@@ -1,0 +1,5 @@
+{
+  "$schema": "https://avodado.dev/schema/config.json",
+  "docsDir": "docs",
+  "outDir": "dist"
+}

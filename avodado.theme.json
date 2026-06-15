@@ -1,0 +1,28 @@
+{
+  "name": "My brand",
+
+  "//": "1) Pick a base theme. 2) Optionally override individual colors/fonts. Re-run `avo render` — no rebuild.",
+
+  "theme": "minimal",
+  "//theme-options": "minimal (default, clean white) | soft (modern, white) | dark | teal | plum | slate",
+
+  "//colors": "Optional overrides on top of the base theme. Add any of: primary, secondary, accent, positive, negative, purple, teal, ink, muted, rule, paper. Values are any CSS color.",
+  "colors": {},
+
+  "//fonts": "Optional. display | body | mono. Use single quotes inside font names.",
+  "fonts": {},
+
+  "//what-each-color-does": {
+    "primary": "headings, links, primary nodes, section numbers",
+    "secondary": "secondary accents (CDN / consumer nodes)",
+    "accent": "highlight pills, foreign keys, 'current' markers",
+    "positive": "success, service nodes, done",
+    "negative": "errors, forbidden edges, danger",
+    "purple": "data / context / provider nodes",
+    "teal": "queues, topics, caches",
+    "ink": "body text",
+    "muted": "captions, dim text, external nodes",
+    "rule": "hairlines, borders, dividers",
+    "paper": "card / surface fills"
+  }
+}
