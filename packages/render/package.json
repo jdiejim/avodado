@@ -1,0 +1,57 @@
+{
+  "name": "@avodado/render",
+  "version": "0.4.0",
+  "description": "Render an Avodado Document to a standalone HTML string.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@avodado/core": "workspace:*",
+    "marked": "^14.1.4"
+  },
+  "devDependencies": {
+    "@dagrejs/dagre": "^3.0.0",
+    "node-html-parser": "^7.0.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdiejim/avodado.git",
+    "directory": "packages/render"
+  },
+  "homepage": "https://github.com/jdiejim/avodado#readme",
+  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "keywords": [
+    "avodado",
+    "documentation",
+    "docs-as-code",
+    "markdown",
+    "html",
+    "svg",
+    "diagrams",
+    "render",
+    "themes"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
