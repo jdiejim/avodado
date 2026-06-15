@@ -1,0 +1,54 @@
+{
+  "name": "@avodado/export",
+  "version": "0.2.6",
+  "description": "Export an Avodado Document to HTML or PDF.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@avodado/core": "workspace:*",
+    "@avodado/render": "workspace:*"
+  },
+  "optionalDependencies": {
+    "playwright": "^1.49.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdiejim/avodado.git",
+    "directory": "packages/export"
+  },
+  "homepage": "https://github.com/jdiejim/avodado#readme",
+  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "keywords": [
+    "avodado",
+    "documentation",
+    "docs-as-code",
+    "markdown",
+    "pdf",
+    "html",
+    "export"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
