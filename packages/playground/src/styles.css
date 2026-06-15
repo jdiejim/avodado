@@ -1,0 +1,144 @@
+/* Playground chrome — kept distinct from the renderer's .docskin CSS, which
+   lives inside the preview iframe. */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  color: #1a1a2e;
+  background: #f3f4f6;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: 48px 1fr;
+  height: 100vh;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  background: #0e54a1;
+  color: #fff;
+  border-bottom: 1px solid #073a75;
+}
+
+.bar h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.bar .sub {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  color: #cfe0f3;
+}
+
+.bar .spacer { flex: 1; }
+
+.bar select,
+.bar button {
+  font: inherit;
+  font-size: 12px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.15);
+  color: #fff;
+  cursor: pointer;
+}
+.bar select:hover,
+.bar button:hover { background: rgba(0, 0, 0, 0.25); }
+.bar button.copied { background: #1f9747; border-color: #1f9747; }
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100%;
+  min-height: 0;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid #d1d5db;
+}
+.pane:last-child { border-right: none; }
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pane.source textarea {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  resize: none;
+  outline: none;
+  padding: 16px;
+  background: #0f1722;
+  color: #d6e3f0;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.pane.preview {
+  background: #fff;
+}
+
+.pane.preview iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.diagnostics {
+  max-height: 30vh;
+  overflow-y: auto;
+  background: #fdf2f2;
+  border-top: 1px solid #f3c9c9;
+  padding: 8px 14px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11.5px;
+  color: #991b1b;
+}
+
+.diagnostics .ok {
+  color: #1f9747;
+  background: #dcf1e2;
+  margin: -8px -14px;
+  padding: 8px 14px;
+  border-top: 1px solid #b6dcc1;
+}
+
+.diagnostics .row {
+  padding: 2px 0;
+}
+
+.diagnostics .row .level {
+  display: inline-block;
+  width: 50px;
+  font-weight: 700;
+}
+.diagnostics .row.warn { color: #b45309; }
