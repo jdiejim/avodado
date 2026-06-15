@@ -1,0 +1,37 @@
+name: vscode-extension
+
+# Manually publish the VS Code extension to the MS Marketplace + Open VSX.
+# Requires repo secrets: VSCE_PAT (Azure DevOps PAT) and OVSX_TOKEN (open-vsx.org).
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Version bump (patch | minor | major) or "none" to publish as-is'
+        default: 'none'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/vscode-extension
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        working-directory: .
+      - run: pnpm --filter avodado build
+        working-directory: .
+      - name: Bump version
+        if: ${{ inputs.release != 'none' }}
+        run: pnpm exec vsce package ${{ inputs.release }} --no-dependencies --no-git-tag-version
+      - name: Publish to VS Code Marketplace
+        run: pnpm exec vsce publish --no-dependencies
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - name: Publish to Open VSX
+        run: pnpm exec ovsx publish --no-dependencies -p ${{ secrets.OVSX_TOKEN }}
