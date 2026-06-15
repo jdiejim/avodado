@@ -1,0 +1,88 @@
+{
+  "name": "@avodado/vscode-extension",
+  "displayName": "Avodado",
+  "description": "Live preview + validation for Avodado documentation (Markdown with typed YAML blocks).",
+  "version": "0.0.1",
+  "publisher": "avodado",
+  "private": true,
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./dist/extension.js",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "avodado",
+    "documentation",
+    "diagrams",
+    "markdown"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "workspaceContains:avodado.config.json",
+    "workspaceContains:avodado.config.yml",
+    "workspaceContains:.avodado/skill/SKILL.md"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "avodado.showPreview",
+        "title": "Avodado: Show Preview to the Side",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "avodado.cycleTheme",
+        "title": "Avodado: Cycle Preview Theme"
+      },
+      {
+        "command": "avodado.checkAll",
+        "title": "Avodado: Validate All Documents"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "avodado.showPreview",
+          "when": "editorLangId == markdown",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Avodado",
+      "properties": {
+        "avodado.theme": {
+          "type": "string",
+          "enum": [
+            "minimal",
+            "teal",
+            "plum",
+            "slate"
+          ],
+          "default": "minimal",
+          "description": "Theme for the preview pane."
+        },
+        "avodado.validate.glob": {
+          "type": "string",
+          "default": "docs/**/*.md",
+          "description": "Glob for documents that should be validated as Avodado docs (relative to the workspace root)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "vscode:prepublish": "tsup"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@avodado/core": "workspace:*",
+    "@avodado/render": "workspace:*",
+    "@types/vscode": "^1.80.0"
+  }
+}
