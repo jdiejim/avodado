@@ -1,0 +1,53 @@
+{
+  "name": "avodado",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Documentation-as-code: Markdown with typed YAML blocks.",
+  "type": "module",
+  "packageManager": "pnpm@10.23.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter='!@avodado/playground' build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r --filter='!@avodado/playground' typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "changeset": "changeset",
+    "release": "pnpm -r --filter='!@avodado/playground' build && changeset publish",
+    "avo": "node packages/cli/dist/bin.js",
+    "playground": "pnpm --filter @avodado/playground dev",
+    "playground:build": "pnpm --filter @avodado/playground build",
+    "vscode-ext:build": "pnpm --filter avodado build",
+    "publint": "pnpm -r --filter='!@avodado/playground' --filter='!avodado' exec publint",
+    "attw": "pnpm -r --filter='@avodado/core' --filter='@avodado/render' --filter='@avodado/export' --filter='@avodado/sync' exec attw --pack . --profile esm-only",
+    "check:packages": "pnpm build && pnpm publint && pnpm attw",
+    "verify": "pnpm build && pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "esbuild@<0.28.1": ">=0.28.1"
+    }
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.3",
+    "@changesets/cli": "^2.27.9",
+    "@eslint/js": "^9.18.0",
+    "@types/node": "^22.10.5",
+    "@vitest/coverage-v8": "^3.2.6",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "publint": "^0.3.21",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.1",
+    "vitest": "^3.2.6"
+  }
+}
