@@ -1,0 +1,48 @@
+{
+  "name": "@avodado/mcp",
+  "version": "0.0.20",
+  "description": "Model Context Protocol server for Avodado — author, validate, and render Avodado documents from any MCP client.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "avodado-mcp": "./dist/server.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "embed": "node scripts/embed-skill.mjs",
+    "build": "node scripts/embed-skill.mjs && tsup",
+    "typecheck": "node scripts/embed-skill.mjs && tsc --noEmit"
+  },
+  "dependencies": {
+    "@avodado/core": "workspace:*",
+    "@avodado/render": "workspace:*",
+    "@avodado/sync": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdiejim/avodado.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/jdiejim/avodado#readme",
+  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "keywords": [
+    "avodado",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "documentation"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
