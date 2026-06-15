@@ -1,0 +1,70 @@
+/**
+ * Renders a table block. Doc-studio variant supports:
+ * - Column objects with `align` ('l'|'c'|'r') and `highlight`
+ * - Cell objects with `tone` ('pos'|'neg'|'warn'|'muted'), `lead`, `highlight`
+ * - Optional `title`, `description`, `note`
+ *
+ * Plain string columns / cells still work.
+ */
+
+import type { BlockDataMap } from '@avodado/core';
+import { escapeHtml } from '../escape.js';
+
+type TableData = BlockDataMap['table'];
+type Col = NonNullable<TableData['columns']>[number];
+type Cell = NonNullable<NonNullable<TableData['rows']>[number]>[number];
+
+function colClass(c: Col): string {
+  if (typeof c === 'string') return '';
+  const parts: string[] = [];
+  if (c.align === 'r') parts.push('r');
+  if (c.align === 'c') parts.push('c');
+  if (c.highlight === true) parts.push('hi');
+  return parts.join(' ');
+}
+
+function colLabel(c: Col): string {
+  return typeof c === 'string' ? c : c.label;
+}
+
+function cellClass(c: Cell): string {
+  if (typeof c === 'string' || typeof c === 'number') return '';
+  const parts: string[] = [];
+  if (c.tone) parts.push(`cell-${c.tone}`);
+  if (c.lead === true) parts.push('lead');
+  if (c.highlight === true) parts.push('hi');
+  return parts.join(' ');
+}
+
+function cellValue(c: Cell): string {
+  if (typeof c === 'string' || typeof c === 'number') return escapeHtml(c);
+  return escapeHtml(c.v);
+}
+
+export function renderTable(data: BlockDataMap['table']): string {
+  const cols = data.columns ?? [];
+  const rows = data.rows ?? [];
+  const head = cols
+    .map((c) => {
+      const cls = colClass(c);
+      return `<th${cls ? ` class="${cls}"` : ''}>${escapeHtml(colLabel(c))}</th>`;
+    })
+    .join('');
+  const body = rows
+    .map((r) => {
+      const cells = (r ?? [])
+        .map((c, i) => {
+          const col = cols[i];
+          const cls = [col !== undefined ? colClass(col) : '', cellClass(c)]
+            .filter(Boolean)
+            .join(' ');
+          return `<td${cls ? ` class="${cls}"` : ''}>${cellValue(c)}</td>`;
+        })
+        .join('');
+      return `<tr>${cells}</tr>`;
+    })
+    .join('');
+  const note =
+    data.note !== undefined ? `<p class="tbl-note">${escapeHtml(data.note)}</p>` : '';
+  return `<table class="pres-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>${note}`;
+}

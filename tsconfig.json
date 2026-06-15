@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/render" },
+    { "path": "./packages/export" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/sync" },
+    { "path": "./packages/playground" },
+    { "path": "./packages/vscode-extension" }
+  ]
+}
