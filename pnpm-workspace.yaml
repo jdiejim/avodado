@@ -1,0 +1,6 @@
+packages:
+  - 'packages/*'
+
+# Phase B — playground is intentionally not built as part of `pnpm -r build`
+# (it's a hosted app, not a library). It still picks up workspace deps.
+
