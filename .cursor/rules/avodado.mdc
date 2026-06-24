@@ -1,0 +1,27 @@
+<!-- Repo location: .cursor/rules/avodado.mdc -->
+---
+description: Authoring Avodado documentation (Markdown + typed blocks)
+globs:
+  - "docs/**/*.md"
+alwaysApply: false
+---
+
+# Avodado docs
+
+This repo uses **Avodado**: documentation is Markdown with typed, fenced YAML blocks,
+and the `.md` files are the single source of truth. When writing or editing anything
+under `docs/`, follow the full authoring skill at **`.avodado/skill/SKILL.md`**.
+
+Essentials:
+
+- Prose is plain Markdown. Structure goes in typed blocks — use only these nine:
+  `sequence`, `erd`, `table`, `callout`, `userstory`, `timeline`, `kanban`, `tracker`,
+  `meta`. Block bodies are YAML.
+- Never paste raw HTML or inline SVG into a doc; express it as a block.
+- Use only documented fields for each block; don't invent block types or fields.
+- Add `id:` to a block that needs referencing; reference it as `doc#id` (or `#id` in
+  the same file). Don't reference an id that doesn't exist.
+- Edit the specific block surgically rather than rewriting the whole document.
+- After any change, run `avo check` and fix every diagnostic before finishing.
+
+See `.avodado/skill/SKILL.md` for each block's exact fields and worked examples.
