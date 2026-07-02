@@ -1,0 +1,30 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: { bin: 'src/bin.ts' },
+  format: ['esm'],
+  dts: false,
+  sourcemap: true,
+  clean: true,
+  target: 'node20',
+  treeshake: true,
+  splitting: false,
+  banner: { js: '#!/usr/bin/env node' },
+  external: [
+    '@avodado/core',
+    '@avodado/render',
+    '@avodado/export',
+    '@avodado/sync',
+    'ink',
+    'ink-select-input',
+    'ink-table',
+    'react',
+    'commander',
+    'fast-glob',
+    'jiti',
+    'open',
+    'picocolors',
+    'yaml',
+    'playwright',
+  ],
+});
