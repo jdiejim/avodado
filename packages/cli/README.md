@@ -1,4 +1,4 @@
-# @avodado/cli
+# avodado
 
 **Documentation-as-code.** Write docs as plain Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and `avo` validates them like code, renders them to HTML, slides, or PDF, and lets you edit them in a visual studio. The `.md` files on disk stay the single source of truth.
 

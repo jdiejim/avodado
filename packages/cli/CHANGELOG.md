@@ -1,5 +1,12 @@
 # @avodado/cli
 
+## 0.34.1
+
+### Patch Changes
+
+- Fix the npm README title — the heading now reads `avodado` instead of the old
+  `@avodado/cli` package name.
+
 ## 0.34.0
 
 ### Minor Changes
