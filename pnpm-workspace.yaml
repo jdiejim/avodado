@@ -1,0 +1,5 @@
+packages:
+  - 'packages/*'
+
+# The avodado.dev website lives in its own repo (jdiejim/avodado-website) and
+# consumes @avodado/* from npm — it is no longer part of this workspace.

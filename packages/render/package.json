@@ -1,0 +1,69 @@
+{
+  "name": "@avodado/render",
+  "version": "0.21.0",
+  "description": "Render Avodado documentation-as-code (Markdown + typed YAML blocks) to standalone, themeable HTML, slide decks, and PDF — architecture & system-design diagrams, C4, ERDs, API references, tables, and charts as self-contained SVG. No runtime, no CDN, no client JS.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@avodado/core": "workspace:*",
+    "marked": "^14.1.4"
+  },
+  "devDependencies": {
+    "@dagrejs/dagre": "^3.0.0",
+    "node-html-parser": "^7.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdiejim/avodado.git",
+    "directory": "packages/render"
+  },
+  "homepage": "https://avodado.dev",
+  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "keywords": [
+    "avodado",
+    "documentation",
+    "docs-as-code",
+    "documentation-as-code",
+    "markdown",
+    "yaml",
+    "html",
+    "svg",
+    "diagrams",
+    "diagrams-as-code",
+    "mermaid-alternative",
+    "slides",
+    "pdf",
+    "themes",
+    "render",
+    "static-site-generator",
+    "api-documentation",
+    "system-design",
+    "architecture",
+    "c4-model",
+    "presentations",
+    "technical-writing"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

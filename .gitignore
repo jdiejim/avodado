@@ -1,0 +1,26 @@
+node_modules
+dist
+coverage
+.DS_Store
+*.log
+.env
+.env.local
+.env*.local
+.turbo
+.vitest-cache
+.pnpm-store
+
+# Next.js (planner app)
+.next
+out
+
+# build caches / generated
+*.tsbuildinfo
+*.generated.ts
+next-env.d.ts
+
+# local scratch / personal references (not part of the project)
+ref.png
+
+# VS Code extension build artifact
+*.vsix

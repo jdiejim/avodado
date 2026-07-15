@@ -1,0 +1,4619 @@
+/* Avodado Studio chrome (v2 — focus editing). All classes are `stu-*` so
+   nothing collides with the docskin stylesheet injected for the document. */
+
+/* Editorial Paper — the studio chrome wears the website/style-lab .A system.
+   Light is warm cream paper with navy display ink; dark is "paper at night":
+   warm charcoal, cream-tinted ink, aged-paper primary controls, clay accents.
+   The chrome follows the SYSTEM theme (prefers-color-scheme). The rendered
+   document keeps its own theme; selection/highlight colors that ride ON the
+   doc surface use the fixed --stu-sel/--stu-sel-line tokens below (plus the
+   [data-doc-theme='dark'] overrides), never the app-flipping chrome tokens. */
+:root {
+  color-scheme: light dark;
+
+  /* chrome — light (paper) */
+  --stu-navy: #233a5e; /* navy ink: primary controls, accents, display */
+  --stu-navy-strong: #1b2e4c; /* primary hover */
+  --stu-on-navy: #fcfbf7; /* text on primary */
+  --stu-display: #233a5e; /* display headings (cream ink at night) */
+  --stu-teal: #2f6f6a; /* positive microcopy */
+  --stu-terra: #9c4a2f; /* terracotta — ONE accent moment per surface */
+  --stu-terra-soft: #f3e4dc;
+  --stu-ink: #211f1a; /* body ink */
+  --stu-slate: #4c473d; /* strong secondary text (warm) */
+  --stu-gray: #6b665a; /* secondary text (warm) */
+  --stu-faint: #a39d8d; /* tertiary/placeholder */
+  --stu-bg: #f4f1e8; /* app canvas around the paper */
+  --stu-panel: #fffdf8; /* raised paper: bars, cards, popovers */
+  --stu-well: #faf8f0; /* sunken paper: nested items, yaml, thumbs */
+  --stu-rule: #e3ded2; /* warm hairline */
+  --stu-rule-soft: #f2efe4;
+  --stu-amber: #955d10;
+  --stu-amber-soft: #f7ecd8;
+  --stu-red: #a13b2e;
+  --stu-red-soft: #f7e4df;
+  --stu-on-red: #fff;
+  --stu-green: #3f7d4e;
+  --stu-green-soft: #e7f0e2;
+  --stu-navy-soft: color-mix(in srgb, var(--stu-navy) 9%, var(--stu-panel));
+  --stu-teal-soft: color-mix(in srgb, var(--stu-teal) 12%, var(--stu-panel));
+  --stu-ring: 0 0 0 3px rgba(35, 58, 94, 0.16); /* focus halo */
+  --stu-switch-off: #d3cdbd;
+  --stu-tip-bg: #233a5e; /* inverted chips: toasts, hints */
+  --stu-tip-fg: #f6f2e8;
+  --stu-scrim: rgba(33, 31, 26, 0.4); /* modal backdrops (warm) */
+  --stu-shadow: 0 1px 2px rgba(35, 58, 94, 0.05), 0 10px 24px -12px rgba(35, 58, 94, 0.16);
+  --stu-shadow-lift:
+    0 2px 4px rgba(35, 58, 94, 0.06), 0 18px 44px -16px rgba(35, 58, 94, 0.28);
+  --stu-radius: 10px;
+  --stu-font:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --stu-mono:
+    'JetBrains Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* doc-surface-anchored highlights — tuned for light paper and deliberately
+     NOT flipped by the app theme; [data-doc-theme='dark'] swaps them when the
+     DOCUMENT paints a dark surface. */
+  --stu-sel: #233a5e;
+  --stu-sel-line: #2f6f6a;
+}
+
+/* Dark chrome — paper at night. Doc-surface tokens (--stu-sel*) stay put. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --stu-navy: #e6ddc7; /* aged paper takes the primary role */
+    --stu-navy-strong: #f0e9d8;
+    --stu-on-navy: #211f1a;
+    --stu-display: #ece7db; /* cream ink */
+    --stu-teal: #8ec4ba;
+    --stu-terra: #d9906f; /* clay */
+    --stu-terra-soft: #302620;
+    --stu-ink: #ece7db;
+    --stu-slate: #c6bfae;
+    --stu-gray: #a89f90;
+    --stu-faint: #7b7568;
+    --stu-bg: #17181c;
+    --stu-panel: #1e1e22;
+    --stu-well: #232227;
+    --stu-rule: #34312a;
+    --stu-rule-soft: #2a2924;
+    --stu-amber: #d9a05a;
+    --stu-amber-soft: #322818;
+    --stu-red: #e0705c;
+    --stu-red-soft: #3a221d;
+    --stu-on-red: #2b130d;
+    --stu-green: #94bd85;
+    --stu-green-soft: #23301e;
+    --stu-ring: 0 0 0 3px rgba(230, 221, 199, 0.22);
+    --stu-switch-off: #413e35;
+    --stu-tip-bg: #e6ddc7;
+    --stu-tip-fg: #211f1a;
+    --stu-scrim: rgba(5, 5, 7, 0.6);
+    --stu-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 24px -12px rgba(0, 0, 0, 0.5);
+    --stu-shadow-lift:
+      0 2px 4px rgba(0, 0, 0, 0.35), 0 18px 44px -16px rgba(0, 0, 0, 0.65);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--stu-font);
+  color: var(--stu-ink);
+  background: var(--stu-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+kbd {
+  font-family: var(--stu-mono);
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--stu-rule-soft);
+  border: 1px solid var(--stu-rule);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: var(--stu-slate);
+}
+
+@keyframes stu-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes stu-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes stu-sheet-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.stu-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---------- top bar ---------- */
+
+.stu-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 16px;
+  background: var(--stu-panel);
+  border-bottom: 1px solid var(--stu-rule);
+  flex: none;
+  z-index: 20;
+}
+
+.stu-wordmark {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--stu-navy);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.stu-wordmark em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--stu-teal);
+}
+
+/* The official avodado mark (src/assets/mark.png). */
+.stu-wordmark-dot {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: none;
+}
+
+.stu-spacer {
+  flex: 1;
+}
+
+.stu-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.stu-chip-saved {
+  color: var(--stu-green);
+  background: var(--stu-green-soft);
+}
+
+.stu-chip-editing {
+  color: var(--stu-amber);
+  background: var(--stu-amber-soft);
+}
+
+.stu-chip-conflict {
+  color: var(--stu-red);
+  background: var(--stu-red-soft);
+}
+
+.stu-chip-muted {
+  color: var(--stu-gray);
+  background: var(--stu-rule-soft);
+}
+
+.stu-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  background: var(--stu-panel);
+  color: var(--stu-slate);
+  cursor: pointer;
+  transition: background 0.13s ease-out, color 0.13s ease-out;
+}
+
+.stu-iconbtn:hover:not(:disabled) {
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+}
+
+.stu-iconbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stu-btngroup {
+  display: flex;
+  gap: 6px;
+}
+
+.stu-select {
+  height: 30px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  background: var(--stu-panel);
+  color: var(--stu-ink);
+  font-size: 12.5px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.stu-select:focus-visible {
+  outline: none;
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-autosave {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--stu-slate);
+  cursor: pointer;
+  user-select: none;
+}
+
+.stu-autosave input,
+.stu-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.stu-switch {
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  background: var(--stu-switch-off);
+  position: relative;
+  transition: background 0.15s;
+  flex: none;
+}
+
+.stu-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fdfcf7;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: left 0.15s;
+}
+
+.stu-autosave input:checked + .stu-switch,
+.stu-toggle input:checked + .stu-switch {
+  background: var(--stu-teal);
+}
+
+.stu-autosave input:checked + .stu-switch::after,
+.stu-toggle input:checked + .stu-switch::after {
+  left: 15px;
+}
+
+/* ---------- doc switcher ---------- */
+
+.stu-switcher {
+  position: relative;
+  min-width: 0;
+}
+
+.stu-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 420px;
+  height: 32px;
+  padding: 0 10px 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--stu-ink);
+  cursor: pointer;
+  transition: background 0.13s ease-out, border-color 0.13s ease-out;
+}
+
+.stu-switcher-btn:hover {
+  background: var(--stu-rule-soft);
+}
+
+.stu-switcher-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--stu-slate);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-switcher-caret {
+  display: inline-flex;
+  color: var(--stu-faint);
+  transition: transform 0.13s ease-out;
+}
+
+.stu-switcher-caret-open {
+  transform: rotate(180deg);
+}
+
+.stu-switcher-pop {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  width: 340px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 12px;
+  box-shadow: var(--stu-shadow-lift);
+  z-index: 40;
+  overflow: hidden;
+  animation: stu-pop-in 0.14s ease-out;
+}
+
+.stu-switcher-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--stu-rule);
+  color: var(--stu-faint);
+}
+
+.stu-switcher-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--stu-ink);
+  background: none;
+}
+
+.stu-switcher-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.stu-switcher-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 7px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.stu-switcher-item:hover {
+  background: var(--stu-rule-soft);
+}
+
+.stu-switcher-item-active,
+.stu-switcher-item-active:hover {
+  background: var(--stu-navy-soft);
+}
+
+.stu-switcher-item-icon {
+  display: inline-flex;
+  color: var(--stu-faint);
+  flex: none;
+}
+
+.stu-switcher-item-active .stu-switcher-item-icon {
+  color: var(--stu-navy);
+}
+
+.stu-switcher-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.stu-switcher-item-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stu-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-switcher-item-active .stu-switcher-item-title {
+  color: var(--stu-navy);
+}
+
+.stu-switcher-item-slug {
+  font-size: 10.5px;
+  color: var(--stu-faint);
+  font-family: var(--stu-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-switcher-item-check {
+  display: inline-flex;
+  color: var(--stu-navy);
+  flex: none;
+}
+
+.stu-switcher-none {
+  padding: 14px 12px;
+  font-size: 12.5px;
+  color: var(--stu-faint);
+  text-align: center;
+}
+
+.stu-switcher-foot {
+  border-top: 1px solid var(--stu-rule);
+  padding: 6px;
+}
+
+.stu-switcher-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 8px 9px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  cursor: pointer;
+}
+
+.stu-switcher-add:hover {
+  background: var(--stu-navy-soft);
+}
+
+.stu-switcher-new {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+}
+
+.stu-switcher-new input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-family: var(--stu-mono);
+  font-size: 12px;
+  outline: none;
+}
+
+.stu-switcher-new input:focus {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+/* ---------- hint bar ---------- */
+
+.stu-hintbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 16px;
+  background: var(--stu-navy-soft);
+  border-bottom: 1px solid var(--stu-rule);
+  font-size: 12px;
+  color: var(--stu-slate);
+  flex: none;
+  animation: stu-fade-in 0.16s ease-out;
+}
+
+.stu-hintbar kbd {
+  background: var(--stu-panel);
+}
+
+.stu-hintbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--stu-gray);
+  cursor: pointer;
+}
+
+.stu-hintbar button:hover {
+  background: color-mix(in srgb, var(--stu-navy) 10%, transparent);
+  color: var(--stu-navy);
+}
+
+/* ---------- mode switch + Site / Present surfaces ---------- */
+
+.stu-modeswitch {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  background: var(--stu-well);
+  padding: 2px;
+  gap: 2px;
+  flex: none;
+}
+
+.stu-modeswitch-btn {
+  height: 24px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--stu-gray);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.13s ease-out, color 0.13s ease-out;
+}
+
+.stu-modeswitch-btn:hover {
+  color: var(--stu-navy);
+}
+
+.stu-modeswitch-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--stu-ring);
+}
+
+.stu-modeswitch-active,
+.stu-modeswitch-btn.stu-modeswitch-active:hover {
+  background: var(--stu-panel);
+  color: var(--stu-navy);
+  box-shadow: 0 1px 2px rgba(35, 58, 94, 0.08);
+}
+
+/* Full-height area under the top bar that Site / Present fill. */
+.stu-modearea {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--stu-bg);
+}
+
+.stu-modeframe {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--stu-panel);
+}
+
+/* Slim dirty-doc notice above the Site iframe. */
+.stu-modenotice {
+  flex: none;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--stu-amber);
+  background: var(--stu-amber-soft);
+  border-bottom: 1px solid var(--stu-rule);
+}
+
+.stu-modenotice kbd {
+  font-family: var(--stu-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 4px;
+  background: var(--stu-panel);
+}
+
+/* Floating "Back to editor" pill over the Present deck (top-right — the
+   deck's own nav bar owns the bottom edge). */
+.stu-present-back {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--stu-panel) 85%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--stu-navy);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.stu-present-back:hover {
+  background: var(--stu-panel);
+  border-color: var(--stu-navy);
+}
+
+.stu-present-empty {
+  margin: auto;
+  padding: 24px 32px;
+  font-size: 13px;
+  color: var(--stu-gray);
+}
+
+/* ---------- canvas ---------- */
+
+.stu-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 36px 48px 140px;
+  /* Own the chrome surface — the injected docskin stylesheet paints the BODY
+     with the doc's paper color; the canvas around the page stays app-themed. */
+  background: var(--stu-bg);
+}
+
+/* The docskin paints its own themed surface (cream, dark, …) — the page card
+   only supplies radius + shadow, so no chrome-coloured frame leaks around it. */
+.stu-page {
+  max-width: 1040px;
+  margin: 0 auto;
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow);
+  overflow: hidden;
+}
+
+.stu-page > .docskin {
+  padding-bottom: 96px;
+}
+
+.stu-render-error {
+  max-width: 720px;
+  margin: 40px auto;
+  padding: 16px 20px;
+  background: var(--stu-red-soft);
+  color: var(--stu-red);
+  border-radius: var(--stu-radius);
+  font-size: 13px;
+}
+
+.stu-seg {
+  position: relative;
+  border-radius: var(--stu-radius);
+  transition: box-shadow 0.14s ease-out;
+}
+
+.stu-seg:hover {
+  box-shadow:
+    0 0 0 1px #e3ded2,
+    0 2px 10px -4px rgba(35, 58, 94, 0.16);
+}
+
+.stu-seg-selected,
+.stu-seg-selected:hover {
+  box-shadow: 0 0 0 2px var(--stu-sel);
+}
+
+/* while prose edits in place, the textarea carries the ring — not the shell */
+.stu-seg-editing,
+.stu-seg-editing:hover {
+  box-shadow: none;
+}
+
+.stu-seg-html {
+  padding: 2px 6px;
+}
+
+/* floating mini-toolbar */
+
+.stu-blocktools {
+  position: absolute;
+  top: -14px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  box-shadow: var(--stu-shadow);
+  padding: 2px;
+  z-index: 3;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(2px);
+  transition: opacity 0.13s ease-out, transform 0.13s ease-out, visibility 0.13s;
+}
+
+.stu-seg:hover .stu-blocktools,
+.stu-seg-selected .stu-blocktools {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.stu-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  color: var(--stu-slate);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.12s ease-out, color 0.12s ease-out;
+}
+
+.stu-tool:hover:not(:disabled) {
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+}
+
+.stu-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.stu-tool-grip {
+  cursor: grab;
+  color: var(--stu-faint);
+}
+
+.stu-tool-grip:active {
+  cursor: grabbing;
+}
+
+.stu-tool-danger:hover:not(:disabled) {
+  background: var(--stu-red-soft);
+  color: var(--stu-red);
+}
+
+/* placeholders */
+
+.stu-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  margin: 4px 6px;
+  border-radius: var(--stu-radius);
+  font-size: 12.5px;
+  color: var(--stu-gray);
+}
+
+.stu-placeholder-meta {
+  background: var(--stu-navy-soft);
+}
+
+.stu-placeholder-empty {
+  border: 1.5px dashed var(--stu-rule);
+}
+
+.stu-placeholder-chip {
+  font-family: var(--stu-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--stu-navy);
+  background: color-mix(in srgb, var(--stu-navy) 10%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex: none;
+}
+
+/* gaps between blocks: hairline + '+' fade in on hover; DnD drop target */
+
+.stu-gap {
+  position: relative;
+  height: 20px;
+  margin: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.stu-gap-line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  border-top: 2px solid transparent;
+  border-radius: 2px;
+  pointer-events: none;
+  transition: border-color 0.13s ease-out;
+}
+
+.stu-gap:hover .stu-gap-line {
+  border-top-color: rgba(35, 58, 94, 0.3);
+}
+
+.stu-gap-plus {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--stu-rule);
+  background: var(--stu-panel);
+  color: var(--stu-navy);
+  cursor: pointer;
+  box-shadow: var(--stu-shadow);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.13s ease-out, transform 0.13s ease-out, background 0.13s ease-out;
+  z-index: 2;
+  padding: 0;
+}
+
+.stu-gap:hover .stu-gap-plus,
+.stu-gap-plus:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.stu-gap-plus:hover {
+  background: var(--stu-navy);
+  border-color: var(--stu-navy);
+  color: var(--stu-on-navy);
+}
+
+/* drag mode: the gap becomes a drop slot */
+
+.stu-gap-armed {
+  height: 26px;
+}
+
+.stu-gap-armed .stu-gap-line {
+  border-top-color: rgba(35, 58, 94, 0.42);
+  border-top-style: dashed;
+}
+
+.stu-gap-over {
+  background: rgba(47, 111, 106, 0.12);
+}
+
+.stu-gap-over .stu-gap-line {
+  border-top-width: 2.5px;
+  border-top-color: var(--stu-sel-line);
+  border-top-style: solid;
+}
+
+/* prose in-place editor */
+
+.stu-prose-editor {
+  display: block;
+  width: calc(100% - 12px);
+  margin: 4px 6px;
+  border: none;
+  border-radius: var(--stu-radius);
+  box-shadow: 0 0 0 2px var(--stu-sel);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: inherit;
+  background: rgba(35, 58, 94, 0.04);
+  resize: none;
+  outline: none;
+}
+
+/* empty doc ghost */
+
+.stu-ghost {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 72px 24px;
+  margin: 8px 6px;
+  border: 1.5px dashed var(--stu-rule);
+  border-radius: 12px;
+  color: var(--stu-gray);
+  font-size: 13px;
+}
+
+.stu-ghost-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--stu-rule);
+  background: var(--stu-panel);
+  color: var(--stu-navy);
+  cursor: pointer;
+  box-shadow: var(--stu-shadow);
+  transition: background 0.13s ease-out, color 0.13s ease-out, transform 0.13s ease-out;
+}
+
+.stu-ghost-plus:hover {
+  background: var(--stu-navy);
+  color: var(--stu-on-navy);
+  transform: scale(1.05);
+}
+
+/* ---------- hero / empty state ---------- */
+
+.stu-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70%;
+}
+
+.stu-hero-card {
+  background: var(--stu-panel);
+  border-radius: 16px;
+  box-shadow: var(--stu-shadow);
+  padding: 48px 56px;
+  text-align: center;
+  max-width: 460px;
+}
+
+.stu-hero-mark {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 62%, var(--stu-panel) 0 34%, var(--stu-navy) 35%);
+  border: 2.5px solid var(--stu-navy);
+}
+
+.stu-hero-card h1 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+}
+
+.stu-hero-card p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--stu-gray);
+}
+
+.stu-hero-card code {
+  font-family: var(--stu-mono);
+  font-size: 12px;
+  background: var(--stu-rule-soft);
+  padding: 1px 6px;
+  border-radius: 5px;
+  color: var(--stu-teal);
+}
+
+/* ---------- insert menu ('+' popover) ---------- */
+
+.stu-insert {
+  position: fixed;
+  width: 620px;
+  max-width: calc(100vw - 24px);
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 12px;
+  box-shadow: var(--stu-shadow-lift);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  animation: stu-pop-in 0.15s ease-out;
+  overflow: hidden;
+}
+
+.stu-insert-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--stu-rule);
+  color: var(--stu-faint);
+  flex: none;
+}
+
+.stu-insert-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--stu-ink);
+  background: none;
+}
+
+.stu-insert-body {
+  overflow-y: auto;
+  max-height: 404px;
+  padding: 12px 14px 16px;
+}
+
+.stu-insert-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stu-gray);
+  margin: 2px 2px 8px;
+}
+
+.stu-insert-none {
+  padding: 28px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--stu-faint);
+}
+
+.stu-cardgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  background: var(--stu-panel);
+  padding: 6px 6px 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.13s ease-out, box-shadow 0.13s ease-out, transform 0.13s ease-out;
+}
+
+.stu-card:hover {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-shadow);
+  transform: translateY(-1px);
+}
+
+.stu-card:focus-visible {
+  outline: none;
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-thumb {
+  position: relative;
+  height: 106px;
+  border-radius: 7px;
+  background: var(--stu-well);
+  border: 1px solid var(--stu-rule-soft);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stu-thumb-doc {
+  transform-origin: top left;
+  padding: 10px 12px;
+  background: transparent !important;
+}
+
+.stu-thumb-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: var(--stu-mono);
+  font-size: 11px;
+  color: var(--stu-faint);
+}
+
+.stu-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 3px;
+  padding: 0 2px;
+}
+
+.stu-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stu-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-card-type {
+  font-family: var(--stu-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+  padding: 1px 6px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.stu-card-desc {
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--stu-gray);
+  padding: 0 2px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.stu-insert-fam {
+  margin-top: 10px;
+}
+
+.stu-insert-famhead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 7px 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stu-slate);
+  cursor: pointer;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.stu-insert-famhead:hover {
+  background: var(--stu-rule-soft);
+}
+
+.stu-insert-caret {
+  display: inline-flex;
+  color: var(--stu-faint);
+  transition: transform 0.13s ease-out;
+}
+
+.stu-insert-caret-open {
+  transform: rotate(90deg);
+}
+
+.stu-insert-count {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--stu-faint);
+  background: var(--stu-rule-soft);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.stu-insert-fam .stu-cardgrid {
+  padding: 4px 0 6px;
+}
+
+/* ---------- slash menu ---------- */
+
+.stu-slash {
+  position: fixed;
+  top: 16vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 420px;
+  max-width: calc(100vw - 24px);
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 12px;
+  box-shadow: var(--stu-shadow-lift);
+  z-index: 50;
+  overflow: hidden;
+  animation: stu-pop-in 0.14s ease-out;
+}
+
+.stu-slash-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--stu-rule);
+}
+
+.stu-slash-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+  flex: none;
+}
+
+.stu-slash-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--stu-ink);
+  background: none;
+}
+
+.stu-slash-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 322px;
+  overflow-y: auto;
+}
+
+.stu-slash-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 7px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.stu-slash-item-active {
+  background: var(--stu-navy-soft);
+}
+
+.stu-slash-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stu-ink);
+  flex: none;
+}
+
+.stu-slash-item-active .stu-slash-name {
+  color: var(--stu-navy);
+}
+
+.stu-slash-type {
+  font-family: var(--stu-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+  padding: 1px 6px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.stu-slash-item-active .stu-slash-type {
+  background: color-mix(in srgb, var(--stu-navy) 16%, transparent);
+}
+
+.stu-slash-fam {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--stu-faint);
+  white-space: nowrap;
+}
+
+.stu-slash-none {
+  padding: 18px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--stu-faint);
+}
+
+/* ---------- edit sheet ---------- */
+
+.stu-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--stu-scrim);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: stu-fade-in 0.14s ease-out;
+}
+
+.stu-sheet {
+  width: 92vw;
+  max-width: 1240px;
+  height: 85vh;
+  background: var(--stu-panel);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: stu-sheet-in 0.16s ease-out;
+}
+
+.stu-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--stu-rule);
+  flex: none;
+}
+
+.stu-sheet-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.stu-sheet-title h2 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stu-kind-chip {
+  font-family: var(--stu-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--stu-on-navy);
+  background: var(--stu-navy);
+  padding: 2px 9px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.stu-family-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stu-faint);
+  white-space: nowrap;
+}
+
+.stu-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--stu-rule-soft);
+  border-radius: 9px;
+  padding: 3px;
+}
+
+.stu-sheet-tabs {
+  width: 170px;
+  flex: none;
+}
+
+.stu-tab {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 5px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stu-gray);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.stu-tab-active {
+  background: var(--stu-panel);
+  color: var(--stu-navy);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.stu-tab:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stu-sheet-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.stu-sheet-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.stu-sheet-form {
+  width: 44%;
+  min-width: 360px;
+  border-right: 1px solid var(--stu-rule);
+  overflow-y: auto;
+  padding: 18px 18px 40px;
+}
+
+.stu-sheet-yaml {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+}
+
+.stu-sheet-yaml .stu-yaml-editor {
+  flex: 1;
+  min-height: 260px;
+}
+
+.stu-sheet-diags {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.stu-sheet-preview {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  background: var(--stu-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.stu-sheet-preview-label {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stu-faint);
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  padding: 2px 8px;
+  border-radius: 999px;
+  z-index: 2;
+}
+
+.stu-sheet-preview-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 22px;
+}
+
+.stu-sheet-preview-doc {
+  border-radius: 10px;
+  box-shadow: var(--stu-shadow);
+  padding: 28px 32px 36px !important;
+  min-height: 100%;
+}
+
+.stu-sheet-preview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 13px;
+  color: var(--stu-faint);
+}
+
+/* diagnostics */
+
+.stu-diag {
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stu-diag-error {
+  background: var(--stu-red-soft);
+  color: var(--stu-red);
+}
+
+.stu-diag-warn {
+  background: var(--stu-amber-soft);
+  color: var(--stu-amber);
+}
+
+.stu-diag-code {
+  font-family: var(--stu-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  opacity: 0.75;
+}
+
+.stu-diag-msg {
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.stu-diag-hint {
+  margin-top: 3px;
+  font-size: 11.5px;
+  opacity: 0.85;
+}
+
+.stu-field-diags {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stu-field-diag {
+  font-size: 11px;
+  line-height: 1.4;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.stu-field-diag-error {
+  background: var(--stu-red-soft);
+  color: var(--stu-red);
+}
+
+.stu-field-diag-warn {
+  background: var(--stu-amber-soft);
+  color: var(--stu-amber);
+}
+
+/* ---------- form controls ---------- */
+
+.stu-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.stu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stu-field-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--stu-slate);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.stu-optional {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--stu-faint);
+}
+
+.stu-input {
+  width: 100%;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  padding: 7px 9px;
+  height: 32px;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: var(--stu-ink);
+  background: var(--stu-panel);
+  outline: none;
+  transition: border-color 0.13s ease-out, box-shadow 0.13s ease-out;
+}
+
+.stu-input:focus {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-input-area {
+  resize: vertical;
+  min-height: 64px;
+  height: auto;
+  line-height: 1.5;
+}
+
+.stu-input-select {
+  cursor: pointer;
+}
+
+.stu-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.stu-toggle-label {
+  font-size: 12px;
+  color: var(--stu-gray);
+}
+
+.stu-swatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stu-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s;
+}
+
+.stu-swatch:hover {
+  transform: scale(1.12);
+}
+
+.stu-swatch-active {
+  border-color: var(--stu-ink);
+  box-shadow: inset 0 0 0 2px var(--stu-panel);
+}
+
+.stu-swatch-clear {
+  border: none;
+  background: none;
+  color: var(--stu-faint);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.stu-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.stu-chip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 6px 3px 10px;
+  border-radius: 999px;
+  max-width: 100%;
+}
+
+.stu-chip-item button {
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 2px;
+}
+
+.stu-chip-item button:hover {
+  opacity: 1;
+}
+
+.stu-chips-add {
+  width: 90px;
+  flex: 1 0 90px;
+  padding: 4px 8px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.stu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stu-item {
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  background: var(--stu-well);
+}
+
+.stu-item-open {
+  border-color: var(--stu-navy);
+  background: var(--stu-panel);
+}
+
+.stu-item-row {
+  display: flex;
+  align-items: center;
+}
+
+.stu-item-summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: none;
+  padding: 7px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.stu-item-caret {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--stu-faint);
+  transition: transform 0.12s;
+  flex: none;
+}
+
+.stu-item-caret-open {
+  transform: rotate(90deg);
+}
+
+.stu-item-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--stu-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-item-tools {
+  display: flex;
+  gap: 1px;
+  padding-right: 6px;
+}
+
+.stu-item-tools button {
+  border: none;
+  background: none;
+  color: var(--stu-faint);
+  font-size: 12px;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.stu-item-tools button:hover:not(:disabled) {
+  background: var(--stu-rule-soft);
+  color: var(--stu-slate);
+}
+
+.stu-item-tools button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.stu-item-remove:hover:not(:disabled) {
+  background: var(--stu-red-soft) !important;
+  color: var(--stu-red) !important;
+}
+
+.stu-item-fields {
+  border-top: 1px solid var(--stu-rule);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stu-addbtn {
+  border: 1.5px dashed var(--stu-rule);
+  background: none;
+  border-radius: 9px;
+  padding: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.stu-addbtn:hover {
+  border-color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+}
+
+.stu-fieldset {
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  padding: 10px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stu-fieldset legend {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--stu-gray);
+  padding: 0 5px;
+}
+
+.stu-opaque {
+  font-size: 12px;
+  color: var(--stu-gray);
+  background: var(--stu-rule-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.stu-opaque-block {
+  margin-top: 4px;
+}
+
+.stu-linkbtn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--stu-navy);
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.stu-yaml-editor {
+  width: 100%;
+  min-height: 300px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-family: var(--stu-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--stu-ink);
+  background: var(--stu-well);
+  resize: vertical;
+  outline: none;
+}
+
+.stu-yaml-editor:focus {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+/* ---------- buttons, conflict banner, toasts ---------- */
+
+.stu-btn {
+  border: 1px solid var(--stu-rule);
+  background: var(--stu-panel);
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 32px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stu-slate);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.13s ease-out, border-color 0.13s ease-out;
+}
+
+.stu-btn:hover {
+  background: var(--stu-rule-soft);
+}
+
+.stu-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--stu-ring);
+}
+
+.stu-btn-primary {
+  background: var(--stu-navy);
+  border-color: var(--stu-navy);
+  color: var(--stu-on-navy);
+}
+
+.stu-btn-primary:hover {
+  background: var(--stu-navy-strong);
+  border-color: var(--stu-navy-strong);
+}
+
+.stu-conflict {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-red);
+  border-radius: 12px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 12px 16px;
+  z-index: 60;
+  max-width: min(560px, calc(100vw - 32px));
+  animation: stu-pop-in 0.15s ease-out;
+}
+
+.stu-conflict-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+}
+
+.stu-conflict-msg strong {
+  color: var(--stu-red);
+}
+
+.stu-conflict-msg span {
+  color: var(--stu-gray);
+}
+
+.stu-conflict-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.stu-toasts {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 70;
+  max-width: 360px;
+}
+
+.stu-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--stu-tip-bg);
+  color: var(--stu-tip-fg);
+  border-radius: 10px;
+  box-shadow: var(--stu-shadow);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  animation: stu-pop-in 0.15s ease-out;
+}
+
+.stu-toast-error {
+  background: #8a2f22;
+  color: #f8ece7;
+}
+
+.stu-toast button {
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+}
+
+.stu-toast button:hover {
+  opacity: 1;
+}
+
+/* ── Direct on-diagram editing (v3) ─────────────────────────────────────── */
+
+/* Zero-footprint overlay pinned to the block wrapper; individual affordances
+   re-enable pointer events. Works over HTML and SVG alike. */
+.stu-dx-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* Hover highlight — hugs the hovered `data-bp` element. */
+.stu-dx-hl {
+  position: absolute;
+  border: 1.5px solid var(--stu-sel);
+  border-radius: 6px;
+  background: rgba(35, 58, 94, 0.06);
+  pointer-events: none;
+  animation: stu-fade-in 0.1s ease-out;
+}
+
+/* Form-field ↔ diagram linkage highlight (Edit Sheet preview). */
+.stu-dx-link {
+  position: absolute;
+  border: 1.5px solid var(--stu-sel-line);
+  border-radius: 6px;
+  background: rgba(47, 111, 106, 0.1);
+  box-shadow: 0 0 0 3px rgba(47, 111, 106, 0.12);
+  pointer-events: none;
+  animation: stu-fade-in 0.1s ease-out;
+}
+
+/* Humanized path chip riding the highlight. */
+.stu-dx-chip {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--stu-sel);
+  border-radius: 5px;
+  padding: 2px 7px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: var(--stu-shadow);
+  animation: stu-fade-in 0.1s ease-out;
+  z-index: 2;
+}
+
+/* Key hints riding inside the path chip ("Title · ⏎ edit · ←↑↓→ move · ⌫"). */
+.stu-dx-chip-keys {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+/* Hover × — one-click removal of an array item. */
+.stu-dx-x {
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 1px solid var(--stu-rule);
+  background: var(--stu-panel);
+  color: var(--stu-red);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: var(--stu-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+.stu-dx-x:hover {
+  background: var(--stu-red-soft);
+  border-color: var(--stu-red);
+}
+
+/* "+ Add …" ghost chips. */
+.stu-dx-add {
+  border: 1.5px dashed var(--stu-rule);
+  background: var(--stu-panel);
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  cursor: pointer;
+  pointer-events: auto;
+  white-space: nowrap;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.stu-dx-add:hover {
+  border-color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+}
+
+/* Bar of add-chips after the block content (in flow — never overlaps). */
+.stu-dx-addbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 2px 2px;
+  animation: stu-fade-in 0.12s ease-out;
+}
+
+/* In-place chip pinned at a nested HTML container's bottom edge. */
+.stu-dx-add-spot {
+  position: absolute;
+  z-index: 2;
+  box-shadow: var(--stu-shadow);
+}
+
+/* Micro-editor popover. */
+.stu-dx-pop {
+  position: absolute;
+  pointer-events: auto;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: var(--stu-radius);
+  box-shadow: var(--stu-shadow-lift);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 40;
+  animation: stu-pop-in 0.12s ease-out;
+}
+
+.stu-dx-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 18px;
+}
+
+.stu-dx-pop-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--stu-slate);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stu-dx-pop-tools {
+  display: flex;
+  gap: 2px;
+}
+
+.stu-dx-pop-tools button {
+  border: none;
+  background: none;
+  color: var(--stu-faint);
+  font-size: 12px;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.stu-dx-pop-tools button:hover:not(:disabled) {
+  background: var(--stu-rule-soft);
+  color: var(--stu-slate);
+}
+
+.stu-dx-pop-tools button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.stu-dx-pop-tools .stu-dx-remove-btn:hover:not(:disabled) {
+  background: var(--stu-red-soft);
+  color: var(--stu-red);
+}
+
+.stu-dx-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.stu-dx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stu-dx-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--stu-slate);
+}
+
+.stu-dx-more {
+  align-self: flex-start;
+  font-size: 11px;
+}
+
+.stu-dx-yaml {
+  font-family: var(--stu-mono);
+  font-size: 11.5px;
+}
+
+.stu-dx-err {
+  font-size: 11px;
+  color: var(--stu-red);
+}
+
+.stu-input-invalid {
+  border-color: var(--stu-red) !important;
+  background: var(--stu-red-soft);
+}
+
+/* ── Drag-to-move on diagrams (v8) ──────────────────────────────────────── */
+
+/* Semi-transparent ghost following the pointer during a drag. */
+.stu-dx-ghost {
+  position: absolute;
+  pointer-events: none;
+  z-index: 46;
+  border: 1.5px solid var(--stu-sel);
+  border-radius: 8px;
+  background: rgba(35, 58, 94, 0.12);
+  box-shadow: var(--stu-shadow-lift);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 0.9;
+}
+
+.stu-dx-ghost span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--stu-sel);
+  background: #fffdf8;
+  border-radius: 5px;
+  padding: 1px 7px;
+  max-width: calc(100% - 8px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: var(--stu-shadow);
+}
+
+/* Live insertion indicator for order-based reorder drags. */
+.stu-dx-drop {
+  position: absolute;
+  pointer-events: none;
+  z-index: 45;
+  background: var(--stu-sel-line);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.65);
+}
+
+/* Snap-target grid cell for block-graph node drags. */
+.stu-dx-snap {
+  position: absolute;
+  pointer-events: none;
+  z-index: 45;
+  border: 2px dashed var(--stu-sel-line);
+  border-radius: 10px;
+  background: rgba(47, 111, 106, 0.1);
+}
+
+/* ── Drag-to-connect on diagram nodes (v10) ─────────────────────────────── */
+
+/* Connector dot on the selected node's edge — drag it to another node. */
+.stu-dx-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--stu-sel);
+  background: var(--stu-panel);
+  padding: 0;
+  cursor: crosshair;
+  pointer-events: auto;
+  box-shadow: var(--stu-shadow);
+  z-index: 6;
+  animation: stu-fade-in 0.1s ease-out;
+}
+
+.stu-dx-dot:hover {
+  background: var(--stu-sel);
+}
+
+/* Invisible wide-stroke clones of the SVG arrows: a 1.4px path is nearly
+   unhittable, so each arrow gets a fat transparent twin that hovers, clicks,
+   and deletes like the arrow itself (it carries the same data-bp). */
+.stu-dx-hit {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+}
+
+.stu-dx-hit path {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+/* Corner resize handle on the selected group — drag to change its span. */
+.stu-dx-resize {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 2px solid var(--stu-sel);
+  background: var(--stu-panel);
+  padding: 0;
+  pointer-events: auto;
+  box-shadow: var(--stu-shadow);
+  z-index: 6;
+  animation: stu-fade-in 0.1s ease-out;
+}
+
+.stu-dx-resize:hover {
+  background: var(--stu-sel);
+}
+
+/* Rubber-band wire following the pointer during a connect drag. */
+.stu-dx-wire {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 44;
+  overflow: visible;
+}
+
+.stu-dx-wire line {
+  stroke: var(--stu-sel-line);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  stroke-linecap: round;
+}
+
+.stu-dx-wire circle {
+  fill: var(--stu-sel-line);
+}
+
+/* The hovered drop-target node during a connect drag. */
+.stu-dx-connect-target {
+  position: absolute;
+  pointer-events: none;
+  z-index: 45;
+  border: 2px solid var(--stu-sel-line);
+  border-radius: 8px;
+  background: rgba(47, 111, 106, 0.12);
+}
+
+/* Empty-canvas drop: the anchored shape picker (choose a node kind). */
+.stu-dx-connect-picker {
+  position: absolute;
+  z-index: 47;
+  min-width: 128px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 4px;
+  pointer-events: auto;
+  animation: stu-pop-in 0.12s ease-out;
+}
+
+.stu-dx-connect-picker-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stu-gray);
+  padding: 3px 8px 2px;
+}
+
+.stu-dx-connect-picker button {
+  border: none;
+  background: none;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stu-ink);
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.stu-dx-connect-picker button:hover {
+  background: var(--stu-navy-soft);
+}
+
+/* Marquee on empty diagram canvas — releases into a dashed group wrapper. */
+.stu-dx-marquee {
+  position: absolute;
+  pointer-events: none;
+  z-index: 46;
+  border: 1.5px dashed var(--stu-sel);
+  border-radius: 4px;
+  background: rgba(35, 58, 94, 0.05);
+}
+
+/* ── Part selection (v9) ────────────────────────────────────────────────── */
+
+/* The selected part: solid, slightly thicker than the hover highlight, with
+   a soft halo — persistent until Esc / click elsewhere. */
+.stu-dx-sel {
+  position: absolute;
+  border: 2px solid var(--stu-sel);
+  border-radius: 6px;
+  background: rgba(35, 58, 94, 0.05);
+  box-shadow: 0 0 0 3px rgba(35, 58, 94, 0.16);
+  pointer-events: none;
+  animation: stu-fade-in 0.1s ease-out;
+}
+
+/* One-time discoverability hint on a selected, taggable block. Sits at the
+   top-LEFT edge — the block toolbar owns the top-right corner. STRADDLES the
+   block's top edge (half in, half out) so it never fully covers the text in
+   the gap above. */
+.stu-dx-hint {
+  position: absolute;
+  top: -13px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--stu-tip-bg);
+  color: var(--stu-tip-fg);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 3px 6px 3px 11px;
+  pointer-events: auto;
+  box-shadow: var(--stu-shadow-lift);
+  animation: stu-pop-in 0.15s ease-out;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.stu-dx-hint button {
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 1px 4px;
+}
+
+.stu-dx-hint button:hover {
+  opacity: 1;
+}
+
+/* Preview wrapper (Edit Sheet) — the anchor for its DirectLayer. */
+.stu-sheet-preview-wrap {
+  position: relative;
+}
+
+/* Preview-click → form-field flash. */
+@keyframes stu-flash {
+  0% {
+    background: var(--stu-teal-soft);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--stu-teal) 25%, transparent);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+.stu-field-flash {
+  animation: stu-flash 1.3s ease-out;
+  border-radius: 8px;
+}
+
+/* ─── v4: smart controls ──────────────────────────────────────────────────── */
+
+/* Number stepper: −/+ affordances hugging the input. */
+.stu-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stu-stepper .stu-input-num {
+  width: 72px;
+  text-align: center;
+}
+
+.stu-step-btn {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 7px;
+  background: var(--stu-panel);
+  color: var(--stu-slate);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.stu-step-btn:hover {
+  border-color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+}
+
+/* Color control: palette swatches + native picker + hex field. */
+.stu-colorctl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stu-swatches-wrap {
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.stu-swatch-sm {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+}
+
+.stu-colorrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stu-colorpick {
+  flex: none;
+  width: 32px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 7px;
+  background: var(--stu-panel);
+  cursor: pointer;
+}
+
+.stu-colorhex {
+  width: 110px;
+  height: 28px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+}
+
+/* Options dropdown custom-text escape. */
+.stu-customrow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stu-custom-back {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 7px;
+  background: var(--stu-panel);
+  color: var(--stu-faint);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.stu-custom-back:hover {
+  color: var(--stu-navy);
+  border-color: var(--stu-navy);
+}
+
+/* ─── v4: collapsed field sections (More fields / Advanced) ───────────────── */
+
+.stu-collapse {
+  border-top: 1px dashed var(--stu-rule);
+  margin-top: 2px;
+}
+
+.stu-collapse-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 7px 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--stu-gray);
+  cursor: pointer;
+  text-align: left;
+}
+
+.stu-collapse-head:hover {
+  color: var(--stu-navy);
+}
+
+.stu-collapse-count {
+  min-width: 16px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--stu-rule-soft);
+  color: var(--stu-gray);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 15px;
+  text-align: center;
+}
+
+.stu-collapse-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0 6px;
+}
+
+/* ─── v4: meta lock ───────────────────────────────────────────────────────── */
+
+.stu-gap-locked {
+  pointer-events: none;
+}
+
+.stu-gap-locked .stu-gap-line,
+.stu-gap-locked .stu-gap-plus {
+  display: none;
+}
+
+/* ─── v4: stale-tab update toast ──────────────────────────────────────────── */
+
+.stu-update {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px 7px 14px;
+  border-radius: 999px;
+  background: var(--stu-tip-bg);
+  color: var(--stu-tip-fg);
+  font-size: 12.5px;
+  box-shadow: var(--stu-shadow-lift);
+}
+
+.stu-update-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--stu-tip-fg);
+  color: var(--stu-tip-bg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stu-update-btn:hover {
+  filter: brightness(0.96);
+}
+
+/* ─── v5: dual-representation twins (diagram row ↔ step list item) ────────── */
+
+/* Softer echo of the hover highlight on the path's other representations. */
+.stu-dx-hl-twin {
+  border-style: dashed;
+  border-color: rgba(35, 58, 94, 0.55);
+  background: rgba(35, 58, 94, 0.04);
+}
+
+/* One-shot flash when clicking one representation (① → its step below). */
+@keyframes stu-dx-flash-kf {
+  0% {
+    border-color: var(--stu-sel-line);
+    background: rgba(47, 111, 106, 0.18);
+    box-shadow: 0 0 0 4px rgba(47, 111, 106, 0.18);
+  }
+  100% {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+.stu-dx-flash {
+  position: absolute;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  pointer-events: none;
+  animation: stu-dx-flash-kf 1.35s ease-out forwards;
+}
+
+/* "＋ Add step descriptions" — the payoff chip on sequences w/o summaries. */
+.stu-dx-add-steps {
+  border-style: solid;
+  border-color: var(--stu-teal);
+  color: var(--stu-teal);
+}
+
+.stu-dx-add-steps:hover {
+  border-color: var(--stu-teal);
+  background: var(--stu-teal-soft);
+}
+
+/* ─── v6: filterable combobox ─────────────────────────────────────────────── */
+
+.stu-combo {
+  position: relative;
+}
+
+.stu-combo-caret {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--stu-faint);
+  pointer-events: none;
+}
+
+.stu-combo .stu-input {
+  padding-right: 24px;
+}
+
+.stu-combo-list {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  box-shadow: var(--stu-shadow-lift);
+  max-height: 186px;
+  overflow-y: auto;
+}
+
+.stu-combo-item {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.stu-combo-item-active {
+  background: var(--stu-navy-soft);
+}
+
+.stu-combo-value {
+  font-weight: 600;
+  color: var(--stu-ink);
+}
+
+.stu-combo-label {
+  font-size: 11px;
+  color: var(--stu-gray);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── v6: contextual shortcut footer ──────────────────────────────────────── */
+
+.stu-keybar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 95; /* above the sheet backdrop — hints change WITH the sheet */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 5px 34px 6px;
+  background: color-mix(in srgb, var(--stu-panel) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--stu-rule);
+  font-size: 11px;
+  color: var(--stu-gray);
+}
+
+.stu-keybar-hint kbd,
+.stu-slash-next kbd,
+.stu-keys-card kbd {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--stu-slate);
+  background: var(--stu-rule-soft);
+  border: 1px solid var(--stu-rule);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.stu-keybar-x {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: var(--stu-faint);
+  cursor: pointer;
+  padding: 3px;
+}
+
+.stu-keybar-x:hover {
+  color: var(--stu-slate);
+}
+
+/* ─── v6: `?` shortcut overlay ────────────────────────────────────────────── */
+
+.stu-keys-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: var(--stu-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stu-keys-card {
+  width: min(680px, calc(100vw - 48px));
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  background: var(--stu-panel);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 18px 22px 14px;
+}
+
+.stu-keys-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.stu-keys-card h2 {
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+  margin: 0;
+}
+
+.stu-keys-card header button {
+  border: none;
+  background: none;
+  color: var(--stu-faint);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.stu-keys-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 28px;
+}
+
+.stu-keys-cols section:first-child {
+  grid-row: span 2;
+}
+
+.stu-keys-cols h3 {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stu-gray);
+  margin: 10px 0 6px;
+}
+
+.stu-keys-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 12px;
+  color: var(--stu-slate);
+}
+
+.stu-keys-row kbd {
+  flex: none;
+  min-width: 86px;
+  text-align: center;
+}
+
+.stu-keys-card footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--stu-rule);
+  font-size: 11px;
+  color: var(--stu-gray);
+  text-align: center;
+}
+
+/* ─── v6: "press / for the next block" affordance ─────────────────────────── */
+
+.stu-slash-next {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 4px;
+  font-size: 11.5px;
+  color: var(--stu-gray);
+  gap: 5px;
+  animation: stu-fade-in 0.25s ease-out;
+}
+
+/* ─── v6fix: high-contrast highlights on dark document surfaces ───────────── */
+/* The selection outline and direct-edit highlights are studio-chrome colors
+   (navy/teal) tuned for light paper — on the dark docskin they vanish.
+   `data-doc-theme="dark"` (set from docSurface()) swaps them for bright
+   equivalents. */
+
+[data-doc-theme='dark'] .stu-seg:hover {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 2px 10px -4px rgba(0, 0, 0, 0.5);
+}
+
+[data-doc-theme='dark'] .stu-seg-selected,
+[data-doc-theme='dark'] .stu-seg-selected:hover {
+  box-shadow:
+    0 0 0 2px #7ab5ff,
+    0 0 0 5px rgba(122, 181, 255, 0.22);
+}
+
+[data-doc-theme='dark'] .stu-seg-editing,
+[data-doc-theme='dark'] .stu-seg-editing:hover {
+  box-shadow: none;
+}
+
+[data-doc-theme='dark'] .stu-prose-editor {
+  box-shadow: 0 0 0 2px #7ab5ff;
+  background: rgba(122, 181, 255, 0.08);
+}
+
+[data-doc-theme='dark'] .stu-dx-hl {
+  border-color: #7ab5ff;
+  background: rgba(122, 181, 255, 0.12);
+}
+
+[data-doc-theme='dark'] .stu-dx-hl-twin {
+  border-color: rgba(122, 181, 255, 0.65);
+  background: rgba(122, 181, 255, 0.06);
+}
+
+[data-doc-theme='dark'] .stu-dx-link {
+  border-color: #45c7b8;
+  background: rgba(69, 199, 184, 0.14);
+  box-shadow: 0 0 0 3px rgba(69, 199, 184, 0.16);
+}
+
+[data-doc-theme='dark'] .stu-dx-sel {
+  border-color: #7ab5ff;
+  background: rgba(122, 181, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(122, 181, 255, 0.28);
+}
+
+[data-doc-theme='dark'] .stu-dx-ghost {
+  border-color: #7ab5ff;
+  background: rgba(122, 181, 255, 0.14);
+}
+
+[data-doc-theme='dark'] .stu-dx-ghost span {
+  color: #7ab5ff;
+}
+
+[data-doc-theme='dark'] .stu-dx-snap {
+  border-color: #45c7b8;
+  background: rgba(69, 199, 184, 0.12);
+}
+
+[data-doc-theme='dark'] .stu-dx-drop {
+  background: #45c7b8;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+[data-doc-theme='dark'] .stu-dx-dot {
+  border-color: #7ab5ff;
+}
+
+[data-doc-theme='dark'] .stu-dx-dot:hover {
+  background: #7ab5ff;
+}
+
+[data-doc-theme='dark'] .stu-dx-resize {
+  border-color: #7ab5ff;
+}
+
+[data-doc-theme='dark'] .stu-dx-resize:hover {
+  background: #7ab5ff;
+}
+
+[data-doc-theme='dark'] .stu-dx-wire line {
+  stroke: #45c7b8;
+}
+
+[data-doc-theme='dark'] .stu-dx-wire circle {
+  fill: #45c7b8;
+}
+
+[data-doc-theme='dark'] .stu-dx-connect-target {
+  border-color: #45c7b8;
+  background: rgba(69, 199, 184, 0.14);
+}
+
+[data-doc-theme='dark'] .stu-dx-marquee {
+  border-color: #7ab5ff;
+  background: rgba(122, 181, 255, 0.08);
+}
+
+@keyframes stu-dx-flash-dark-kf {
+  0% {
+    border-color: #45c7b8;
+    background: rgba(69, 199, 184, 0.3);
+    box-shadow: 0 0 0 4px rgba(69, 199, 184, 0.3);
+  }
+  100% {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+[data-doc-theme='dark'] .stu-dx-flash {
+  animation-name: stu-dx-flash-dark-kf;
+}
+
+/* ---------- review-before-write dialog ---------- */
+
+.stu-review-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--stu-scrim);
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  animation: stu-fade-in 0.14s ease-out;
+}
+
+/* Over a dark doc surface the page already reads dark — dim harder so the
+   dialog still separates. */
+.stu-review-backdrop[data-surface='dark'] {
+  background: rgba(2, 6, 18, 0.55);
+}
+
+.stu-review {
+  width: min(440px, calc(100vw - 32px));
+  background: var(--stu-panel);
+  border-radius: 12px;
+  box-shadow: var(--stu-shadow-lift);
+  overflow: hidden;
+  animation: stu-sheet-in 0.16s ease-out;
+}
+
+.stu-review-head {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--stu-rule);
+}
+
+.stu-review-head h2 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+}
+
+.stu-review-head h2 code {
+  font-family: var(--stu-mono);
+  font-size: 12.5px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--stu-rule-soft);
+  border: 1px solid var(--stu-rule);
+  color: var(--stu-navy);
+}
+
+.stu-review-sub {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--stu-gray);
+}
+
+/* The change count — the review dialog's one terracotta accent. */
+.stu-review-count {
+  color: var(--stu-terra);
+  font-weight: 650;
+}
+
+.stu-review-list {
+  max-height: 44vh;
+  overflow-y: auto;
+  padding: 8px 10px;
+}
+
+.stu-review-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stu-review-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.stu-review-item:hover {
+  background: var(--stu-rule-soft);
+}
+
+.stu-review-glyph {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.stu-review-glyph-edited {
+  color: var(--stu-amber);
+  background: var(--stu-amber-soft);
+}
+
+.stu-review-glyph-added {
+  color: var(--stu-green);
+  background: var(--stu-green-soft);
+}
+
+.stu-review-glyph-removed {
+  color: var(--stu-red);
+  background: var(--stu-red-soft);
+}
+
+.stu-review-glyph-reordered {
+  color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+}
+
+.stu-review-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--stu-ink);
+  font-weight: 600;
+}
+
+.stu-review-kind {
+  flex: none;
+  font-size: 11px;
+  color: var(--stu-faint);
+}
+
+.stu-review-empty {
+  padding: 14px 8px;
+  font-size: 12.5px;
+  color: var(--stu-gray);
+  font-style: italic;
+}
+
+.stu-review-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--stu-rule);
+}
+
+/* The save chip doubles as a button in manual-save mode. */
+.stu-chip-action {
+  border: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stu-chip-action:hover {
+  filter: brightness(0.96);
+}
+
+/* ---------- delete-confirm popover ---------- */
+
+.stu-delpop {
+  position: fixed;
+  z-index: 70;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 10px 12px;
+  max-width: 320px;
+  animation: stu-fade-in 0.1s ease-out;
+}
+
+.stu-delpop-text {
+  font-size: 12.5px;
+  color: var(--stu-ink);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-delpop-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stu-delpop-hint {
+  font-size: 10.5px;
+  color: var(--stu-faint);
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+.stu-btn-sm {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  border-radius: 7px;
+}
+
+.stu-btn-danger {
+  background: var(--stu-red);
+  border-color: var(--stu-red);
+  color: var(--stu-on-red);
+}
+
+.stu-btn-danger:hover {
+  background: color-mix(in srgb, var(--stu-red) 85%, #000);
+}
+
+.stu-btn-danger:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--stu-red) 26%, transparent);
+}
+
+/* ---------- template picker (the "+ New doc" modal) ---------- */
+
+.stu-tpl {
+  width: 92vw;
+  max-width: 760px;
+  max-height: 82vh;
+  background: var(--stu-panel);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: stu-sheet-in 0.16s ease-out;
+}
+
+.stu-tpl-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--stu-rule);
+  flex: none;
+}
+
+.stu-tpl-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+  white-space: nowrap;
+}
+
+.stu-tpl-slug {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-family: var(--stu-mono);
+  font-size: 12px;
+  outline: none;
+}
+
+.stu-tpl-slug:focus {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-tpl-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  padding: 14px 18px;
+  overflow-y: auto;
+}
+
+.stu-tpl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  background: var(--stu-panel);
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.13s ease-out, box-shadow 0.13s ease-out;
+}
+
+.stu-tpl-card:hover {
+  border-color: var(--stu-navy);
+}
+
+.stu-tpl-card:focus-visible {
+  outline: none;
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-tpl-card-active,
+.stu-tpl-card-active:hover {
+  border-color: var(--stu-navy);
+  box-shadow: 0 0 0 1px var(--stu-navy), 0 0 0 4px color-mix(in srgb, var(--stu-navy) 12%, transparent);
+}
+
+.stu-tpl-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--stu-ink);
+}
+
+.stu-tpl-card-desc {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--stu-slate);
+}
+
+.stu-tpl-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.stu-tpl-card-chips code {
+  font-family: var(--stu-mono);
+  font-size: 10px;
+  color: var(--stu-slate);
+  background: var(--stu-rule-soft);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+.stu-tpl-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--stu-rule);
+  flex: none;
+}
+
+.stu-tpl-hint {
+  flex: 1;
+  font-size: 11.5px;
+  color: var(--stu-slate);
+}
+
+/* ─── union fields (Simple ⇄ Detailed) ─────────────────────────────────────── */
+
+.stu-union {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stu-union-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  background: var(--stu-rule-soft);
+  border: 1px solid var(--stu-rule);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.stu-union-seg {
+  border: none;
+  background: none;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--stu-gray);
+  padding: 2px 9px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.stu-union-seg:hover {
+  color: var(--stu-ink);
+}
+
+.stu-union-seg-active {
+  background: var(--stu-panel);
+  color: var(--stu-navy);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.stu-union-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--stu-rule-soft) 45%, var(--stu-panel));
+}
+
+/* ─── table grid editor ────────────────────────────────────────────────────── */
+
+.stu-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stu-grid-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  background: var(--stu-panel);
+}
+
+.stu-grid-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.stu-grid-table th,
+.stu-grid-table td {
+  border: none;
+  border-bottom: 1px solid var(--stu-rule-soft);
+  border-right: 1px solid var(--stu-rule-soft);
+  padding: 0;
+  min-width: 84px;
+}
+
+.stu-grid-table tr:last-child td {
+  border-bottom: none;
+}
+
+.stu-grid-table thead th {
+  background: var(--stu-rule-soft);
+  border-bottom: 1px solid var(--stu-rule);
+}
+
+.stu-grid-table thead th.stu-grid-th-hl {
+  background: var(--stu-navy-soft);
+}
+
+.stu-grid-table .stu-grid-addcol-th,
+.stu-grid-table .stu-grid-rowtools-td {
+  min-width: 28px;
+  width: 28px;
+  border-right: none;
+  text-align: center;
+  background: none;
+}
+
+.stu-grid-cellwrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.stu-grid-input {
+  border: none;
+  border-radius: 0;
+  height: 30px;
+  background: none;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+.stu-grid-table thead .stu-grid-input {
+  font-weight: 700;
+  font-size: 11.5px;
+  color: var(--stu-slate);
+}
+
+.stu-grid-input:focus {
+  box-shadow: inset 0 0 0 2px var(--stu-navy);
+  border-radius: 4px;
+}
+
+.stu-grid-celltools {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  gap: 1px;
+}
+
+.stu-grid-cellwrap:hover .stu-grid-celltools,
+.stu-grid-cellwrap:focus-within .stu-grid-celltools {
+  display: inline-flex;
+}
+
+.stu-grid-cellbtn {
+  border: none;
+  background: var(--stu-panel);
+  color: var(--stu-gray);
+  border-radius: 5px;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px var(--stu-rule);
+}
+
+.stu-grid-cellbtn:hover {
+  color: var(--stu-navy);
+  box-shadow: 0 0 0 1px var(--stu-navy);
+}
+
+.stu-grid-cellbtn-danger:hover {
+  color: var(--stu-red);
+  background: var(--stu-red-soft);
+  box-shadow: 0 0 0 1px var(--stu-red);
+}
+
+.stu-grid-rowdel {
+  box-shadow: none;
+  background: none;
+}
+
+.stu-grid-addcol {
+  border: none;
+  background: none;
+  color: var(--stu-navy);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  height: 30px;
+  border-radius: 6px;
+}
+
+.stu-grid-addcol:hover {
+  background: var(--stu-navy-soft);
+}
+
+.stu-grid-tonedot {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.stu-grid-tone-pos { background: var(--stu-green); }
+.stu-grid-tone-neg { background: var(--stu-red); }
+.stu-grid-tone-warn { background: var(--stu-amber); }
+.stu-grid-tone-muted { background: var(--stu-faint); }
+
+.stu-grid-pop {
+  position: fixed;
+  z-index: 130;
+  width: 224px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  animation: stu-pop-in 0.12s ease-out;
+}
+
+.stu-grid-pop-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--stu-gray);
+}
+
+.stu-grid-pop-simplify {
+  align-self: flex-start;
+  font-size: 11px;
+}
+
+.stu-grid-foot {
+  display: flex;
+  gap: 8px;
+}
+
+.stu-grid-foot .stu-addbtn {
+  flex: 1;
+}
+
+/* ─── the interactive tour ─────────────────────────────────────────────────── */
+
+.stu-tour-spot {
+  position: fixed;
+  z-index: 200;
+  border-radius: 12px;
+  border: 2px solid var(--stu-terra);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--stu-terra) 22%, transparent),
+    0 0 0 9999px var(--stu-scrim);
+  pointer-events: none;
+  transition: left 0.28s cubic-bezier(0.3, 0.9, 0.3, 1),
+    top 0.28s cubic-bezier(0.3, 0.9, 0.3, 1),
+    width 0.28s cubic-bezier(0.3, 0.9, 0.3, 1),
+    height 0.28s cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.stu-tour-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--stu-scrim);
+  pointer-events: none;
+  animation: stu-fade-in 0.18s ease-out;
+}
+
+.stu-tour-card {
+  position: fixed;
+  z-index: 210;
+  width: 316px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 16px 16px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: stu-pop-in 0.16s ease-out;
+  transition: left 0.28s cubic-bezier(0.3, 0.9, 0.3, 1),
+    top 0.28s cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.stu-tour-card-center {
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  width: 380px;
+}
+
+.stu-tour-dots {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+
+.stu-tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--stu-rule);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.stu-tour-dot-done {
+  background: color-mix(in srgb, var(--stu-terra) 45%, var(--stu-rule));
+}
+
+.stu-tour-dot-active {
+  background: var(--stu-terra);
+  transform: scale(1.35);
+}
+
+.stu-tour-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+}
+
+.stu-tour-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--stu-slate);
+}
+
+.stu-tour-body code {
+  font-family: var(--stu-mono);
+  font-size: 11px;
+  background: var(--stu-rule-soft);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.stu-tour-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.stu-tour-keys kbd {
+  font-size: 10.5px;
+  padding: 2px 7px;
+}
+
+.stu-tour-wait {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--stu-teal);
+}
+
+.stu-tour-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--stu-teal);
+  animation: stu-tour-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes stu-tour-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--stu-teal) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.stu-tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.stu-tour-spacer {
+  flex: 1;
+}
+
+.stu-tour-skip {
+  font-size: 11px;
+  color: var(--stu-gray);
+}
+
+/* ─── tour entry points ────────────────────────────────────────────────────── */
+
+.stu-hintbar button.stu-hintbar-tour {
+  width: auto;
+  height: auto;
+  border: none;
+  background: var(--stu-navy);
+  color: var(--stu-on-navy);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.stu-hintbar button.stu-hintbar-tour:hover {
+  background: var(--stu-navy-strong);
+  color: var(--stu-on-navy);
+}
+
+.stu-savewrap {
+  display: inline-flex;
+}
+
+.stu-keys-tour {
+  border: none;
+  background: none;
+  color: var(--stu-navy);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 12px;
+}
+
+.stu-keys-tour:hover {
+  text-decoration: underline;
+}
+
+.stu-union-items {
+  gap: 8px;
+}
+
+.stu-union-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.stu-union-item > .stu-union {
+  flex: 1;
+}
+
+.stu-union-item-remove {
+  border: none;
+  background: none;
+  color: var(--stu-faint);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 8px 4px;
+  border-radius: 6px;
+}
+
+.stu-union-item-remove:hover {
+  color: var(--stu-red);
+  background: var(--stu-red-soft);
+}
+
+/* ── File import: drop veil, OpenAPI confirm, Import… menu entries ─────── */
+
+.stu-dropveil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none; /* the window-level drop handler owns the event */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--stu-bg) 62%, transparent);
+  backdrop-filter: blur(1.5px);
+  animation: stu-fade-in 0.12s ease-out;
+}
+
+.stu-dropveil-card {
+  background: var(--stu-panel);
+  border: 1.5px dashed var(--stu-navy);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 22px 30px;
+  text-align: center;
+}
+
+.stu-dropveil-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--stu-display);
+  margin-bottom: 6px;
+}
+
+.stu-dropveil-sub {
+  font-size: 12.5px;
+  color: var(--stu-gray);
+}
+
+.stu-dropveil-sub code {
+  font-family: var(--stu-mono);
+  font-size: 11.5px;
+  color: var(--stu-slate);
+  background: var(--stu-well);
+  border: 1px solid var(--stu-rule-soft);
+  border-radius: 5px;
+  padding: 1px 4px;
+}
+
+.stu-import {
+  width: 92vw;
+  max-width: 460px;
+  background: var(--stu-panel);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  padding: 18px 20px;
+  animation: stu-sheet-in 0.16s ease-out;
+}
+
+.stu-import-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stu-import-head h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--stu-display);
+  margin: 0;
+}
+
+.stu-import-glyph {
+  display: inline-flex;
+  color: var(--stu-navy);
+}
+
+.stu-import-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--stu-slate);
+  margin: 0 0 12px;
+}
+
+.stu-import-text code {
+  font-family: var(--stu-mono);
+  font-size: 11.5px;
+  color: var(--stu-navy);
+  background: var(--stu-well);
+  border: 1px solid var(--stu-rule-soft);
+  border-radius: 5px;
+  padding: 1px 4px;
+}
+
+.stu-import-slug {
+  width: 100%;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-family: var(--stu-mono);
+  font-size: 12px;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.stu-import-slug:focus {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-import-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stu-import-hint {
+  flex: 1;
+  font-size: 11px;
+  color: var(--stu-faint);
+}
+
+.stu-insert-foot {
+  border-top: 1px solid var(--stu-rule-soft);
+  padding: 6px;
+}
+
+.stu-insert-import,
+.stu-slash-import {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  cursor: pointer;
+  text-align: left;
+}
+
+.stu-insert-import:hover,
+.stu-slash-import:hover {
+  background: var(--stu-navy-soft);
+}
+
+.stu-insert-import-hint,
+.stu-slash-import-hint {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--stu-faint);
+}
+
+.stu-slash-foot {
+  border-top: 1px solid var(--stu-rule-soft);
+  padding: 4px;
+}
+
+/* ---------- block library (gallery overlay) ---------- */
+
+/* Top-bar entry point — sits between the doc switcher and the mode switch. */
+.stu-libbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  background: var(--stu-panel);
+  color: var(--stu-slate);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.13s ease-out, color 0.13s ease-out;
+}
+
+.stu-libbtn:hover {
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+}
+
+.stu-libbtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.stu-export {
+  position: relative;
+}
+
+.stu-export-pop {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  min-width: 168px;
+  padding: 6px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 12px;
+  box-shadow: var(--stu-shadow-lift);
+  z-index: 40;
+  animation: stu-pop-in 0.14s ease-out;
+}
+
+.stu-export-item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stu-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stu-export-item:hover {
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+}
+
+.stu-export-item:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.stu-lib-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--stu-scrim);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: stu-fade-in 0.14s ease-out;
+}
+
+.stu-lib {
+  position: relative;
+  width: min(1180px, calc(100vw - 40px));
+  height: calc(100vh - 56px);
+  background: var(--stu-bg);
+  border: 1px solid var(--stu-rule);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: stu-sheet-in 0.16s ease-out;
+}
+
+/* sticky header: title row, search, family pills — raised paper */
+.stu-lib-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 22px 12px;
+  background: var(--stu-panel);
+  border-bottom: 1px solid var(--stu-rule);
+}
+
+.stu-lib-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.stu-lib-title-icon {
+  display: inline-flex;
+  color: var(--stu-navy);
+}
+
+.stu-lib-title h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+}
+
+.stu-lib-title-count {
+  font-size: 13px;
+  color: var(--stu-gray);
+  font-variant-numeric: tabular-nums;
+}
+
+.stu-lib-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--stu-gray);
+  cursor: pointer;
+}
+
+.stu-lib-x:hover {
+  background: var(--stu-rule-soft);
+  color: var(--stu-ink);
+}
+
+.stu-lib-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 9px;
+  background: var(--stu-well);
+  color: var(--stu-faint);
+}
+
+.stu-lib-search:focus-within {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-lib-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--stu-ink);
+}
+
+.stu-lib-showing {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--stu-gray);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stu-lib-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stu-lib-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 10px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 999px;
+  background: var(--stu-panel);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--stu-slate);
+  cursor: pointer;
+  transition: border-color 0.13s ease-out, color 0.13s ease-out, background 0.13s ease-out;
+}
+
+.stu-lib-pill:hover {
+  border-color: var(--stu-navy);
+  color: var(--stu-navy);
+}
+
+.stu-lib-pill-active,
+.stu-lib-pill-active:hover {
+  background: var(--stu-navy);
+  border-color: var(--stu-navy);
+  color: var(--stu-on-navy);
+}
+
+.stu-lib-pill-empty:not(.stu-lib-pill-active) {
+  opacity: 0.45;
+}
+
+.stu-lib-pill-count {
+  font-size: 10px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--stu-rule-soft);
+  color: var(--stu-gray);
+  font-variant-numeric: tabular-nums;
+}
+
+.stu-lib-pill-active .stu-lib-pill-count {
+  background: color-mix(in srgb, var(--stu-on-navy) 20%, transparent);
+  color: var(--stu-on-navy);
+}
+
+/* body: family sections of cards */
+.stu-lib-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 22px 28px;
+}
+
+.stu-lib-fam {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
+}
+
+.stu-lib-fam + .stu-lib-fam {
+  margin-top: 24px;
+}
+
+.stu-lib-famhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stu-gray);
+}
+
+.stu-lib-famhead::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--stu-rule);
+  margin-left: 6px;
+}
+
+.stu-lib-grid {
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+}
+
+.stu-lib-card {
+  position: relative;
+  background: var(--stu-panel);
+}
+
+/* "also: waterfall" — the alias spelling this search hit matched through */
+.stu-lib-also {
+  align-self: flex-start;
+  margin: 2px 2px 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-family: var(--stu-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--stu-amber);
+  background: var(--stu-amber-soft);
+}
+
+.stu-lib-none {
+  padding: 64px 24px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--stu-faint);
+}
+
+/* ---------- block library: detail dialog (second layer) ---------- */
+
+.stu-lib-detail-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--stu-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: stu-fade-in 0.12s ease-out;
+}
+
+.stu-lib-detail {
+  width: min(980px, calc(100% - 48px));
+  height: min(620px, calc(100% - 48px));
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 14px;
+  box-shadow: var(--stu-shadow-lift);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: stu-pop-in 0.14s ease-out;
+}
+
+.stu-lib-detail-head {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px 0;
+  flex: none;
+}
+
+.stu-lib-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stu-lib-detail-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--stu-display);
+  white-space: nowrap;
+}
+
+.stu-lib-detail-fam {
+  font-size: 11px;
+  color: var(--stu-gray);
+  border-left: 1px solid var(--stu-rule);
+  padding-left: 8px;
+  white-space: nowrap;
+}
+
+.stu-lib-detail-desc {
+  margin: 6px 18px 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--stu-gray);
+  flex: none;
+}
+
+.stu-lib-detail-alias {
+  align-self: flex-start;
+  margin: 8px 18px 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--stu-amber);
+  background: var(--stu-amber-soft);
+  flex: none;
+}
+
+.stu-lib-detail-alias code {
+  font-family: var(--stu-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stu-lib-detail-body {
+  flex: 1;
+  min-height: 240px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 18px 0;
+}
+
+@media (max-width: 860px) {
+  .stu-lib-detail-body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+}
+
+.stu-lib-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.stu-lib-pane-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stu-gray);
+  flex: none;
+}
+
+/* full-size preview: same pipeline as the thumbnails, unscaled, own scroll */
+.stu-lib-preview {
+  flex: 1;
+  min-height: 200px;
+  overflow: auto;
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  background: var(--stu-well);
+}
+
+.stu-lib-preview-doc {
+  padding: 18px 22px;
+  min-width: 440px;
+}
+
+.stu-lib-preview-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: var(--stu-mono);
+  font-size: 12px;
+  color: var(--stu-faint);
+}
+
+.stu-lib-yaml {
+  flex: 1;
+  min-height: 200px;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  background: var(--stu-well);
+  padding: 12px 14px;
+  font-family: var(--stu-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--stu-ink);
+  white-space: pre;
+}
+
+.stu-lib-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 7px;
+  background: var(--stu-panel);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--stu-slate);
+  cursor: pointer;
+}
+
+.stu-lib-copy:hover {
+  border-color: var(--stu-navy);
+  color: var(--stu-navy);
+}
+
+.stu-lib-detail-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px 14px;
+  flex: none;
+}
+
+.stu-lib-detail-hint {
+  flex: 1;
+  font-size: 11px;
+  color: var(--stu-faint);
+}

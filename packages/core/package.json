@@ -1,0 +1,63 @@
+{
+  "name": "@avodado/core",
+  "version": "0.11.0",
+  "description": "Core engine for Avodado documentation-as-code: Markdown parser, Zod schemas for a rich family of typed YAML blocks (API docs, architecture & system design, data models, ADRs, planning, charts), strict validation, and `doc#id` cross-reference resolution. Pure — no I/O, no DOM.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdiejim/avodado.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://avodado.dev",
+  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "keywords": [
+    "avodado",
+    "documentation",
+    "docs-as-code",
+    "documentation-as-code",
+    "markdown",
+    "yaml",
+    "typed-blocks",
+    "diagrams-as-code",
+    "parser",
+    "schema",
+    "zod",
+    "validation",
+    "ast",
+    "cross-references",
+    "api-documentation",
+    "system-design",
+    "architecture",
+    "adr",
+    "technical-writing",
+    "developer-tools"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

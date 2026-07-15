@@ -1,0 +1,110 @@
+/**
+ * Commit routing for direct edits. A {@link DirectHost} is where a micro-edit
+ * lands:
+ *
+ * - the CANVAS host routes each commit through `store.applyOp` as a
+ *   `replaceBlockBody` (one undo step, one autosave — like any other edit);
+ * - the SHEET host routes commits into the Edit Sheet's DRAFT (the document is
+ *   untouched until Done), reusing the sheet's own `commitPath`/`deletePath`.
+ *
+ * The pure segment-body editors are exported separately so the routing rules
+ * are unit-testable without a store.
+ */
+
+import {
+  deleteYamlPath,
+  replaceBlockBody,
+  setYamlPath,
+  type BlockType,
+  type Document,
+} from '@avodado/core';
+import { useStudio } from '../state/store.js';
+import type { PathSeg } from './paths.js';
+
+/** Where micro-editor commits land. */
+export interface DirectHost {
+  readonly kind: BlockType;
+  /** Sets `path` to `value` in the block body. */
+  commitPath(path: ReadonlyArray<PathSeg>, value: unknown): void;
+  /**
+   * Sets SEVERAL paths in one commit (one undo step) — compound moves like a
+   * table-column reorder or a cross-column kanban drag compose here.
+   */
+  commitPaths(sets: ReadonlyArray<{ path: ReadonlyArray<PathSeg>; value: unknown }>): void;
+  /** Deletes the node at `path` from the block body. */
+  deletePath(path: ReadonlyArray<PathSeg>): void;
+  /** Escape hatch: open the full editor (sheet form / YAML tab). */
+  openFull(): void;
+  /** Optional user feedback (toast) — e.g. "auto-layout pinned". */
+  notify?(message: string): void;
+}
+
+/** Pure: new SOURCE with `path` set inside segment `index`'s YAML body. */
+export function setPathInSegment(
+  source: string,
+  doc: Document,
+  index: number,
+  path: ReadonlyArray<PathSeg>,
+  value: unknown,
+): string {
+  const seg = doc.segments[index];
+  if (seg === undefined || seg.kind === 'markdown') {
+    throw new TypeError(`segment ${index} is not a typed block`);
+  }
+  return replaceBlockBody(source, doc, index, setYamlPath(seg.raw, path, value));
+}
+
+/**
+ * Pure: new SOURCE with every `sets` entry applied to segment `index`'s YAML
+ * body — the writes compose on the same raw, then ONE body replacement (so a
+ * caller's applyOp stays one undo step).
+ */
+export function setPathsInSegment(
+  source: string,
+  doc: Document,
+  index: number,
+  sets: ReadonlyArray<{ path: ReadonlyArray<PathSeg>; value: unknown }>,
+): string {
+  const seg = doc.segments[index];
+  if (seg === undefined || seg.kind === 'markdown') {
+    throw new TypeError(`segment ${index} is not a typed block`);
+  }
+  let raw = seg.raw;
+  for (const s of sets) raw = setYamlPath(raw, s.path, s.value);
+  return replaceBlockBody(source, doc, index, raw);
+}
+
+/** Pure: new SOURCE with the node at `path` deleted inside segment `index`'s body. */
+export function deletePathInSegment(
+  source: string,
+  doc: Document,
+  index: number,
+  path: ReadonlyArray<PathSeg>,
+): string {
+  const seg = doc.segments[index];
+  if (seg === undefined || seg.kind === 'markdown') {
+    throw new TypeError(`segment ${index} is not a typed block`);
+  }
+  return replaceBlockBody(source, doc, index, deleteYamlPath(seg.raw, path));
+}
+
+/** Canvas host for the block at `index`: each commit is one applyOp/undo step. */
+export function canvasHost(index: number, kind: BlockType): DirectHost {
+  return {
+    kind,
+    commitPath: (path, value) => {
+      const s = useStudio.getState();
+      s.applyOp((src, doc) => setPathInSegment(src, doc, index, path, value), index);
+    },
+    commitPaths: (sets) => {
+      const s = useStudio.getState();
+      s.applyOp((src, doc) => setPathsInSegment(src, doc, index, sets), index);
+    },
+    deletePath: (path) => {
+      const s = useStudio.getState();
+      s.applyOp((src, doc) => deletePathInSegment(src, doc, index, path), index);
+    },
+    openFull: () => useStudio.getState().openSheet(index),
+    notify: (message) => useStudio.getState().toast(message),
+  };
+}

@@ -1,0 +1,52 @@
+{
+  "name": "avodado",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Documentation-as-code: Markdown with typed YAML blocks.",
+  "type": "module",
+  "packageManager": "pnpm@10.23.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "changeset": "changeset",
+    "release": "pnpm -r build && changeset publish",
+    "avo": "node packages/cli/dist/bin.js",
+    "studio": "pnpm --filter @avodado/studio dev",
+    "studio:api": "node packages/cli/dist/bin.js studio --no-open --port 4174",
+    "publint": "pnpm -r exec publint",
+    "attw": "pnpm -r --filter='@avodado/core' --filter='@avodado/render' exec attw --pack . --profile esm-only",
+    "check:packages": "pnpm build && pnpm publint && pnpm attw",
+    "verify": "pnpm build && pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "esbuild@<0.28.1": ">=0.28.1"
+    }
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.3",
+    "@changesets/cli": "^2.27.9",
+    "@eslint/js": "^9.18.0",
+    "@types/node": "^22.10.5",
+    "@vitest/coverage-v8": "^3.2.6",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "publint": "^0.3.21",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.1",
+    "vitest": "^3.2.6"
+  }
+}

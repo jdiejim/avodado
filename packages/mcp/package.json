@@ -1,0 +1,60 @@
+{
+  "name": "@avodado/mcp",
+  "version": "0.3.0",
+  "description": "Model Context Protocol (MCP) server for Avodado — let Claude, Cursor, or any AI agent author, validate, and render documentation-as-code directly: Markdown with typed YAML blocks for API docs, architecture & system design, ADRs, and presentations, with the full block grammar and `avo check` diagnostics built in.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "avodado-mcp": "./dist/server.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "embed": "node scripts/embed-skill.mjs",
+    "build": "node scripts/embed-skill.mjs && tsup",
+    "typecheck": "node scripts/embed-skill.mjs && tsc --noEmit"
+  },
+  "dependencies": {
+    "@avodado/core": "workspace:*",
+    "@avodado/render": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdiejim/avodado.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://avodado.dev",
+  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "keywords": [
+    "avodado",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "ai-documentation",
+    "claude",
+    "cursor",
+    "llm",
+    "agent",
+    "documentation",
+    "docs-as-code",
+    "documentation-as-code",
+    "markdown",
+    "yaml",
+    "typed-blocks",
+    "api-documentation",
+    "system-design",
+    "architecture",
+    "adr"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

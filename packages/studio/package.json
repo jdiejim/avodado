@@ -1,0 +1,79 @@
+{
+  "name": "@avodado/studio",
+  "version": "0.3.1",
+  "description": "Avodado Studio — the local, AI-native visual editor for documentation-as-code. Edit Markdown + typed YAML blocks for API docs, architecture & system design, ADRs, and frontend design systems with live preview, browse the built docs site, and present as slides — the .md files on disk stay the single source of truth. Launch with `avo studio`.",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@avodado/core": "workspace:*",
+    "@avodado/render": "workspace:*",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^3.2.6",
+    "yaml": "^2.9.0",
+    "zustand": "^5.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdiejim/avodado.git",
+    "directory": "packages/studio"
+  },
+  "homepage": "https://avodado.dev",
+  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "keywords": [
+    "avodado",
+    "studio",
+    "documentation",
+    "docs-as-code",
+    "documentation-as-code",
+    "visual-editor",
+    "editor",
+    "wysiwyg",
+    "markdown",
+    "yaml",
+    "typed-blocks",
+    "live-preview",
+    "slides",
+    "presentations",
+    "diagrams",
+    "api-documentation",
+    "system-design",
+    "architecture",
+    "adr",
+    "design-system",
+    "ai-documentation",
+    "technical-writing",
+    "developer-tools"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
