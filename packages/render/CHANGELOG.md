@@ -1,5 +1,12 @@
 # @avodado/render
 
+## 0.22.1
+
+### Patch Changes
+
+- Updated dependencies [7052a5d]
+  - @avodado/core@0.12.1
+
 ## 0.22.0
 
 ### Minor Changes
