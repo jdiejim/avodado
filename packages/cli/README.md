@@ -1,63 +1,95 @@
 # @avodado/cli
 
-`avo` — author, validate, render, and export Avodado documentation from the terminal. Ink TUI when interactive; plain log-friendly output in CI.
+**Documentation-as-code.** Write docs as plain Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and `avo` validates them like code, renders them to HTML, slides, or PDF, and lets you edit them in a visual studio. The `.md` files on disk stay the single source of truth.
+
+`avo` is the command-line tool. It shows a friendly interactive UI in your terminal, and plain text output in CI.
 
 ## Install
 
-```
-pnpm add -D @avodado/cli
-```
-
-## Commands
-
-```
-avo init                              # scaffold docs/, config, skill, editor adapters
-avo block sequence -o docs/orders.md  # scaffold a doc around one block (avo block list — all 76 types)
-avo template adr -o docs/adr-001.md   # scaffold a doc from a document template
-avo check                             # validate all docs (default: docs/**/*.md)
-avo check 'docs/api/**'               # custom glob
-avo check --json                      # machine-readable diagnostics
-avo html docs/orders.md -o out.html
-avo preview docs/orders.md            # render to a temp file and open it
-avo build                             # build the static site (index + sidebar nav + Doc | Slides toggle) → dist/
-avo studio                            # THE local surface — Edit visually · Site: browse the built site live · Present: slides; files stay the source of truth
-avo sync openapi spec.yaml -o docs/api.md   # generate an API doc from an OpenAPI spec (--check for CI drift)
-avo sync csv sales.csv                # CSV → ready-to-paste table/statustable/chart block (auto-picked; -o wraps it in a doc)
-avo install claude                    # install/update the skill + an AI-tool adapter (claude | cursor | copilot | windsurf)
+```bash
+pnpm add -D @avodado/cli      # or: npm i -D @avodado/cli  ·  yarn add -D @avodado/cli
 ```
 
-## Exit codes
+## Quick example
+
+A doc is normal Markdown, plus fenced blocks for anything structured. Put this in `docs/orders.md`:
+
+````markdown
+## Checkout flow
+
+```sequence
+title: Place an order
+actors:
+  - { id: user, name: Shopper }
+  - { id: api, name: Orders API }
+messages:
+  - user -> api: POST /orders
+  - api --> user: 201 Created
+```
+````
+
+Then run:
+
+```bash
+avo check docs/orders.md      # validates every block against its schema
+avo html  docs/orders.md -p   # renders a styled HTML page and opens it
+avo slides docs/orders.md -p  # …or a slide deck   ·   avo pdf docs/orders.md  → a PDF
+avo studio                    # edit visually — forms + live preview
+```
+
+`avo check` prints the exact file, line, and a fix when something's wrong (a bad field, a broken link, a duplicate id), and exits non-zero — so it drops straight into CI.
+
+## Get started on a real project
+
+```bash
+avo demo        # see it instantly — renders a showcase of every block and opens it
+avo init        # scaffold docs/, config, and set up your AI tools (interactive)
+avo tour        # a short, guided, hands-on walkthrough
+```
+
+## Let your AI write the docs
+
+After `avo init`, the AI tools in your repo already know the block grammar, so you can just ask them to "document the checkout flow as a sequence diagram."
+
+```bash
+avo install claude    # or: cursor · copilot · windsurf  (installs the authoring skill + adapter)
+avo skill             # print the grammar as a system prompt (paste into ChatGPT / any AI)
+avo mcp               # setup for Model Context Protocol clients (@avodado/mcp)
+```
+
+## Common commands
+
+```bash
+avo check [globs]                 # validate docs (default: docs/**/*.md; --json for machine output)
+avo html | slides | pdf <file>    # render one doc (-p opens it, -o writes to a path)
+avo build                         # build a static HTML site from all docs → dist/
+avo studio                        # local visual editor: edit, browse the site, present as slides
+avo new <template|block>          # scaffold a doc (adr, runbook…) or a single block (sequence, erd…)
+avo theme                         # pick a theme (textbook · minimal · soft · dark · teal · slate)
+avo sync openapi <spec>           # generate an API doc from an OpenAPI spec
+avo sync csv <file>               # turn a CSV into a table / chart block
+```
+
+Run `avo --help` (or `avo <command> --help`) for everything.
+
+## Exit codes (for CI)
 
 | Code | Meaning |
 | --- | --- |
-| 0 | Clean (or non-error warnings only) |
-| 1 | One or more error-level diagnostics |
-| 2 | CLI usage error (missing required flag, etc.) |
+| `0` | Clean (or warnings only) |
+| `1` | One or more errors — `avo check` failed |
+| `2` | Usage error (e.g. a missing flag) |
 
-## Output modes
-
-| Mode | Trigger |
-| --- | --- |
-| Ink TUI | TTY and not in CI and `AVO_PLAIN` unset |
-| Plain text | Non-TTY, or `CI=true`, or `AVO_PLAIN=1` |
-| JSON | `avo check --json` (always non-Ink) |
-
-Set `AVO_PLAIN=1` to force plain output even in a TTY.
-
-## What `avo init` writes
-
-- `avodado.config.json` — `{ docsDir: 'docs', outDir: 'dist' }`
-- `docs/getting-started.md` — sample doc
-- `.avodado/skill/SKILL.md` — authoring skill (block grammar + worked examples)
-- `CLAUDE.md` — pointer for Claude Code to follow the skill
-- `.cursor/rules/avodado.mdc` — same, for Cursor
-
-This means any AI agent already in the user's repo (Claude Code, Cursor, others that read `CLAUDE.md` or rules files) can author Avodado docs immediately.
+Set `AVO_PLAIN=1` to force plain text output even in a terminal.
 
 ## Configuration
 
-`avo` looks for `avodado.config.{ts,js,mjs,json,yml,yaml}` in the working directory and falls back to defaults:
+Optional `avodado.config.{json,ts,js,mjs,yml,yaml}` in your project root. Defaults:
 
 ```json
 { "docsDir": "docs", "outDir": "dist" }
 ```
+
+## Learn more
+
+Full docs and the block reference: **[avodado.dev](https://avodado.dev)**.

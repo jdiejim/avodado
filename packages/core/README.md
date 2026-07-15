@@ -36,6 +36,6 @@ const { graph, diagnostics } = resolveRefs([{ doc, file: 'docs/orders.md' }]);
 
 ## Block types
 
-`meta · callout · table · sequence · erd · userstory · timeline · kanban · tracker`.
+**77 block types** across 12 families (prose, tables, API, architecture, flows, data model, charts, planning, business, design system, algorithms, AI/agents) — high-signal ones include `sequence`, `erd`, `c4`, `table`, `callout`, `flow`, `userstory`, `chart`, and `endpoint`. The full list is `BLOCK_TYPES`; `BLOCK_FAMILIES` groups them.
 
-Field shapes are zod schemas exported individually (e.g. `userstorySchema`). Per-block data types are exposed as `BlockDataMap[K]`.
+Each block's field shape is a zod schema exported individually (e.g. `sequenceSchema`), and its data type is `BlockDataMap[K]`. See the full reference at **[avodado.dev](https://avodado.dev)**.
