@@ -7,8 +7,12 @@
 ## Install
 
 ```bash
-pnpm add -D @avodado/cli      # or: npm i -D @avodado/cli  ·  yarn add -D @avodado/cli
+pnpm add -D avodado      # or: npm i -D avodado  ·  yarn add -D avodado
 ```
+
+The command is available as both `avo` (short) and `avodado`. Try it with no install: `npx avodado demo`.
+
+> Previously published as `@avodado/cli` — now **`avodado`**. Same tool; update your dependency.
 
 ## Quick example
 

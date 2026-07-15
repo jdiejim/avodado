@@ -58,7 +58,7 @@ Full list: **[77 block types](#the-77-block-types)** across 12 families.
 ## Quick start
 
 ```bash
-pnpm add -D @avodado/cli        # or npm / yarn
+pnpm add -D avodado             # or npm / yarn  ·  or run once: npx avodado demo
 
 avo demo                        # see it instantly — renders the showcase and opens it
 avo init                        # scaffold docs/, config, the AI skill, editor adapters
