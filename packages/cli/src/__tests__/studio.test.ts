@@ -264,6 +264,54 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
     }
   }, 20_000);
 
+  it('POST /api/theme writes a theme file (and validates name/base/method)', async () => {
+    const s = await startStudio();
+    try {
+      const ok = await fetch(api(s.port, '/api/theme'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Sunset Vibes',
+          base: 'minimal',
+          colors: { primary: '#ff5722', accent: '#ffc107' },
+          fonts: { display: 'Georgia, serif' },
+          scope: 'project',
+        }),
+      });
+      expect(ok.status).toBe(200);
+      const body = (await ok.json()) as { slug: string; path: string };
+      expect(body.slug).toBe('sunset-vibes');
+
+      // The file lands in the project's .avodado/themes with a friendly shape.
+      const themePath = join(s.tmp, '.avodado', 'themes', 'sunset-vibes.theme.json');
+      expect(existsSync(themePath)).toBe(true);
+      const theme = JSON.parse(readFileSync(themePath, 'utf8')) as {
+        name: string;
+        theme: string;
+        colors: Record<string, string>;
+      };
+      expect(theme).toMatchObject({ name: 'Sunset Vibes', theme: 'minimal' });
+      expect(theme.colors.primary).toBe('#ff5722');
+
+      // Guards: wrong method, missing name, bad base.
+      expect((await fetch(api(s.port, '/api/theme'))).status).toBe(405);
+      const noName = await fetch(api(s.port, '/api/theme'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base: 'minimal' }),
+      });
+      expect(noName.status).toBe(400);
+      const badBase = await fetch(api(s.port, '/api/theme'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'X', base: 'not-a-theme' }),
+      });
+      expect(badBase.status).toBe(400);
+    } finally {
+      await s.stop();
+    }
+  }, 20_000);
+
   it('streams a typed fs event over /__events when a doc changes on disk', async () => {
     const s = await startStudio();
     try {

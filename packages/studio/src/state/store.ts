@@ -208,6 +208,13 @@ export interface StudioState {
    * the picker and `avo theme` are the same control.)
    */
   setTheme: (choice: string) => void;
+  /**
+   * Live-preview arbitrary theme vars over a base (the Theme Generator), without
+   * touching {@link themeChoice} — so cancelling can restore it via `setTheme`.
+   */
+  previewTheme: (theme: ThemeName, themeVars: Readonly<Record<string, string>> | undefined) => void;
+  /** After a theme file is written on disk, refetch meta and activate it. */
+  applySavedTheme: (slug: string) => Promise<void>;
   setAutosave: (on: boolean) => void;
   /** Opens the sheet; `fresh` marks a just-inserted block (arrays pre-open). */
   openSheet: (index: number, fresh?: boolean) => void;
@@ -573,6 +580,14 @@ export const useStudio = create<StudioState>()((set, get) => {
     setTheme: (choice) => {
       const resolved = resolveChoice(choice, get().meta);
       set({ themeChoice: choice, theme: resolved.theme, themeVars: resolved.themeVars });
+    },
+
+    previewTheme: (theme, themeVars) => set({ theme, themeVars }),
+
+    applySavedTheme: async (slug) => {
+      const meta = await fetchMeta();
+      set({ meta });
+      get().setTheme(`saved:${slug}`);
     },
     setAutosave: (on) => {
       // Flipping autosave back ON while dirty would immediately (and

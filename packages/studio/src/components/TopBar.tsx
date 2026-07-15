@@ -17,12 +17,14 @@ import {
   IconDoc,
   IconExport,
   IconLibrary,
+  IconPalette,
   IconPlus,
   IconRedo,
   IconSearch,
   IconUndo,
 } from './Icons.js';
 import { TemplatePicker } from './TemplatePicker.js';
+import { ThemeGenerator } from './ThemeGenerator.js';
 
 function SaveChip(): JSX.Element {
   const dirty = useStudio((s) => s.dirty);
@@ -388,8 +390,10 @@ export function TopBar(): JSX.Element {
   const redo = useStudio((s) => s.redo);
   const canUndo = useStudio((s) => s.undoStack.length > 0);
   const canRedo = useStudio((s) => s.redoStack.length > 0);
+  const [themeGenOpen, setThemeGenOpen] = useState(false);
 
   return (
+    <>
     <header className="stu-topbar" data-tour="topbar">
       <div className="stu-wordmark">
         <img src={markUrl} alt="" className="stu-wordmark-dot" aria-hidden="true" />
@@ -408,6 +412,15 @@ export function TopBar(): JSX.Element {
         Autosave
       </label>
       <ThemePicker />
+      <button
+        type="button"
+        className="stu-libbtn"
+        title="Generate a custom theme"
+        onClick={() => setThemeGenOpen(true)}
+      >
+        <IconPalette size={13} />
+        Theme
+      </button>
       <ExportMenu />
       <div className="stu-btngroup">
         <button
@@ -432,5 +445,7 @@ export function TopBar(): JSX.Element {
         </button>
       </div>
     </header>
+    {themeGenOpen && <ThemeGenerator onClose={() => setThemeGenOpen(false)} />}
+    </>
   );
 }

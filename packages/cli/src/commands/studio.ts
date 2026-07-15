@@ -41,6 +41,7 @@ import type { ThemeName } from '@avodado/render';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
 import { toPdf } from '../io/pdf.js';
+import { globalThemePath, savedThemePath, themeSlug } from '../io/theme.js';
 import { loadTheme, studioThemeInfo } from '../io/theme.js';
 import { cliVersion } from '../io/version.js';
 import { createDocsWatcher, createConfigWatcher } from '../io/watch.js';
@@ -413,6 +414,62 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
     }
   };
 
+  // ── Theme install (POST /api/theme) ───────────────────────────────────────
+  // The Theme Generator posts a friendly theme (name, base, colors, fonts); we
+  // write it as `<slug>.theme.json` into the project's `.avodado/themes` (or
+  // `~/.avodado/themes` for scope=global). The config watcher then broadcasts a
+  // meta change, so the studio's theme picker shows it without a reload.
+  const THEME_BASES = new Set(['textbook', 'minimal', 'soft', 'dark', 'teal', 'slate']);
+  const stringMap = (v: unknown): Record<string, string> => {
+    const out: Record<string, string> = {};
+    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      for (const [k, val] of Object.entries(v)) {
+        if (typeof val === 'string' && val.trim() !== '') out[k] = val;
+      }
+    }
+    return out;
+  };
+
+  const handleThemePost = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    const body = await readBody(req, MAX_BODY_BYTES);
+    if (body === null) {
+      sendJson(res, 413, { error: `body exceeds ${MAX_BODY_BYTES} bytes` });
+      return;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(body.toString('utf8'));
+    } catch {
+      sendJson(res, 400, { error: 'invalid JSON body' });
+      return;
+    }
+    const p = parsed as { name?: unknown; base?: unknown; colors?: unknown; fonts?: unknown; scope?: unknown };
+    const name = typeof p.name === 'string' ? p.name.trim() : '';
+    if (name === '') return sendJson(res, 400, { error: 'missing "name" (string)' });
+    const base = typeof p.base === 'string' ? p.base : '';
+    if (!THEME_BASES.has(base)) return sendJson(res, 400, { error: `"base" must be one of ${[...THEME_BASES].join(', ')}` });
+    const slug = themeSlug(name);
+    if (slug === '') return sendJson(res, 400, { error: 'name has no usable characters for a filename' });
+
+    const colors = stringMap(p.colors);
+    const fonts = stringMap(p.fonts);
+    const themeFile = {
+      name,
+      theme: base,
+      ...(Object.keys(colors).length > 0 ? { colors } : {}),
+      ...(Object.keys(fonts).length > 0 ? { fonts } : {}),
+    };
+    const scope = p.scope === 'global' ? 'global' : 'project';
+    const abs = scope === 'global' ? globalThemePath(slug) : savedThemePath(opts.cwd, slug);
+    try {
+      await mkdir(dirname(abs), { recursive: true });
+      await writeFile(abs, `${JSON.stringify(themeFile, null, 2)}\n`, 'utf8');
+      sendJson(res, 200, { slug, path: abs });
+    } catch (err) {
+      sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
+    }
+  };
+
   // ── Built site pages (/site/…) ─────────────────────────────────────────────
 
   const handleSite = async (res: ServerResponse, pathname: string): Promise<void> => {
@@ -510,6 +567,10 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
     if (pathname === '/api/export/pdf') {
       if (method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
       return handleExportPdf(req, res);
+    }
+    if (pathname === '/api/theme') {
+      if (method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
+      return handleThemePost(req, res);
     }
     if (pathname.startsWith('/api/doc/')) {
       const hit = resolveDocPath(docsDirAbs, pathname.slice('/api/doc/'.length));

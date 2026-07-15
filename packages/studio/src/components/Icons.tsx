@@ -197,6 +197,17 @@ export function IconImport({ size = 14 }: IconProps): JSX.Element {
   );
 }
 
+export function IconPalette({ size = 14 }: IconProps): JSX.Element {
+  return (
+    <svg {...svgProps(size)}>
+      <path d="M8 1.8a6.2 6.2 0 1 0 0 12.4c1 0 1.5-.8 1.2-1.6-.3-.9.3-1.6 1.2-1.6h1a2.8 2.8 0 0 0 2.8-2.8A6.2 6.2 0 0 0 8 1.8Z" />
+      <circle cx="5.3" cy="7" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="5.2" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="10.7" cy="7" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconExport({ size = 14 }: IconProps): JSX.Element {
   return (
     <svg {...svgProps(size)}>

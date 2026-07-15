@@ -112,3 +112,38 @@ export async function saveDoc(
   const body = (await res.json()) as { hash: string; mtimeMs: number };
   return { ok: true, hash: body.hash, mtimeMs: body.mtimeMs };
 }
+
+/** A theme to write via `POST /api/theme` (the Theme Generator). */
+export interface ThemeInput {
+  readonly name: string;
+  /** Base built-in theme the custom colors/fonts extend. */
+  readonly base: string;
+  readonly colors: Readonly<Record<string, string>>;
+  readonly fonts: Readonly<Record<string, string>>;
+  /** `project` → `.avodado/themes`; `global` → `~/.avodado/themes`. */
+  readonly scope: 'project' | 'global';
+}
+
+/**
+ * Writes a generated theme file to disk via the file bridge and returns its
+ * slug. The server watcher then broadcasts a meta change, so the picker picks
+ * it up. Throws with the server's message on failure.
+ */
+export async function saveTheme(input: ThemeInput): Promise<{ slug: string; path: string }> {
+  const res = await fetch('/api/theme', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    let message = `theme install failed (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: unknown };
+      if (typeof body.error === 'string') message = body.error;
+    } catch {
+      /* non-JSON error */
+    }
+    throw new Error(message);
+  }
+  return (await res.json()) as { slug: string; path: string };
+}
