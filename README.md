@@ -5,10 +5,10 @@
 <h1 align="center">Avodado</h1>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@avodado/cli"><img src="https://img.shields.io/npm/v/@avodado/cli?label=%40avodado%2Fcli&color=4f46e5" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/avodado"><img src="https://img.shields.io/npm/v/avodado?label=avodado&color=4f46e5" alt="npm" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license" /></a>
   <a href="https://www.npmjs.com/package/@avodado/core"><img src="https://img.shields.io/npm/types/@avodado/core" alt="types" /></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/@avodado/cli" alt="node" /></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/avodado" alt="node" /></a>
   <a href="https://pnpm.io"><img src="https://img.shields.io/badge/maintained%20with-pnpm-f69220" alt="pnpm" /></a>
 </p>
 
@@ -237,7 +237,7 @@ CI gates on this for free.
 | --- | --- |
 | [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 77 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
 | [`@avodado/render`](./packages/render) | All rendering: `renderDocument` (standalone HTML) + `renderDocumentParts` (embeddable) + `toSlides` (self-contained decks). Inline CSS + SVG, 6 themes. |
-| [`@avodado/cli`](./packages/cli) | `avo` — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · theme · sync` + per-tool installers. PDF export (Playwright) lives here. |
+| [`avodado`](./packages/cli) | The `avo` CLI (also runs as `avodado`) — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · theme · sync` + per-tool installers. PDF export (Playwright) lives here. |
 | [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` — Edit \| Site \| Present, plus HTML / slides / PDF export. |
 | [`@avodado/mcp`](./packages/mcp) | Model Context Protocol server exposing the doc tooling to any MCP client. |
 
