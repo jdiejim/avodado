@@ -1,5 +1,12 @@
 # @avodado/cli
 
+## 0.35.14
+
+### Patch Changes
+
+- 8462fab: `avo -v` prints the version (lowercase, what fingers type) — `-V` and
+  `--version` still work.
+
 ## 0.35.13
 
 ### Patch Changes
