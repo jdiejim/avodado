@@ -61,6 +61,7 @@ function renderStepList(
           : '';
       return (
         `<li${errCls}${bp(`messages.${r.n - 1}`)}>` +
+        `<span class="step-n">${r.n}</span>` +
         `<span class="step-actor${actorErrCls}">${actorLabel}</span>` +
         `<span class="step-summary">${escapeHtml(r.summary ?? '')}</span>` +
         code +

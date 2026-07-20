@@ -13,6 +13,7 @@
 
 import {
   deleteYamlPath,
+  parseBlockBody,
   replaceBlockBody,
   setYamlPath,
   textBodyYaml,
@@ -20,7 +21,38 @@ import {
   type Document,
 } from '@avodado/core';
 import { useStudio } from '../state/store.js';
-import type { PathSeg } from './paths.js';
+import { valueAt, type PathSeg } from './paths.js';
+
+/**
+ * Materializes TERSE sugar items along `path` before a structured edit: a
+ * message written as `- api -> pay: authorize` is a scalar / single-pair map
+ * in the RAW YAML, so `setYamlPath(raw, ['messages', 1, 'summary'], …)` can't
+ * land. Wherever the raw item differs from its canonical (sugar-expanded)
+ * parsed form, the item is rewritten as the canonical object first — then the
+ * edit applies normally. Items already in object form pass through untouched.
+ */
+function materializeTerse(
+  raw: string,
+  data: unknown,
+  path: ReadonlyArray<PathSeg>,
+): string {
+  if (path.length < 2) return raw;
+  const parsed = parseBlockBody(raw);
+  if (!parsed.ok) return raw;
+  let out = raw;
+  for (let i = 0; i < path.length - 1; i++) {
+    if (typeof path[i] !== 'number') continue;
+    const prefix = path.slice(0, i + 1);
+    const rawV = valueAt(parsed.data, prefix);
+    const canonV = valueAt(data, prefix);
+    if (rawV === undefined || canonV === undefined) continue;
+    if (JSON.stringify(rawV) !== JSON.stringify(canonV)) {
+      out = setYamlPath(out, prefix, canonV);
+      break; // the canonical subtree is fully object-shaped below this point
+    }
+  }
+  return out;
+}
 
 /** Where micro-editor commits land. */
 export interface DirectHost {
@@ -53,8 +85,9 @@ export function setPathInSegment(
     throw new TypeError(`segment ${index} is not a typed block`);
   }
   // Bare-text bodies (callout/pullquote text sugar) canonicalize to explicit
-  // YAML first, so structured path edits apply instead of throwing.
-  const raw0 = textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  // YAML first, so structured path edits apply instead of throwing; terse
+  // sugar items along the path materialize the same way.
+  const raw0 = materializeTerse(textBodyYaml(seg.kind, seg.raw) ?? seg.raw, seg.data, path);
   return replaceBlockBody(source, doc, index, setYamlPath(raw0, path, value));
 }
 
@@ -74,6 +107,10 @@ export function setPathsInSegment(
     throw new TypeError(`segment ${index} is not a typed block`);
   }
   let raw = textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  // Materialize BEFORE any write: materializeTerse compares against the
+  // segment's parsed data, so running it mid-batch would see earlier writes
+  // as "terse drift" and clobber them back to the pre-edit values.
+  for (const s of sets) raw = materializeTerse(raw, seg.data, s.path);
   for (const s of sets) raw = setYamlPath(raw, s.path, s.value);
   return replaceBlockBody(source, doc, index, raw);
 }
@@ -89,7 +126,7 @@ export function deletePathInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  const raw0 = textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  const raw0 = materializeTerse(textBodyYaml(seg.kind, seg.raw) ?? seg.raw, seg.data, path);
   return replaceBlockBody(source, doc, index, deleteYamlPath(raw0, path));
 }
 

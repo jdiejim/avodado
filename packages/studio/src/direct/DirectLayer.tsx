@@ -403,6 +403,11 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
         suppressClickRef.current = false;
         return;
       }
+      // Clicks on the layer's own chrome (the note button, pickers) belong to
+      // their React handlers — they must not read as "empty space" and clear
+      // the part selection out from under them. (The tagged hit layers live
+      // OUTSIDE .stu-dx-overlay, so real part clicks still land below.)
+      if (e.target instanceof Element && e.target.closest('.stu-dx-overlay') !== null) return;
       const el = findTagged(e.target);
       if (el === null) {
         // Empty block space pops part selection back to the block level.
@@ -491,6 +496,18 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
         return;
       }
       if (partPath === null) return; // block level — the canvas owns the keys
+      // `n` on a sequence message: annotate it — the micro-editor opens
+      // focused on `summary`, which becomes the numbered step note below.
+      if (e.key.toLowerCase() === 'n' && host.kind === 'sequence' && /^messages\.\d+$/.test(partPath)) {
+        const el = wrap.querySelector(`[data-bp="${CSS.escape(partPath)}"]`);
+        if (el !== null) {
+          e.preventDefault();
+          e.stopPropagation();
+          openEditorAt(partPath, el, wrap, 'summary');
+          flashTwins(partPath, el, wrap);
+        }
+        return;
+      }
       if (e.key === 'Enter' && !e.shiftKey) {
         const el = wrap.querySelector(`[data-bp="${CSS.escape(partPath)}"]`);
         if (el === null) return;
@@ -881,11 +898,24 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
     connect.spec !== null && partPath !== null && edgeIndexFromPath(connect.spec, partPath) !== null
       ? connect.spec.edgeTextField
       : null;
+  /** Sequence messages take a numbered ANNOTATION (`summary`): it renders in
+   *  the Step-by-step list under the diagram with the same ① reference
+   *  number, so "add note" on step 2 automatically becomes entry ②. */
+  const noteMatch = host.kind === 'sequence' && partPath !== null ? /^messages\.(\d+)$/.exec(partPath) : null;
+  const noteInfo =
+    noteMatch !== null
+      ? {
+          n: Number(noteMatch[1]) + 1,
+          has:
+            typeof valueAt(data, ['messages', Number(noteMatch[1]), 'summary']) === 'string' &&
+            (valueAt(data, ['messages', Number(noteMatch[1]), 'summary']) as string).length > 0,
+        }
+      : null;
   const partHint =
     partCls === null
       ? ''
       : partEdgeField !== null
-        ? `⏎ edit ${partEdgeField} · ⌫`
+        ? `⏎ edit ${partEdgeField}${noteInfo !== null ? ' · n note' : ''} · ⌫`
         : partCls.kind === 'table-cell'
           ? '⏎ edit · ←↑↓→ cells'
           : partCls.kind === 'grid-group'
@@ -982,6 +1012,26 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
                   onClick={(e) => e.stopPropagation()}
                 />
               ))}
+            {noteInfo !== null && (
+              <button
+                type="button"
+                className="stu-dx-note"
+                style={{
+                  left: Math.max(0, partRect.left - 3),
+                  top: partChipAbove ? partRect.top + partRect.height + 8 : partRect.top - 36,
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const wrapEl = wrapperRef.current;
+                  if (wrapEl === null || partPath === null) return;
+                  const el = wrapEl.querySelector(`[data-bp="${CSS.escape(partPath)}"]`);
+                  if (el !== null) openEditorAt(partPath, el, wrapEl, 'summary');
+                }}
+              >
+                {noteInfo.has ? `✎ note ${noteInfo.n}` : `＋ add note ${noteInfo.n}`}
+              </button>
+            )}
             {connNodeIndex !== null &&
               connectorDots(partRect).map((d) => (
                 <button

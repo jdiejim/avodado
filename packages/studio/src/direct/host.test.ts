@@ -43,6 +43,21 @@ describe('pure segment-body editors', () => {
     expect(() => setPathInSegment(DOC, doc(DOC), 1, ['x'], 1)).toThrow(TypeError);
   });
 
+  it('annotating a TERSE sequence message materializes it and lands the summary', () => {
+    // The message is arrow-sugar in the raw YAML — a scalar item. Setting
+    // messages.1.summary must expand it to the object form first.
+    const src =
+      '```sequence\nactors:\n  - { id: a, name: A }\n  - { id: b, name: B }\nmessages:\n  - a -> b: request\n  - b --> a: response\n```\n';
+    const next = setPathInSegment(src, doc(src), 0, ['messages', 1, 'summary'], 'The reply is cached.');
+    const d = doc(next);
+    const seg = d.segments[0];
+    if (seg === undefined || seg.kind === 'markdown') throw new Error('expected block');
+    const msgs = (seg.data as { messages: Array<Record<string, unknown>> }).messages;
+    expect(msgs[1]).toMatchObject({ from: 'b', to: 'a', kind: 'response', summary: 'The reply is cached.' });
+    // The untouched terse sibling keeps its one-line spelling in the source.
+    expect(next).toContain('a -> b: request');
+  });
+
   it('structured edits on a BARE-TEXT callout canonicalize instead of throwing', () => {
     // The body is plain prose (core's text-body sugar) — no YAML fields at all.
     const src = '```callout\nHeads up: the rate limit is 100 req/min.\n```\n';

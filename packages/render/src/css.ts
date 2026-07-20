@@ -73,10 +73,12 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .step-badge-text{fill:var(--white);font-family:var(--font-mono);font-size:10px;font-weight:700;text-anchor:middle;}
 .docskin .seq-steps{margin-top:16px;padding:14px 18px;background:var(--light-gray);border:1px solid var(--rule);}
 .docskin .seq-steps-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--navy);font-weight:700;margin-bottom:8px;}
-.docskin .seq-steps ol{list-style:none;counter-reset:step;padding:0;margin:0;}
-.docskin .seq-steps li{counter-increment:step;padding:7px 0 8px 40px;position:relative;border-bottom:1px solid var(--rule);}
+.docskin .seq-steps ol{list-style:none;padding:0;margin:0;}
+.docskin .seq-steps li{padding:7px 0 8px 40px;position:relative;border-bottom:1px solid var(--rule);}
 .docskin .seq-steps li:last-child{border-bottom:none;}
-.docskin .seq-steps li::before{content:counter(step);position:absolute;left:0;top:7px;width:26px;height:20px;background:var(--navy);color:var(--white);font-family:var(--font-mono);font-size:11px;font-weight:700;text-align:center;line-height:20px;border-radius:2px;}
+/* The number is emitted by the renderer (the message's DIAGRAM number, so an
+   annotation on step 4 reads ④ here even when steps 1-3 have no note). */
+.docskin .seq-steps .step-n{position:absolute;left:0;top:7px;width:26px;height:20px;background:var(--navy);color:var(--white);font-family:var(--font-mono);font-size:11px;font-weight:700;text-align:center;line-height:20px;border-radius:2px;}
 .docskin .seq-steps li.err::before{background:var(--negative);}
 .docskin .step-actor{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--navy);margin-right:8px;text-transform:uppercase;letter-spacing:.06em;}
 .docskin .step-actor.err{color:var(--negative);}

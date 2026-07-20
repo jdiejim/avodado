@@ -79,6 +79,9 @@ messages:
   - { from: Agent, to: KB, label: "search_kb(query)", kind: sync }
   - { from: KB, to: Agent, label: top 3 articles, kind: response }
   - { from: Agent, to: User, label: cited reply, kind: response }
+  - from: User
+    to: Agent
+    label: message
 ```
 
 ## A real episode

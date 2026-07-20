@@ -4192,6 +4192,27 @@ kbd {
   cursor: default;
 }
 
+/* The add-note button on a selected sequence message. */
+.stu-dx-note {
+  position: absolute;
+  z-index: 30;
+  pointer-events: auto; /* the overlay is pointer-events:none — opt back in */
+  border: 1px solid var(--stu-navy);
+  border-radius: 8px;
+  background: var(--stu-panel);
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  cursor: pointer;
+  box-shadow: var(--stu-shadow-lift);
+}
+
+.stu-dx-note:hover {
+  background: var(--stu-navy);
+  color: #fff;
+}
+
 /* ── Doc layout: site-style sidebar + canvas ──────────────────────────────── */
 .stu-docwrap {
   flex: 1;
