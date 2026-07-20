@@ -1,5 +1,12 @@
 # @avodado/render
 
+## 0.25.4
+
+### Patch Changes
+
+- b55ae7e: Decks show diagrams complete on slide entry — the progressive ① ② ③ step
+  reveal is removed; navigation is one press per slide again.
+
 ## 0.25.3
 
 ### Patch Changes
