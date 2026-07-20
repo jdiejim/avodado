@@ -42,8 +42,8 @@ permanent aliases — see the alias table at the bottom.
 | `felogic` | `architecture.md` | Frontend module/logic graph — components, hooks, interfaces, strategies; group zones + egress edges; `variant: be` re-frames it for the backend (controller / service / repository / adapter). |
 | `wireframe` | `design-system.md` | Low-fi UI mockups inside device frames — desktop / browser / phone screens. |
 | `endpoint` | `api.md` | A Swagger-style API endpoint card — method, path, params, request body, responses, examples. |
-| `pullquote` | `api.md` | A standout pull-quote with optional attribution. |
-| `layers` | `api.md` | A layered explanation — N numbered layers, each a kicker / title / source / question + body. |
+| `pullquote` | `narrative.md` | A standout pull-quote with optional attribution. |
+| `layers` | `narrative.md` | A layered explanation — N numbered layers, each a kicker / title / source / question + body. |
 | `matrix` | `business.md` | A role × resource capability grid; cells tint by permission level. |
 | `anatomy` | `business.md` | The labelled parts of a structured string (e.g. `app:feature:action`). |
 | `composition` | `business.md` | Effective access as intersected gates — `gate₁ ∩ gate₂ ∩ … = result`. |

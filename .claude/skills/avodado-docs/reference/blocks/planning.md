@@ -65,8 +65,8 @@ plans ahead.
 columns:
   - label: Now
     cards:
-      - { title: Core parser }
-      - { title: Validation, tag: priority }
+      - Core parser
+      - Validation · priority
   - label: Next
     cards:
       - { title: Hot reload }

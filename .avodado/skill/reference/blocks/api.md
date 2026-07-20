@@ -29,18 +29,3 @@ response: |            # optional example response body
 ```
 Only `method` and `path` are required. `params[].in` is `path | query | header | cookie`. For a whole spec, generate docs with `avo sync openapi`.
 
-#### `pullquote` — a standout quote
-```pullquote
-text: Site group = read at that plant. Role group = extra actions on top.
-attribution: The taxonomy in one line
-```
-
-#### `layers` — a layered explanation (N numbered layers)
-```layers
-title: Access in three layers
-items:
-  - { kicker: L1, title: Identity, source: IdP JWT, question: "Signed in?", body: Validate the token. }
-  - { kicker: L2, title: Site scope, source: lookup, question: "Which sites?", body: Confirm site is in range. }
-  - { kicker: L3, title: Permission, source: App DB, question: "May you do this?", body: Resolve from the matrix. }
-```
-Use `layers` (not a table) when content reads as ordered tiers each answering one question — e.g. an L1/L2/L3 model. `callout` also now supports `tone: success` (green).

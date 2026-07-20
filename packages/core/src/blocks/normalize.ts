@@ -161,6 +161,83 @@ const timelineGrammar: Grammar = {
 };
 
 /**
+ * Text-pair grammar for list-shaped blocks: an item may be a plain string,
+ * split on the FIRST ` — ` (em dash) into lead + rest:
+ *
+ *   - Ship small — five focused releases beat one big one.   (takeaways)
+ *   - SLO — the target the team commits to.                  (glossary)
+ *   - Why is it fast? — The cache is warm.                   (faq)
+ *
+ * With no ` — `, the whole string becomes the lead field (when the rest field
+ * is optional) or stays a string and surfaces as a schema error (when both
+ * halves are required — glossary/faq). `alsoColon` additionally accepts
+ * `Term: definition` (the natural glossary spelling).
+ *
+ * The single-pair-map signature is "the key is NOT a known item field": YAML
+ * turns an unquoted `- SLO: the target` into `{ SLO: 'the target' }`, which is
+ * reconstructed to `SLO: the target` and expanded — while a real field form
+ * like `{ term: SLO }` never matches.
+ */
+function textPairGrammar(
+  leadField: string,
+  restField: string,
+  restRequired: boolean,
+  knownKeys: readonly string[],
+  alsoColon = false,
+): Grammar {
+  const expand = (s: string): unknown => {
+    const t = s.trim();
+    if (t.length === 0) return s;
+    let i = t.indexOf(' — ');
+    let sep = 3;
+    if (i === -1 && alsoColon) {
+      i = t.indexOf(': ');
+      sep = 2;
+    }
+    if (i === -1) return restRequired ? s : { [leadField]: t };
+    const lead = t.slice(0, i).trim();
+    const rest = t.slice(i + sep).trim();
+    if (lead.length === 0) return s;
+    return { [leadField]: lead, ...(rest.length > 0 ? { [restField]: rest } : {}) };
+  };
+  return { expand, signature: (key) => !knownKeys.includes(key) };
+}
+
+const glossaryGrammar = textPairGrammar('term', 'def', true, ['term', 'def', 'id'], true);
+const faqGrammar = textPairGrammar('q', 'a', true, ['q', 'a', 'open', 'id']);
+const takeawaysGrammar = textPairGrammar('text', 'detail', false, ['text', 'detail', 'id']);
+const listGrammar = textPairGrammar('lead', 'text', false, [
+  'lead',
+  'text',
+  'icon',
+  'accent',
+  'done',
+  'id',
+]);
+const stepsGrammar = textPairGrammar('title', 'body', false, [
+  'title',
+  'body',
+  'code',
+  'lang',
+  'note',
+  'id',
+]);
+
+/** Kanban card: `'Title'` or `'Title · tag'` → `{ title, tag? }`. */
+const kanbanCardGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    const parts = s
+      .split('·')
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+    if (parts.length === 0) return s;
+    if (parts.length === 1) return { title: parts[0] };
+    return { title: parts[0], tag: parts.slice(1).join(' · ') };
+  },
+  signature: (key) => !['title', 'tag', 'id'].includes(key),
+};
+
+/**
  * Expands the terse items of `data[key]` via `grammar`, leaving everything
  * else untouched. Handles both spellings of a terse item:
  *
@@ -210,6 +287,24 @@ const SUGAR: Partial<
   graph: (d) => mapArrayField(d, 'edges', edgeGrammar),
   block: (d) => mapArrayField(d, 'edges', edgeGrammar),
   timeline: (d) => mapArrayField(d, 'items', timelineGrammar),
+  glossary: (d) => mapArrayField(d, 'terms', glossaryGrammar),
+  faq: (d) => mapArrayField(d, 'items', faqGrammar),
+  takeaways: (d) => mapArrayField(d, 'items', takeawaysGrammar),
+  list: (d) => mapArrayField(d, 'items', listGrammar),
+  steps: (d) => mapArrayField(d, 'items', stepsGrammar),
+  kanban: (d) => {
+    // Cards nest one level down: expand each column's `cards` in place.
+    const cols = d['columns'];
+    if (!Array.isArray(cols)) return d;
+    let changed = false;
+    const next = cols.map((col) => {
+      if (!isPlainObject(col)) return col;
+      const out = mapArrayField(col, 'cards', kanbanCardGrammar);
+      if (out !== col) changed = true;
+      return out;
+    });
+    return changed ? { ...d, columns: next } : d;
+  },
 };
 
 /** Recursively coerces number/boolean scalars to strings at string-only positions. */

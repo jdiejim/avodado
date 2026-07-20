@@ -49,8 +49,8 @@ body: Clients must send an Idempotency-Key header so retries are safe.
 #### `glossary` — term / definition rows
 ```glossary
 terms:
-  - { term: Idempotent, def: A replay produces the same outcome. }
-  - { term: SLO, def: Service-level objective the team commits to. }
+  - Idempotent — a replay produces the same outcome.
+  - SLO — the service-level objective the team commits to.
 ```
 
 #### `figure` — an image with a caption
@@ -116,13 +116,28 @@ a row of KPIs.
 ```takeaways
 title: Takeaways
 items:
-  - text: The synchronous capture call was the bottleneck
-    detail: It accounted for 71% of the 2.4s checkout p95.
-  - text: Moving it to a queue cut p95 by 75%
-  - text: Conversion recovered within two weeks
+  - The synchronous capture call was the bottleneck — it accounted for 71% of the 2.4s checkout p95.
+  - Moving it to a queue cut p95 by 75%
+  - Conversion recovered within two weeks
     detail: "+0.4pp against the pre-regression baseline."
 ```
 `items` takes 2-6 rows; each `text` is a bold one-liner, `detail` an optional
 smaller line beneath. `title` defaults to "Takeaways"; `accent` tints the
 circled numbers. The natural closing slide of a deck — use `list` for ordinary
 bullets inside a document.
+
+#### `pullquote` — a standout quote
+```pullquote
+Site group = read at that plant. Role group = extra actions on top.
+```
+Bare text IS the quote (like `callout`); lead with `text:` / `attribution:` for fields.
+
+#### `layers` — a layered explanation (N numbered layers)
+```layers
+title: Access in three layers
+items:
+  - { kicker: L1, title: Identity, source: IdP JWT, question: "Signed in?", body: Validate the token. }
+  - { kicker: L2, title: Site scope, source: lookup, question: "Which sites?", body: Confirm site is in range. }
+  - { kicker: L3, title: Permission, source: App DB, question: "May you do this?", body: Resolve from the matrix. }
+```
+Use `layers` (not a table) when content reads as ordered tiers each answering one question — e.g. an L1/L2/L3 model.

@@ -19,7 +19,7 @@ required**, so they're left out of the table below, which shows only the
 | `meta` | `title` `subtitle` `tag` `logo` | — |
 | `callout` | `tone` `title` `body` | tone: note · tip · warn · danger; bare-text body allowed (the body IS `body`) |
 | `prose` | `blocks[]`: `type` `text` `items[]` | type: h · p · ul · ol · quote |
-| `glossary` | `terms[]`: `term*` `def*` | — |
+| `glossary` | `terms[]`: `term*` `def*` | string items: `Term — definition` or `Term: definition` |
 | `proscons` | `prosLabel` `consLabel` `pros[]` `cons[]` | — |
 | `cvt` | `current{label, items[]}` `target{label, items[]}` `note` | — |
 | `agenda` | `items[]`: `title*` `time` `duration` `owner` `desc` | — |
@@ -27,7 +27,7 @@ required**, so they're left out of the table below, which shows only the
 | `stats` | `stats[]`: `value*` `label*` `delta` `trend` `accent` | trend: up · down · flat |
 | `code` | `kind` · `code` `lang` `session` (single-snippet shorthand) · `blocks[]`: `code*` `title` `lang` | kind: diff · terminal (omit for plain snippets). Plain: one snippet via top-level `code`/`lang`, several via `blocks[]`. `kind: diff`: unified-diff text in `code` (`+` added · `-` removed · `@@` hunk). `kind: terminal`: shell text in `session` (`$ ` command · `# ` comment · else output) |
 | `risk` | `items[]`: `risk*` `likelihood*` `impact*` `mitigation` `owner` `status` | likelihood / impact: low · med · high — status: open · mitigating · accepted · closed. Severity derives: both high → critical · one high → high · both low → low · else medium |
-| `kanban` | `columns[]`: `label*` `cards[]`: `title*` `tag` | — |
+| `kanban` | `columns[]`: `label*` `cards[]`: `title*` `tag` | string cards: `Title` or `Title · tag` |
 | `timeline` | `items[]`: `label*` `date` `desc` `status` | status: done · current · next · future |
 | `gantt` | `periods[]` · `tasks[]`: `label*` `start`(n) `span`(n) `kind` | kind: done · active · current · milestone |
 | `userstory` | `role` `want` `soThat` `priority` `points`(n) · `criteria[]`: `given` `when` `then` · `links[]`: `ref` `mode` `label` | — |
@@ -68,15 +68,15 @@ required**, so they're left out of the table below, which shows only the
 | `options` | `title` `description` · `items[]`: `title*` `kicker` `how` `pros[]` `cons[]` `verdict` `tone` | tone: rejected·viable·chosen·warn·neutral (chosen is highlighted) |
 | `scorecard` | `criteria[]`: `label*` `weight`(n, default 1) · `options[]`: `label*` `scores*[]`(n, one per criterion) `note` | scores on a 0-5 scale by convention; the highest weighted total wins (ties highlight all) |
 | `spec` | `title` `description` `accent` · `rows[]`: `label*` (`value` **or** `steps[]`) | a `steps[]` row renders as an arrow-joined pill flow — accent as in `drivers` |
-| `list` | `title` `description` `style` `accent` · `items[]`: `lead*` `text` `icon` `accent` `done`(bool) | style: accent · check · icon · number — icon/accent as in `drivers`; `done: false` dims a check row |
+| `list` | `title` `description` `style` `accent` · `items[]`: `lead*` `text` `icon` `accent` `done`(bool) | string items: `Lead` or `Lead — text`; style: accent · check · icon · number — icon/accent as in `drivers`; `done: false` dims a check row |
 | `stories` | `title` `description` · `items[]`: `id` `title` `role` `want` `soThat` `priority` `points`(n) `tags[]` `open`(bool) · `criteria[]`: `given` `when` `then` · `links[]`: `ref` `mode` `label` | each item is a collapsible story; `open: true` starts expanded; `links[].ref` is a real `doc#id` cross-reference |
 | `pattern` | `name*` `category` `intent` `forces[]` `solution` `structure` `note` · `participants[]`: `name*` `role` · `consequences{pros[], cons[]}` | — |
 | `gallery` | `title` `description` `cols`(n) · `items[]`: `title` `code` `lang` `caption` `accent` | a card with `code` renders a highlighted snippet; without it, a title+caption note. Responsive grid (set `cols` to fix the column count). |
 | `chart` | `kind` `unit` `max`(n) `budget`(n) `labels[]` · `series[]`: `label*` `accent` `values*[]`(n) · `items[]` (donut / waterfall / funnel): `label*` `value*`(n) `accent` `desc` | kind: bar · line · area · donut · radar · waterfall · funnel (default bar) — accent as in `drivers`. `labels`+`series` drive bar/line/area/radar; `items` drives donut/waterfall/funnel (`stages[]` is a legacy synonym for funnel items). `unit` suffixes values; `max` caps the y-axis (radar: the outer ring); radar needs 3+ labels as axes. waterfall: bars cascade left→right, a navy TOTAL bar closes the run, `budget` draws a dashed cap (segments past it tint red + over/under chip). funnel: bands proportional to value with `↓ NN%` conversion chips |
 | `heatmap` | `xLabels*[]` `unit` `min`(n) `max`(n) · `rows[]`: `label*` `values*[]`(n, one per xLabel) | tiles tint low → high on a single-hue ramp between the data min/max (or the explicit `min`/`max` bounds); short rows pad missing cells as blank tiles |
 | `figure` | `src*` `alt` `caption` `width`(n, px) | — |
-| `steps` | `title` `description` · `items[]`: `title*` `body` `code` `lang` `note` | — |
-| `faq` | `title` `description` · `items[]`: `q*` `a*` `open`(bool) | `open: true` starts a question expanded; `a` is plain text (blank lines become paragraphs) |
+| `steps` | `title` `description` · `items[]`: `title*` `body` `code` `lang` `note` | string items: `Title` or `Title — body` |
+| `faq` | `title` `description` · `items[]`: `q*` `a*` `open`(bool) | string items: `Question? — Answer`; `open: true` starts a question expanded; `a` is plain text (blank lines become paragraphs) |
 | `envelope` | `assumptions[]`: `label*` `value*` · `steps[]`: `label*` `calc*` `result*` · `result{label*, value*}` | every value is a string — quote anything with `, : #`; `result` is the highlighted bottom line |
 | `slo` | `items[]`: `name*` `sli*` `target*` `current` `window` `budget`(n, 0..1) | `budget` = fraction of error budget **consumed**: <0.5 green · 0.5–0.8 amber · >0.8 red · >1 exhausted; omit it for no bar |
 | `swot` | `strengths[]` `weaknesses[]` `opportunities[]` `threats[]` (string lists) | all four quadrants always draw; omit a list you have no content for |
@@ -90,7 +90,7 @@ required**, so they're left out of the table below, which shows only the
 | `inventory` | `items[]`: `name*` `status*` `tag` `note` | status: stable (green) · beta (blue) · experimental (purple) · deprecated (red) · planned (gray) |
 | `divider` | `title*` `kicker` `subtitle` `accent` | accent as in `drivers` — tints the kicker + band wash. Alone under a `##` heading it makes an interstitial slide |
 | `bignumber` | `value*` (string — **quote numbers**: `"-75%"`) `label*` `context` `delta` `trend` `accent` | trend: up · down · flat — the arrow stays neutral gray ("down" is often good); `delta` text takes the accent. One number only — a row of KPIs is `stats` |
-| `takeaways` | `title` (default Takeaways) · `items*[]` (2-6): `text*` `detail` · `accent` | accent as in `drivers` — tints the circled row numbers |
+| `takeaways` | `title` (default Takeaways) · `items*[]` (2-6): `text*` `detail` · `accent` | string items: `Text` or `Text — detail`; accent as in `drivers` — tints the circled row numbers |
 | `statustable` | `variant` · `columns[]` (strings; default Task · Update) · `statuses[]`: `label*` `color*` · `rows*[]`: `cells*[]` (string \| number) `status*` `subtasks[]`: `cells*[]` `status*` · legacy `items[]`: `task*` `status` `priority` `owner` `due` | color: navy · blue · teal · green · amber · purple · red · gray, or a semantic alias: success → green · error → red · warn → amber · neutral → gray · info → blue. Every `status` (row or subtask) must match a `statuses` label or a built-in default (case-insensitive): in progress (amber) · blocked (red) · completed (green) · todo (gray) · done (green). variant: tracker + `items[]` (status: todo · doing · done · blocked — priority: high · med · low) is the legacy `tracker`-era shape — accepted in place of `rows`, write `rows` in new blocks |
 
 **Reading the contract:**
