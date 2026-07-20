@@ -1,6 +1,6 @@
 {
   "name": "@avodado/studio",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Avodado Studio — the local, AI-native visual editor for documentation-as-code. Edit Markdown + typed YAML blocks for API docs, architecture & system design, ADRs, and frontend design systems with live preview, browse the built docs site, and present as slides — the .md files on disk stay the single source of truth. Launch with `avo studio`.",
   "license": "MIT",
   "private": false,
