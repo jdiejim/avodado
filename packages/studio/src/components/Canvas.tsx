@@ -515,17 +515,45 @@ export function Canvas(): JSX.Element {
       >
         <div className="docskin">
           <div dangerouslySetInnerHTML={{ __html: rendered.defs }} />
-          <div dangerouslySetInnerHTML={{ __html: rendered.cover }} />
+          {/* The rendered cover IS the meta block's edit surface: click it to
+              open the cover editor — no detached placeholder strip. */}
+          {metaFirst ? (
+            <div
+              className="stu-cover"
+              role="button"
+              tabIndex={0}
+              title="Edit the cover — title, subtitle & tag"
+              onClick={(e) => {
+                e.stopPropagation();
+                useStudio.getState().openSheet(0);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  useStudio.getState().openSheet(0);
+                }
+              }}
+            >
+              <div dangerouslySetInnerHTML={{ __html: rendered.cover }} />
+              <span className="stu-cover-edit">✎ Edit cover</span>
+            </div>
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: rendered.cover }} />
+          )}
           <Gap index={0} locked={metaFirst} onPlus={setInsertAt} />
           {doc.segments.map((seg, i) => (
             <div key={i}>
-              <SegmentShell
-                index={i}
-                count={count}
-                seg={seg}
-                html={rendered.segments[i]?.html ?? ''}
-                metaFirst={metaFirst}
-              />
+              {/* The meta cover edits through the rendered cover above — no
+                  strip in the flow. */}
+              {!(metaFirst && i === 0) && (
+                <SegmentShell
+                  index={i}
+                  count={count}
+                  seg={seg}
+                  html={rendered.segments[i]?.html ?? ''}
+                  metaFirst={metaFirst}
+                />
+              )}
               {showSlashHint && slashHintAt === i && (
                 <div className="stu-slash-next" role="note">
                   press <kbd>/</kbd> for the next block

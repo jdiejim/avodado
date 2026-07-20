@@ -21,6 +21,7 @@ import { useDerived, useStudio } from './state/store.js';
 import { BlockLibrary } from './components/BlockLibrary.js';
 import { Canvas } from './components/Canvas.js';
 import { HomeView } from './components/HomeView.js';
+import { SideNav } from './components/SideNav.js';
 import { PresentView } from './components/PresentView.js';
 import { DeleteConfirm } from './components/DeleteConfirm.js';
 import { EditSheet } from './components/EditSheet.js';
@@ -203,12 +204,16 @@ export function App(): JSX.Element {
       if (dir !== 0 && !mod && !e.altKey && !e.shiftKey) {
         if (count === 0) return;
         e.preventDefault();
+        // The meta cover has no shell in the flow (the rendered cover is its
+        // edit surface) — keyboard roving starts at the first real block.
+        const min = doc.segments[0]?.kind === 'meta' ? 1 : 0;
+        if (count <= min) return;
         const next =
           sel === null
             ? dir === 1
-              ? 0
+              ? min
               : count - 1
-            : Math.min(count - 1, Math.max(0, sel + dir));
+            : Math.min(count - 1, Math.max(min, sel + dir));
         s.select(next);
         document
           .querySelector(`[data-seg="${next}"]`)
@@ -250,7 +255,16 @@ export function App(): JSX.Element {
     <div className="stu-app">
       <TopBar />
       {mode === 'edit' && <HintBar />}
-      {mode === 'home' ? <HomeView /> : mode === 'edit' ? <Canvas /> : <PresentView />}
+      {mode === 'home' ? (
+        <HomeView />
+      ) : mode === 'edit' ? (
+        <div className="stu-docwrap">
+          <SideNav />
+          <Canvas />
+        </div>
+      ) : (
+        <PresentView />
+      )}
       <EditSheet />
       {mode === 'edit' && <SlashLayer open={slashOpen} setOpen={setSlashOpen} />}
       <BlockLibrary />
