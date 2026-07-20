@@ -1,5 +1,17 @@
 # @avodado/cli
 
+## 0.35.4
+
+### Patch Changes
+
+- c7de193: Diagrams shed their page-card chrome on slides: no border box, tag pill, fig
+  number, or dashed rule inside a slide — the slide itself is the card, so
+  sequence/flow/architecture diagrams now sit directly on the stage at full
+  presentation scale.
+- Updated dependencies [c7de193]
+  - @avodado/render@0.25.1
+  - @avodado/studio@0.5.1
+
 ## 0.35.3
 
 ### Patch Changes
