@@ -48,7 +48,7 @@ const UNDO_CAP = 100;
 const AUTOSAVE_MS = 800;
 
 /** The studio's three surfaces: editing canvas, built-site preview, deck. */
-export type StudioMode = 'home' | 'edit' | 'site' | 'present';
+export type StudioMode = 'home' | 'edit' | 'present';
 
 /** Starter source for a brand-new doc. */
 export function newDocTemplate(slug: string): string {
@@ -101,10 +101,10 @@ export interface StudioState {
     readonly create: (slug: string) => void;
   } | null;
   /**
-   * Which surface fills the area under the top bar: the editing canvas
-   * (default), the built docs site in an iframe (`/site/…`), or the current
-   * doc as a slide deck. Edit state (source, selection, undo) is untouched by
-   * mode switches — Site/Present are views over it.
+   * Which surface fills the area under the top bar: the Home doc grid, the
+   * editing canvas, or the current doc as a slide deck (Present). The built
+   * site opens in its own browser tab (`/site/…`) — it is a website, not a
+   * mode. Edit state (source, selection, undo) survives mode switches.
    */
   mode: StudioMode;
   selection: number | null;

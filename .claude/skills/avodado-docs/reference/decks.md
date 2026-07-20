@@ -46,7 +46,7 @@ body: Both blocks land on "The fix" slide.
   marker, `## Title {split}`, switches the slide to the consulting layout —
   prose left, exhibit right (see *Consulting-style decks* below).
 - Every non-cover slide automatically gets a footer (deck title · page number).
-- **`avo build` — and `avo studio`'s Site mode — emit both views of every
+- **`avo build` — and the studio's Site link — emit both views of every
   doc**: the page plus a companion deck at `<slug>.slides.html`, linked by a
   Doc | Slides toggle on each page — so a doc is a deck with no extra command.
   Studio's Present mode shows the current doc's deck without even saving.

@@ -536,8 +536,8 @@ describe('mode switching', () => {
     expect(s.mode).toBe('home');
     s.applyOp((src, d) => insertBlock(src, d, d.segments.length, 'callout', templateBody('callout')), 1);
     const dirtySource = useStudio.getState().source;
-    useStudio.getState().setMode('site');
-    expect(useStudio.getState().mode).toBe('site');
+    useStudio.getState().setMode('present');
+    expect(useStudio.getState().mode).toBe('present');
     expect(useStudio.getState().source).toBe(dirtySource);
     expect(useStudio.getState().dirty).toBe(true);
     expect(useStudio.getState().selection).toBe(1); // editor state preserved
@@ -559,7 +559,7 @@ describe('mode switching', () => {
   it('dismisses an open review and a pending delete on switch', () => {
     useStudio.setState({ review: 'save' });
     useStudio.getState().requestDelete({ label: 'x', anchor: { x: 0, y: 0 }, run: () => {} });
-    useStudio.getState().setMode('site');
+    useStudio.getState().setMode('present');
     expect(useStudio.getState().review).toBeNull();
     expect(useStudio.getState().pendingDelete).toBeNull();
     expect(useStudio.getState().dirty).toBe(false); // review cancel: nothing written
@@ -616,11 +616,11 @@ describe('block library overlay', () => {
   });
 
   it('closeLibrary drops the flag and nothing else', () => {
-    useStudio.setState({ library: true, selection: 1, mode: 'site' });
+    useStudio.setState({ library: true, selection: 1, mode: 'present' });
     useStudio.getState().closeLibrary();
     const s = useStudio.getState();
     expect(s.library).toBe(false);
     expect(s.selection).toBe(1);
-    expect(s.mode).toBe('site');
+    expect(s.mode).toBe('present');
   });
 });

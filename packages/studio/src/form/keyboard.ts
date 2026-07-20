@@ -138,7 +138,7 @@ export function filterComboOptions(
 /* ─── contextual shortcut footer ──────────────────────────────────────────── */
 
 /** Which surface currently owns the keyboard. */
-export type ShortcutContext = 'canvas' | 'canvas-selected' | 'part' | 'sheet' | 'home' | 'site' | 'present';
+export type ShortcutContext = 'canvas' | 'canvas-selected' | 'part' | 'sheet' | 'home' | 'present';
 
 /** One footer hint: the key chord and what it does. */
 export interface ShortcutHint {
@@ -176,12 +176,6 @@ const SHORTCUTS: Readonly<Record<ShortcutContext, readonly ShortcutHint[]>> = {
   home: [
     { keys: 'click', label: 'open a doc' },
     { keys: '⇧⌘P', label: 'present' },
-    { keys: '?', label: 'shortcuts' },
-  ],
-  site: [
-    { keys: 'click', label: 'browse the published preview' },
-    { keys: '⌘S', label: 'update after edits' },
-    { keys: 'esc', label: 'Edit to return' },
     { keys: '?', label: 'shortcuts' },
   ],
   present: [

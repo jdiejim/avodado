@@ -10,7 +10,7 @@ import { themes, type ThemeName } from '@avodado/render';
 import markUrl from '../assets/mark.png';
 import { changesSummary } from '../state/changes.js';
 import { exportDeckHtml, exportDocHtml, exportPdf } from '../lib/export.js';
-import { useDerived, useStudio, type StudioMode } from '../state/store.js';
+import { useDerived, useStudio } from '../state/store.js';
 import {
   IconCheck,
   IconChevronDown,
@@ -206,12 +206,6 @@ function DocSwitcher(): JSX.Element {
   );
 }
 
-const MODES: ReadonlyArray<{ id: StudioMode; label: string; title: string }> = [
-  { id: 'home', label: 'Home', title: 'All docs — the project front page' },
-  { id: 'edit', label: 'Edit', title: 'Edit the document (Esc from any other mode)' },
-  { id: 'site', label: 'Site', title: 'Browse the built docs site — last saved state' },
-  { id: 'present', label: 'Present', title: 'Present the current doc as slides (⇧⌘P)' },
-];
 
 /** Opens the Block Library — the browsable gallery of every block type. */
 function LibraryButton(): JSX.Element {
@@ -326,25 +320,35 @@ function ExportMenu(): JSX.Element {
   );
 }
 
-/** The Edit | Site | Present segmented control. */
-function ModeSwitch(): JSX.Element {
+/**
+ * Present — a primary action, not a mode to remember: shows the current doc
+ * as a slide deck. Toggled by ⇧⌘P; Esc returns to editing.
+ */
+function PresentButton(): JSX.Element {
   const mode = useStudio((s) => s.mode);
   const setMode = useStudio((s) => s.setMode);
+  const presenting = mode === 'present';
   return (
-    <div className="stu-modeswitch" role="group" aria-label="Studio mode">
-      {MODES.map((m) => (
-        <button
-          key={m.id}
-          type="button"
-          className={`stu-modeswitch-btn ${mode === m.id ? 'stu-modeswitch-active' : ''}`}
-          aria-pressed={mode === m.id}
-          title={m.title}
-          onClick={() => setMode(m.id)}
-        >
-          {m.label}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className={`stu-libbtn stu-present ${presenting ? 'stu-present-on' : ''}`}
+      title={presenting ? 'Back to editing (Esc)' : 'Present this doc as slides (⇧⌘P)'}
+      onClick={() => setMode(presenting ? 'edit' : 'present')}
+    >
+      ▶ Present
+    </button>
+  );
+}
+
+/** Opens the built docs site in its own tab — it's a website, not a mode. */
+function SiteLink(): JSX.Element {
+  const currentSlug = useStudio((s) => s.currentSlug);
+  const home = useStudio((s) => s.mode) === 'home';
+  const href = !home && currentSlug !== null ? `/site/${currentSlug}.html` : '/site/';
+  return (
+    <a className="stu-libbtn" href={href} target="_blank" rel="noreferrer" title="Open the built site in a new tab">
+      Site ↗
+    </a>
   );
 }
 
@@ -410,7 +414,6 @@ export function TopBar(): JSX.Element {
       </button>
       {!home && <DocSwitcher />}
       <LibraryButton />
-      <ModeSwitch />
       <span className="stu-spacer" />
       {!home && (
         <span className="stu-savewrap" data-tour="save">
@@ -434,7 +437,9 @@ export function TopBar(): JSX.Element {
         <IconPalette size={13} />
         Theme
       </button>
+      <SiteLink />
       {!home && <ExportMenu />}
+      {!home && <PresentButton />}
       {!home && (
       <div className="stu-btngroup">
         <button

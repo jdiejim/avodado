@@ -369,7 +369,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   // (files stay canonical) with Edit | Site | Present modes in one server.
   program
     .command('studio')
-    .description('open the local studio — Edit visually, browse the built Site, Present as slides; files stay the source of truth')
+    .description('open the local studio — a Home page of your docs, edit in place, present as slides; the built site is one click away; files stay the source of truth')
     .option('--port <n>', 'port to listen on (0 = pick a free port)', '4174')
     .option('--no-open', "don't open the browser")
     .action(async (opts: { port: string; open: boolean }) => {

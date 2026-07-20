@@ -99,7 +99,7 @@ describe('importFileAt', () => {
   });
 
   it('does nothing outside Edit mode', async () => {
-    useStudio.setState({ mode: 'site' });
+    useStudio.setState({ mode: 'present' });
     await importFileAt(file('tasks.csv', 'task,status\nShip,done\n'), 1);
     const s = useStudio.getState();
     expect(s.source).toBe(DOC);

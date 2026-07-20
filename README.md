@@ -117,11 +117,10 @@ The agent writes `docs/*.md`; you run `avo check` to keep it honest. Same files,
 avo studio               # opens http://localhost:… (files stay the source of truth)
 ```
 
-Studio is a local visual editor with three modes:
-
-- **Edit** — change blocks through schema-aware forms or raw YAML, with live preview.
-- **Site** — browse the built docs site with live reload.
-- **Present** — show the current doc as slides (⇧⌘P).
+Studio is a local visual editor that opens on a **Home page** of your docs —
+click a card and you're editing it in place (schema-aware forms or raw YAML,
+live preview). **Present** (⇧⌘P) shows the current doc as slides, and **Site ↗**
+opens the built docs site in its own tab.
 
 Every edit writes straight back to the `.md` file (atomic, hash-guarded), so Studio, your editor, and your AI agent all stay in sync.
 
@@ -238,7 +237,7 @@ CI gates on this for free.
 | [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 77 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
 | [`@avodado/render`](./packages/render) | All rendering: `renderDocument` (standalone HTML) + `renderDocumentParts` (embeddable) + `toSlides` (self-contained decks). Inline CSS + SVG, 6 themes. |
 | [`avodado`](./packages/cli) | The `avo` CLI (also runs as `avodado`) — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · theme · sync` + per-tool installers. PDF export (Playwright) lives here. |
-| [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` — Edit \| Site \| Present, plus HTML / slides / PDF export. |
+| [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` — a Home page of your docs, in-place editing, Present, plus HTML / slides / PDF export. |
 | [`@avodado/mcp`](./packages/mcp) | Model Context Protocol server exposing the doc tooling to any MCP client. |
 
 ## Full CLI reference
@@ -251,7 +250,7 @@ CI gates on this for free.
 | `avo init` | Scaffold a project — docs, config, skill, editor adapters (interactive; `--yes` for CI) |
 | `avo check [globs]` | Validate docs — schemas, refs, duplicate ids (exits non-zero on errors; `--json`) |
 | `avo preview <in>` | Render to a temp HTML file and open it |
-| `avo studio` | The local editor — **Edit** visually, browse the built **Site**, **Present** as slides, **Export** HTML/slides/PDF (`--port`, `--no-open`) |
+| `avo studio` | The local editor — a **Home** page of your docs, edit in place, **Present** as slides, **Export** HTML/slides/PDF, built site one click away (`--port`, `--no-open`) |
 | `avo build` | Build a static HTML site from all docs — index, sidebar nav, cross-doc links (`--out`) |
 | `avo html / slides / pdf <in>` | Render one doc to HTML, a slide deck, or a PDF (`-p` opens, `-o` writes) |
 | `avo demo [family] [-s]` | Render the built-in showcase — every block, or one family; bare `avo demo` shows a picker (`-s` for slides) |

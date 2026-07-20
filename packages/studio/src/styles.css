@@ -4377,6 +4377,25 @@ kbd {
   font-size: 13px;
 }
 
+a.stu-libbtn,
+a.stu-btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.stu-present {
+  border-color: var(--stu-navy);
+  color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+}
+
+.stu-present:hover,
+.stu-present-on {
+  background: var(--stu-navy);
+  color: #fff;
+}
+
 /* The wordmark is now a Home button — keep it looking like the wordmark. */
 button.stu-wordmark {
   border: none;

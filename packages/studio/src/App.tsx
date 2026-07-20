@@ -21,7 +21,6 @@ import { useDerived, useStudio } from './state/store.js';
 import { BlockLibrary } from './components/BlockLibrary.js';
 import { Canvas } from './components/Canvas.js';
 import { HomeView } from './components/HomeView.js';
-import { SiteView } from './components/SiteView.js';
 import { PresentView } from './components/PresentView.js';
 import { DeleteConfirm } from './components/DeleteConfirm.js';
 import { EditSheet } from './components/EditSheet.js';
@@ -145,7 +144,7 @@ export function App(): JSX.Element {
         void s.save();
         return;
       }
-      // Site/Present: the iframe owns the surface — only Esc (back to Edit)
+      // Present: the deck owns the surface — only Esc (back to Edit)
       // and the chords above apply; every editing shortcut stays inert.
       if (s.mode !== 'edit') {
         // Esc backs out one level: Site/Present → Edit; Home is the landing.
@@ -251,7 +250,7 @@ export function App(): JSX.Element {
     <div className="stu-app">
       <TopBar />
       {mode === 'edit' && <HintBar />}
-      {mode === 'home' ? <HomeView /> : mode === 'edit' ? <Canvas /> : mode === 'site' ? <SiteView /> : <PresentView />}
+      {mode === 'home' ? <HomeView /> : mode === 'edit' ? <Canvas /> : <PresentView />}
       <EditSheet />
       {mode === 'edit' && <SlashLayer open={slashOpen} setOpen={setSlashOpen} />}
       <BlockLibrary />

@@ -64,9 +64,9 @@ export function HomeView(): JSX.Element {
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
-          <button type="button" className="stu-btn" onClick={() => setMode('site')}>
-            Browse the site
-          </button>
+          <a className="stu-btn" href="/site/" target="_blank" rel="noreferrer">
+            Browse the site ↗
+          </a>
         </div>
       </header>
 
