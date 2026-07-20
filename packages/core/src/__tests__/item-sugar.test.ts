@@ -72,3 +72,89 @@ describe('string-item sugar', () => {
     expect(data['terms']).toEqual([{ term: 'SLO', def: 'the target' }]);
   });
 });
+
+describe('diagram sugar — nodes, transitions, links, columns', () => {
+  it('flow: bare node strings become id+label; a full sketch is names + arrows', () => {
+    const { data, diags } = block('flow', 'nodes: [Receive, Check]\nedges:\n  - Receive -> Check: lookup');
+    expect(diags).toHaveLength(0);
+    expect(data['nodes']).toEqual([
+      { id: 'Receive', label: 'Receive' },
+      { id: 'Check', label: 'Check' },
+    ]);
+    expect(data['edges']).toEqual([{ from: 'Receive', to: 'Check', label: 'lookup' }]);
+  });
+
+  it('state: `id: Name` nodes + arrow transitions (label becomes the event)', () => {
+    const { data, diags } = block('state', 'states:\n  - idle\n  - active: Active\ntransitions:\n  - idle -> active: submit');
+    expect(diags).toHaveLength(0);
+    expect(data['states']).toEqual([{ id: 'idle', name: 'idle' }, { id: 'active', name: 'Active' }]);
+    expect(data['transitions']).toEqual([{ from: 'idle', to: 'active', event: 'submit' }]);
+  });
+
+  it('dfd + swimlane: arrows expand without a kind field; lanes are labels', () => {
+    const dfd = block('dfd', 'nodes:\n  - a: Client\n  - b: Store\nedges:\n  - a --> b: writes');
+    expect(dfd.diags).toHaveLength(0);
+    expect(dfd.data['edges']).toEqual([{ from: 'a', to: 'b', label: 'writes' }]); // kind dropped
+
+    const swim = block(
+      'swimlane',
+      'lanes: [Dev, Ops]\nsteps:\n  - { id: a, label: A, col: 1, lane: 0 }\n  - { id: b, label: B, col: 2, lane: 1 }\nlinks:\n  - a -> b: handoff',
+    );
+    expect(swim.diags).toHaveLength(0);
+    expect(swim.data['lanes']).toEqual([{ label: 'Dev' }, { label: 'Ops' }]);
+  });
+
+  it('c4 + cluster edges keep their kind variants', () => {
+    const c4 = block(
+      'c4',
+      'nodes:\n  - { id: a, kind: system, name: A, col: 1, row: 1 }\n  - { id: b, kind: system, name: B, col: 2, row: 1 }\nedges:\n  - a --> b: calls',
+    );
+    expect(c4.diags).toHaveLength(0);
+    expect(c4.data['edges']).toEqual([{ from: 'a', to: 'b', label: 'calls', kind: 'dashed' }]);
+  });
+
+  it('erd columns: `id uuid pk` tokens and the `org_id: uuid fk` colon form', () => {
+    const { data, diags } = block('erd', 'entities:\n  - name: users\n    columns:\n      - id uuid pk\n      - email text\n      - org_id: uuid fk');
+    expect(diags).toHaveLength(0);
+    const cols = (data['entities'] as Array<{ columns: unknown[] }>)[0]?.columns;
+    expect(cols).toEqual([
+      { name: 'id', type: 'uuid', pk: true },
+      { name: 'email', type: 'text' },
+      { name: 'org_id', type: 'uuid', fk: true },
+    ]);
+  });
+});
+
+describe('card sugar — stats, team, agenda, okr', () => {
+  it('stats: `label · value · delta` infers the trend from the sign', () => {
+    const { data, diags } = block('stats', 'stats:\n  - p95 · 120ms · -30%\n  - Conversion · 4.1% · +0.8%');
+    expect(diags).toHaveLength(0);
+    expect(data['stats']).toEqual([
+      { label: 'p95', value: '120ms', delta: '-30%', trend: 'down' },
+      { label: 'Conversion', value: '4.1%', delta: '+0.8%', trend: 'up' },
+    ]);
+  });
+
+  it('team: `Name · role · focus`', () => {
+    const { data, diags } = block('team', 'members:\n  - Ana · Backend · payments');
+    expect(diags).toHaveLength(0);
+    expect(data['members']).toEqual([{ name: 'Ana', role: 'Backend', focus: 'payments' }]);
+  });
+
+  it('agenda: time and duration detected by shape; ` — ` splits the desc', () => {
+    const { data, diags } = block('agenda', 'items:\n  - 09:00 · 20m · Standup — round robin\n  - Wrap-up');
+    expect(diags).toHaveLength(0);
+    expect(data['items']).toEqual([
+      { time: '09:00', duration: '20m', title: 'Standup', desc: 'round robin' },
+      { title: 'Wrap-up' },
+    ]);
+  });
+
+  it('okr key results: `[status] Text · progress`', () => {
+    const { data, diags } = block('okr', 'items:\n  - objective: Grow\n    krs:\n      - "[on-track] Signups · 60%"');
+    expect(diags).toHaveLength(0);
+    expect((data['items'] as Array<{ krs: unknown[] }>)[0]?.krs).toEqual([
+      { kr: 'Signups', progress: 60, status: 'on-track' },
+    ]);
+  });
+});

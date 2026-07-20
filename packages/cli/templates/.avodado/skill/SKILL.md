@@ -538,21 +538,41 @@ Rules:
 
 ### Terse arrows & items — the default for the chatty lists
 
-Four list fields accept a **terse one-line string** per item — write this form
-by default; it expands to the object form at parse time, so validation and
-rendering are identical:
+Most chatty list fields accept a **terse one-line string** per item — write
+this form by default; it expands to the object form at parse time, so
+validation and rendering are identical:
+
+**Arrows & diagrams**
 
 | Field | Terse item | Grammar |
 |---|---|---|
 | `sequence.messages` | `Client -> API: POST /orders` | `from -> to: label` — `->` sync · `-->` response · `-x->` error |
-| `flow` / `graph` / `block` `edges` | `build -> deploy: on green` | `from -> to: label` — `->` solid · `-->` dashed · `-x->` error |
-| `erd.relations` | `users \|\|--o{ orders: places` | crow's-foot cardinality — `\|\|--\|\|` 1:1 · `\|\|--o{` 1:N · `}o--\|\|` N:1 · `}o--o{` N:M · plain `->` = no cardinality |
-| `timeline.items` | `[done] 2026-07 · Ship beta · Behind a flag` | optional `[status]`, then `date · label · desc` split on `·` (label alone, or date · label, also work) |
+| `flow` / `graph` / `block` `edges` · `c4.edges` · `cluster.links` | `build -> deploy: on green` | `from -> to: label` — `->` solid · `-->` dashed · `-x->` error |
+| `dfd.edges` · `swimlane.links` | `a -> b: writes` | `from -> to: label` (no kind variants) |
+| `state.transitions` | `idle -> active: submit` | the label is the **event** |
+| `flow` / `graph` / `block` / `dfd` / `state` **nodes** | `rx: Receive` — or just `Receive` | `id: Label`; a bare name is both id and label, so a sketch is names + arrows: `nodes: [Receive, Check]` |
+| `erd` entity `columns` | `id uuid pk` · `org_id: uuid fk` | `name [type…] [pk] [fk]` |
+| `erd.relations` | `users \|\|--o{ orders: places` | crow's-foot — `\|\|--\|\|` 1:1 · `\|\|--o{` 1:N · `}o--\|\|` N:1 · `}o--o{` N:M · plain `->` = no cardinality |
+| `swimlane.lanes` | `Dev` | the lane label |
 
-The label is everything after the **first** `:`. Mix terse strings and objects
-freely in one list — switch an item to the object form when it needs fields the
-grammar can't say (`kind: async`/`note`, `summary`, `code`, an id containing
-spaces or arrows).
+**Text & cards** (split on ` — ` em dash · `·` middle dot)
+
+| Field | Terse item | Grammar |
+|---|---|---|
+| `glossary.terms` | `SLO — the target` or `SLO: the target` | `term — def` |
+| `faq.items` | `Why is it fast? — The cache is warm.` | `q — a` |
+| `takeaways` / `list` / `steps` items | `Ship small — five beats one.` | `lead — detail?` (detail optional) |
+| `kanban` cards | `Core parser` · `Validation · priority` | `title · tag?` |
+| `stats.stats` | `p95 · 120ms · -30%` | `label · value · delta?` — trend inferred from the delta's sign |
+| `team.members` | `Ana · Backend · payments` | `name · role? · focus?` |
+| `agenda.items` | `09:00 · 20m · Standup — round robin` | `[time ·] [duration ·] title [— desc]` (time/duration detected by shape) |
+| `okr` key results | `[on-track] Signups · 60%` | optional `[status]`, then `kr · progress` |
+| `timeline.items` | `[done] 2026-07 · Ship beta · Behind a flag` | optional `[status]`, then `date · label · desc` |
+
+The label is everything after the **first** `:` (arrows) or the first ` — `
+(text pairs). Mix terse strings and objects freely in one list — switch an item
+to the object form when it needs fields the grammar can't say (`kind:
+async`/`note`, `summary`, `code`, accents/icons, an id containing spaces).
 
 ## Cross-references (`doc#id`)
 

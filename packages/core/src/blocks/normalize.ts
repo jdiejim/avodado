@@ -237,6 +237,161 @@ const kanbanCardGrammar: Grammar = {
   signature: (key) => !['title', 'tag', 'id'].includes(key),
 };
 
+/** Splits on `·`, trimming and dropping empties. */
+function dotParts(s: string): string[] {
+  return s
+    .split('·')
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+}
+
+/** A signature that rescues any single-pair map whose key is NOT a real field. */
+const notAField =
+  (kind: BlockType, path: ReadonlyArray<string | number>) =>
+  (key: string): boolean =>
+    key !== 'id' && !fieldNamesAt(kind, [...path, 0, key]).includes(key);
+
+/**
+ * Node sugar for grid diagrams: `'rx: Receive'` → `{ id: 'rx', label: 'Receive' }`
+ * (or `name:` for the kinds that spell it that way); a bare `'Receive'` uses the
+ * text as BOTH id and label, so a quick sketch is just names + arrows:
+ *
+ *   nodes: [Receive, Check, Ship]
+ *   edges: [Receive -> Check, Check -> Ship]
+ */
+function nodeGrammar(kind: BlockType, nodesField: string, labelField: 'label' | 'name'): Grammar {
+  const expand = (s: string): unknown => {
+    const t = s.trim();
+    if (t.length === 0) return s;
+    const i = t.indexOf(': ');
+    if (i === -1) return { id: t, [labelField]: t };
+    const id = t.slice(0, i).trim();
+    const label = t.slice(i + 2).trim();
+    if (id.length === 0 || label.length === 0 || /\s/.test(id)) return s;
+    return { id, [labelField]: label };
+  };
+  const isField = notAField(kind, [nodesField]);
+  return { expand, signature: (key) => !/\s/.test(key) && isField(key) };
+}
+
+/** `'a -> b: label'` with NO kind field on the target — plain from/to/label. */
+const linkGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    const out = edgeFromString(s);
+    if (typeof out === 'string' || !isPlainObject(out)) return out;
+    const { kind: _drop, ...rest } = out as { kind?: unknown };
+    return rest;
+  },
+  signature: (key) => ARROW_RE.test(key),
+};
+
+/** `'idle -> active: submit'` → a state transition (the label is the EVENT). */
+const transitionGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    const out = messageFromString(s);
+    if (typeof out === 'string' || !isPlainObject(out)) return out;
+    const o = out as { from: string; to: string; label?: string };
+    // `event` is required by the schema — seed empty when unlabelled.
+    return { from: o.from, to: o.to, event: o.label ?? '' };
+  },
+  signature: (key) => ARROW_RE.test(key),
+};
+
+/** ERD column: `'id uuid pk'` — name, optional flags `pk`/`fk`, rest is the type. */
+const erdColumnGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    // The single-pair rescue reconstructs `'id: uuid pk'` — treat ':' as space.
+    const tokens = s.replace(':', ' ').split(/\s+/).filter((t) => t.length > 0);
+    const name = tokens.shift();
+    if (name === undefined) return s;
+    const out: Record<string, unknown> = { name };
+    const type = tokens.filter((t) => !/^(pk|fk)$/i.test(t)).join(' ');
+    if (type.length > 0) out['type'] = type;
+    if (tokens.some((t) => /^pk$/i.test(t))) out['pk'] = true;
+    if (tokens.some((t) => /^fk$/i.test(t))) out['fk'] = true;
+    return out;
+  },
+  signature: (key) => !/\s/.test(key) && !['name', 'type', 'pk', 'fk'].includes(key),
+};
+
+/** Stat: `'label · value · delta'` — trend inferred from the delta's sign. */
+const statGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    const parts = dotParts(s);
+    if (parts.length < 2) return s; // value + label both required
+    const out: Record<string, unknown> = { label: parts[0], value: parts[1] };
+    const delta = parts[2];
+    if (delta !== undefined) {
+      out['delta'] = delta;
+      if (delta.startsWith('+')) out['trend'] = 'up';
+      else if (delta.startsWith('-')) out['trend'] = 'down';
+    }
+    return out;
+  },
+  signature: (key) => key.includes('·'),
+};
+
+/** Team member: `'Name · role · focus'`. */
+const teamGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    const parts = dotParts(s);
+    const name = parts[0];
+    if (name === undefined) return s;
+    return {
+      name,
+      ...(parts[1] !== undefined ? { role: parts[1] } : {}),
+      ...(parts[2] !== undefined ? { focus: parts.slice(2).join(' · ') } : {}),
+    };
+  },
+  signature: (key) => key.includes('·'),
+};
+
+const TIME_RE = /^~?\d{1,2}:\d{2}$/;
+const DURATION_RE = /^~?\d+\s*(m|min|mins|h|hr|hrs)$/i;
+
+/** Agenda item: `'09:00 · 20m · Title — desc'` — time/duration detected by shape. */
+const agendaGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    const parts = dotParts(s);
+    if (parts.length === 0) return s;
+    const out: Record<string, unknown> = {};
+    if (parts.length > 1 && TIME_RE.test(parts[0] ?? '')) out['time'] = parts.shift();
+    if (parts.length > 1 && DURATION_RE.test(parts[0] ?? '')) out['duration'] = parts.shift();
+    const title = parts.join(' · ');
+    const d = title.indexOf(' — ');
+    if (d === -1) out['title'] = title;
+    else {
+      out['title'] = title.slice(0, d).trim();
+      out['desc'] = title.slice(d + 3).trim();
+    }
+    return out;
+  },
+  signature: (key) => key.includes('·') || TIME_RE.test(key),
+};
+
+/** OKR key result: `'[status] Text · 60'` — bracket status, trailing `· progress`. */
+const krGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    let rest = s.trim();
+    let status: string | undefined;
+    const b = STATUS_BRACKET_RE.exec(rest);
+    if (b !== null) {
+      status = (b[1] ?? '').trim();
+      rest = rest.slice(b[0].length);
+    }
+    const parts = dotParts(rest);
+    const last = parts[parts.length - 1];
+    const progress = last !== undefined && /^\d+%?$/.test(last) ? Number(last.replace('%', '')) : undefined;
+    if (progress === undefined) return s; // progress is required — schema explains
+    return {
+      kr: parts.slice(0, -1).join(' · '),
+      progress,
+      ...(status !== undefined && status.length > 0 ? { status } : {}),
+    };
+  },
+  signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
+};
+
 /**
  * Expands the terse items of `data[key]` via `grammar`, leaving everything
  * else untouched. Handles both spellings of a terse item:
@@ -282,10 +437,60 @@ const SUGAR: Partial<
   Record<BlockType, (data: Record<string, unknown>) => Record<string, unknown>>
 > = {
   sequence: (d) => mapArrayField(d, 'messages', messageGrammar),
-  erd: (d) => mapArrayField(d, 'relations', relationGrammar),
-  flow: (d) => mapArrayField(d, 'edges', edgeGrammar),
-  graph: (d) => mapArrayField(d, 'edges', edgeGrammar),
-  block: (d) => mapArrayField(d, 'edges', edgeGrammar),
+  erd: (d) => {
+    // Relations get the crow's-foot grammar; each entity's columns get the
+    // `'id uuid pk'` token grammar (nested, like kanban cards).
+    let out = mapArrayField(d, 'relations', relationGrammar);
+    const ents = out['entities'];
+    if (Array.isArray(ents)) {
+      let changed = false;
+      const next = ents.map((e) => {
+        if (!isPlainObject(e)) return e;
+        const c = mapArrayField(e, 'columns', erdColumnGrammar);
+        if (c !== e) changed = true;
+        return c;
+      });
+      if (changed) out = { ...out, entities: next };
+    }
+    return out;
+  },
+  flow: (d) =>
+    mapArrayField(mapArrayField(d, 'edges', edgeGrammar), 'nodes', nodeGrammar('flow', 'nodes', 'label')),
+  graph: (d) =>
+    mapArrayField(mapArrayField(d, 'edges', edgeGrammar), 'nodes', nodeGrammar('graph', 'nodes', 'label')),
+  block: (d) =>
+    mapArrayField(mapArrayField(d, 'edges', edgeGrammar), 'nodes', nodeGrammar('block', 'nodes', 'name')),
+  state: (d) =>
+    mapArrayField(
+      mapArrayField(d, 'transitions', transitionGrammar),
+      'states',
+      nodeGrammar('state', 'states', 'name'),
+    ),
+  dfd: (d) =>
+    mapArrayField(mapArrayField(d, 'edges', linkGrammar), 'nodes', nodeGrammar('dfd', 'nodes', 'name')),
+  swimlane: (d) =>
+    mapArrayField(mapArrayField(d, 'links', linkGrammar), 'lanes', {
+      // A lane is just its label: `lanes: [Dev, QA, Ops]`.
+      expand: (s) => ({ label: s.trim() }),
+      signature: () => false, // single-pair lanes have no terse form
+    }),
+  c4: (d) => mapArrayField(d, 'edges', edgeGrammar),
+  cluster: (d) => mapArrayField(d, 'links', edgeGrammar),
+  stats: (d) => mapArrayField(d, 'stats', statGrammar),
+  team: (d) => mapArrayField(d, 'members', teamGrammar),
+  agenda: (d) => mapArrayField(d, 'items', agendaGrammar),
+  okr: (d) => {
+    const items = d['items'];
+    if (!Array.isArray(items)) return d;
+    let changed = false;
+    const next = items.map((it) => {
+      if (!isPlainObject(it)) return it;
+      const out = mapArrayField(it, 'krs', krGrammar);
+      if (out !== it) changed = true;
+      return out;
+    });
+    return changed ? { ...d, items: next } : d;
+  },
   timeline: (d) => mapArrayField(d, 'items', timelineGrammar),
   glossary: (d) => mapArrayField(d, 'terms', glossaryGrammar),
   faq: (d) => mapArrayField(d, 'items', faqGrammar),
