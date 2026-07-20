@@ -154,7 +154,7 @@ describe('card sugar — stats, team, agenda, okr', () => {
     const { data, diags } = block('okr', 'items:\n  - objective: Grow\n    krs:\n      - "[on-track] Signups · 60%"');
     expect(diags).toHaveLength(0);
     expect((data['items'] as Array<{ krs: unknown[] }>)[0]?.krs).toEqual([
-      { kr: 'Signups', progress: 60, status: 'on-track' },
+      { kr: 'Signups', progress: 0.6, status: 'on-track' },
     ]);
   });
 });

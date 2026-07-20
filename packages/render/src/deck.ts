@@ -126,6 +126,8 @@ const DECK_JS = `(function(){
   // count-based so short lists keep their single column.
   [].slice.call(document.querySelectorAll(
     '.slide .ls-list,.slide .tk-list,.slide .steps,.slide .faq,.slide .glossary,'+
+    '.slide .agenda,.slide .spec,.slide .inv-list,.slide .slo-list,'+
+    '.slide .okr-list,.slide .rk-list,'+
     '.slide .slide-inner .prose > ul,.slide .slide-inner .prose > ol'
   )).forEach(function(el){
     var n=el.children.length;

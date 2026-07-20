@@ -381,8 +381,11 @@ const krGrammar: Grammar = {
     }
     const parts = dotParts(rest);
     const last = parts[parts.length - 1];
-    const progress = last !== undefined && /^\d+%?$/.test(last) ? Number(last.replace('%', '')) : undefined;
-    if (progress === undefined) return s; // progress is required — schema explains
+    const raw = last !== undefined && /^\d+(\.\d+)?%?$/.test(last) ? Number(last.replace('%', '')) : undefined;
+    if (raw === undefined) return s; // progress is required — schema explains
+    // The schema's `progress` is a 0-1 fraction; the terse form reads as a
+    // percentage (`· 60` or `· 60%`), so anything above 1 divides by 100.
+    const progress = raw > 1 ? raw / 100 : raw;
     return {
       kr: parts.slice(0, -1).join(' · '),
       progress,
