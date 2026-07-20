@@ -1,5 +1,13 @@
 # @avodado/mcp
 
+## 0.3.13
+
+### Patch Changes
+
+- Updated dependencies [0451174]
+  - @avodado/render@0.25.8
+  - @avodado/core@0.16.1
+
 ## 0.3.12
 
 ### Patch Changes
