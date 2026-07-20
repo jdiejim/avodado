@@ -578,7 +578,18 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
           if (parts.length > 0) pushSlide(true);
           if (carry !== undefined) parts.push(carry);
         } else if (pendingWeight() + w > SLIDE_BUDGET) {
-          pushSlide(true);
+          // AUTO-SPLIT: substantial prose + this section's FIRST real exhibit
+          // won't fit stacked — instead of spilling (or letting fit() shrink
+          // the stack), lay them out side by side: prose becomes the message
+          // column, the block the exhibit. Same layout the `{split}` marker
+          // forces, chosen automatically for the classic two-part slide.
+          const allProse = parts.every((p) => !p.block);
+          if (block && allProse && pendingWeight() >= 2 && w >= 3) {
+            forcedLayout = 'split';
+            forced = undefined; // split slides center; drop stack alignment
+          } else {
+            pushSlide(true);
+          }
         }
       }
       // A hero consumes the whole budget: whatever follows spills to the next

@@ -55,6 +55,15 @@ body: Both blocks land on "The fix" slide.
   fill a slide on its own, e.g. a big diagram or a many-card grid) splits onto
   its own slide with the same section title instead of sharing the stage with
   its section's prose.
+- **Two-part slides auto-split.** Substantial prose plus a medium exhibit that
+  would overflow stacked lays out side by side automatically — prose becomes
+  the left message column, the exhibit the right — the same layout `{split}`
+  forces. Write the section naturally; the deck picks the layout.
+- **Numbered diagrams build step by step.** In the deck, a slide whose diagram
+  carries numbered steps (a `sequence`, or any edge-steps diagram with the
+  ① ② ③ legend — `flow`, `c4`, `cycle`, …) reveals one step per advance:
+  arrow, numeral, and legend row appear together. Back un-reveals; the jump
+  menu, Home, and End show the finished slide; print shows everything.
 - The `meta` block is the cover slide. A doc with **no headings at all** falls
   back to one slide per block (legacy behavior).
 

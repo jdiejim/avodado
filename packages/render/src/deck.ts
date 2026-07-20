@@ -87,8 +87,12 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .deck-counter{font-variant-numeric:tabular-nums;color:var(--slate);min-width:54px;text-align:center;}
 .deck-sel{max-width:340px;font-family:var(--font-body);font-size:13px;padding:6px 10px;border:1px solid var(--rule);
   border-radius:8px;background:var(--white);color:var(--charcoal);}
+/* Progressive step reveal (numbered diagrams build ①②③ on Next). Opacity, not
+   display — geometry stays fixed so fit() never reflows mid-build. */
+.rv-hide{opacity:0;transition:opacity .3s ease;}
 @media print{@page{size:landscape;}.deck-nav{display:none;}.deck{display:block;padding:0;}
-  .docskin.slide{display:flex!important;width:100%;aspect-ratio:auto;min-height:96vh;border-radius:0;box-shadow:none;page-break-after:always;}}
+  .docskin.slide{display:flex!important;width:100%;aspect-ratio:auto;min-height:96vh;border-radius:0;box-shadow:none;page-break-after:always;}
+  .rv-hide{opacity:1;}}
 `;
 
 const DECK_JS = `(function(){
@@ -119,19 +123,72 @@ const DECK_JS = `(function(){
     var s=Math.min(cap, content.clientWidth/r.width, content.clientHeight/r.height)*0.98;
     inner.style.transform='scale('+s+')';
   }
-  function show(n){
+  // ── Progressive step reveal ──────────────────────────────────────────────
+  // Numbered diagrams build: a slide whose content carries a numbered step
+  // legend (sequence \`.seq-steps li\`, edge-steps \`.edge-step\`) reveals one
+  // step per advance — the ① ② ③ badges, their arrows, and the legend rows
+  // populate together (they share a data-bp path). Jump/Home/End skip builds.
+  function revealGroups(slide){
+    var seen={},order=[];
+    function add(p){
+      if(!p||seen[p])return;
+      seen[p]=1;
+      var els=[].slice.call(slide.querySelectorAll('[data-bp="'+p+'"]'));
+      if(els.length)order.push(els);
+    }
+    // Numbered edge legends (edge-steps diagrams, cycle): legend order IS the
+    // step order — each entry shares its data-bp with its arrow + numeral.
+    [].slice.call(slide.querySelectorAll('.edge-steps .edge-step[data-bp]'))
+      .forEach(function(el){add(el.getAttribute('data-bp'));});
+    // Sequence diagrams: every message row carries a numbered badge — build the
+    // rows (arrow + badge + label + any step-list twin) in message order.
+    if(slide.querySelector('.step-badge')){
+      var msgs=[];
+      [].slice.call(slide.querySelectorAll('[data-bp]')).forEach(function(el){
+        var p=el.getAttribute('data-bp')||'';
+        var m=/^messages\\.(\\d+)$/.exec(p);
+        if(m&&!seen[p])msgs.push({n:+m[1],p:p});
+      });
+      msgs.sort(function(a,b){return a.n-b.n;});
+      msgs.forEach(function(x){add(x.p);});
+    }
+    return order.length>1?order:[]; // one step is no build
+  }
+  var groups=[],rev=0;
+  function applyReveal(){
+    groups.forEach(function(els,gi){
+      els.forEach(function(el){el.classList.toggle('rv-hide',gi>=rev);});
+    });
+  }
+  function enter(slide,from){
+    groups=revealGroups(slide);
+    // Forward entry starts the build at zero steps; backward/jump entry shows
+    // the finished slide.
+    rev=from==='fwd'?0:groups.length;
+    applyReveal();
+  }
+  function show(n,how){
     i=Math.max(0,Math.min(slides.length-1,n));
     for(var k=0;k<slides.length;k++)slides[k].classList.toggle('active',k===i);
     cur.textContent=i+1; jump.value=String(i);
+    enter(slides[i],how||'jump');
     fit(slides[i]);
     history.replaceState(null,'','#'+(i+1));
   }
-  document.getElementById('deck-prev').onclick=function(){show(i-1);};
-  document.getElementById('deck-next').onclick=function(){show(i+1);};
+  function next(){
+    if(rev<groups.length){rev+=1;applyReveal();return;}
+    if(i<slides.length-1)show(i+1,'fwd');
+  }
+  function prev(){
+    if(rev>0){rev-=1;applyReveal();return;}
+    if(i>0)show(i-1,'back');
+  }
+  document.getElementById('deck-prev').onclick=prev;
+  document.getElementById('deck-next').onclick=next;
   jump.onchange=function(){show(parseInt(jump.value,10)||0);};
   document.addEventListener('keydown',function(e){
-    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')show(i+1);
-    else if(e.key==='ArrowLeft'||e.key==='PageUp')show(i-1);
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')next();
+    else if(e.key==='ArrowLeft'||e.key==='PageUp')prev();
     else if(e.key==='Home')show(0); else if(e.key==='End')show(slides.length-1);
   });
   window.addEventListener('resize',function(){fit(slides[i]);});
