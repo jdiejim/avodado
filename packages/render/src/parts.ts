@@ -13,6 +13,7 @@
  */
 
 import type { BlockDataMap, BlockType, Document, Segment, TypedSegment } from '@avodado/core';
+import { isNearDuplicateTitle, trailingHeading } from '@avodado/core';
 import { houseCss } from './css.js';
 import { escapeHtml } from './escape.js';
 import { renderCover } from './blocks/meta.js';
@@ -65,6 +66,29 @@ export interface DocumentParts {
 interface RenderCtx {
   sectionNum: number;
   sections: DocumentSection[];
+  /** Typed segment → the trailing heading of the prose run directly above it. */
+  headingFor: WeakMap<Segment, string>;
+}
+
+/**
+ * "The heading titles the block": for every typed segment whose immediately
+ * preceding segment is a prose run ENDING with a heading, record that heading
+ * text. The section head then suppresses a near-duplicate block `title` (no
+ * more two stacked headings saying the same thing), and a title-less block
+ * inherits the heading for the sections nav — so the Markdown heading is the
+ * one place a title needs to be written.
+ */
+function headingTitleMap(segments: readonly Segment[]): WeakMap<Segment, string> {
+  const map = new WeakMap<Segment, string>();
+  for (let i = 0; i < segments.length - 1; i++) {
+    const prose = segments[i];
+    const next = segments[i + 1];
+    if (prose === undefined || next === undefined) continue;
+    if (prose.kind !== 'markdown' || next.kind === 'markdown') continue;
+    const heading = trailingHeading(prose.text);
+    if (heading !== undefined) map.set(next, heading.text);
+  }
+  return map;
 }
 
 function pad2(n: number): string {
@@ -135,6 +159,14 @@ function renderTypedSegment(seg: TypedSegment, ctx: RenderCtx): string {
       : seg.data;
   const body = dispatchBlock(seg.kind, bodyData as BlockDataMap[typeof seg.kind]);
 
+  // The heading directly above titles this block: a near-duplicate block
+  // `title` is suppressed visually (the heading already says it), and a
+  // title-less block inherits the heading text for the sections nav.
+  const heading = ctx.headingFor.get(seg);
+  const dupOfHeading =
+    !ownsTitle && title !== undefined && heading !== undefined && isNearDuplicateTitle(heading, title);
+  const navTitle = title ?? (!ownsTitle ? heading : undefined);
+
   ctx.sectionNum += 1;
   const num = ctx.sectionNum;
   const id = `section-${pad2(num)}`;
@@ -142,10 +174,15 @@ function renderTypedSegment(seg: TypedSegment, ctx: RenderCtx): string {
     id,
     num,
     label: sectionLabelFor(seg),
-    ...(title !== undefined ? { title } : {}),
+    ...(navTitle !== undefined ? { title: navTitle } : {}),
     ...(seg.id !== undefined ? { blockId: seg.id } : {}),
   });
-  const head = renderSectionHead(num, sectionLabelFor(seg), ownsTitle ? undefined : title, lede);
+  const head = renderSectionHead(
+    num,
+    sectionLabelFor(seg),
+    ownsTitle || dupOfHeading ? undefined : title,
+    lede,
+  );
 
   // A section can't carry two DOM ids: `section-NN` stays on the <section>
   // (existing nav consumers rely on it) and the block's user `id:` lands on a
@@ -223,7 +260,7 @@ export function renderDocumentSegments(
   const title = doc.meta?.title ?? 'Untitled';
   const theme = opts.theme ?? DEFAULT_THEME;
   const themeVars = buildThemeVars(theme, opts.themeVars);
-  const ctx: RenderCtx = { sectionNum: 0, sections: [] };
+  const ctx: RenderCtx = { sectionNum: 0, sections: [], headingFor: headingTitleMap(doc.segments) };
   const segments: RenderedSegment[] = doc.segments.map((s) => {
     const before = ctx.sections.length;
     const html = renderSegment(s, ctx);
@@ -458,7 +495,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
   const title = doc.meta?.title ?? 'Untitled';
   const theme = opts.theme ?? DEFAULT_THEME;
   const themeVars = buildThemeVars(theme, opts.themeVars);
-  const ctx: RenderCtx = { sectionNum: 0, sections: [] };
+  const ctx: RenderCtx = { sectionNum: 0, sections: [], headingFor: headingTitleMap(doc.segments) };
   const slides: Slide[] = [];
 
   if (doc.meta !== undefined) slides.push({ label: 'Cover', title, html: renderCover(doc.meta) });

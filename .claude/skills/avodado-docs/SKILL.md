@@ -126,11 +126,12 @@ The blocks of a doc describe **one world** — keep the world consistent:
   point at it (`userstory.links[].ref: "#id"`) rather than redrawing it.
 - **Titles agree.** The `##` heading, the block's `title`/`lede`, and the `meta`
   cover should sound like one author (see *Titles, headings & voice*).
-- **One heading per idea.** A `##` heading immediately followed by a block whose
-  `title` says (nearly) the same thing renders as two stacked headings — keep
-  one. Either drop the block `title` (the heading already names it) or make the
-  heading say something the title doesn't. `avo check` flags this as
-  `W_DUP_HEADING`.
+- **The heading titles the block.** A `##` heading directly above a block IS
+  that block's title — omit the block `title` entirely and write it once, in
+  Markdown (the sections nav inherits it automatically). If a near-duplicate
+  `title` does get written, the renderer shows only the heading — never two
+  stacked headings. Give a block its own `title` only when it says something
+  the heading doesn't.
 - **Quote YAML strings containing `,` `:` `#` etc.** — see *YAML pitfalls*.
 
 ### 5 · Validate, then skim
@@ -445,11 +446,12 @@ for**, in their words, never from a scaffold placeholder.
   `RFC`, `Runbook`, `INTERNAL`). If the user named the doc, use that name verbatim.
 - **Section headings (`##`).** One per block, stating what the reader will see
   ("Request flow", "Data model", "Rollout plan") — not the block type ("Sequence").
-- **Every diagram/structured block.** Set `title` (what *this* figure shows) and,
-  when a sentence of context helps, `lede`/`description`. The `title` and its `##`
-  heading should agree in voice — but never repeat each other. If the heading
-  already names the figure, omit the block `title`; two stacked near-identical
-  headings is a bug (`W_DUP_HEADING`).
+- **Every diagram/structured block.** Title it once: prefer the `##` heading
+  above the block (omit the block `title` — the heading titles it and fills the
+  nav), and add `lede`/`description` when a sentence of context helps. Give the
+  block its own `title` only when there is no heading, or when it must say
+  something the heading doesn't (a near-duplicate `title` is auto-suppressed at
+  render — the heading wins).
 - **Use the user's nouns, verbatim.** If they say "tenants", don't write
   "customers"; if they say "shifts", don't write "schedules". Carry their exact
   domain terms into labels, headings, and node names.
@@ -606,7 +608,6 @@ Every diagnostic carries a stable code so you can mechanically apply a fix.
 | `W_EMPTY_BLOCK` | A typed block had an empty body. | Add fields or remove the block. |
 | `W_SUSPECT_BLOCK` | A fence tag isn't a documented block type but is within typo distance of one (e.g. ` ```sequnce `) — the block silently rendered as plain text. `value` is the bad tag. | Rename the fence to the suggested type in the "did you mean" hint. |
 | `W_ALIAS_TYPE` | The fence uses one of the 12 old merged names (e.g. ` ```waterfall ` — now `chart` with `kind: waterfall`). The block parsed and rendered fine. | Nothing — both spellings work forever. Use the canonical name in new blocks; don't churn existing fences just to silence this. |
-| `W_DUP_HEADING` | A `##` heading is nearly duplicated by the next block's `title` — they render as two stacked headings. | Keep one: drop the block `title` or reword the heading (see *One heading per idea*). |
 
 ### Common schema errors I see often
 

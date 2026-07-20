@@ -84,13 +84,13 @@ nodes:
     kind: producer
     name: Social svc
   - id: topic
-    col: 2
-    row: 1
+    col: 3
+    row: 2
     kind: topic
     name: domain.events
   - id: digest
-    col: 2
-    row: 3
+    col: 3
+    row: 4
     kind: consumer
     name: Email digest
   - id: worker
@@ -112,6 +112,11 @@ nodes:
     kind: db
     col: 4
     row: 2
+  - id: n10
+    name: New database
+    kind: db
+    col: 4
+    row: 4
 edges:
   - { from: orders, to: topic }
   - { from: billing, to: topic }
@@ -123,6 +128,8 @@ edges:
     to: n9
   - from: digest
     to: n9
+  - from: digest
+    to: n10
 groups:
   - col: 2
     row: 0

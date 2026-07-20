@@ -128,7 +128,6 @@ Stable codes that the CLI can sort, filter, and format:
 | `W_EMPTY_BLOCK` | warn | Typed block with empty body |
 | `W_SUSPECT_BLOCK` | warn | Fence tag looks like a typo of a real block type (rendered as plain text; carries a did-you-mean suggestion) |
 | `W_ALIAS_TYPE` | warn | Fence uses one of the 12 permanent alias names (e.g. `waterfall`) — parsed and rendered as its canonical type; informational only |
-| `W_DUP_HEADING` | warn | Markdown heading nearly duplicated by the following block's `title` (renders as two stacked headings) |
 
 Uniform shape: `{ file, line?, level, code, message, value? }`.
 

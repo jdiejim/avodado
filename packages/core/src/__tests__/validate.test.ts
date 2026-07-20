@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseDocument } from '../parser.js';
-import { validateDocument } from '../validate.js';
+import { isNearDuplicateTitle, trailingHeading, validateDocument } from '../validate.js';
 import { ordersApi, roadmap } from './fixtures.js';
 
 describe('validateDocument', () => {
@@ -108,39 +108,30 @@ describe('validateDocument', () => {
   });
 });
 
-describe('W_DUP_HEADING (heading nearly duplicated by the next block title)', () => {
-  it('fires on exact normalized equality and points at the heading line', () => {
+describe('heading/title adjacency (healed at render — no warning)', () => {
+  it('a near-duplicate heading + block title produces NO diagnostic', () => {
+    // "The heading titles the block": the renderer suppresses the block's
+    // visual title under a same-text heading, so validation stays quiet
+    // instead of nagging (the old W_DUP_HEADING).
     const md = 'Intro prose.\n\n## Type scale\n\n```table\ntitle: "Type scale!"\ncolumns: [A]\nrows:\n  - [x]\n```\n';
     const diags = validateDocument(parseDocument(md, 'dup'), 'dup.md');
-    const dup = diags.find((d) => d.code === 'W_DUP_HEADING');
-    expect(dup).toBeDefined();
-    expect(dup).toMatchObject({ level: 'warn', line: 3, value: 'Type scale' });
-    expect(dup?.message).toContain('Type scale');
-    expect(dup?.hint).toContain('Keep one');
+    expect(diags).toHaveLength(0);
+  });
+});
+
+describe('trailingHeading + isNearDuplicateTitle (the render-dedup primitives)', () => {
+  it('trailingHeading finds a heading that ends the run (ignoring blanks)', () => {
+    expect(trailingHeading('Intro.\n\n## Type scale\n\n')).toMatchObject({
+      text: 'Type scale',
+      offset: 2,
+    });
+    expect(trailingHeading('## Heading\n\nTrailing prose.')).toBeUndefined();
+    expect(trailingHeading('No headings at all.')).toBeUndefined();
   });
 
-  it('fires when one text contains the other', () => {
-    const md = '## Order lifecycle\n\n```state\ntitle: Order lifecycle states\nstates:\n  - { id: a, col: 1, row: 1, name: A }\n```\n';
-    const diags = validateDocument(parseDocument(md, 'contain'), 'contain.md');
-    expect(diags.some((d) => d.code === 'W_DUP_HEADING')).toBe(true);
-  });
-
-  it('does NOT fire on mere adjacency with different texts', () => {
-    // The meridian case: a heading followed by a differently-titled block.
-    const md = '## Approaches explored\n\n```options\ntitle: Directory-only vs hybrid\nitems:\n  - { title: One }\n```\n';
-    const diags = validateDocument(parseDocument(md, 'adjacent'), 'adjacent.md');
-    expect(diags.some((d) => d.code === 'W_DUP_HEADING')).toBe(false);
-  });
-
-  it('does NOT fire when prose does not END with the heading', () => {
-    const md = '## Type scale\n\nSome trailing prose after the heading.\n\n```table\ntitle: Type scale\ncolumns: [A]\nrows:\n  - [x]\n```\n';
-    const diags = validateDocument(parseDocument(md, 'notend'), 'notend.md');
-    expect(diags.some((d) => d.code === 'W_DUP_HEADING')).toBe(false);
-  });
-
-  it('does NOT fire when the next block has no title', () => {
-    const md = '## Payment flow\n\n```callout\ntone: note\nbody: hello\n```\n';
-    const diags = validateDocument(parseDocument(md, 'untitled'), 'untitled.md');
-    expect(diags.some((d) => d.code === 'W_DUP_HEADING')).toBe(false);
+  it('isNearDuplicateTitle matches normalized equality and containment', () => {
+    expect(isNearDuplicateTitle('Type scale', 'Type scale!')).toBe(true);
+    expect(isNearDuplicateTitle('Order lifecycle', 'Order lifecycle states')).toBe(true);
+    expect(isNearDuplicateTitle('Approaches explored', 'Directory-only vs hybrid')).toBe(false);
   });
 });

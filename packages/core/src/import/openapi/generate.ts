@@ -104,7 +104,8 @@ function renderEndpointSequence(slug: string, ep: Endpoint): string {
   const errCodes = codes.filter((c) => /^[345]/.test(c));
 
   // The `## METHOD /path` heading above this block already names the endpoint;
-  // only emit a title when the summary adds something (avoids W_DUP_HEADING).
+  // only emit a title when the summary adds something (the render would
+  // suppress a near-duplicate anyway — keep the source clean too).
   const lines: string[] = [
     '```sequence',
     `id: ${id}`,

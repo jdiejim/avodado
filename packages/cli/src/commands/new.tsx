@@ -30,8 +30,8 @@ export interface NewOptions {
  * Returns the template string for a block type. No scaffold `## <type>`
  * heading: the skill's authoring rule is that headings state what the reader
  * sees (never the block type), and the example block's own title already
- * names the section — a type heading would just near-duplicate it
- * (`W_DUP_HEADING`).
+ * names the section — a type heading would just near-duplicate it (the
+ * renderer would suppress one of them anyway).
  */
 export function templateFor(type: BlockType): string {
   return `\`\`\`meta\ntitle: New document\ntag: DRAFT\n\`\`\`\n\n${BLOCK_TEMPLATES[type]}`;

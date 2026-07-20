@@ -78,8 +78,12 @@ function renderIssue(kind: BlockType, issue: z.ZodIssue): IssueRender {
  * The trailing ATX heading of a prose run, if the run ends with one (ignoring
  * trailing blank lines). Returns the heading text and its 0-based line offset
  * within the run.
+ *
+ * Exported for the renderer: a prose run that ends with a heading TITLES the
+ * block that follows — the section head suppresses a near-duplicate block
+ * `title`, and a title-less block inherits the heading for the sections nav.
  */
-function trailingHeading(text: string): { readonly text: string; readonly offset: number } | undefined {
+export function trailingHeading(text: string): { readonly text: string; readonly offset: number } | undefined {
   const lines = text.split('\n');
   let i = lines.length - 1;
   while (i >= 0 && (lines[i] ?? '').trim() === '') i--;
@@ -99,8 +103,9 @@ function normalizeTitle(s: string): string {
  * same thing: equal after normalization, or one contains the other. Mere
  * adjacency with different texts never fires.
  *
- * Exported so generators (e.g. the CLI's OpenAPI importer) can avoid emitting a title
- * that would trip `W_DUP_HEADING` under the heading they just wrote.
+ * Used by the renderer to suppress a block title under a same-text heading
+ * ("the heading titles the block"), and by generators (e.g. the CLI's OpenAPI
+ * importer) to avoid emitting a redundant title in the first place.
  */
 export function isNearDuplicateTitle(heading: string, title: string): boolean {
   const a = normalizeTitle(heading);
@@ -118,30 +123,11 @@ export function isNearDuplicateTitle(heading: string, title: string): boolean {
 export function validateDocument(doc: Document, file: string): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
-  // A prose run that ENDS with a heading, immediately followed by a titled
-  // block whose title is a near-duplicate of that heading, renders as two
-  // stacked headings saying the same thing. Warn and suggest keeping one.
-  for (let i = 0; i < doc.segments.length - 1; i++) {
-    const prose = doc.segments[i];
-    const next = doc.segments[i + 1];
-    if (prose === undefined || next === undefined) continue;
-    if (prose.kind !== 'markdown' || next.kind === 'markdown') continue;
-    const heading = trailingHeading(prose.text);
-    if (heading === undefined) continue;
-    const data: unknown = next.data;
-    if (typeof data !== 'object' || data === null || Array.isArray(data)) continue;
-    const title = (data as Record<string, unknown>)['title'];
-    if (typeof title !== 'string' || !isNearDuplicateTitle(heading.text, title)) continue;
-    diagnostics.push({
-      file,
-      line: prose.line + heading.offset,
-      level: 'warn',
-      code: 'W_DUP_HEADING',
-      message: `Heading "${heading.text}" is nearly duplicated by the following ${next.kind} block's title "${title}"`,
-      hint: 'They render as two stacked headings saying the same thing. Keep one: drop the block title or the heading.',
-      value: heading.text,
-    });
-  }
+  // Note on heading/title adjacency: a prose run that ends with a heading
+  // TITLES the block that follows — the renderer suppresses a near-duplicate
+  // block `title` (and a title-less block inherits the heading in the sections
+  // nav), so duplication is healed at render time rather than warned about
+  // here (the old W_DUP_HEADING).
 
   // Suspect fence tags (typos of real block types) → warnings.
   for (const sf of doc.suspectFences ?? []) {

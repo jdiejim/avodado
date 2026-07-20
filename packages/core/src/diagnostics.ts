@@ -19,7 +19,6 @@ export type DiagnosticCode =
   | 'E_UNKNOWN_BLOCK'
   | 'W_EMPTY_BLOCK'
   | 'W_SUSPECT_BLOCK'
-  | 'W_DUP_HEADING'
   | 'W_ALIAS_TYPE';
 
 /**
