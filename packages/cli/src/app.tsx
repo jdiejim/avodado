@@ -100,12 +100,17 @@ function printInitSummary(result: InitResult, theme: string): void {
 
 /** Runs the CLI for the given argv (typically `process.argv`). */
 export async function main(argv: readonly string[]): Promise<number> {
+  // Both spellings work: commander allows one short flag per option, so a
+  // lone -V normalizes to --version before parsing.
+  argv = argv.map((a) => (a === '-V' ? '--version' : a));
   const version = cliVersion();
   const program = new Command();
   program
     .name('avo')
     .description('Author, validate, render, and export Avodado documentation.')
-    .version(version)
+    // Lowercase -v is what fingers type; commander's default is -V only, so
+    // register the flag string explicitly and alias -V below.
+    .version(version, '-v, --version', 'print the version')
     // Banner + workflow only on top-level help — not on every subcommand's --help.
     .addHelpText('beforeAll', (ctx) => (ctx.command.name() === 'avo' ? banner(version) : ''))
     .addHelpText('after', (ctx) => (ctx.command.name() === 'avo' ? examples() : ''))

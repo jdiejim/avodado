@@ -136,6 +136,15 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
+  it('-v, -V, and --version all print the real version (never the 0.0.0 fallback)', async () => {
+    for (const flag of ['-v', '-V', '--version']) {
+      const r = await runBin([flag], process.cwd());
+      expect(r.code).toBe(0);
+      expect(r.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+      expect(r.stdout.trim()).not.toBe('0.0.0');
+    }
+  });
+
   it('avo mcp prints client setup snippets', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
     const { code, stdout } = await runBin(['mcp'], repoRoot);
