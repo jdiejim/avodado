@@ -55,13 +55,10 @@ describe('auto-split slide layout', () => {
   });
 });
 
-describe('deck progressive step reveal', () => {
-  it('ships the reveal CSS + JS and numbered steps carry their data-bp hooks', () => {
+describe('deck shows diagrams complete (no step builds)', () => {
+  it('ships no reveal machinery — the full diagram is visible on entry', () => {
     const html = toSlides(parseDocument(`## The flow\n\n${SEQ_MED}`, 't'));
-    expect(html).toContain('.rv-hide{opacity:0');
-    expect(html).toContain('revealGroups');
-    // The build targets: sequence step-list rows tagged with their message path.
-    expect(html).toContain('data-bp="messages.0"');
-    expect(html).toContain('seq-steps');
+    expect(html).not.toContain('rv-hide');
+    expect(html).not.toContain('revealGroups');
   });
 });
