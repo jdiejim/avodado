@@ -1,5 +1,13 @@
 # @avodado/cli
 
+## 0.35.13
+
+### Patch Changes
+
+- 75a0648: `avo --version` (and the studio's version reporting) works again after the
+  package rename — the version lookup accepted only the old `@avodado/cli` name
+  and fell back to `0.0.0`.
+
 ## 0.35.12
 
 ### Patch Changes
