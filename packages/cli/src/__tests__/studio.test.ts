@@ -110,6 +110,9 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
       expect(metaRes.status).toBe(200);
       const meta = (await metaRes.json()) as { version: string; docsDir: string };
       expect(meta.version).toMatch(/^\d+\.\d+\.\d+/);
+      // '0.0.0' is cliVersion()'s can't-find-my-package fallback — seeing it
+      // means the version walk broke (as it did after the avodado rename).
+      expect(meta.version).not.toBe('0.0.0');
       expect(meta.docsDir).toBe('docs');
 
       const docsRes = await fetch(api(s.port, '/api/docs'));

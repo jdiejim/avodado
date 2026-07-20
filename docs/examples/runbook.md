@@ -57,3 +57,14 @@ rows:
   - ["CPU pinned", "Under-provisioned", "Scale consumers up; right-size after"]
   - ["No throughput", "Bus outage", "Escalate to platform on-call"]
 ```
+
+```code
+title: Reference
+blocks:
+  - title: index.ts
+    lang: TypeScript
+    code: |
+      export function add(a: number, b: number): number {
+        return a + b;
+      }
+```
