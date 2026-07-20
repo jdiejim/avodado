@@ -20,6 +20,7 @@ import { derive } from './state/derive.js';
 import { useDerived, useStudio } from './state/store.js';
 import { BlockLibrary } from './components/BlockLibrary.js';
 import { Canvas } from './components/Canvas.js';
+import { HomeView } from './components/HomeView.js';
 import { SiteView } from './components/SiteView.js';
 import { PresentView } from './components/PresentView.js';
 import { DeleteConfirm } from './components/DeleteConfirm.js';
@@ -147,7 +148,8 @@ export function App(): JSX.Element {
       // Site/Present: the iframe owns the surface — only Esc (back to Edit)
       // and the chords above apply; every editing shortcut stays inert.
       if (s.mode !== 'edit') {
-        if (e.key === 'Escape') {
+        // Esc backs out one level: Site/Present → Edit; Home is the landing.
+        if (e.key === 'Escape' && s.mode !== 'home') {
           e.preventDefault();
           s.setMode('edit');
         }
@@ -249,7 +251,7 @@ export function App(): JSX.Element {
     <div className="stu-app">
       <TopBar />
       {mode === 'edit' && <HintBar />}
-      {mode === 'edit' ? <Canvas /> : mode === 'site' ? <SiteView /> : <PresentView />}
+      {mode === 'home' ? <HomeView /> : mode === 'edit' ? <Canvas /> : mode === 'site' ? <SiteView /> : <PresentView />}
       <EditSheet />
       {mode === 'edit' && <SlashLayer open={slashOpen} setOpen={setSlashOpen} />}
       <BlockLibrary />

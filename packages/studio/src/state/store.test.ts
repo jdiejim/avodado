@@ -59,7 +59,7 @@ function resetStore(): void {
     dirty: false,
     review: null,
     pendingDelete: null,
-    mode: 'edit',
+    mode: 'home',
     saving: false,
     savedAt: null,
     autosave: false, // keep timers out of these tests
@@ -533,7 +533,7 @@ describe('handleServerEvent (meta) — theme sync', () => {
 describe('mode switching', () => {
   it('defaults to edit and switches surfaces without touching edit state', () => {
     const s = useStudio.getState();
-    expect(s.mode).toBe('edit');
+    expect(s.mode).toBe('home');
     s.applyOp((src, d) => insertBlock(src, d, d.segments.length, 'callout', templateBody('callout')), 1);
     const dirtySource = useStudio.getState().source;
     useStudio.getState().setMode('site');

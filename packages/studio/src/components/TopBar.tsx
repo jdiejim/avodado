@@ -207,6 +207,7 @@ function DocSwitcher(): JSX.Element {
 }
 
 const MODES: ReadonlyArray<{ id: StudioMode; label: string; title: string }> = [
+  { id: 'home', label: 'Home', title: 'All docs — the project front page' },
   { id: 'edit', label: 'Edit', title: 'Edit the document (Esc from any other mode)' },
   { id: 'site', label: 'Site', title: 'Browse the built docs site — last saved state' },
   { id: 'present', label: 'Present', title: 'Present the current doc as slides (⇧⌘P)' },
@@ -391,26 +392,38 @@ export function TopBar(): JSX.Element {
   const canUndo = useStudio((s) => s.undoStack.length > 0);
   const canRedo = useStudio((s) => s.redoStack.length > 0);
   const [themeGenOpen, setThemeGenOpen] = useState(false);
+  // Home is the front page: doc-editing chrome (switcher, save state,
+  // autosave, export, undo) is noise there — show only the global controls.
+  const home = useStudio((s) => s.mode) === 'home';
 
   return (
     <>
     <header className="stu-topbar" data-tour="topbar">
-      <div className="stu-wordmark">
+      <button
+        type="button"
+        className="stu-wordmark"
+        title="Home — all docs"
+        onClick={() => useStudio.getState().setMode('home')}
+      >
         <img src={markUrl} alt="" className="stu-wordmark-dot" aria-hidden="true" />
         avodado <em>studio</em>
-      </div>
-      <DocSwitcher />
+      </button>
+      {!home && <DocSwitcher />}
       <LibraryButton />
       <ModeSwitch />
       <span className="stu-spacer" />
-      <span className="stu-savewrap" data-tour="save">
-        <SaveChip />
-      </span>
-      <label className="stu-autosave" data-tour="autosave">
-        <input type="checkbox" checked={autosave} onChange={(e) => setAutosave(e.target.checked)} />
-        <span className="stu-switch" aria-hidden="true" />
-        Autosave
-      </label>
+      {!home && (
+        <span className="stu-savewrap" data-tour="save">
+          <SaveChip />
+        </span>
+      )}
+      {!home && (
+        <label className="stu-autosave" data-tour="autosave">
+          <input type="checkbox" checked={autosave} onChange={(e) => setAutosave(e.target.checked)} />
+          <span className="stu-switch" aria-hidden="true" />
+          Autosave
+        </label>
+      )}
       <ThemePicker />
       <button
         type="button"
@@ -421,7 +434,8 @@ export function TopBar(): JSX.Element {
         <IconPalette size={13} />
         Theme
       </button>
-      <ExportMenu />
+      {!home && <ExportMenu />}
+      {!home && (
       <div className="stu-btngroup">
         <button
           type="button"
@@ -444,6 +458,7 @@ export function TopBar(): JSX.Element {
           <IconRedo />
         </button>
       </div>
+      )}
     </header>
     {themeGenOpen && <ThemeGenerator onClose={() => setThemeGenOpen(false)} />}
     </>

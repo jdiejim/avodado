@@ -48,7 +48,7 @@ const UNDO_CAP = 100;
 const AUTOSAVE_MS = 800;
 
 /** The studio's three surfaces: editing canvas, built-site preview, deck. */
-export type StudioMode = 'edit' | 'site' | 'present';
+export type StudioMode = 'home' | 'edit' | 'site' | 'present';
 
 /** Starter source for a brand-new doc. */
 export function newDocTemplate(slug: string): string {
@@ -308,7 +308,7 @@ export const useStudio = create<StudioState>()((set, get) => {
     review: null,
     pendingDelete: null,
     pendingImport: null,
-    mode: 'edit',
+    mode: 'home',
     selection: null,
     partSel: null,
     themeChoice: DEFAULT_THEME,
