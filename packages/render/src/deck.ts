@@ -60,6 +60,16 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 /* auto-fit card grids (drivers/options) need the full stage width — inside a
    shrink-wrapped inner they collapse to fewer columns and wrap lopsidedly. */
 .slide-inner:has(.dv-grid),.slide-inner:has(.op-grid){width:100%;}
+/* Tall TEXT lists (checklists, takeaways, steps, glossaries, long prose
+   lists) break into columns on the stage — horizontal space instead of one
+   skinny centered strip that fit() would shrink. The deck JS adds the class
+   by item count: 4+ → two columns, 8+ → three. */
+/* display:block beats the containers' own flex-column (multicol is ignored on
+   flex boxes); .docskin.slide outweighs the house .docskin .ls-list rules. */
+.docskin.slide .sl-cols-2{display:block;columns:2;column-gap:40px;width:100%;}
+.docskin.slide .sl-cols-3{display:block;columns:3;column-gap:34px;width:100%;}
+.docskin.slide .sl-cols-2>*,.docskin.slide .sl-cols-3>*{break-inside:avoid;margin-bottom:12px;}
+.slide-inner:has(.sl-cols-2),.slide-inner:has(.sl-cols-3){width:100%;}
 /* Consulting split layout ({split} heading marker): message left, exhibit right. */
 .slide-content.sl-split .slide-inner{display:grid;grid-template-columns:2fr 3fr;gap:38px;align-items:center;width:100%;}
 .sl-msg{display:flex;flex-direction:column;gap:8px;min-width:0;}
@@ -85,6 +95,8 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .diagram-title{font-size:19px;}
 /* Cover (first slide): centered title, no top bar. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
+.docskin.slide.slide-cover .slide-inner{width:100%;}
+.docskin.slide.slide-cover .cover-sub{margin-left:auto;margin-right:auto;}
 .docskin.slide.slide-cover .cover-bar{display:none;}
 .docskin.slide.slide-cover .cover-pad{border-bottom:none;padding-bottom:0;margin-bottom:0;}
 .docskin.slide.slide-cover .cover-meta{justify-content:center;}
@@ -109,6 +121,16 @@ const DECK_JS = `(function(){
   [].slice.call(document.querySelectorAll('.slide svg[viewBox]:not([width])')).forEach(function(sv){
     var vb=sv.viewBox&&sv.viewBox.baseVal;
     if(vb&&vb.width&&vb.height){sv.setAttribute('width',vb.width);sv.setAttribute('height',vb.height);}
+  });
+  // Tall text lists flow into stage columns (see .sl-cols-* in the CSS):
+  // count-based so short lists keep their single column.
+  [].slice.call(document.querySelectorAll(
+    '.slide .ls-list,.slide .tk-list,.slide .steps,.slide .faq,.slide .glossary,'+
+    '.slide .slide-inner .prose > ul,.slide .slide-inner .prose > ol'
+  )).forEach(function(el){
+    var n=el.children.length;
+    if(n>=8)el.classList.add('sl-cols-3');
+    else if(n>=4)el.classList.add('sl-cols-2');
   });
   var jump=document.getElementById('deck-jump'),cur=document.getElementById('deck-cur');
   var i=0;
