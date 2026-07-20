@@ -88,7 +88,7 @@ describe('renderDocument', () => {
   });
 
   it('emits an err div for a block with a parse error', () => {
-    const doc = parseDocument('```callout\nkind: [oops\n```\n', 'broken');
+    const doc = parseDocument('```callout\ntone: [oops\n```\n', 'broken');
     const html = renderDocument(doc);
     expect(html).toContain('class="err"');
     expect(html).toContain('callout block — parse error:');

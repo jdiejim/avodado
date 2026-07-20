@@ -3,10 +3,14 @@
  *
  * Doc-studio variant: `tone` (note/tip/warn/danger) instead of the original
  * `kind`. Defaults to `note` if omitted. Title defaults to the tone's label.
+ * The body renders as inline Markdown (bold/italic/`code`/links; blank lines
+ * become paragraph breaks) — pairs with the bare-text body sugar in core,
+ * where a callout fence can be nothing but the text itself.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
+import { renderInlineMd } from '../markdown.js';
 import { bp } from '../paths.js';
 
 type Tone = 'note' | 'tip' | 'warn' | 'danger' | 'success';
@@ -29,7 +33,7 @@ export function renderCallout(data: BlockDataMap['callout']): string {
   return (
     `<div class="callout ${tone}">` +
     `<div class="callout-title"${bp('title')}>${escapeHtml(title)}</div>` +
-    `<div class="callout-body"${bp('body')}>${escapeHtml(body)}</div>` +
+    `<div class="callout-body"${bp('body')}>${renderInlineMd(body)}</div>` +
     `</div>`
   );
 }

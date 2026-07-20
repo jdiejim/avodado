@@ -35,13 +35,13 @@ describe('runCheck', () => {
 
   it('returns exitCode 1 for a schema violation', async () => {
     const { root, cleanup } = await tempProject({
-      'docs/bad.md': '```callout\nkind: invalid\n```\n',
+      'docs/bad.md': '```callout\ntone: invalid\n```\n',
     });
     try {
       const result = await runCheck({ patterns: ['docs/**/*.md'], cwd: root, docsRoot: 'docs' });
       expect(result.exitCode).toBe(1);
       expect(result.diagnostics.some((d) => d.code === 'E_SCHEMA')).toBe(true);
-      // Points at the offending `kind:` line (2), not the fence (1).
+      // Points at the offending `tone:` line (2), not the fence (1).
       expect(result.diagnostics[0]?.line).toBe(2);
       expect(result.diagnostics[0]?.file).toContain('bad.md');
     } finally {

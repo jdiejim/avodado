@@ -30,12 +30,21 @@ blocks:
 ```
 
 #### `callout` — note / tip / warning / danger
+
+The simplest form is just the text — no YAML at all (colons and quotes are fine,
+and inline Markdown like `**bold**` and `` `code` `` renders):
+
+```callout
+Clients must send an Idempotency-Key header so retries are safe.
+```
+
+Lead with a field to set tone or title (`tone` is `note | tip | warn | danger`):
+
 ```callout
 tone: warn
 title: Idempotency required
 body: Clients must send an Idempotency-Key header so retries are safe.
 ```
-`tone` is `note | tip | warn | danger`.
 
 #### `glossary` — term / definition rows
 ```glossary

@@ -9,7 +9,7 @@
 import { splitMarkdown, detectSuspectFences } from './splitter.js';
 import { parseBlockBody } from './yaml.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
-import { normalizeBlockData } from './blocks/normalize.js';
+import { normalizeBlockData, textBodyData } from './blocks/normalize.js';
 import type { Document, MetaData, Segment, TypedSegment } from './types.js';
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -72,7 +72,12 @@ export function parseDocument(markdown: string, slug: string): Document {
     }
     typedBlockCount += 1;
 
-    const parsed = parseBlockBody(r.raw);
+    // Text-first blocks (callout, pullquote) take a bare-text body: the whole
+    // body becomes the block's text field, skipping YAML entirely — colons and
+    // quotes in prose never need escaping. A field-led body parses as YAML.
+    const textData = textBodyData(r.kind, r.raw);
+    const parsed =
+      textData !== undefined ? ({ ok: true, data: textData } as const) : parseBlockBody(r.raw);
     const id = parsed.ok ? extractId(parsed.data) : undefined;
 
     // Alias fences: inject the alias patch for keys the body doesn't set

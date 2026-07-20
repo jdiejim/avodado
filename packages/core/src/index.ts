@@ -26,7 +26,7 @@ export {
   type BlockAlias,
 } from './blocks/aliases.js';
 
-export { normalizeBlockData } from './blocks/normalize.js';
+export { normalizeBlockData, textBodyData, textBodyYaml } from './blocks/normalize.js';
 
 export {
   type Diagnostic,

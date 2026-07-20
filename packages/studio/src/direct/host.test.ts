@@ -43,6 +43,20 @@ describe('pure segment-body editors', () => {
     expect(() => setPathInSegment(DOC, doc(DOC), 1, ['x'], 1)).toThrow(TypeError);
   });
 
+  it('structured edits on a BARE-TEXT callout canonicalize instead of throwing', () => {
+    // The body is plain prose (core's text-body sugar) — no YAML fields at all.
+    const src = '```callout\nHeads up: the rate limit is 100 req/min.\n```\n';
+    const next = setPathInSegment(src, doc(src), 0, ['tone'], 'warn');
+    const d = doc(next);
+    const seg = d.segments[0];
+    if (seg === undefined || seg.kind === 'markdown') throw new Error('expected block');
+    // The edit landed AND the original text survived as the body field.
+    expect(seg.data).toMatchObject({
+      tone: 'warn',
+      body: 'Heads up: the rate limit is 100 req/min.',
+    });
+  });
+
   it('setPathsInSegment composes several writes into ONE body replacement', () => {
     const next = setPathsInSegment(DOC, doc(DOC), 2, [
       { path: ['items', 0, 'label'], value: 'Start' },

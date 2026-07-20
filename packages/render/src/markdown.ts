@@ -65,3 +65,19 @@ export function renderProse(text: string): string {
   const html = marked.parse(text, { async: false });
   return `<div class="prose">${html}</div>`;
 }
+
+/**
+ * Renders a text-first field (callout body, pullquote text) as INLINE
+ * Markdown — bold/italic/`code`/links work, block constructs don't. Blank
+ * lines become paragraph breaks. Same hardened pipeline as {@link renderProse}
+ * (raw HTML declined, hrefs sanitized).
+ */
+export function renderInlineMd(text: string): string {
+  const paras = text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter((p) => p !== '');
+  const inline = (p: string): string => marked.parseInline(p, { async: false });
+  if (paras.length <= 1) return inline(paras[0] ?? '');
+  return paras.map((p) => `<p>${inline(p)}</p>`).join('');
+}

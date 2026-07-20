@@ -20,7 +20,7 @@ describe('validateDocument', () => {
   });
 
   it('reports E_PARSE_YAML pointing at the offending body line (not the fence)', () => {
-    const md = '\n\n```callout\nkind: [oops\n```\n';
+    const md = '\n\n```callout\ntone: [oops\n```\n';
     const doc = parseDocument(md, 'broken');
     const diags = validateDocument(doc, 'broken.md');
     expect(diags).toHaveLength(1);

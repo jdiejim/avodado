@@ -23,7 +23,9 @@ describe('parseDocument', () => {
   });
 
   it('records parseError on a malformed block body instead of throwing', () => {
-    const md = '```callout\nkind: [oops\n```\n';
+    // Leads with the known field `tone` so the body takes the YAML path
+    // (a non-field lead would be rescued as a bare-text body instead).
+    const md = '```callout\ntone: [oops\n```\n';
     const doc = parseDocument(md, 'broken');
     const seg = doc.segments[0];
     expect(seg?.kind).toBe('callout');

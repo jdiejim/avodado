@@ -17,7 +17,7 @@ required**, so they're left out of the table below, which shows only the
 | Block | Structural shape (`*` = required, `(n)` = number) | Closed enums |
 |---|---|---|
 | `meta` | `title` `subtitle` `tag` `logo` | — |
-| `callout` | `tone` `title` `body` | tone: note · tip · warn · danger |
+| `callout` | `tone` `title` `body` | tone: note · tip · warn · danger; bare-text body allowed (the body IS `body`) |
 | `prose` | `blocks[]`: `type` `text` `items[]` | type: h · p · ul · ol · quote |
 | `glossary` | `terms[]`: `term*` `def*` | — |
 | `proscons` | `prosLabel` `consLabel` `pros[]` `cons[]` | — |
@@ -59,7 +59,7 @@ required**, so they're left out of the table below, which shows only the
 | `quadrant` | `xAxis{label, low, high}` `yAxis{label, low, high}` · `items[]`: `x*`(n, 0..1) `y*`(n, 0..1) `label*` | — |
 | `wireframe` | `screens[]`: `device` `title` `url` `label` `elements[]`: `type` `label` `rows`(n) `align` `tone` | device: desktop · browser · phone — element type: header · subheader · text · button · input · search · image · avatar · card · list · nav · tabs · divider · badge · toggle · spacer — align: l · c · r — tone: accent · muted · danger |
 | `endpoint` | `method*` `path*` `title` `description` `auth` · `params[]`: `name*` `in` `type` `required`(bool) `desc` · `body[]`: `name*` `type` `required`(bool) `desc` · `responses[]`: `status*`(n) `desc` · `request` `response` | method: GET · POST · PUT · PATCH · DELETE · HEAD · OPTIONS — `in`: path · query · header · cookie |
-| `pullquote` | `text*` `attribution` | — |
+| `pullquote` | `text*` `attribution` | bare-text body allowed (the body IS `text`) |
 | `layers` | `title` `description` · `items[]`: `title*` `kicker` `source` `question` `body` | — |
 | `matrix` | `title` `description` `corner` `cols*[]` · `rows[]`: `label*` `cells*[]` (one per col, in order) | cell tints: Full/Admin/Write/✓ → green · —/None/✗ → muted · else → amber |
 | `anatomy` | `title` `description` `separator` (default `:`) · `parts[]`: `label*` `value*` `note` | — |

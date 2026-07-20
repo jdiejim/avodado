@@ -34,8 +34,9 @@
  * endpoint status, dfd num) keep their numbers.
  */
 
+import { stringify as stringifyYaml } from 'yaml';
 import type { BlockType } from '../types.js';
-import { stringOnlyAt } from './schema-walk.js';
+import { fieldNamesAt, stringOnlyAt } from './schema-walk.js';
 
 /** Arrow head: `from -> to`, longest arrow first so `-->` never parses as `-` + `->`. */
 const ARROW_RE = /^(\S+?)\s*(-x->|-->|->)\s*(\S+)$/;
@@ -240,4 +241,54 @@ export function normalizeBlockData(kind: BlockType, data: unknown): unknown {
   const sugar = SUGAR[kind];
   const sugared = sugar !== undefined ? sugar(data) : data;
   return coerce(kind, sugared, []);
+}
+
+/* ── Bare-text bodies ───────────────────────────────────────────────────────
+ * Text-first blocks accept their body as PLAIN TEXT — no YAML at all:
+ *
+ *   ```callout
+ *   Heads up: the API rate limit is 100 req/min.
+ *   ```
+ *
+ * The whole body becomes the block's text field (callout `body`, pullquote
+ * `text`), so colons, quotes and dashes never need YAML escaping. The escape
+ * hatch back to fields is leading with one: a body whose FIRST non-blank line
+ * is `<known-field>:` (or `id:`) parses as YAML exactly as before.
+ */
+const TEXT_BODY: Partial<Record<BlockType, string>> = {
+  callout: 'body',
+  pullquote: 'text',
+};
+
+/** True when the body's first non-blank line is a known `field:` for `kind`. */
+function leadsWithField(kind: BlockType, text: string): boolean {
+  const first = text.split('\n').find((l) => l.trim() !== '') ?? '';
+  const m = /^([A-Za-z][A-Za-z0-9_-]*):(\s|$)/.exec(first.trim());
+  if (m === null) return false;
+  const key = m[1] ?? '';
+  return key === 'id' || fieldNamesAt(kind, []).includes(key);
+}
+
+/**
+ * The parsed data for a bare-text body, or `undefined` when the body should go
+ * through the normal YAML parse (not a text-first kind, empty, or field-led).
+ */
+export function textBodyData(kind: BlockType, raw: string): Record<string, unknown> | undefined {
+  const field = TEXT_BODY[kind];
+  if (field === undefined) return undefined;
+  const text = raw.trim();
+  if (text === '' || leadsWithField(kind, text)) return undefined;
+  return { [field]: text };
+}
+
+/**
+ * The explicit-YAML equivalent of a bare-text body, or `undefined` when `raw`
+ * is not one. Editors (the studio's YAML path ops) canonicalize through this
+ * before structured edits, so a bare-text block upgrades to fields instead of
+ * failing the edit.
+ */
+export function textBodyYaml(kind: BlockType, raw: string): string | undefined {
+  const data = textBodyData(kind, raw);
+  if (data === undefined) return undefined;
+  return stringifyYaml(data);
 }

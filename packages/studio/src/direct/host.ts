@@ -15,6 +15,7 @@ import {
   deleteYamlPath,
   replaceBlockBody,
   setYamlPath,
+  textBodyYaml,
   type BlockType,
   type Document,
 } from '@avodado/core';
@@ -51,7 +52,10 @@ export function setPathInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  return replaceBlockBody(source, doc, index, setYamlPath(seg.raw, path, value));
+  // Bare-text bodies (callout/pullquote text sugar) canonicalize to explicit
+  // YAML first, so structured path edits apply instead of throwing.
+  const raw0 = textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  return replaceBlockBody(source, doc, index, setYamlPath(raw0, path, value));
 }
 
 /**
@@ -69,7 +73,7 @@ export function setPathsInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  let raw = seg.raw;
+  let raw = textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
   for (const s of sets) raw = setYamlPath(raw, s.path, s.value);
   return replaceBlockBody(source, doc, index, raw);
 }
@@ -85,7 +89,8 @@ export function deletePathInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  return replaceBlockBody(source, doc, index, deleteYamlPath(seg.raw, path));
+  const raw0 = textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  return replaceBlockBody(source, doc, index, deleteYamlPath(raw0, path));
 }
 
 /** Canvas host for the block at `index`: each commit is one applyOp/undo step. */
