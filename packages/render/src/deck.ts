@@ -70,6 +70,12 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .sl-cols-3{display:block;columns:3;column-gap:34px;width:100%;}
 .docskin.slide .sl-cols-2>*,.docskin.slide .sl-cols-3>*{break-inside:avoid;margin-bottom:12px;}
 .slide-inner:has(.sl-cols-2),.slide-inner:has(.sl-cols-3){width:100%;}
+/* Code owns the stage width — a shrink-wrapped <pre> read at 0.5x; full-width
+   it only ever scales for height. */
+.docskin.slide .slide-inner:has(pre){width:100%;}
+/* A lone short prose fragment (a hero exhibit's intro that spilled to its own
+   slide) reads as a deliberate STATEMENT — larger, centered, measured. */
+.docskin.slide .sl-statement .prose p{font-size:21px;line-height:1.6;max-width:46ch;margin-left:auto;margin-right:auto;text-align:center;color:var(--slate);}
 /* Consulting split layout ({split} heading marker): message left, exhibit right. */
 .slide-content.sl-split .slide-inner{display:grid;grid-template-columns:2fr 3fr;gap:38px;align-items:center;width:100%;}
 .sl-msg{display:flex;flex-direction:column;gap:8px;min-width:0;}
@@ -133,6 +139,15 @@ const DECK_JS = `(function(){
     var n=el.children.length;
     if(n>=8)el.classList.add('sl-cols-3');
     else if(n>=4)el.classList.add('sl-cols-2');
+  });
+  // Prose-only slides with little text are section STATEMENTS — style them
+  // as such instead of leaving a small centered fragment.
+  [].slice.call(document.querySelectorAll('.slide')).forEach(function(sl){
+    var inner=sl.querySelector('.slide-inner');
+    if(!inner)return;
+    var hasBlock=inner.querySelector('.section-block,.diagram,pre,table,.dvd,svg,img');
+    var text=(inner.textContent||'').trim();
+    if(!hasBlock&&text.length>0&&text.length<520)inner.classList.add('sl-statement');
   });
   var jump=document.getElementById('deck-jump'),cur=document.getElementById('deck-cur');
   var i=0;

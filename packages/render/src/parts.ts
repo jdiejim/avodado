@@ -340,6 +340,8 @@ type SizedData = {
   rows?: unknown[];
   stats?: unknown[];
   blocks?: ReadonlyArray<{ code?: string }>;
+  /** The flat `code` block form — one snippet at the top level. */
+  code?: unknown;
   levels?: unknown[];
   terms?: unknown[];
   parts?: unknown[];
@@ -439,9 +441,17 @@ export function blockWeight(seg: TypedSegment): number {
   if (seg.kind === 'proscons') return 2 + (arrLen(d.pros) + arrLen(d.cons)) * 1.1;
   if (seg.kind === 'cvt') return 2 + (arrLen(d.current?.items) + arrLen(d.target?.items)) * 1.1;
   if (seg.kind === 'code') {
+    // Both spellings weigh in: the blocks[] form AND the flat top-level
+    // `code:` form (which used to count as 2.0 no matter how tall — two
+    // 24-line terminals then stacked onto one slide at half scale).
     let lines = 0;
+    let cards = arrLen(d.blocks);
     for (const b of d.blocks ?? []) lines += String(b.code ?? '').split('\n').length;
-    return 2 + arrLen(d.blocks) * 1.5 + lines * 0.35;
+    if (typeof d.code === 'string') {
+      cards += 1;
+      lines += d.code.split('\n').length;
+    }
+    return 2 + cards * 1.5 + lines * 0.35;
   }
   // Height comes from actors (columns set the diagram's text density) AND the
   // message rows beneath them.
@@ -479,11 +489,11 @@ const SLIDE_BUDGET = 10;
  */
 const HERO_WEIGHT = 8;
 /**
- * A single short connective line (≤ ~180 chars → prose weight 1) may ride
- * along above a hero exhibit as its kicker — splitting "The whole journey:"
- * onto its own slide would read sparse-broken.
+ * A short connective intro (≤ ~400 chars → prose weight 2.2) may ride along
+ * above a hero exhibit as its kicker — splitting a two-sentence lede onto its
+ * own slide reads sparse-broken.
  */
-const KICKER_WEIGHT = 1;
+const KICKER_WEIGHT = 2.2;
 /**
  * …unless the exhibit already overflows the stage this badly (1.25× budget):
  * then even a one-line kicker eats into space the exhibit needs, and it

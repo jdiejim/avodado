@@ -173,7 +173,9 @@ describe('renderSlides', () => {
     expect(heavy.length).toBeGreaterThan(1);
   });
 
-  it('hero rule: intro prose and a heavy block split onto separate slides', () => {
+  it('hero rule: a SHORT intro rides with the exhibit; LONG prose splits off', () => {
+    // ~2.0 weight — within the kicker threshold (2.2): rides above the hero
+    // instead of stranding a near-empty prose slide.
     const intro = [
       'Three requirements drive everything we build here, and each one shapes the access model:',
       '',
@@ -184,11 +186,17 @@ describe('renderSlides', () => {
     const md = ['```meta', 'title: T', '```', '', '## Needs', '', intro, '', driversMd(4)].join('\n');
     const { slides } = renderSlides(parseDocument(md, 'd'));
     const needs = slides.filter((s) => s.title === 'Needs');
-    expect(needs.length).toBe(2);
+    expect(needs.length).toBe(1); // kicker + exhibit share the slide
     expect(needs[0]?.html).toContain('Three requirements');
-    expect(needs[0]?.html).not.toContain('dv-grid');
-    expect(needs[1]?.html).toContain('dv-grid');
-    expect(needs[1]?.html).not.toContain('Three requirements');
+    expect(needs[0]?.html).toContain('dv-grid');
+
+    // Past the kicker threshold, the prose keeps its own slide as before.
+    const long = Array.from({ length: 6 }, () => 'A long paragraph of context that keeps going and explains the requirement in detail across several sentences of prose. ').join('');
+    const md2 = ['```meta', 'title: T', '```', '', '## Needs', '', long, '', driversMd(4)].join('\n');
+    const s2 = renderSlides(parseDocument(md2, 'd')).slides.filter((s) => s.title === 'Needs');
+    expect(s2.length).toBe(2);
+    expect(s2[0]?.html).not.toContain('dv-grid');
+    expect(s2[1]?.html).toContain('dv-grid');
   });
 
   it('hero rule: content after a hero exhibit spills to the next slide', () => {
