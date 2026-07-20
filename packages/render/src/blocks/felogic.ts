@@ -332,7 +332,7 @@ function renderFelogicGraph(data: Data, frame: FrameOpts): string {
   });
   s += `</g>`; // close the nodes list container
 
-  const { overlay, legend } = edgeLabelLayer(pending);
+  const { overlay, legend } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)));
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
   return diagramFrame(

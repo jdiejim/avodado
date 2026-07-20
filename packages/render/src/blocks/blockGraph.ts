@@ -866,7 +866,7 @@ function renderGrid(data: Data): string {
   });
   s += `</g>`; // close the nodes list container
 
-  const { overlay, legend } = edgeLabelLayer(pending);
+  const { overlay, legend } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)));
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
   return s + legend;
@@ -969,7 +969,7 @@ function renderLayered(data: Data): string {
   });
   s += `</g>`; // close the nodes list container
 
-  const { overlay, legend } = edgeLabelLayer(pending);
+  const { overlay, legend } = edgeLabelLayer(pending, [...rects.values()]);
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
   return s + legend;

@@ -134,7 +134,7 @@ export function renderSwimlane(data: BlockDataMap['swimlane']): string {
   });
   s += `</g>`; // close the steps list container
 
-  const { overlay, legend } = edgeLabelLayer(pending);
+  const { overlay, legend } = edgeLabelLayer(pending, steps.map((st) => rectFor(st)));
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
   return diagramFrame(

@@ -106,7 +106,7 @@ export function renderGraph(data: BlockDataMap['graph']): string {
   });
   s += `</g>`;
 
-  const { overlay, legend } = edgeLabelLayer(pending);
+  const { overlay, legend } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)));
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
   return diagramFrame(

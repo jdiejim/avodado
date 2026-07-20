@@ -119,10 +119,12 @@ export function renderUml(data: BlockDataMap['uml']): string {
   s += `</g>`; // close the rels list container
 
   s += `<g${bl('classes')}>`;
+  const nodeRects: { x: number; y: number; w: number; h: number }[] = [];
   classes.forEach((c, ci) => {
     const p = at.get(c.id);
     if (p === undefined) return;
     const r = { x: p.x, y: p.y, w: wOf(c), h: clsH(c) };
+    nodeRects.push(r);
     const hh = headH(c);
     const aH = compH(c.attrs);
     const nameY = r.y + (c.stereotype !== undefined ? 30 : 18);
@@ -164,7 +166,7 @@ export function renderUml(data: BlockDataMap['uml']): string {
   });
   s += `</g>`; // close the classes list container
 
-  const { overlay, legend } = edgeLabelLayer(pending);
+  const { overlay, legend } = edgeLabelLayer(pending, nodeRects);
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
   return diagramFrame(

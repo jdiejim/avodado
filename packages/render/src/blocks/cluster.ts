@@ -180,7 +180,7 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
   });
   s += `</g>`; // close the services list container
 
-  const { overlay, legend } = edgeLabelLayer(pending);
+  const { overlay, legend } = edgeLabelLayer(pending, [...rects.values()]);
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
   return diagramFrame(
