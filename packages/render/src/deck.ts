@@ -74,6 +74,15 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .section-head{display:none;}              /* the slide header replaces it */
 .docskin.slide .section-block{margin:0;}
 .docskin.slide .diagram{margin:0 auto;}
+/* Diagrams shed their page-card chrome on the stage — the slide IS the card,
+   so a bordered box inside it reads as clutter. The tag pill and fig number
+   drop too (the slide header already names the block); the diagram's own
+   title stays when it has one, at presentation scale. */
+.docskin.slide .diagram{border:none;background:transparent;padding:0;box-shadow:none;border-radius:0;}
+.docskin.slide .diagram-head{border-bottom:none;padding-bottom:0;margin-bottom:12px;}
+.docskin.slide .diagram-tag,.docskin.slide .diagram-fignum{display:none;}
+.docskin.slide .diagram-head:not(:has(.diagram-title)){display:none;}
+.docskin.slide .diagram-title{font-size:19px;}
 /* Cover (first slide): centered title, no top bar. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
 .docskin.slide.slide-cover .cover-bar{display:none;}
