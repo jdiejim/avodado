@@ -1,5 +1,20 @@
 # @avodado/cli
 
+## 0.35.18
+
+### Patch Changes
+
+- 460ef16: Slides: title cards center properly and title themselves.
+  - The cover's title + subtitle sit at the true vertical center (trailing doc
+    margins no longer skew the flex centering).
+  - A slide that is only a `divider` is its own title card: no stale section
+    heading above the PART band, and the jump menu lists it by the band's title.
+  - Untitled leading-prose slides drop the meaningless "Slide" header.
+
+- Updated dependencies [460ef16]
+  - @avodado/render@0.25.10
+  - @avodado/studio@0.9.0
+
 ## 0.35.17
 
 ### Patch Changes
