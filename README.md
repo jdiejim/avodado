@@ -131,8 +131,9 @@ Every edit writes straight back to the `.md` file (atomic, hash-guarded), so Stu
 | **HTML page** | A standalone, themed `.html` — inline CSS + SVG, no runtime. |
 | **Slide deck (HTML)** | A self-contained `.slides.html` presentation. |
 | **PDF** | A print-ready PDF (headless Chromium; downloaded once on first use). |
+| **PowerPoint** | A real `.pptx` — every slide photographed at 2× as a full-bleed 16:9 image, titles as speaker notes. |
 
-## 📄 Turn a doc into HTML, slides, or a PDF
+## 📄 Turn a doc into HTML, slides, a PDF, or a PowerPoint deck
 
 The same exports from the CLI, for any doc:
 
@@ -140,6 +141,7 @@ The same exports from the CLI, for any doc:
 avo html   docs/orders.md          # → orders.html   (standalone, themed)
 avo slides docs/plan.md            # → plan.slides.html  (one slide per # / ## heading)
 avo pdf    docs/plan.md            # → plan.pdf
+avo pptx   docs/plan.md            # → plan.pptx  (real PowerPoint, slides as crisp images)
 avo preview docs/orders.md         # render to a temp file and just open it
 ```
 
@@ -283,7 +285,7 @@ pnpm lint           # ESLint + typescript-eslint
 pnpm build          # tsup, ESM
 ```
 
-PDF export needs Chromium. `avo pdf` (and Studio's PDF export) **downloads it automatically on first use** (the matching build, ~100 MB, one time). To pre-install: `npx playwright install chromium`.
+PDF and PowerPoint export need Chromium. `avo pdf` / `avo pptx` (and Studio's PDF/PowerPoint export) **downloads it automatically on first use** (the matching build, ~100 MB, one time). To pre-install: `npx playwright install chromium`.
 
 ## License
 

@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { themes, type ThemeName } from '@avodado/render';
 import markUrl from '../assets/mark.png';
 import { changesSummary } from '../state/changes.js';
-import { exportDeckHtml, exportDocHtml, exportPdf } from '../lib/export.js';
+import { exportDeckHtml, exportDocHtml, exportPdf, exportPptx } from '../lib/export.js';
 import { useDerived, useStudio } from '../state/store.js';
 import {
   IconCheck,
@@ -237,6 +237,7 @@ function ExportMenu(): JSX.Element {
   const { doc } = useDerived();
   const [open, setOpen] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [pptxBusy, setPptxBusy] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -281,6 +282,18 @@ function ExportMenu(): JSX.Element {
       setPdfBusy(false);
     }
   };
+  const doPptx = async (): Promise<void> => {
+    setPptxBusy(true);
+    try {
+      await exportPptx(doc, slug, theme, themeVars);
+      toast('Exported PowerPoint deck', 'info');
+      setOpen(false);
+    } catch (err) {
+      toast(`PowerPoint export failed: ${(err as Error).message}`, 'error');
+    } finally {
+      setPptxBusy(false);
+    }
+  };
 
   return (
     <div className="stu-export" ref={rootRef}>
@@ -313,6 +326,15 @@ function ExportMenu(): JSX.Element {
             onClick={() => void doPdf()}
           >
             {pdfBusy ? 'Exporting PDF…' : 'PDF'}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="stu-export-item"
+            disabled={pptxBusy}
+            onClick={() => void doPptx()}
+          >
+            {pptxBusy ? 'Exporting PowerPoint…' : 'PowerPoint (.pptx)'}
           </button>
         </div>
       )}

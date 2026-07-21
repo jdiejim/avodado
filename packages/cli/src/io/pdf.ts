@@ -135,8 +135,11 @@ export async function toPdf(input: Document | string, opts: PdfOptions = {}): Pr
  * Launches headless Chromium. If the browser binary is missing, either
  * auto-installs it (when `opts.autoInstallBrowser`) and retries, or throws a
  * clear, actionable error with the exact command to run.
+ *
+ * Exported for the other Chromium-backed exporter ({@link ../pptx.js toPptx});
+ * not part of the public CLI surface.
  */
-async function launchChromium(pw: PlaywrightModule, opts: PdfOptions): Promise<Playwright.Browser> {
+export async function launchChromium(pw: PlaywrightModule, opts: PdfOptions): Promise<Playwright.Browser> {
   try {
     return await pw.chromium.launch({ headless: true });
   } catch (err) {
@@ -154,7 +157,8 @@ async function launchChromium(pw: PlaywrightModule, opts: PdfOptions): Promise<P
   }
 }
 
-async function loadPlaywright(): Promise<PlaywrightModule> {
+/** Lazy Playwright import shared by the PDF and PPTX exporters. */
+export async function loadPlaywright(): Promise<PlaywrightModule> {
   try {
     return await import('playwright');
   } catch (err) {

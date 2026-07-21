@@ -1,7 +1,7 @@
 {
   "name": "avodado",
   "version": "0.35.19",
-  "description": "Documentation-as-code CLI: write Markdown with typed YAML blocks for API docs, architecture & system design (C4, ERDs, sequence diagrams), frontend & design systems, ADRs and decision records, planning, and slide presentations. Validate like code with `avo check`, export to themed HTML, slides, or PDF. AI-native — author with Claude, Cursor, or Copilot and edit visually in Avodado Studio.",
+  "description": "Documentation-as-code CLI: write Markdown with typed YAML blocks for API docs, architecture & system design (C4, ERDs, sequence diagrams), frontend & design systems, ADRs and decision records, planning, and slide presentations. Validate like code with `avo check`, export to themed HTML, slides, PDF, or PowerPoint (.pptx). AI-native — author with Claude, Cursor, or Copilot and edit visually in Avodado Studio.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/bin.js",
@@ -32,6 +32,7 @@
     "jiti": "^2.4.2",
     "open": "^10.1.0",
     "picocolors": "^1.1.1",
+    "pptxgenjs": "^4.0.1",
     "react": "^18.3.1",
     "yaml": "^2.6.1",
     "zod": "^3.24.1"
@@ -89,7 +90,10 @@
     "pdf",
     "static-site-generator",
     "cli",
-    "developer-tools"
+    "developer-tools",
+    "pptx",
+    "powerpoint",
+    "powerpoint-export"
   ],
   "engines": {
     "node": ">=20"

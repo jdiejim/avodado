@@ -506,6 +506,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   single('html', 'Render one document to a standalone HTML file');
   single('slides', 'Render one document to a self-contained slide deck');
   single('pdf', 'Render one document to a PDF (needs Chromium once)');
+  single('pptx', 'Render one document to a PowerPoint deck (needs Chromium once)');
 
   // ——— Discover: demo · catalog · design · tour ———————————————————————————
   // One action per discovery flow, registered twice: as a visible subcommand

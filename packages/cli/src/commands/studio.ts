@@ -41,6 +41,7 @@ import type { ThemeName } from '@avodado/render';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
 import { toPdf } from '../io/pdf.js';
+import { toPptx } from '../io/pptx.js';
 import { globalThemePath, savedThemePath, themeSlug } from '../io/theme.js';
 import { loadTheme, studioThemeInfo } from '../io/theme.js';
 import { cliVersion } from '../io/version.js';
@@ -381,38 +382,49 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
     sendJson(res, 200, { hash, mtimeMs: st.mtimeMs });
   };
 
-  // ── PDF export (POST /api/export/pdf) ──────────────────────────────────────
-  // The studio renders the doc to themed HTML in the browser and POSTs it here;
-  // we run it through headless Chromium and stream the PDF back. Chromium is
-  // downloaded on the first export (one time) — hence the loopback-only server
-  // is the natural place for it. Failures (Playwright/Chromium missing) surface
-  // as a 500 with a readable message the studio shows as a toast.
-  const handleExportPdf = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-    const body = await readBody(req, MAX_BODY_BYTES);
-    if (body === null) {
-      sendJson(res, 413, { error: `body exceeds ${MAX_BODY_BYTES} bytes` });
-      return;
-    }
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(body.toString('utf8'));
-    } catch {
-      sendJson(res, 400, { error: 'invalid JSON body' });
-      return;
-    }
-    const html = (parsed as { html?: unknown } | null)?.html;
-    if (typeof html !== 'string') {
-      sendJson(res, 400, { error: 'missing "html" (string)' });
-      return;
-    }
-    try {
-      const pdf = await toPdf(html, { autoInstallBrowser: true, log: (m) => console.log(m) });
-      res.writeHead(200, { 'Content-Type': 'application/pdf', 'Cache-Control': 'no-store' });
-      res.end(Buffer.from(pdf));
-    } catch (err) {
-      sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
-    }
-  };
+  // ── Chromium exports (POST /api/export/pdf | /api/export/pptx) ─────────────
+  // The studio renders the doc to themed HTML in the browser and POSTs it here
+  // (page HTML for PDF, deck HTML for PowerPoint); we run it through headless
+  // Chromium and stream the bytes back. Chromium is downloaded on the first
+  // export (one time) — hence the loopback-only server is the natural place
+  // for it. Failures (Playwright/Chromium missing) surface as a 500 with a
+  // readable message the studio shows as a toast.
+  const chromiumExport =
+    (convert: (html: string) => Promise<Uint8Array>, contentType: string) =>
+    async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+      const body = await readBody(req, MAX_BODY_BYTES);
+      if (body === null) {
+        sendJson(res, 413, { error: `body exceeds ${MAX_BODY_BYTES} bytes` });
+        return;
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(body.toString('utf8'));
+      } catch {
+        sendJson(res, 400, { error: 'invalid JSON body' });
+        return;
+      }
+      const html = (parsed as { html?: unknown } | null)?.html;
+      if (typeof html !== 'string') {
+        sendJson(res, 400, { error: 'missing "html" (string)' });
+        return;
+      }
+      try {
+        const bytes = await convert(html);
+        res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'no-store' });
+        res.end(Buffer.from(bytes));
+      } catch (err) {
+        sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
+      }
+    };
+  const handleExportPdf = chromiumExport(
+    (html) => toPdf(html, { autoInstallBrowser: true, log: (m) => console.log(m) }),
+    'application/pdf',
+  );
+  const handleExportPptx = chromiumExport(
+    (html) => toPptx(html, { autoInstallBrowser: true, log: (m) => console.log(m) }),
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  );
 
   // ── Theme install (POST /api/theme) ───────────────────────────────────────
   // The Theme Generator posts a friendly theme (name, base, colors, fonts); we
@@ -567,6 +579,10 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
     if (pathname === '/api/export/pdf') {
       if (method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
       return handleExportPdf(req, res);
+    }
+    if (pathname === '/api/export/pptx') {
+      if (method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
+      return handleExportPptx(req, res);
     }
     if (pathname === '/api/theme') {
       if (method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });

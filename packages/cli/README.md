@@ -1,6 +1,6 @@
 # avodado
 
-**Documentation-as-code.** Write docs as plain Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and `avo` validates them like code, renders them to HTML, slides, or PDF, and lets you edit them in a visual studio. The `.md` files on disk stay the single source of truth.
+**Documentation-as-code.** Write docs as plain Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and `avo` validates them like code, renders them to HTML, slides, PDF, or PowerPoint, and lets you edit them in a visual studio. The `.md` files on disk stay the single source of truth.
 
 `avo` is the command-line tool. It shows a friendly interactive UI in your terminal, and plain text output in CI.
 
@@ -38,6 +38,7 @@ Then run:
 avo check docs/orders.md      # validates every block against its schema
 avo html  docs/orders.md -p   # renders a styled HTML page and opens it
 avo slides docs/orders.md -p  # …or a slide deck   ·   avo pdf docs/orders.md  → a PDF
+avo pptx  docs/orders.md      # …or a real PowerPoint deck (one image slide per slide)
 avo studio                    # edit visually — forms + live preview
 ```
 
