@@ -301,6 +301,23 @@ export function renderDocumentParts(doc: Document, opts: RenderPartsOptions = {}
   return { css, themeVars, body, title, sections };
 }
 
+/**
+ * One piece of a slide, for structure-aware exporters (e.g. editable PPTX):
+ * the same content as the slide's HTML, but still addressable as prose text or
+ * a typed block with its parsed data.
+ */
+export interface SlidePart {
+  readonly kind: 'prose' | 'block';
+  /** This part's rendered HTML (a slice of the slide's `html`). */
+  readonly html: string;
+  /** Raw Markdown source (prose parts only). */
+  readonly text?: string;
+  /** Block type (block parts only). */
+  readonly type?: BlockType;
+  /** Parsed, sugar-normalized block data (block parts only). */
+  readonly data?: unknown;
+}
+
 /** One presentation slide (used by the slides export). */
 export interface Slide {
   /** Section label (e.g. `Sequence`), or `Cover`. */
@@ -314,6 +331,10 @@ export interface Slide {
   /** `split` = consulting layout: prose (message) left, blocks (exhibit) right.
    *  Forced via a `{split}` heading marker. */
   readonly layout?: 'split';
+  /** The slide's content as structured parts (empty for the cover — exporters
+   *  read `doc.meta` for it). Concatenating part HTML yields `html`, modulo
+   *  the split-layout column wrappers. */
+  readonly parts?: readonly SlidePart[];
 }
 
 /** A document rendered as a sequence of slides. */
@@ -520,7 +541,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
   );
 
   if (usesHeadings) {
-    let parts: Array<{ h: string; w: number; block: boolean; chars: number }> = [];
+    let parts: Array<{ h: string; w: number; block: boolean; chars: number; part: SlidePart }> = [];
     let heading: string | undefined;
     let label: string | undefined;
     let forced: 'top' | 'center' | 'bottom' | undefined;
@@ -556,6 +577,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
           html,
           align,
           ...(forcedLayout !== undefined ? { layout: forcedLayout } : {}),
+          parts: parts.map((p) => p.part),
         });
       }
       parts = [];
@@ -571,7 +593,9 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
     // would overflow the budget (but never flush an empty slide). Split-layout
     // slides never spill: message + exhibit belong together, and the deck's
     // fit() scaler absorbs the size.
-    const addPart = (h: string, w: number, block: boolean, chars = 0): void => {
+    const addPart = (part: SlidePart, w: number, chars = 0): void => {
+      const h = part.html;
+      const block = part.kind === 'block';
       const hero = block && w >= HERO_WEIGHT;
       if (forcedLayout !== 'split' && parts.length > 0) {
         if (hero) {
@@ -604,7 +628,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
       }
       // A hero consumes the whole budget: whatever follows spills to the next
       // slide instead of squeezing in under the exhibit.
-      parts.push({ h, w: hero ? Math.max(w, SLIDE_BUDGET + 0.5) : w, block, chars });
+      parts.push({ h, w: hero ? Math.max(w, SLIDE_BUDGET + 0.5) : w, block, chars, part });
     };
     for (const seg of doc.segments) {
       if (seg.kind === 'meta') continue;
@@ -615,7 +639,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
           if (text !== '') {
             const h = renderProse(buf.join('\n'));
             if (h.trim() !== '') {
-              addPart(h, Math.max(1, text.length / 180), false, text.length);
+              addPart({ kind: 'prose', html: h, text }, Math.max(1, text.length / 180), text.length);
             }
           }
           buf = [];
@@ -642,7 +666,10 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
         }
         flushBuf();
       } else {
-        addPart(renderSegment(seg, ctx), blockWeight(seg), true);
+        addPart(
+          { kind: 'block', html: renderSegment(seg, ctx), type: seg.kind, data: seg.data },
+          blockWeight(seg),
+        );
         label = ctx.sections[ctx.sections.length - 1]?.label;
       }
     }
@@ -650,10 +677,14 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
   } else {
     // No headings/breaks: one slide per block (legacy).
     let prose = '';
+    let proseParts: SlidePart[] = [];
     for (const seg of doc.segments) {
       if (seg.kind === 'markdown') {
         const h = renderProse(seg.text);
-        if (h.trim() !== '') prose += h;
+        if (h.trim() !== '') {
+          prose += h;
+          proseParts.push({ kind: 'prose', html: h, text: seg.text.trim() });
+        }
         continue;
       }
       if (seg.kind === 'meta') continue;
@@ -663,10 +694,12 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
         label: sec?.label ?? 'Section',
         ...(sec?.title !== undefined ? { title: sec.title } : {}),
         html: prose + html,
+        parts: [...proseParts, { kind: 'block', html, type: seg.kind, data: seg.data }],
       });
       prose = '';
+      proseParts = [];
     }
-    if (prose.trim() !== '') slides.push({ label: 'Notes', html: prose });
+    if (prose.trim() !== '') slides.push({ label: 'Notes', html: prose, parts: proseParts });
   }
 
   return { css: houseCss, themeVars, title, defs: globalDefsSvg(), slides };

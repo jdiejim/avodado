@@ -24,6 +24,7 @@ export {
   type RenderedSegment,
   type DocumentSegmentsResult,
   type Slide,
+  type SlidePart,
   type SlidesResult,
 } from './parts.js';
 export { toSlides } from './deck.js';

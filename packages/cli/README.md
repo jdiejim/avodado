@@ -38,7 +38,7 @@ Then run:
 avo check docs/orders.md      # validates every block against its schema
 avo html  docs/orders.md -p   # renders a styled HTML page and opens it
 avo slides docs/orders.md -p  # …or a slide deck   ·   avo pdf docs/orders.md  → a PDF
-avo pptx  docs/orders.md      # …or a real PowerPoint deck (one image slide per slide)
+avo pptx  docs/orders.md      # …or a real PowerPoint deck (add --editable for native text)
 avo studio                    # edit visually — forms + live preview
 ```
 

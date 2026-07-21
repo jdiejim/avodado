@@ -77,3 +77,33 @@ describe('the emitted deck script is valid JavaScript', () => {
     expect(script).toContain('sl-code-cols');
   });
 });
+
+describe('slide model parts (structure-aware exporters)', () => {
+  it('every content slide carries its parts — prose with text, blocks with type + data', () => {
+    const doc = parseDocument(
+      `\`\`\`meta\ntitle: T\n\`\`\`\n\n# One\n\nSome prose.\n\n${SEQ_MED}`,
+      'd',
+    );
+    const { slides } = renderSlides(doc);
+    const content = slides[1];
+    expect(content?.parts?.map((p) => p.kind)).toEqual(['prose', 'block']);
+    expect(content?.parts?.[0]?.text).toBe('Some prose.');
+    const block = content?.parts?.[1];
+    expect(block?.type).toBe('sequence');
+    expect((block?.data as { messages: unknown[] }).messages).toHaveLength(3);
+    // Concatenated part HTML is exactly the slide HTML (non-split layout).
+    expect(content?.parts?.map((p) => p.html).join('')).toBe(content?.html);
+  });
+
+  it('split slides still expose flat parts (columns are presentation-only)', () => {
+    const doc = parseDocument(
+      `\`\`\`meta\ntitle: T\n\`\`\`\n\n# Two {split}\n\n${PROSE_LONG}\n\n${SEQ_MED}`,
+      'd',
+    );
+    const { slides } = renderSlides(doc);
+    const sl = slides[1];
+    expect(sl?.layout).toBe('split');
+    expect(sl?.parts?.some((p) => p.kind === 'prose')).toBe(true);
+    expect(sl?.parts?.some((p) => p.type === 'sequence')).toBe(true);
+  });
+});

@@ -481,12 +481,19 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   // Single-document shortcuts: `avo html|slides|pdf <input> [-o out] [-p]`.
   const single = (name: SingleFormat, desc: string): void => {
-    program
+    const cmd = program
       .command(`${name} <input>`)
       .description(desc)
       .option('-o, --output <path>', 'output file path')
-      .option('-p, --preview', 'render to a temp file and open it in the browser')
-      .action(async (input: string, opts: { output?: string; preview?: boolean }) => {
+      .option('-p, --preview', 'render to a temp file and open it in the browser');
+    if (name === 'pptx') {
+      cmd.option(
+        '-e, --editable',
+        'native PowerPoint text/tables/charts (editable); diagrams stay images',
+      );
+    }
+    cmd.action(
+      async (input: string, opts: { output?: string; preview?: boolean; editable?: boolean }) => {
         const word = opts.preview === true ? 'preview' : name;
         if (isInteractive) {
           console.log(actionBanner(word));
@@ -498,6 +505,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           format: name,
           ...(opts.output !== undefined ? { output: opts.output } : {}),
           ...(opts.preview === true ? { preview: true } : {}),
+          ...(opts.editable === true ? { editable: true } : {}),
         });
         const verb = result.opened ? 'Opened' : 'Wrote';
         console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
