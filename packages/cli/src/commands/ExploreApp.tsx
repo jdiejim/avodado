@@ -9,12 +9,13 @@ import { Box, Text, useApp, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
 
 /** What `avo explore` can front. */
-export type ExplorePick = 'demo' | 'catalog' | 'design' | 'tour';
+export type ExplorePick = 'demo' | 'catalog' | 'compare' | 'design' | 'tour';
 
-/** The four entries, in display order, with their picker blurbs. */
+/** The entries, in display order, with their picker blurbs. */
 export const EXPLORE_ENTRIES: ReadonlyArray<{ readonly id: ExplorePick; readonly blurb: string }> = [
   { id: 'demo', blurb: 'Render the built-in showcase — every block, or one family' },
   { id: 'catalog', blurb: 'Every block type + what it is for (live HTML gallery with -p)' },
+  { id: 'compare', blurb: 'Every block in DOC and SLIDE mode side by side' },
   { id: 'design', blurb: 'Ready design-pattern templates — system, AI / agents, GoF' },
   { id: 'tour', blurb: 'A guided, hands-on walkthrough in 7 short chapters' },
 ];

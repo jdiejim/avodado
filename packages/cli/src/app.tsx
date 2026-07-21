@@ -15,6 +15,7 @@ import { cliVersion } from './io/version.js';
 import { runCheck } from './commands/check.js';
 import { runSingle, type SingleFormat } from './commands/single.js';
 import { runDemo } from './commands/demo.js';
+import { runCompare } from './commands/compare.js';
 import {
   runCatalog,
   BLOCK_DESCRIPTIONS,
@@ -597,6 +598,41 @@ export async function main(argv: readonly string[]): Promise<number> {
       .action(catalogAction);
   };
 
+  // `compare [family]` — every block rendered doc-mode AND slide-mode side by
+  // side (with a Doc / Slide / Both toggle), from the showcase examples.
+  const compareAction = async (
+    familyArg: string | undefined,
+    opts: { output?: string; open?: boolean },
+  ): Promise<void> => {
+    let family: DemoFamily | undefined;
+    if (familyArg !== undefined) {
+      if (!isDemoFamily(familyArg)) {
+        const choices = DEMO_FAMILIES.map((f) => f.id).join(' | ');
+        console.error(pc.red(`Unknown family: ${familyArg}. Try one of: ${choices}`));
+        exitCode = 2;
+        return;
+      }
+      family = familyArg;
+    }
+    flourish('compare', 'demo');
+    const result = await runCompare({
+      ...(family !== undefined ? { family } : {}),
+      ...(opts.output !== undefined
+        ? { output: resolvePath(process.cwd(), opts.output) }
+        : { preview: opts.open !== false }),
+    });
+    const verb = result.opened ? 'Opened' : 'Wrote';
+    console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
+  };
+  const registerCompare = (parent: Command, hidden: boolean): void => {
+    parent
+      .command('compare [family]', hidden ? { hidden: true } : {})
+      .description('See every block in DOC and SLIDE mode side by side (all blocks or one family)')
+      .option('-o, --output <path>', "write the page to a path (implies --no-open)")
+      .option('--no-open', "write the file but don't open it")
+      .action(compareAction);
+  };
+
   // `design [name]` — list patterns in the terminal, print a template
   // (<slug>), or render a gallery (`-p` HTML, `-s` slides).
   const designAction = async (
@@ -703,6 +739,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     .description('Discover Avodado — the demo showcase, block catalog, design patterns, and guided tour');
   registerDemo(exploreCmd, false);
   registerCatalog(exploreCmd, false);
+  registerCompare(exploreCmd, false);
   registerDesign(exploreCmd, false);
   registerTour(exploreCmd, false);
   exploreCmd.action(async () => {
@@ -717,6 +754,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     if (picked === undefined) return; // cancelled with q / escape
     if (picked === 'demo') await demoAction(undefined, {});
     else if (picked === 'catalog') await catalogAction({});
+    else if (picked === 'compare') await compareAction(undefined, { open: true });
     else if (picked === 'design') await designAction(undefined, {});
     else await tourAction({ open: true });
   });
@@ -724,6 +762,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   // Hidden-but-working top-level compat spellings (pre-`explore` era).
   registerDemo(program, true);
   registerCatalog(program, true);
+  registerCompare(program, true);
   registerDesign(program, true);
   registerTour(program, true);
 
