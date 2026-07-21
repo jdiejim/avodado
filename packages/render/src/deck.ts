@@ -102,7 +102,11 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 /* Cover (first slide): centered title, no top bar. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
 .docskin.slide.slide-cover .slide-inner{width:100%;}
-.docskin.slide.slide-cover .cover-sub{margin-left:auto;margin-right:auto;}
+.docskin.slide.slide-cover .cover-sub{margin:0 auto;}
+.docskin.slide.slide-cover .cover-meta{margin-bottom:24px;}
+/* A divider that owns its slide is the title card: center the band's content
+   block on the stage with no leftover doc margins. */
+.docskin.slide .slide-inner:has(.dvd) .section-block{margin:0;}
 .docskin.slide.slide-cover .cover-bar{display:none;}
 .docskin.slide.slide-cover .cover-pad{border-bottom:none;padding-bottom:0;margin-bottom:0;}
 .docskin.slide.slide-cover .cover-meta{justify-content:center;}
@@ -200,14 +204,24 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
   const slideEls = slides
     .map((sl, i) => {
       const isCover = i === 0 && sl.label === 'Cover';
+      // Self-titling slides carry no header bar: a lone DIVIDER names itself
+      // (the PART band is the title — a stale section heading above it reads
+      // wrong), and an untitled prose statement needs no "Slide" label.
+      const onlyDivider =
+        sl.html.includes('"dvd') &&
+        (sl.html.match(/section-block/g) ?? []).length === 1 &&
+        !sl.html.includes('class="prose"');
+      const untitled = sl.title === undefined && sl.label === 'Slide';
       let header = '';
       if (!isCover) {
         secNum += 1;
         const nn = String(secNum).padStart(2, '0');
         const heading = sl.title ?? sl.label;
-        header =
-          `<div class="slide-hd"><div class="slide-hd-l">${esc(heading)}</div>` +
-          `<div class="slide-hd-r">${nn} · ${esc(sl.label)}</div></div>`;
+        if (!onlyDivider && !untitled) {
+          header =
+            `<div class="slide-hd"><div class="slide-hd-l">${esc(heading)}</div>` +
+            `<div class="slide-hd-r">${nn} · ${esc(sl.label)}</div></div>`;
+        }
       }
       const alignCls = sl.align === 'top' ? ' sl-top' : sl.align === 'bottom' ? ' sl-bottom' : '';
       const layoutCls = sl.layout === 'split' ? ' sl-split' : '';
@@ -221,7 +235,10 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
   const options = slides
     .map((sl, i) => {
       const n = String(i + 1).padStart(2, '0');
-      const label = sl.title ?? sl.label;
+      // A divider-only slide is its own title card — list it by the band's
+      // title (e.g. "Prompting well"), not the preceding section's heading.
+      const dvdTitle = /class="dvd-title"[^>]*>([^<]+)</.exec(sl.html)?.[1];
+      const label = dvdTitle ?? sl.title ?? sl.label;
       return `<option value="${i}">${n} · ${esc(label)}</option>`;
     })
     .join('');
