@@ -22,7 +22,7 @@ function renderStep(step: Step, index: number): string {
     step.lang !== undefined ? `<div class="stp-code-head">${escapeHtml(step.lang)}</div>` : '';
   const code =
     step.code !== undefined
-      ? `<div class="stp-code">${lang}<pre><code>${highlightCode(step.code)}</code></pre></div>`
+      ? `<div class="stp-code">${lang}<pre><code>${highlightCode(step.code, step.lang)}</code></pre></div>`
       : '';
   const note =
     step.note !== undefined

@@ -101,7 +101,7 @@ function snippet(
     `<span${bp(paths.title)}>${escapeHtml(title)}</span>` +
     `<span${bp(paths.lang)}>${escapeHtml(lang)}</span>` +
     `</div>` +
-    `<pre${bp(paths.code)}>${highlightCode(code)}</pre>` +
+    `<pre${bp(paths.code)}>${highlightCode(code, lang)}</pre>` +
     `</div>`
   );
 }

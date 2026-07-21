@@ -46,7 +46,7 @@ function renderCard(item: GalleryItem, i: number): string {
       item.title !== undefined || item.lang !== undefined
         ? `<div class="code-header"><span>${escapeHtml(item.title ?? '')}</span><span>${escapeHtml(item.lang ?? '')}</span></div>`
         : '';
-    return `<div class="gl-card gl-code${accent}"${bp(`items.${i}`)}>${header}<pre${bp(`items.${i}.code`)}>${highlightCode(item.code)}</pre>${caption}</div>`;
+    return `<div class="gl-card gl-code${accent}"${bp(`items.${i}`)}>${header}<pre${bp(`items.${i}.code`)}>${highlightCode(item.code, item.lang)}</pre>${caption}</div>`;
   }
   // A plain note cell.
   return `<div class="gl-card${accent}"${bp(`items.${i}`)}>${title}${caption}</div>`;

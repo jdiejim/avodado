@@ -34,13 +34,22 @@ const TY = new Set(
 const TOKEN_RE =
   /(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b\d[\w.]*)|([A-Za-z_$][\w$]*)/g;
 
+/** `lang` labels that switch the highlighter into Markdown mode. */
+const MD_LANGS = new Set(['md', 'markdown', 'mdx']);
+
 /**
  * Highlights a code snippet, returning HTML-safe string.
  *
  * @param code - Source code (any language). HTML-escaped before token wrapping.
+ * @param lang - Optional language label from the block (`lang:`). Most values
+ *   only affect the chip, but `md`/`markdown`/`mdx` switch to a
+ *   Markdown-aware pass (headings, emphasis, links, list markers, quotes).
  */
-export function highlightCode(code: string): string {
+export function highlightCode(code: string, lang?: string): string {
   if (code.length === 0) return '';
+  if (lang !== undefined && MD_LANGS.has(lang.trim().toLowerCase())) {
+    return highlightMarkdown(String(code));
+  }
   const src = String(code);
   let out = '';
   let last = 0;
@@ -67,4 +76,67 @@ export function highlightCode(code: string): string {
   }
   if (last < src.length) out += escapeHtml(src.slice(last));
   return out;
+}
+
+/** Inline Markdown spans: `` `code` ``, `**bold**`, `*em*`/`_em_`, `[t](url)`. */
+const MD_INLINE_RE =
+  /(`[^`\n]+`)|(\*\*[^*\n]+\*\*|__[^_\n]+__)|(\*[^*\n]+\*|_[^_\n]+_)|(\[[^\]\n]+\]\([^)\n]+\))/g;
+
+function mdInline(s: string): string {
+  let out = '';
+  let last = 0;
+  MD_INLINE_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = MD_INLINE_RE.exec(s)) !== null) {
+    if (m.index > last) out += escapeHtml(s.slice(last, m.index));
+    const t = m[0];
+    if (m[1] !== undefined) out += `<span class="str">${escapeHtml(t)}</span>`;
+    else if (m[2] !== undefined) out += `<span class="fn">${escapeHtml(t)}</span>`;
+    else if (m[3] !== undefined) out += `<span class="ty">${escapeHtml(t)}</span>`;
+    else {
+      // [text](url) — text reads as a link, the target stays muted.
+      const link = /^(\[[^\]]+\])(\([^)]+\))$/.exec(t);
+      if (link !== null)
+        out += `<span class="fn">${escapeHtml(link[1] ?? '')}</span><span class="com">${escapeHtml(link[2] ?? '')}</span>`;
+      else out += escapeHtml(t);
+    }
+    last = MD_INLINE_RE.lastIndex;
+  }
+  if (last < s.length) out += escapeHtml(s.slice(last));
+  return out;
+}
+
+/**
+ * Markdown-aware highlighting, line by line: headings pop as keywords, list
+ * markers as numbers, blockquotes and fences as comments — and the *contents*
+ * of a fenced region run through the generic tokenizer, so a Markdown sample
+ * that embeds a code block still shows highlighted code.
+ */
+function highlightMarkdown(src: string): string {
+  const out: string[] = [];
+  let inFence = false;
+  for (const line of src.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      out.push(`<span class="com">${escapeHtml(line)}</span>`);
+    } else if (inFence) {
+      out.push(highlightCode(line));
+    } else if (/^#{1,6}\s/.test(line)) {
+      out.push(`<span class="kw">${escapeHtml(line)}</span>`);
+    } else if (/^\s*>/.test(line)) {
+      out.push(`<span class="com">${escapeHtml(line)}</span>`);
+    } else if (/^\s*(-{3,}|={3,}|\*{3,})\s*$/.test(line)) {
+      out.push(`<span class="com">${escapeHtml(line)}</span>`);
+    } else {
+      const marker = /^(\s*)([-*+]|\d+\.)(\s+)(.*)$/.exec(line);
+      if (marker !== null) {
+        out.push(
+          `${escapeHtml(marker[1] ?? '')}<span class="num">${escapeHtml(marker[2] ?? '')}</span>${marker[3] ?? ''}${mdInline(marker[4] ?? '')}`,
+        );
+      } else {
+        out.push(mdInline(line));
+      }
+    }
+  }
+  return out.join('\n');
 }
