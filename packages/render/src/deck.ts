@@ -73,6 +73,20 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 /* Code owns the stage width — a shrink-wrapped <pre> read at 0.5x; full-width
    it only ever scales for height. */
 .docskin.slide .slide-inner:has(pre){width:100%;}
+/* Code presents at presentation scale: the type starts big (16px vs the doc's
+   12.5px) and the fitter scales DOWN only if it must — so every code slide
+   shows the largest readable type that fits the stage. Gallery cards keep
+   their compact grid size. */
+.docskin.slide .code-block pre{font-size:16px;line-height:1.5;padding:18px 22px;}
+.docskin.slide .code-block{margin:10px 0;}
+.docskin.slide .code-header{font-size:12px;padding:9px 16px;}
+/* A tall lone snippet splits into a two-column spread (deck JS) — half the
+   height, so the type stays at presentation size and fills the stage. */
+.sl-code-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;align-items:start;}
+.sl-code-cols .code-block{margin:0;}
+/* Columns are narrower than the longest line — wrap instead of clipping
+   (slides can't scroll horizontally). */
+.sl-code-cols pre{white-space:pre-wrap;word-break:break-word;}
 /* A lone short prose fragment (a hero exhibit's intro that spilled to its own
    slide) reads as a deliberate STATEMENT — larger, centered, measured. */
 .docskin.slide .sl-statement .prose p{font-size:21px;line-height:1.6;max-width:46ch;margin-left:auto;margin-right:auto;text-align:center;color:var(--slate);}
@@ -143,6 +157,32 @@ const DECK_JS = `(function(){
     var n=el.children.length;
     if(n>=8)el.classList.add('sl-cols-3');
     else if(n>=4)el.classList.add('sl-cols-2');
+  });
+  // A slide whose only exhibit is ONE tall code block reads at half scale —
+  // split the snippet into a two-column spread instead (top-down, left column
+  // first, like a printed listing). Only when the highlight spans balance, so
+  // markup never tears.
+  [].slice.call(document.querySelectorAll('.slide')).forEach(function(sl){
+    var inner=sl.querySelector('.slide-inner');
+    if(!inner)return;
+    var blocks=inner.querySelectorAll('.code-block');
+    if(blocks.length!==1)return;
+    var pre=blocks[0].querySelector('pre');
+    if(!pre)return;
+    var lines=pre.innerHTML.split('\\n');
+    if(lines.length<18)return;
+    var mid=Math.ceil(lines.length/2);
+    var a=lines.slice(0,mid).join('\\n'),c=lines.slice(mid).join('\\n');
+    var balanced=function(s){return (s.match(/<span/g)||[]).length===(s.match(/<\\/span/g)||[]).length;};
+    if(!balanced(a)||!balanced(c))return;
+    var clone=blocks[0].cloneNode(true);
+    pre.innerHTML=a;
+    clone.querySelector('pre').innerHTML=c;
+    var wrap=document.createElement('div');
+    wrap.className='sl-code-cols';
+    blocks[0].parentNode.insertBefore(wrap,blocks[0]);
+    wrap.appendChild(blocks[0]);
+    wrap.appendChild(clone);
   });
   // Prose-only slides with little text are section STATEMENTS — style them
   // as such instead of leaving a small centered fragment.

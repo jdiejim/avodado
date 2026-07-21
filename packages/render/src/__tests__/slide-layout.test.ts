@@ -62,3 +62,18 @@ describe('deck shows diagrams complete (no step builds)', () => {
     expect(html).not.toContain('revealGroups');
   });
 });
+
+describe('the emitted deck script is valid JavaScript', () => {
+  it('parses cleanly — template-literal escapes never tear the deck JS', () => {
+    // DECK_JS is authored inside a TS template literal, where an unescaped
+    // '\n' or regex '\/' silently corrupts the EMITTED script and kills the
+    // whole deck (three real incidents). new Function() parses without
+    // executing, so any such tear fails here instead of in the browser.
+    const html = toSlides(parseDocument(`## The flow\n\n${SEQ_MED}`, 't'));
+    const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1];
+    expect(script).toBeDefined();
+    expect(() => new Function(script as string)).not.toThrow();
+    // The two-column code spread shipped with the script.
+    expect(script).toContain('sl-code-cols');
+  });
+});
