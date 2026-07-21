@@ -32,4 +32,7 @@ In short:
   schema in `core` plus a renderer in each target. Registries are compile-time
   exhaustive — don't bypass them with ad-hoc switches.
 - Libraries return diagnostics/typed results; only the CLI throws and sets exit codes.
+- `@avodado/studio` BUNDLES `core`/`render` (devDependencies, baked in by Vite at
+  publish). A changeset that changes anything Studio renders must also patch
+  `@avodado/studio`, or the published Studio canvas keeps the old renderer.
 - Keep `pnpm lint`, `pnpm typecheck`, and `pnpm test` green. Conventional commits.
