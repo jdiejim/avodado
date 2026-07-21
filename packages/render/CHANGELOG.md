@@ -1,5 +1,15 @@
 # @avodado/render
 
+## 0.26.1
+
+### Patch Changes
+
+- aba44c3: Markdown-aware snippet highlighting: a `code` block (or steps/gallery snippet)
+  with `lang: markdown` (or `md`/`mdx`) now colors headings, **bold**, _italic_,
+  inline code, links, list markers and blockquotes in the dark code card — and
+  fenced code inside the sample still gets generic token highlighting. Any other
+  `lang` value keeps the existing universal tokenizer.
+
 ## 0.26.0
 
 ### Minor Changes
