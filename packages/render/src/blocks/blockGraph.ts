@@ -803,7 +803,7 @@ function renderGrid(data: Data): string {
     !(rawNodes.length > 0 && rawNodes.every((n) => n.col !== undefined && n.row !== undefined));
   const nodes =
     groups.length === 0
-      ? ensureGrid(rawNodes, edges, 'LR')
+      ? ensureGrid(rawNodes, edges, data.dir ?? 'LR')
       : rawNodes.map((n) => ({ ...n, col: n.col ?? 1, row: n.row ?? 1 }));
   const cellW = 178;
   const cellH = 88;

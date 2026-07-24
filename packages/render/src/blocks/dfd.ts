@@ -32,7 +32,7 @@ export function renderDfd(data: BlockDataMap['dfd']): string {
   const edges = data.edges ?? [];
   const rawNodes = data.nodes ?? [];
   const quick = !(rawNodes.length > 0 && rawNodes.every((n) => n.col !== undefined && n.row !== undefined));
-  const nodes = ensureGrid(rawNodes, edges, 'LR');
+  const nodes = ensureGrid(rawNodes, edges, data.dir ?? 'LR');
   const cellW = 148;
   // Long names wrap (word-aware, ≤3 lines) inside the shape; the cell grows
   // uniformly per extra line so wrapped labels never spill or collide.

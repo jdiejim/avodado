@@ -57,7 +57,7 @@ export function renderState(data: BlockDataMap['state']): string {
   const trans = data.transitions ?? [];
   const rawStates = data.states ?? [];
   const quick = !(rawStates.length > 0 && rawStates.every((n) => n.col !== undefined && n.row !== undefined));
-  const states = ensureGrid(rawStates, trans, 'LR');
+  const states = ensureGrid(rawStates, trans, data.dir ?? 'LR');
   const cellW = 168;
   const cellH = 64;
   const gapX = 74;

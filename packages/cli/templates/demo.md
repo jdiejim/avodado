@@ -525,13 +525,13 @@ edges:
 ```flow
 variant: dag
 title: Build pipeline
-description: "CI stages fan out and back in. The w: 2 spans make Checkout, Build, and Deploy cover two columns."
+description: "CI stages fan out and back in, left to right. The w: 2 span makes Deploy cover two columns."
 nodes:
-  - { id: src, col: 1, row: 1, w: 2, kind: start, label: Checkout }
-  - { id: lint, col: 1, row: 2, kind: process, label: Lint }
+  - { id: src, col: 1, row: 1, kind: start, label: Checkout }
+  - { id: lint, col: 2, row: 1, kind: process, label: Lint }
   - { id: test, col: 2, row: 2, kind: process, label: Unit tests }
-  - { id: build, col: 1, row: 3, w: 2, kind: process, label: Build }
-  - { id: deploy, col: 1, row: 4, w: 2, kind: end, label: Deploy }
+  - { id: build, col: 3, row: 1, kind: process, label: Build }
+  - { id: deploy, col: 4, row: 1, w: 2, kind: end, label: Deploy }
 edges:
   - src -> lint
   - src -> test

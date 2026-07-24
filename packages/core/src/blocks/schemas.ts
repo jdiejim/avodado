@@ -410,6 +410,13 @@ const gridGroupSchema = z
   })
   .strict();
 
+// ─── shared: auto-layout direction on the coordinate-grid diagrams ──────────
+// Only consulted in *quick mode* (no node carries `col`/`row`): `LR` ranks the
+// graph left-to-right, `TB` top-to-bottom. Default is `LR` everywhere — a
+// stack of ranks running down the page grows taller than the page can show,
+// where the same graph laid out sideways fits a slide.
+const gridDirSchema = z.enum(['LR', 'TB']).optional();
+
 // ─── flow (flowchart / pipeline DAG) ────────────────────────────────────────
 // `variant: dag` renders the pipeline/DAG visual frame; the former `dag` type
 // is a permanent alias for it.
@@ -437,6 +444,7 @@ export const flowSchema = z
     description: z.string().optional(),
     lede: z.string().optional(),
     variant: z.enum(['dag']).optional(),
+    dir: gridDirSchema,
     groups: z.array(gridGroupSchema).optional(),
     nodes: z.array(flowNodeSchema).optional(),
     edges: z.array(flowEdgeSchema).optional(),
@@ -466,6 +474,7 @@ export const stateSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
+    dir: gridDirSchema,
     groups: z.array(gridGroupSchema).optional(),
     states: z.array(stateNodeSchema).optional(),
     transitions: z.array(stateTransitionSchema).optional(),
@@ -495,6 +504,7 @@ export const dfdSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
+    dir: gridDirSchema,
     groups: z.array(gridGroupSchema).optional(),
     nodes: z.array(dfdNodeSchema).optional(),
     edges: z.array(dfdEdgeSchema).optional(),
@@ -567,6 +577,8 @@ export const graphSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
+    // No `dir` here: `graph` already spends that key on its edges
+    // (`dir: directed | undirected`). Its auto-layout is left-to-right.
     nodes: z.array(graphNodeSchema).optional(),
     edges: z.array(graphEdgeSchema).optional(),
   })
@@ -668,6 +680,7 @@ export const c4Schema = z
     level: z.enum(['context', 'container', 'component']).optional(),
     boundary: c4BoundarySchema.optional(),
     boundaries: z.array(c4NamedBoundarySchema).optional(),
+    dir: gridDirSchema,
     groups: z.array(gridGroupSchema).optional(),
     nodes: z.array(c4NodeSchema).optional(),
     edges: z.array(c4EdgeSchema).optional(),
@@ -821,6 +834,7 @@ export const blockGraphSchema = z
     lede: z.string().optional(),
     preset: z.enum(['infra', 'event', 'ddd', 'network']).optional(),
     systemLabel: z.string().optional(),
+    dir: gridDirSchema,
     layers: z.array(blockGraphLayerSchema).optional(),
     groups: z.array(gridGroupSchema).optional(),
     nodes: z.array(blockGraphNodeSchema).optional(),
@@ -858,6 +872,7 @@ export const felogicSchema = z
     description: z.string().optional(),
     lede: z.string().optional(),
     variant: z.enum(['be']).optional(),
+    dir: gridDirSchema,
     groups: z.array(gridGroupSchema).optional(),
     nodes: z.array(feLogicNodeSchema).optional(),
     edges: z.array(feLogicEdgeSchema).optional(),

@@ -91,6 +91,13 @@ edges:
 `from -> to: label` form (`-->` dashed, `-x->` error); `kind: error` edges (or
 labels starting with `no/fail/error/reject`) render in red.
 
+**Flows run across, not down.** Put the main path on `col` (1, 2, 3 …) and let
+branches drop to `row: 2` — as above. A flow written down the page gets taller
+than the page column and shrinks to nothing on a slide. Drop `col`/`row`
+entirely and the auto-layout does it for you, left-to-right; `dir: TB` asks for
+the top-to-bottom layout instead (auto-layout only — with coordinates on the
+nodes, `dir` does nothing).
+
 Optional `groups` draw dashed zone wrappers around cell ranges — one shape on
 every grid diagram (`flow`, `dfd`, `state`, `c4`, `block`): `col`/`row` anchor
 the top-left cell, `cols`/`rows` span (default 1), `label` sits in the corner,

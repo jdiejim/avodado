@@ -150,7 +150,7 @@ export function renderC4(data: BlockDataMap['c4']): string {
   const edges = data.edges ?? [];
   const rawNodes = data.nodes ?? [];
   const quick = !(rawNodes.length > 0 && rawNodes.every((n) => n.col !== undefined && n.row !== undefined));
-  const nodes = ensureGrid(rawNodes, edges, 'TB');
+  const nodes = ensureGrid(rawNodes, edges, data.dir ?? 'LR');
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const cellW = 212;
   const cellH = 112;

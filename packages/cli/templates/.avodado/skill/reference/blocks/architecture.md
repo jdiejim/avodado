@@ -29,7 +29,9 @@ edges:
 `family` (for `container`/`component`): `client | service | data | store |
 controller | repo | external`. Edge `kind` is `solid | dashed | forbidden |
 error`; edge `tech` renders as `label [tech]` (the C4 protocol convention).
-`col`/`row` are optional — omit them everywhere for auto-layout (*quick mode*).
+`col`/`row` are optional — omit them everywhere for auto-layout (*quick mode*),
+which ranks the graph left-to-right so it stays wider than it is tall; `dir: TB`
+switches that auto-layout to top-to-bottom.
 Optional `boundary` draws one dashed box auto-fitted around the internal nodes;
 `boundaries[]` draws several named boxes, each around an explicit id list:
 ```yaml

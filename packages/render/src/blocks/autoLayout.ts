@@ -6,6 +6,10 @@
  * clean layered grid from the edges using dagre (pure JS, no DOM) — ranks become
  * one axis, order-within-rank the other — so you can declare just nodes + edges
  * and still get a sensible diagram. The downstream renderers are unchanged.
+ *
+ * Every caller passes `data.dir ?? 'LR'`: ranks run left-to-right by default,
+ * because a page is wider than it is tall and a stack of ranks running *down*
+ * outgrows both the page column and the slide stage. `dir: TB` opts back in.
  */
 
 import dagre from '@dagrejs/dagre';

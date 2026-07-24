@@ -49,7 +49,7 @@ export function renderFlowSvg(data: BlockDataMap['flow']): string {
   const groups = data.groups ?? [];
   const rawNodes = data.nodes ?? [];
   const quick = !(rawNodes.length > 0 && rawNodes.every((n) => n.col !== undefined && n.row !== undefined));
-  const nodes = ensureGrid(rawNodes, edges, 'TB');
+  const nodes = ensureGrid(rawNodes, edges, data.dir ?? 'LR');
   const cellW = 176;
   const cellH = 70;
   const gapX = 60;

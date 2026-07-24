@@ -195,7 +195,7 @@ function renderFelogicGraph(data: Data, frame: FrameOpts): string {
   // trigger auto-layout of the whole graph from the edges (left-to-right).
   const nodes =
     groups.length === 0
-      ? ensureGrid(data.nodes ?? [], edges, 'LR')
+      ? ensureGrid(data.nodes ?? [], edges, data.dir ?? 'LR')
       : (data.nodes ?? []).map((n) => ({ ...n, col: n.col ?? 1, row: n.row ?? 1 }));
   const cellW = 178;
   const cellH = 80;
