@@ -1,6 +1,6 @@
 {
   "name": "@avodado/mcp",
-  "version": "0.3.18",
+  "version": "0.3.19",
   "description": "Model Context Protocol (MCP) server for Avodado — let Claude, Cursor, or any AI agent author, validate, and render documentation-as-code directly: Markdown with typed YAML blocks for API docs, architecture & system design, ADRs, and presentations, with the full block grammar and `avo check` diagnostics built in.",
   "license": "MIT",
   "type": "module",

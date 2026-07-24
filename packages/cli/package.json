@@ -1,6 +1,6 @@
 {
   "name": "avodado",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "description": "Documentation-as-code CLI: write Markdown with typed YAML blocks for API docs, architecture & system design (C4, ERDs, sequence diagrams), frontend & design systems, ADRs and decision records, planning, and slide presentations. Validate like code with `avo check`, export to themed HTML, slides, PDF, or PowerPoint (.pptx). AI-native — author with Claude, Cursor, or Copilot and edit visually in Avodado Studio.",
   "license": "MIT",
   "type": "module",
