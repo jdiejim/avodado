@@ -1,6 +1,6 @@
 {
   "name": "@avodado/core",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "Core engine for Avodado documentation-as-code: Markdown parser, Zod schemas for a rich family of typed YAML blocks (API docs, architecture & system design, data models, ADRs, planning, charts), strict validation, and `doc#id` cross-reference resolution. Pure — no I/O, no DOM.",
   "license": "MIT",
   "type": "module",

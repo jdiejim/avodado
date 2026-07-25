@@ -1,5 +1,75 @@
 # @avodado/render
 
+## 0.28.0
+
+### Minor Changes
+
+- 6294435: New **`benchmark`** block — measured results side by side, in the shape model
+  cards and vendor comparisons use: subject columns × metric rows, each metric
+  carrying the benchmark's own name under its label.
+
+  The winner in each row is **derived, not authored**: the numbers are read out of
+  the cells (`$0.14`, `310 ms`, `1861` and `43.3%` all compare), then bolded and
+  tinted. `better: low` flips it for latency and cost, `better: none` turns it
+  off, and `best: true` forces a tie or a non-numeric winner. `featured: true`
+  outlines one subject's whole column; `tone: muted` tints a rival's win gray so
+  it doesn't read as your win. A row measured under several conditions names them
+  in `variants` and gives each subject one value per condition — they stack in
+  the cell, captioned, and each condition is compared on its own line.
+
+- 3c1df17: Card and list blocks stop presenting at page width on a slide. Shrink-wrapped
+  to their natural width, they sat where the fitter's text ceiling (1.06×) left
+  them: a checklist covered 30% of the stage, a status board 52%, a set of KPI
+  cards 64%. They now take the stage the way tables do — 20 blocks move to full
+  width, including `list`, `cvt`, `kanban`, `stories`, `spec`, `anatomy`,
+  `changelog`, `prompt`, `team`, `stats`, `proscons`, `dodont` and `userstory`.
+
+  Stacked cards go **across** the stage rather than down it: `slo`, `okr`,
+  `stories`, `envelope` and `trace` lay their cards out with `auto-fit`, so as
+  many fit as stay readable and the rest wrap — the same mechanism `drivers` and
+  `options` already used. Three SLOs side by side instead of a column took that
+  block from 24% of the stage to 98%, and its labels from 7.2px to 12.3px.
+
+  `pullquote` and `bignumber` are deliberately excluded: they are hero text, not
+  card stacks, so they keep the shrink-wrap that lets the fitter enlarge them —
+  and a pull quote now reads at statement size (22px) on the stage.
+
+  Across the library this takes blocks that land clean on a slide from 34 of 77
+  to 59, with no slide clipping at 1120×630. What remains is diagram labels
+  (their wrap widths are baked into the viewBox) and four blocks that need a
+  different drawing on a slide rather than a bigger one.
+
+- 31ba7dc: Slides stop being a scaled-down page. Two changes, measured across a deck of
+  one block per type:
+
+  **Tabular exhibits take the stage width.** Every table in the library is
+  already `width:100%`, but the slide's content box shrink-wraps (so the fitter
+  can enlarge a lone small block), which meant 100% resolved against the table's
+  own intrinsic width: a three-row `table` covered 27% of the stage and the
+  fitter's 1.47× ceiling could not rescue it. Tables now get the whole stage and
+  their size from type rather than transform — 18px rows instead of 13px scaled
+  up, so hairlines and shadows stay crisp. `table` 27% → 98% of the stage width,
+  `matrix` 49% → 98%, `heatmap` 43% → 98%, `glossary` 55% → 98%, `scorecard`
+  58% → 98%. Their page-card borders and shadows drop on the stage, the way the
+  diagrams' already did.
+
+  **A legibility floor for small labels.** The library sets eyebrows, chips,
+  captions and secondary values at 9–11px because a page is read at 40cm; on a
+  stage, after the fitter scales an exhibit down, those were reaching the room at
+  5–8px. Every non-SVG label that measured under 12px is now 12.5px on slides.
+  Across the library, labels landing under 12px on a slide drop from 641 to 452,
+  and 14 blocks lose their sub-10px type entirely — `risk`, `drivers`,
+  `options`, `persona`, `changelog`, `spec`, `kanban` and others.
+
+  SVG diagram labels are deliberately untouched: their wrap widths are computed
+  against the current size and baked into the viewBox, so they move per diagram.
+  `journey`'s emotion label moves from an inline style to a themed class.
+
+### Patch Changes
+
+- Updated dependencies [6294435]
+  - @avodado/core@0.18.0
+
 ## 0.27.0
 
 ### Minor Changes
