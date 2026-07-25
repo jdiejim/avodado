@@ -174,6 +174,33 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .hm-col{font-size:13px;}
 .docskin.slide .glossary .row{grid-template-columns:240px 1fr;padding:11px 0;}
 .docskin.slide :is(.glossary dt,.glossary dd){font-size:16px;}
+/* ── Card and list exhibits take the stage width too ────────────────────────
+   Same lesson as the tables, for the blocks built from HTML rather than a
+   viewBox. Shrink-wrapped, they sit at their page width and the fitter's
+   text cap (1.06) can barely enlarge them: a checklist covered 30% of the
+   stage, a status board 52%. Diagrams and images keep the shrink-wrap — an
+   SVG scales cleanly, a card layout would rather have the room. */
+.docskin.slide .slide-inner:has(:is(.anatomy,.cg-rail,.ct,.dodont,.envelope,.kanban,
+.layer-stack,.list-block,.okr,.pc,.prompt,.slo,.spec,.stat-row,.stories,.story,
+.team,.trace)){width:100%;}
+/* A pull quote and a big number are hero TEXT — width was never what they were
+   missing. They keep the shrink-wrap (so the fitter can still enlarge them) and
+   the quote reads at statement size instead of page size. */
+.docskin.slide .pull-text{font-size:22px;line-height:1.4;}
+/* ── Stacked cards go across the stage ──────────────────────────────────────
+   On a page a list of cards runs down the column, which on a 16:9 stage is the
+   worst possible shape: it drives the fitter's scale down AND leaves the width
+   unused. Across the stage they stay whole and stay legible. auto-fit keeps
+   the call automatic — as many as fit at a readable width, then wrap — and
+   matches how the drivers and options blocks already lay their cards out.
+   The row is only right while the cards stay whole: past the wrap point they
+   fall to a second row rather than shrinking below the minimum. */
+.docskin.slide :is(.slo-list,.okr-list,.st-list,.env-steps,.tr-list){display:grid;align-items:stretch;}
+.docskin.slide .slo-list{grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;}
+.docskin.slide .okr-list{grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;}
+.docskin.slide .st-list{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
+.docskin.slide .env-steps{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
+.docskin.slide .tr-list{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;}
 /* Cover (first slide): centered title, no top bar. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
 .docskin.slide.slide-cover .slide-inner{width:100%;}
@@ -211,8 +238,7 @@ const DECK_JS = `(function(){
   // count-based so short lists keep their single column.
   [].slice.call(document.querySelectorAll(
     '.slide .ls-list,.slide .tk-list,.slide .steps,.slide .faq,.slide .glossary,'+
-    '.slide .agenda,.slide .spec,.slide .inv-list,.slide .slo-list,'+
-    '.slide .okr-list,.slide .rk-list,'+
+    '.slide .agenda,.slide .spec,.slide .inv-list,.slide .rk-list,'+
     '.slide .slide-inner .prose > ul,.slide .slide-inner .prose > ol'
   )).forEach(function(el){
     var n=el.children.length;

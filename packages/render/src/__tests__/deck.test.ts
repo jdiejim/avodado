@@ -41,6 +41,21 @@ describe('toSlides', () => {
     expect(html).toMatch(/\.pres-table[^{]*\{font-size:18px;\}/);
   });
 
+  it('stacked cards go across the stage, and hero text keeps its shrink-wrap', () => {
+    const html = toSlides(parseDocument(SPLIT_DOC, 'split-test'));
+    // Card lists become auto-fit rows — as many as fit, then wrap.
+    expect(html).toMatch(/\.slo-list\{grid-template-columns:repeat\(auto-fit,minmax\(\d+px,1fr\)\)/);
+    expect(html).toContain('.docskin.slide :is(.slo-list,.okr-list,.st-list,.env-steps,.tr-list){display:grid');
+    // …and those blocks stop shrink-wrapping so the row has the stage.
+    expect(html).toMatch(/\.slide-inner:has\(:is\([^)]*\.slo[,)]/s);
+    // A pull quote and a big number are hero text: width was never the problem,
+    // so they keep the shrink-wrap that lets fit() enlarge them.
+    expect(html).not.toMatch(/\.slide-inner:has\(:is\([^)]*\.bn[,)]/s);
+    expect(html).toContain('.docskin.slide .pull-text{font-size:22px');
+    // The multicol pass keeps the text lists; the card lists are grids now.
+    expect(html).not.toContain(".slide .slo-list,'");
+  });
+
   it('carries the slide legibility floor for the library’s small labels', () => {
     const html = toSlides(parseDocument(SPLIT_DOC, 'split-test'));
     // A sample from each of the three groups (eyebrows, chips, notes).
