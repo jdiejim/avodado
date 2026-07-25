@@ -1,4 +1,4 @@
-# The 77 block types — by family
+# The 78 block types — by family
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 The map from block type → the family file beside this one that holds its full
@@ -61,6 +61,7 @@ permanent aliases — see the alias table at the bottom.
 | `faq` | `narrative.md` | Q&A accordions — native `<details>`, question in the summary, answer expands. |
 | `envelope` | `business.md` | Back-of-envelope capacity math — assumptions, derivation rows, a highlighted bottom line. |
 | `slo` | `tables-data.md` | Service-level objectives — SLI, target vs current, and an error-budget burn bar. |
+| `benchmark` | `tables-data.md` | Measured results side by side — subject columns × metric rows, the best number in each row derived and highlighted; one column can be outlined as the focus. |
 | `swot` | `business.md` | A classic SWOT 2×2 — strengths / weaknesses / opportunities / threats as tinted quadrant cards. |
 | `okr` | `business.md` | Objectives + key results — one card per objective, a status-coloured progress bar per KR. |
 | `persona` | `business.md` | User persona cards — avatar, role, quote, goals, frustrations, tools. |

@@ -153,6 +153,7 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   takeaways: 'Takeaways',
   statustable: 'Status',
   cycle: 'Cycle',
+  benchmark: 'Benchmark',
 };
 
 /**

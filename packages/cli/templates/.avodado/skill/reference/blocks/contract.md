@@ -1,7 +1,7 @@
 # Avodado blocks — the strict field contract
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up). The
-strict field contract for all 77 blocks. Schemas reject unknown fields — use
+strict field contract for all 78 blocks. Schemas reject unknown fields — use
 exactly these. Twelve old block names remain valid as permanent aliases — see
 the **Alias table** at the bottom.
 
@@ -72,6 +72,7 @@ required**, so they're left out of the table below, which shows only the
 | `stories` | `title` `description` · `items[]`: `id` `title` `role` `want` `soThat` `priority` `points`(n) `tags[]` `open`(bool) · `criteria[]`: `given` `when` `then` · `links[]`: `ref` `mode` `label` | each item is a collapsible story; `open: true` starts expanded; `links[].ref` is a real `doc#id` cross-reference |
 | `pattern` | `name*` `category` `intent` `forces[]` `solution` `structure` `note` · `participants[]`: `name*` `role` · `consequences{pros[], cons[]}` | — |
 | `gallery` | `title` `description` `cols`(n) · `items[]`: `title` `code` `lang` `caption` `accent` | a card with `code` renders a highlighted snippet; without it, a title+caption note. Responsive grid (set `cols` to fix the column count). |
+| `benchmark` | `metricLabel` `note` · `subjects*[]`: `label*` `sub` `featured`(bool) `tone` · `rows*[]`: `label*` `sub` `variants[]` `better` `cells[]`: value \| `{value, best(bool), note}` \| array of those (one per variant) | subject tone: accent (default) · muted — better: high (default) · low · none. The best value per row is **derived** from the numbers (`$0.14`, `310 ms`, `43.3%` all compare) — `best: true` only forces a tie or a non-numeric winner. `variants[]` names the conditions measured; then that subject's cell is an array, one value per condition. Missing values render as `—` |
 | `chart` | `kind` `unit` `max`(n) `budget`(n) `labels[]` · `series[]`: `label*` `accent` `values*[]`(n) · `items[]` (donut / waterfall / funnel): `label*` `value*`(n) `accent` `desc` | kind: bar · line · area · donut · radar · waterfall · funnel (default bar) — accent as in `drivers`. `labels`+`series` drive bar/line/area/radar; `items` drives donut/waterfall/funnel (`stages[]` is a legacy synonym for funnel items). `unit` suffixes values; `max` caps the y-axis (radar: the outer ring); radar needs 3+ labels as axes. waterfall: bars cascade left→right, a navy TOTAL bar closes the run, `budget` draws a dashed cap (segments past it tint red + over/under chip). funnel: bands proportional to value with `↓ NN%` conversion chips |
 | `heatmap` | `xLabels*[]` `unit` `min`(n) `max`(n) · `rows[]`: `label*` `values*[]`(n, one per xLabel) | tiles tint low → high on a single-hue ramp between the data min/max (or the explicit `min`/`max` bounds); short rows pad missing cells as blank tiles |
 | `figure` | `src*` `alt` `caption` `width`(n, px) | — |

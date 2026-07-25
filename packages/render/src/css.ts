@@ -1083,4 +1083,36 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .stt-amber{--stt-accent:var(--highlight);--stt-soft:var(--highlight-soft);}
 .docskin .stt-purple{--stt-accent:var(--purple);--stt-soft:var(--purple-soft);}
 .docskin .stt-red{--stt-accent:var(--negative);--stt-soft:var(--negative-soft);}
-.docskin .stt-gray{--stt-accent:var(--slate);--stt-soft:var(--light-gray);}`;
+.docskin .stt-gray{--stt-accent:var(--slate);--stt-soft:var(--light-gray);}
+/* benchmark (measured results: subject columns × metric rows) — an airy
+   scoreboard: no fills in the header, hairline row rules drawn as inset
+   shadows so the featured column's real borders can close into a rounded
+   outline, and the winning value in each row tinted with its subject's tone. */
+.docskin .benchmark{margin:26px 0 34px;}
+.docskin .bm-head{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--charcoal);margin-bottom:2px;}
+.docskin .bm-desc{font-size:13px;color:var(--slate);margin:2px 0 14px;line-height:1.5;}
+.docskin .bm-scroll{overflow-x:auto;padding:3px 3px 4px;}
+.docskin .bm-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+.docskin .bm-table th,.docskin .bm-table td{box-shadow:inset 0 -1px 0 var(--rule);vertical-align:middle;}
+.docskin .bm-table tbody tr:last-child th,.docskin .bm-table tbody tr:last-child td{box-shadow:none;}
+.docskin .bm-table th.bm-subj{padding:10px 14px 12px;text-align:center;font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--charcoal);}
+.docskin .bm-subj-sub{display:block;font-family:var(--font-body);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--gray);margin-top:3px;}
+.docskin .bm-table th.bm-metric{padding:10px 14px 12px;text-align:left;font-family:var(--font-body);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray);}
+.docskin .bm-table td.bm-metric{padding:12px 18px 12px 2px;width:30%;min-width:170px;}
+.docskin .bm-row-label{display:block;font-size:14px;font-weight:600;color:var(--charcoal);line-height:1.35;}
+.docskin .bm-row-sub{display:block;font-size:12px;color:var(--gray);line-height:1.4;margin-top:1px;}
+.docskin .bm-table td.bm-cell{padding:0;text-align:center;}
+.docskin .bm-slot{padding:11px 10px;border-radius:4px;}
+.docskin .bm-slot + .bm-slot{position:relative;}
+.docskin .bm-slot + .bm-slot::before{content:"";position:absolute;top:0;left:22%;right:22%;height:1px;background:var(--rule);}
+.docskin .bm-val{display:block;font-size:15px;color:var(--charcoal);line-height:1.25;}
+.docskin .bm-slot.bm-best .bm-val{font-weight:700;}
+.docskin .bm-cap{display:block;font-size:11px;color:var(--gray);margin-top:2px;}
+.docskin .bm-note{display:block;font-size:11px;color:var(--gray);margin-bottom:2px;}
+.docskin .bm-slot.bm-best.bm-accent{background:var(--highlight-soft);}
+.docskin .bm-slot.bm-best.bm-muted{background:var(--light-gray);}
+/* The featured column: side borders on every cell, closed top and bottom. */
+.docskin .bm-table th.bm-feat,.docskin .bm-table td.bm-feat{border-left:1.5px solid var(--highlight);border-right:1.5px solid var(--highlight);}
+.docskin .bm-table thead th.bm-feat{border-top:1.5px solid var(--highlight);border-radius:14px 14px 0 0;}
+.docskin .bm-table tbody tr:last-child td.bm-feat{border-bottom:1.5px solid var(--highlight);border-radius:0 0 14px 14px;}
+.docskin .bm-foot{font-size:12px;color:var(--gray);margin:12px 0 0;line-height:1.5;}`;

@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 77 blocks is `contract.md` beside this file; the block → family
+table for all 78 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Tables & metrics
@@ -40,6 +40,61 @@ One row-card per objective. `budget` is the fraction of the error budget
 red above 0.8; at or above 1 it reads "exhausted" and `current` tints red. Omit
 `budget` to skip the bar. Use `slo` for reliability targets; use `stats` for
 plain KPIs with trends.
+
+#### `benchmark` — measured results, side by side
+
+A scoreboard, not a decision matrix: `scorecard` scores options against
+weighted criteria you invent; `benchmark` reports numbers you measured. One
+column per subject, one row per metric.
+```benchmark
+title: Retrieval engines, measured
+metricLabel: Benchmark
+subjects:
+  - { label: Ours, sub: v2.1, featured: true }
+  - { label: Vendor A }
+  - { label: Vendor B, tone: muted }
+rows:
+  - { label: Answer accuracy, sub: internal QA set, cells: ["82.4%", "79.1%", "74.8%"] }
+  - { label: p95 latency, sub: 500 rps soak, better: low, cells: ["310 ms", "420 ms", "290 ms"] }
+  - { label: Index size, sub: 40M docs, better: none, cells: ["112 GB", "98 GB", "150 GB"] }
+note: Single region, same corpus, October run.
+```
+**The winner is derived — never bold it yourself.** Each row's best value is
+found by reading the numbers out of the cells (`$0.14`, `310 ms`, `1861` and
+`43.3%` all compare), then bolded and tinted. `better: low` flips it for
+latency and cost, `better: none` turns the highlight off for rows where big and
+small are both fine. `best: true` on a cell forces the highlight — use it for a
+tie or a winner that isn't a number. Cells are positional: one entry per
+subject, in column order; a short list or an omitted value renders as `—`.
+
+`featured: true` outlines one subject's whole column — the thing being argued
+for. A subject with `tone: muted` tints its wins gray instead of the accent, so
+"they beat us here" doesn't read as a win for your side.
+
+When the same metric is measured under several conditions, name them in
+`variants` and give each subject one value per condition. The values stack in
+the cell, captioned, and **each condition is compared on its own line**:
+```benchmark
+title: Reasoning, with and without tools
+subjects:
+  - { label: Ours, featured: true }
+  - { label: Theirs }
+rows:
+  - label: Multidisciplinary reasoning
+    sub: Humanity's Last Exam
+    variants: [no tools, with tools]
+    cells:
+      - ["56.3%", "64.7%"]
+      - ["56.5%", "63.9%"]
+  - label: Health
+    sub: HealthBench Professional
+    cells:
+      - "59.8%"
+      - { value: "66.0%", note: preview build }
+```
+`note` on a cell prints a small line above the value — which build produced the
+number. `metricLabel` heads the first column (default `Benchmark`) and `note` at
+block level is the footnote for measurement conditions.
 
 #### `code` — code snippets, a diff, or a terminal session
 

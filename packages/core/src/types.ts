@@ -113,6 +113,8 @@ export const BLOCK_TYPES = [
   'statustable',
   // Phase 22 — cycles: a closed loop of stages arranged in a circle
   'cycle',
+  // Phase 23 — benchmark scoreboards: measured results per subject, best derived
+  'benchmark',
 ] as const;
 
 /** A block type literal. Adding a new type here is a one-place change. */

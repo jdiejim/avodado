@@ -113,6 +113,17 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .diagram-tag,.docskin.slide .diagram-fignum{display:none;}
 .docskin.slide .diagram-head:not(:has(.diagram-title)){display:none;}
 .docskin.slide .diagram-title{font-size:19px;}
+/* A benchmark table on the stage is the exhibit: it claims the full width, and
+   its rows tighten so the fitter has less height to scale away — the numbers
+   are the whole point, they stay big. */
+.docskin.slide .slide-inner:has(.benchmark){width:100%;}
+.docskin.slide .benchmark{margin:0;}
+.docskin.slide .bm-slot{padding:8px 10px;}
+.docskin.slide .bm-table td.bm-metric{padding:8px 16px 8px 2px;}
+.docskin.slide .bm-table th.bm-subj,.docskin.slide .bm-table th.bm-metric{padding-top:2px;padding-bottom:10px;}
+.docskin.slide .bm-val{font-size:16.5px;}
+.docskin.slide .bm-row-label{font-size:15px;}
+.docskin.slide .bm-table th.bm-subj{font-size:16.5px;}
 /* Cover (first slide): centered title, no top bar. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
 .docskin.slide.slide-cover .slide-inner{width:100%;}

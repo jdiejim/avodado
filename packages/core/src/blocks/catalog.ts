@@ -161,6 +161,8 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```statustable\ntitle: Workstream status\ncolumns: [Task, Update]\nstatuses:\n  - { label: in review, color: purple }\n  - { label: waiting on vendor, color: neutral }\n  - { label: shipped, color: success }\nrows:\n  - { cells: [Payment retries, Backoff logic merged; canary running since Monday], status: shipped }\n  - cells: [Vendor SSO, Contract countersigned; sandbox creds due this week]\n    status: waiting on vendor\n    subtasks:\n      - { cells: [SAML metadata exchange, Our metadata sent Tuesday], status: shipped }\n      - { cells: [Provisioning sync, Blocked on sandbox credentials], status: waiting on vendor }\n  - { cells: [Rate-limit rework, PR up for second review], status: in review }\n```\n',
   cycle:
     '```cycle\ntitle: Build–measure–learn\nsteps:\n  - { label: Build, desc: Ship the smallest testable change }\n  - { label: Measure, desc: Watch the one metric the change should move }\n  - { label: Learn, desc: Keep the change or roll it back }\ncenter: every release\n```\n',
+  benchmark:
+    '```benchmark\ntitle: Retrieval engines, measured\nmetricLabel: Benchmark\nsubjects:\n  - { label: Ours, sub: v2.1, featured: true }\n  - { label: Vendor A }\n  - { label: Vendor B, tone: muted }\nrows:\n  - { label: Answer accuracy, sub: internal QA set, cells: ["82.4%", "79.1%", "74.8%"] }\n  - { label: p95 latency, sub: 500 rps soak, better: low, cells: ["310 ms", "420 ms", "290 ms"] }\n  - label: Cost per 1k queries\n    variants: [cached, cold]\n    better: low\n    cells:\n      - ["$0.14", "$0.90"]\n      - ["$0.21", "$1.10"]\n      - ["$0.18", "—"]\nnote: Single region, same corpus, October run.\n```\n',
 };
 
 /**
@@ -273,6 +275,7 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   risk: 'planning',
   statustable: 'planning',
   cycle: 'flows',
+  benchmark: 'tables-data',
   matrix: 'business',
   anatomy: 'business',
   composition: 'business',
@@ -391,6 +394,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   takeaways: 'Takeaways',
   statustable: 'Status table',
   cycle: 'Cycle',
+  benchmark: 'Benchmark table',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -488,4 +492,6 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'Task table with an update column, user-defined colored status pills, and optional subtasks per row; `variant: tracker` renders the classic task-tracker list.',
   cycle:
     'A closed loop of stages arranged in a circle — build–measure–learn, PDCA, an incident loop; step descriptions become a numbered legend.',
+  benchmark:
+    'Measured results side by side — subject columns (one can be outlined as the focus) × metric rows, best in each row derived and highlighted, several conditions per row supported.',
 };

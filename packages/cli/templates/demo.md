@@ -599,6 +599,31 @@ rows:
   - [ Team, { v: "$80", tone: pos }, "50" ]
 ```
 
+## Benchmark
+
+```benchmark
+title: Retrieval engines, measured
+description: "The best number in each row is derived, not authored — `better: low` flips it for latency and cost."
+metricLabel: Benchmark
+subjects:
+  - { label: Ours, sub: v2.1, featured: true }
+  - { label: Vendor A }
+  - { label: Vendor B, tone: muted }
+rows:
+  - { label: Answer accuracy, sub: internal QA set, cells: ["82.4%", "79.1%", "74.8%"] }
+  - { label: Citations correct, sub: 500 sampled answers, cells: ["91.0%", "88.2%", "83.4%"] }
+  - { label: p95 latency, sub: 500 rps soak, better: low, cells: ["310 ms", "420 ms", "290 ms"] }
+  - label: Cost per 1k queries
+    variants: [cached, cold]
+    better: low
+    cells:
+      - ["$0.14", "$0.90"]
+      - ["$0.21", "$1.10"]
+      - ["$0.18", "—"]
+  - { label: Index size, sub: 40M docs, better: none, cells: ["112 GB", "98 GB", "150 GB"] }
+note: Single region, same corpus, October run. Vendor B declined the cold-cache test.
+```
+
 ## Sequence
 
 ```sequence

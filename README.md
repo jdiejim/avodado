@@ -53,7 +53,7 @@ One grammar covers the docs a software team actually writes:
 | **Charts & overviews** | `chart` · `stats` · `heatmap` · `quadrant` · `journey` |
 | **Slide presentations** | any doc → `avo slides` (one slide per heading) |
 
-Full list: **[77 block types](#the-77-block-types)** across 12 families.
+Full list: **[78 block types](#the-78-block-types)** across 12 families.
 
 ## Quick start
 
@@ -84,7 +84,7 @@ avo init --yes      # defaults, no prompts (great for CI)
 You get:
 
 - **`docs/getting-started.md` + `docs/tutorial.md`** — an 80/20 quick start and a deck-first tour of every block (`avo slides docs/tutorial.md`).
-- **`.avodado/skill/SKILL.md`** — the authoring skill: the full block grammar with a worked example for all 77 blocks.
+- **`.avodado/skill/SKILL.md`** — the authoring skill: the full block grammar with a worked example for all 78 blocks.
 - **Editor adapters** for the tools you picked — Claude Code (`CLAUDE.md`), Cursor (`.cursor/rules/avodado.mdc`), GitHub Copilot (`.github/copilot-instructions.md`), Windsurf (`.windsurfrules`).
 - **`avodado.theme.json`** if you chose a custom theme.
 
@@ -190,13 +190,13 @@ Exits non-zero on any error, so it drops straight into CI. It catches bad fields
 
 ---
 
-## The 77 block types
+## The 78 block types
 
 | Family | Blocks |
 |---|---|
 | Document & meta | `meta` |
 | Prose & structure | `prose` `callout` `glossary` `pullquote` `layers` `list` `figure` `faq` `divider` `bignumber` `takeaways` |
-| Tables & metrics | `table` `stats` `slo` `code` `gallery` |
+| Tables & metrics | `table` `stats` `slo` `code` `gallery` `benchmark` |
 | API reference | `endpoint` |
 | Sequence & state | `sequence` `state` |
 | Data model | `erd` |
@@ -237,7 +237,7 @@ CI gates on this for free.
 
 | Package | Purpose |
 | --- | --- |
-| [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 77 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
+| [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 78 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
 | [`@avodado/render`](./packages/render) | All rendering: `renderDocument` (standalone HTML) + `renderDocumentParts` (embeddable) + `toSlides` (self-contained decks). Inline CSS + SVG, 6 themes. |
 | [`avodado`](./packages/cli) | The `avo` CLI (also runs as `avodado`) — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · theme · sync` + per-tool installers. PDF export (Playwright) lives here. |
 | [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` — a Home page of your docs, in-place editing, Present, plus HTML / slides / PDF export. |

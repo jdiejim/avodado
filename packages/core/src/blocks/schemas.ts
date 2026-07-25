@@ -2071,6 +2071,67 @@ export const cycleSchema = z
   })
   .strict();
 
+// ─── benchmark (measured results: subject columns × metric rows) ────────────
+// A scoreboard, not a decision matrix: `scorecard` asks you to score options
+// against weighted criteria, `benchmark` reports numbers you measured. One
+// column per subject (model, vendor, build), one row per metric, and the best
+// result in each row is derived and highlighted — nobody bolds it by hand.
+// A cell is the terse value, or an object when it needs a note, or an array
+// when the row measures the same metric under several conditions.
+const benchmarkSubjectSchema = z
+  .object({
+    label: z.string(),
+    /** Small sub-label under the column head (e.g. a version or "ours"). */
+    sub: z.string().optional(),
+    /** Draws the outline around this whole column — the subject in focus. */
+    featured: z.boolean().optional(),
+    /** Tint used when this subject wins a row. Default `accent`. */
+    tone: z.enum(['accent', 'muted']).optional(),
+  })
+  .strict();
+const benchmarkValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z
+    .object({
+      value: z.union([z.string(), z.number()]).optional(),
+      /** Forces the win highlight (ties, or a winner that isn't a number). */
+      best: z.boolean().optional(),
+      /** Tiny label above the value (e.g. the variant of the subject used). */
+      note: z.string().optional(),
+    })
+    .strict(),
+]);
+/** One subject's result(s) for a row: a value, or one value per variant. */
+const benchmarkCellSchema = z.union([benchmarkValueSchema, z.array(benchmarkValueSchema)]);
+const benchmarkRowSchema = z
+  .object({
+    label: z.string(),
+    /** The benchmark's own name, under the metric label. */
+    sub: z.string().optional(),
+    /** Conditions measured, in order — captions the stacked values in a cell. */
+    variants: z.array(z.string()).optional(),
+    /** Which way is better; `none` highlights nothing. Default `high`. */
+    better: z.enum(['high', 'low', 'none']).optional(),
+    /** One entry per subject, in column order. Short arrays render as `—`. */
+    cells: z.array(benchmarkCellSchema).optional(),
+  })
+  .strict();
+export const benchmarkSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** Head of the metric column. Default `Benchmark`. */
+    metricLabel: z.string().optional(),
+    /** Footnote under the table (measurement conditions, dates, sources). */
+    note: z.string().optional(),
+    subjects: z.array(benchmarkSubjectSchema).min(1),
+    rows: z.array(benchmarkRowSchema).min(1),
+  })
+  .strict();
+
 // ─── registry source-of-truth ───────────────────────────────────────────────
 /**
  * The schema map. `as const satisfies Record<BlockType, ...>` enforces that
@@ -2154,6 +2215,7 @@ export const blockSchemas = {
   takeaways: takeawaysSchema,
   statustable: statustableSchema,
   cycle: cycleSchema,
+  benchmark: benchmarkSchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

@@ -130,4 +130,5 @@ export const blockRegistry: BlockRegistry = {
   takeaways: { type: 'takeaways', schema: blockSchemas.takeaways },
   statustable: { type: 'statustable', schema: blockSchemas.statustable },
   cycle: { type: 'cycle', schema: blockSchemas.cycle },
+  benchmark: { type: 'benchmark', schema: blockSchemas.benchmark },
 };

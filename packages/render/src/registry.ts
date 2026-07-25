@@ -86,6 +86,7 @@ import { renderBignumber } from './blocks/bignumber.js';
 import { renderTakeaways } from './blocks/takeaways.js';
 import { renderStatustable } from './blocks/statustable.js';
 import { renderCycle } from './blocks/cycle.js';
+import { renderBenchmark } from './blocks/benchmark.js';
 
 /** Per-block HTML renderer signature. */
 export type HtmlRenderer<K extends BlockType> = (data: BlockDataMap[K]) => string;
@@ -172,4 +173,5 @@ export const htmlRenderers: HtmlRendererRegistry = {
   takeaways: renderTakeaways,
   statustable: renderStatustable,
   cycle: renderCycle,
+  benchmark: renderBenchmark,
 };

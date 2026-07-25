@@ -43,7 +43,7 @@ function collectOpaquePaths(node: FieldNode, prefix: string, out: string[]): voi
 
 describe('opaque audit across all block types', () => {
   it(`covers ${BLOCK_TYPES.length} block types`, () => {
-    expect(BLOCK_TYPES.length).toBe(77);
+    expect(BLOCK_TYPES.length).toBe(78);
   });
 
   it('every root schema introspects as an object (the form always renders)', () => {
