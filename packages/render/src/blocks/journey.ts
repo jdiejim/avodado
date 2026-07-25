@@ -52,8 +52,8 @@ export function renderJourney(data: BlockDataMap['journey']): string {
       })
       .join('');
     svg =
-      `<div style="margin-top:10px">` +
-      `<div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Emotion</div>` +
+      `<div class="jr-emotion">` +
+      `<div class="jr-emotion-label">Emotion</div>` +
       `<svg viewBox="0 0 ${W} ${H}" style="width:100%" role="img"><title>Emotion curve</title>` +
       `<polyline points="${points}" fill="none" stroke="#0e54a1" stroke-width="2"/>` +
       `<g${bl('emotion')}>${dots}</g>` +

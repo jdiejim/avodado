@@ -124,6 +124,56 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .bm-val{font-size:16.5px;}
 .docskin.slide .bm-row-label{font-size:15px;}
 .docskin.slide .bm-table th.bm-subj{font-size:16.5px;}
+/* ── The legibility floor ───────────────────────────────────────────────────
+   A page is read at 40cm, so the library sets its eyebrows, chips, captions
+   and secondary values at 9–11px. A stage is read from across a room, and the
+   fitter can only shrink an exhibit further — measured across a deck of one
+   block per slide, those labels were arriving at 5–8px.
+   Every non-SVG label that measured under 12px is listed here, at 12.5px:
+   still clearly secondary next to 15–16px body text, still legible after a
+   0.8 scale-down. Re-derive the list by walking a one-block-per-slide deck
+   and collecting classes whose computed font-size is under 12px.
+   SVG diagram labels are deliberately absent — their wrap widths are computed
+   against the current size and baked into the viewBox, so they move as their
+   own change, per diagram. */
+/* eyebrows, kickers, and the small labels that name a value */
+.docskin.slide :is(.a-label,.ac-title,.accent,.agenda-dur,.agenda-owner,.al-foot-label,
+.am-area-label,.bm-metric,.bm-subj-sub,.callout-title,.cp-result-kicker,.ct-label,.ctx-idx,
+.ctx-num,.dd-label,.dv-sub,.dvd-kicker-text,.env-g-label,.env-r-label,.ep-section,.hm-bound,
+.k,.kan-head,.layer-kicker,.layer-src,.mx-corner,.op-kicker,.pa-sec-label,.pa-tool,.pc-head,
+.pr-kicker,.pr-label,.pt-cat,.pt-kicker,.pt-label,.section-num,.slo-v-label,.sp-label,.sp-step,
+.st-ac-label,.stat-label,.stp-code-head,.stt-status-h,.swot-label,.tem-role,.tl-date,.ts-spec){font-size:12.5px;}
+/* chips, pills, and status tokens */
+.docskin.slide :is(.am-tile,.cg-tag,.cg-type,.dv-tag,.inv-status,.inv-tag,.kan-card-tag,
+.op-verdict,.pill,.pl-hex,.rk-sev,.rk-status,.sc-weight,.sc-winner,.st-chip,.story-chip,
+.stt-pill,.tr-chip){font-size:12.5px;}
+/* notes, captions, and secondary values */
+.docskin.slide :is(.am-area-desc,.bm-cap,.dd-ex,.dd-sign,.ep-auth,.ep-req,.item,.okr-owner,
+.okr-pct,.op-how,.pl-usage,.pr-var,.pull-attr,.rk-meta,.rk-owner,.sc-note,.slo-caption,
+.slo-window,.st-id,.tbl-note,.tr-io-label,.tr-mono,.ts-note,
+.cover-meta,.edge-step,.jr-emotion-label,.stt-key){font-size:12.5px;}
+/* ── Tabular exhibits present at full width ─────────────────────────────────
+   Every table in the library is already width:100% — but .slide-inner
+   shrink-wraps (so the fitter can scale a lone small block UP), which means
+   100% resolves against the table's own intrinsic width. A three-row table
+   came out at 27% of the stage, and the fitter's 1.47× cap could not rescue
+   it. Hand the inner the whole stage instead and take the size from type
+   rather than from transform: a table laid out at 16px beats a 13px table
+   scaled 1.5×, because the scale enlarges the hairlines and shadows too. */
+.docskin.slide .slide-inner:has(table),
+.docskin.slide .slide-inner:has(.heatmap),
+.docskin.slide .slide-inner:has(.glossary){width:100%;}
+.docskin.slide :is(.pres-table,.mx-grid,.sc-table,.stt-table,.trk,.bm-table){font-size:18px;}
+.docskin.slide :is(.pres-table,.sc-table,.stt-table,.trk) :is(th,td){padding-top:11px;padding-bottom:11px;}
+.docskin.slide :is(.pres-table,.mx-grid,.sc-table,.stt-table,.trk,.bm-table) thead :is(th,td){font-size:12.5px;}
+.docskin.slide .sc-foot td{font-size:12.5px;}
+.docskin.slide .mx-cell{font-size:16px;}
+/* Their page-card chrome goes the way the diagrams' did — the slide is the card. */
+.docskin.slide :is(.mx-scroll,.sc-scroll,.hm-scroll,.bm-scroll){border:none;box-shadow:none;padding:0;background:transparent;}
+.docskin.slide .hm-cell{font-size:14px;min-height:40px;}
+.docskin.slide .hm-col{font-size:13px;}
+.docskin.slide .glossary .row{grid-template-columns:240px 1fr;padding:11px 0;}
+.docskin.slide :is(.glossary dt,.glossary dd){font-size:16px;}
 /* Cover (first slide): centered title, no top bar. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
 .docskin.slide.slide-cover .slide-inner{width:100%;}

@@ -32,6 +32,27 @@ describe('toSlides', () => {
     expect(html).toContain('var cap=visual?1.5:1.08');
   });
 
+  it('a tabular exhibit takes the stage width instead of being scaled up into it', () => {
+    const html = toSlides(parseDocument(SPLIT_DOC, 'split-test'));
+    // The inner shrink-wraps by default so fit() can enlarge a lone block; a
+    // table would then resolve width:100% against its own intrinsic width.
+    expect(html).toContain('.docskin.slide .slide-inner:has(table)');
+    // …and the size comes from type, not from transform.
+    expect(html).toMatch(/\.pres-table[^{]*\{font-size:18px;\}/);
+  });
+
+  it('carries the slide legibility floor for the library’s small labels', () => {
+    const html = toSlides(parseDocument(SPLIT_DOC, 'split-test'));
+    // A sample from each of the three groups (eyebrows, chips, notes).
+    for (const cls of ['.stat-label', '.rk-sev', '.slo-caption', '.edge-step']) {
+      expect(html, `floor should cover ${cls}`).toContain(cls);
+    }
+    expect((html.match(/\{font-size:12\.5px;\}/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    // SVG diagram labels are excluded on purpose — their wrap widths are baked
+    // into the viewBox, so they move per diagram, not in a sweep.
+    expect(html).not.toContain('.fc-label{font-size');
+  });
+
   it('aliased fences keep their historical SECTION labels in the deck', () => {
     const aliasDoc = [
       '```meta',

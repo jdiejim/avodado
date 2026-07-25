@@ -207,6 +207,8 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .prose strong{font-weight:700;color:var(--charcoal);}
 .docskin .prose em{font-style:italic;}
 /* glossary */
+.docskin .jr-emotion{margin-top:10px;}
+.docskin .jr-emotion-label{font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
 .docskin .glossary{margin:10px 0;}
 .docskin .glossary .row{display:grid;grid-template-columns:170px 1fr;gap:14px;padding:9px 0;border-bottom:1px solid var(--rule);}
 .docskin .glossary dt{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--navy);}
