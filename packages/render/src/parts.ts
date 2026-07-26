@@ -13,7 +13,13 @@
  */
 
 import type { BlockDataMap, BlockType, Document, Segment, TypedSegment } from '@avodado/core';
-import { isNearDuplicateTitle, trailingHeading } from '@avodado/core';
+import {
+  isNearDuplicateTitle,
+  readAlignMarker,
+  readSourceMarker,
+  stripHeadingMarkers,
+  trailingHeading,
+} from '@avodado/core';
 import { houseCss } from './css.js';
 import { escapeHtml } from './escape.js';
 import { renderCover } from './blocks/meta.js';
@@ -692,22 +698,17 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
             pushSlide(false); // a heading starts a new slide
             // Optional marker, e.g. `## Title {top}` or `## Title {split}` —
             // stripped from the title.
-            let title = m[2] ?? '';
-            // `{source: …}` carries free text (commas, colons, a date), so it
-            // is matched before the single-word markers and stripped first.
-            const src = /\s*\{source:\s*([^}]+)\}\s*$/i.exec(title);
-            if (src !== null) {
-              title = title.slice(0, src.index).replace(/\s+$/, '');
-              sourceNote = (src[1] ?? '').trim();
+            // Markers are parsed by @avodado/core so the deck, the page and
+            // the nav can't disagree about what a title says.
+            const raw = m[2] ?? '';
+            const src = readSourceMarker(raw);
+            if (src !== undefined) sourceNote = src;
+            const a = readAlignMarker(raw);
+            if (a === 'split') forcedLayout = 'split';
+            else if (a !== undefined) {
+              forced = a === 'middle' || a === 'center' ? 'center' : a === 'bottom' ? 'bottom' : 'top';
             }
-            const mark = /\s*\{(top|center|middle|bottom|split)\}\s*$/i.exec(title);
-            if (mark !== null) {
-              title = title.slice(0, mark.index).replace(/\s+$/, '');
-              const a = (mark[1] ?? '').toLowerCase();
-              if (a === 'split') forcedLayout = 'split';
-              else forced = a === 'middle' || a === 'center' ? 'center' : a === 'bottom' ? 'bottom' : 'top';
-            }
-            heading = title;
+            heading = stripHeadingMarkers(raw);
           } else {
             buf.push(line);
           }

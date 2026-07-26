@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
 import { parseDocument } from '@avodado/core';
 import { toSlides } from '../deck.js';
+import { renderDocumentSegments } from '../parts.js';
 import { renderScenarios } from '../blocks/scenarios.js';
 import { renderTree } from '../blocks/tree.js';
 
@@ -145,5 +146,35 @@ describe('tree with values — the driver tree', () => {
     const plain = renderTree({ nodes: [{ id: 'a', label: 'A' }, { id: 'b', parent: 'a', label: 'B' }] });
     expect(plain).not.toContain('tvalue');
     expect(plain).not.toContain('tshare');
+  });
+});
+
+describe('heading markers never reach the reader', () => {
+  it('strips {source: …} from the page heading and prints it as provenance', () => {
+    const html = renderDocumentSegments(parseDocument(DECK, 'deck'))
+      .segments.map((s) => s.html)
+      .join('');
+    expect(html).toContain('p95 is three systems');
+    expect(html).not.toContain('{source');
+    expect(html).toContain('Source: production traces, 14 Oct 2026');
+  });
+
+  it('strips the alignment markers on the page too', () => {
+    const doc = ['## Message {split}', '', 'Text.'].join('\n');
+    const html = renderDocumentSegments(parseDocument(doc, 'm'))
+      .segments.map((s) => s.html)
+      .join('');
+    expect(html).toContain('>Message<');
+    expect(html).not.toContain('{split}');
+  });
+
+  it('handles both markers on one heading, in either order', () => {
+    const both = ['## Title {top} {source: a study, 2026}', '', 'Text.'].join('\n');
+    const html = renderDocumentSegments(parseDocument(both, 'b'))
+      .segments.map((s) => s.html)
+      .join('');
+    expect(html).toContain('>Title<');
+    expect(html).not.toContain('{');
+    expect(html).toContain('Source: a study, 2026');
   });
 });

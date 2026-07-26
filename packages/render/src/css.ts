@@ -1117,6 +1117,7 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .bm-table th.bm-feat,.docskin .bm-table td.bm-feat{border-left:1.5px solid var(--highlight);border-right:1.5px solid var(--highlight);}
 .docskin .bm-table thead th.bm-feat{border-top:1.5px solid var(--highlight);border-radius:14px 14px 0 0;}
 .docskin .bm-table tbody tr:last-child td.bm-feat{border-bottom:1.5px solid var(--highlight);border-radius:0 0 14px 14px;}
+.docskin .src-note{font-family:var(--font-mono);font-size:11px;color:var(--gray);margin:-6px 0 18px;letter-spacing:.02em;}
 /* tree values — the driver-tree treatment: the number, then its share of the parent */
 .docskin .tvalue{margin-left:10px;font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--navy);}
 .docskin .tshare{margin-left:6px;font-family:var(--font-mono);font-size:10.5px;color:var(--gray);}

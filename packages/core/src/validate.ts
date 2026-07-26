@@ -83,6 +83,41 @@ function renderIssue(kind: BlockType, issue: z.ZodIssue): IssueRender {
  * block that follows — the section head suppresses a near-duplicate block
  * `title`, and a title-less block inherits the heading for the sections nav.
  */
+/**
+ * Heading markers — `## Title {split}`, `{top}`, `{source: …}`.
+ *
+ * They are authored on the heading but belong to the SLIDE, not to the text,
+ * so every consumer strips them before displaying a title. One definition
+ * here, because the renderer, the deck and the nav all have to agree: a marker
+ * that one of them fails to strip shows up verbatim in front of a reader.
+ */
+const ALIGN_MARKER = /\s*\{(top|center|middle|bottom|split)\}\s*$/i;
+const SOURCE_MARKER = /\s*\{source:\s*([^}]+)\}\s*$/i;
+
+/** The heading text with any trailing markers removed. */
+export function stripHeadingMarkers(text: string): string {
+  let out = text;
+  for (let pass = 0; pass < 3; pass++) {
+    const next = out.replace(SOURCE_MARKER, '').replace(ALIGN_MARKER, '');
+    if (next === out) break;
+    out = next;
+  }
+  return out.replace(/\s+$/, '');
+}
+
+/** The `{source: …}` marker's text, if the heading carries one. */
+export function readSourceMarker(text: string): string | undefined {
+  const m = SOURCE_MARKER.exec(text);
+  return m === null ? undefined : (m[1] ?? '').trim();
+}
+
+/** The `{top|center|bottom|split}` marker, if the heading carries one. */
+export function readAlignMarker(text: string): string | undefined {
+  // The source marker may sit outside it: `## T {top} {source: x}`.
+  const m = ALIGN_MARKER.exec(text.replace(SOURCE_MARKER, ''));
+  return m === null ? undefined : (m[1] ?? '').toLowerCase();
+}
+
 export function trailingHeading(text: string): { readonly text: string; readonly offset: number } | undefined {
   const lines = text.split('\n');
   let i = lines.length - 1;
@@ -90,7 +125,7 @@ export function trailingHeading(text: string): { readonly text: string; readonly
   if (i < 0) return undefined;
   const m = /^#{1,6}\s+(.+?)\s*#*\s*$/.exec((lines[i] ?? '').trim());
   if (m === null) return undefined;
-  return { text: (m[1] ?? '').trim(), offset: i };
+  return { text: stripHeadingMarkers((m[1] ?? '').trim()), offset: i };
 }
 
 /** Lowercases and strips punctuation/whitespace so near-duplicates compare equal. */

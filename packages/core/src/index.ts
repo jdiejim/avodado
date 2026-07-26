@@ -40,7 +40,14 @@ export { levenshtein, closest } from './suggest.js';
 export { splitMarkdown, type RawSegment } from './splitter.js';
 export { parseBlockBody, locateYamlPath, type YamlParseResult, type YamlLocation } from './yaml.js';
 export { parseDocument } from './parser.js';
-export { validateDocument, isNearDuplicateTitle, trailingHeading } from './validate.js';
+export {
+  validateDocument,
+  isNearDuplicateTitle,
+  trailingHeading,
+  stripHeadingMarkers,
+  readSourceMarker,
+  readAlignMarker,
+} from './validate.js';
 export {
   segmentSpan,
   replaceBlockBody,

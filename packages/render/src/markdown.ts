@@ -1,3 +1,5 @@
+import { readSourceMarker, stripHeadingMarkers } from '@avodado/core';
+import { escapeHtml } from './escape.js';
 /**
  * Renders a prose segment to HTML via `marked`.
  *
@@ -33,13 +35,17 @@ marked.use({
   },
   renderer: {
     heading(token: Tokens.Heading): string {
-      // `## Title {split}` / `{top|center|bottom}` are slide-layout markers —
-      // strip them from displayed #/## headings, mirroring the slide renderer.
-      let text = this.parser.parseInline(token.tokens);
-      if (token.depth <= 2) {
-        text = text.replace(/\s*\{(?:top|center|middle|bottom|split)\}\s*$/i, '');
-      }
-      return `<h${token.depth}>${text}</h${token.depth}>\n`;
+      // Heading markers (`{split}`, `{top}`, `{source: …}`) address the slide,
+      // not the text — a page strips them. The source is the exception: the
+      // author wrote provenance, so the page prints it under the heading, the
+      // way the deck prints it in the slide footer.
+      const raw = this.parser.parseInline(token.tokens);
+      if (token.depth > 2) return `<h${token.depth}>${raw}</h${token.depth}>\n`;
+      const text = stripHeadingMarkers(raw);
+      const src = readSourceMarker(raw);
+      const note =
+        src !== undefined ? `<p class="src-note">Source: ${escapeHtml(src)}</p>\n` : '';
+      return `<h${token.depth}>${text}</h${token.depth}>\n${note}`;
     },
     link(token: Tokens.Link): string {
       const href = safeUrl(token.href);
