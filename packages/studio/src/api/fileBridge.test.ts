@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchDoc, saveDoc } from './client.js';
+import { fetchDoc, saveDoc } from './fileBridge.js';
 
 function mockFetch(status: number, body: unknown): ReturnType<typeof vi.fn> {
   const fn = vi.fn(() =>

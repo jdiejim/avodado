@@ -6,6 +6,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import { hasServer } from '../api/client.js';
 import { useStudio } from '../state/store.js';
 import { IconDoc, IconPlus, IconSearch } from './Icons.js';
 import { TemplatePicker } from './TemplatePicker.js';
@@ -50,8 +51,14 @@ export function HomeView(): JSX.Element {
         <div>
           <h1 className="stu-home-title">Your docs</h1>
           <p className="stu-home-sub">
-            {docs.length} document{docs.length === 1 ? '' : 's'} in{' '}
-            <code>{meta?.docsDir ?? 'docs'}/</code> — the files stay the source of truth
+            {docs.length} document{docs.length === 1 ? '' : 's'}{' '}
+            {hasServer ? (
+              <>
+                in <code>{meta?.docsDir ?? 'docs'}/</code> — the files stay the source of truth
+              </>
+            ) : (
+              <>in this tab — nothing is uploaded, so share a link to keep a copy</>
+            )}
           </p>
         </div>
         <div className="stu-home-tools">
@@ -64,9 +71,11 @@ export function HomeView(): JSX.Element {
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
-          <a className="stu-btn" href="/site/" target="_blank" rel="noreferrer">
-            Browse the site ↗
-          </a>
+          {hasServer && (
+            <a className="stu-btn" href="/site/" target="_blank" rel="noreferrer">
+              Browse the site ↗
+            </a>
+          )}
         </div>
       </header>
 

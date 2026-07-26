@@ -29,6 +29,8 @@ import {
   type SaveConflict,
   type StudioMeta,
 } from '../api/client.js';
+import { importDoc } from '../api/client.js';
+import { readShareUrl } from '../lib/shareLink.js';
 import type { ServerEvent } from '../api/events.js';
 import { firstContentIndex } from '../lib/docTemplates.js';
 import { derive, diskChoice, resolveChoice, sameDiskTheme } from './derive.js';
@@ -330,6 +332,27 @@ export const useStudio = create<StudioState>()((set, get) => {
 
     init: async () => {
       try {
+        // A share link brings its own document: import it before listing, so
+        // the studio opens on what the link was sent for.
+        let shared: string | null = null;
+        let sharedMode: StudioMode | null = null;
+        try {
+          const link = await readShareUrl(window.location.href);
+          if (link !== null) {
+            shared = await importDoc(link.source, link.title ?? 'shared');
+            // Drop the payload from the address bar — it has been stored, and
+            // a multi-kilobyte URL left in history helps nobody.
+            window.history.replaceState(null, '', window.location.pathname);
+            // A link was sent for a document, so land on it rather than on the
+            // library — `?present=1` opens straight into the deck. The mode is
+            // applied after the document opens; present mode with nothing open
+            // is an empty deck.
+            sharedMode = link.present ? 'present' : 'edit';
+          }
+        } catch (err) {
+          get().toast(`That share link could not be read: ${(err as Error).message}`, 'error');
+        }
+
         const [meta, docs] = await Promise.all([fetchMeta(), fetchDocs()]);
         const choice = diskChoice(meta);
         const resolved = resolveChoice(choice, meta);
@@ -343,7 +366,9 @@ export const useStudio = create<StudioState>()((set, get) => {
           initialVersion: meta.version,
         });
         const first = docs[0];
-        if (first !== undefined && get().currentSlug === null) await get().openDoc(first.slug);
+        const open = shared ?? (get().currentSlug === null ? first?.slug : undefined);
+        if (open !== undefined) await get().openDoc(open);
+        if (sharedMode !== null) set({ mode: sharedMode });
       } catch (err) {
         set({ loaded: true });
         get().toast(`Could not reach the studio server: ${(err as Error).message}`, 'error');

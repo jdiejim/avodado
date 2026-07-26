@@ -1,149 +1,96 @@
 /**
- * Typed fetch wrappers over the `avo studio` file-bridge API.
+ * The backend the app talks to — chosen once, at boot.
  *
- * The server owns hashing: every read/write returns the sha256 `hash` of the
- * LF-normalised source, and the client threads it back as `baseHash` on save
- * so the server can detect concurrent edits (409 + the current content).
+ * Studio ships in two shapes from one build tree: `avo studio`, where
+ * documents are your `docs/*.md` behind a local file bridge, and the hosted
+ * studio, where they live in the browser's own storage. Both satisfy
+ * {@link StudioBackend}, so everything above this module is identical.
+ *
+ * The default is the file bridge, so the CLI is unaffected by anything here;
+ * the hosted build opts in with `VITE_STUDIO_BACKEND=vault`.
  */
 
-/** What the server says the active theme IS (identity, not resolution). */
-export interface ActiveThemeMeta {
-  /** `builtin` (a base theme), `saved` (a saved custom), `custom` (unmatched overrides), or `none`. */
-  readonly kind: 'builtin' | 'saved' | 'custom' | 'none';
-  /** Built-in name or saved slug, when known. */
-  readonly id?: string;
-  /** Display name for a saved/custom theme, when known. */
-  readonly name?: string;
-}
+import type {
+  DocListItem,
+  DocPayload,
+  SaveResult,
+  StudioBackend,
+  StudioMeta,
+  ThemeInput,
+} from './backend.js';
+import { memoryVault } from './memoryVault.js';
+import { fileBridge } from './fileBridge.js';
 
-/** One saved (installed) theme: identity + its resolved base/vars for preview. */
-export interface SavedThemeMeta {
-  readonly slug: string;
-  readonly name: string;
-  readonly scope: 'global' | 'project';
-  readonly theme?: string;
-  readonly themeVars?: Readonly<Record<string, string>>;
-}
+export type {
+  ActiveThemeMeta,
+  DocListItem,
+  DocPayload,
+  SaveConflict,
+  SaveResult,
+  StudioBackend,
+  StudioMeta,
+  SavedThemeMeta,
+  ThemeInput,
+} from './backend.js';
 
-/** `GET /api/meta` response. */
-export interface StudioMeta {
-  readonly version: string;
-  readonly docsDir: string;
-  /** Resolved base theme of the ACTIVE theme (a built-in name), if configured. */
-  readonly theme?: string;
-  /** Resolved CSS-variable overrides of the active theme. */
-  readonly themeVars?: Readonly<Record<string, string>>;
-  /** Identity of the active theme. Absent on older servers. */
-  readonly active?: ActiveThemeMeta;
-  /** Every saved theme, for the picker. Absent on older servers. */
-  readonly savedThemes?: readonly SavedThemeMeta[];
-}
-
-/** One entry of `GET /api/docs`. */
-export interface DocListItem {
-  readonly slug: string;
-  readonly file: string;
-  readonly title: string;
-  readonly mtimeMs: number;
-}
-
-/** `GET /api/doc/<slug>` response. */
-export interface DocPayload {
-  readonly source: string;
-  readonly hash: string;
-  readonly mtimeMs: number;
-}
-
-/** The 409 payload when a save's `baseHash` is stale. */
-export interface SaveConflict {
-  readonly currentHash: string;
-  readonly currentSource: string;
-}
-
-/** Result of a `PUT /api/doc/<slug>` — success or a stale-base conflict. */
-export type SaveResult =
-  | { readonly ok: true; readonly hash: string; readonly mtimeMs: number }
-  | { readonly ok: false; readonly conflict: SaveConflict };
-
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-  return (await res.json()) as T;
-}
-
-/** Fetches server meta (version, docs dir, configured theme + overrides). */
-export function fetchMeta(): Promise<StudioMeta> {
-  return getJson<StudioMeta>('/api/meta');
-}
-
-/** Fetches the doc list. */
-export function fetchDocs(): Promise<DocListItem[]> {
-  return getJson<DocListItem[]>('/api/docs');
-}
-
-/** Fetches one doc's LF-normalised source + content hash. */
-export function fetchDoc(slug: string): Promise<DocPayload> {
-  return getJson<DocPayload>(`/api/doc/${encodeURIComponent(slug)}`);
-}
+/** The active backend for this session. */
+export const backend: StudioBackend =
+  (import.meta.env?.['VITE_STUDIO_BACKEND'] as string | undefined) === 'vault'
+    ? memoryVault
+    : fileBridge;
 
 /**
- * Saves a doc. `baseHash` is the hash of the source this edit started from —
- * omit it to create a new file. `force` overrides a stale `baseHash`.
- *
- * @returns `{ ok: true, hash }` on success, `{ ok: false, conflict }` on 409.
+ * True when a server sits behind the documents. Gates file-change events and
+ * the exports that need Chromium — see {@link StudioBackend.hasServer}.
  */
-export async function saveDoc(
+export const hasServer = backend.hasServer;
+
+export function fetchMeta(): Promise<StudioMeta> {
+  return backend.fetchMeta();
+}
+
+export function fetchDocs(): Promise<DocListItem[]> {
+  return backend.fetchDocs();
+}
+
+export function fetchDoc(slug: string): Promise<DocPayload> {
+  return backend.fetchDoc(slug);
+}
+
+export function saveDoc(
   slug: string,
   source: string,
   baseHash?: string,
   force = false,
 ): Promise<SaveResult> {
-  const url = `/api/doc/${encodeURIComponent(slug)}${force ? '?force=1' : ''}`;
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(baseHash !== undefined ? { source, baseHash } : { source }),
-  });
-  if (res.status === 409) {
-    const conflict = (await res.json()) as SaveConflict;
-    return { ok: false, conflict };
-  }
-  if (!res.ok) throw new Error(`save ${slug} → HTTP ${res.status}`);
-  const body = (await res.json()) as { hash: string; mtimeMs: number };
-  return { ok: true, hash: body.hash, mtimeMs: body.mtimeMs };
+  return backend.saveDoc(slug, source, baseHash, force);
 }
 
-/** A theme to write via `POST /api/theme` (the Theme Generator). */
-export interface ThemeInput {
-  readonly name: string;
-  /** Base built-in theme the custom colors/fonts extend. */
-  readonly base: string;
-  readonly colors: Readonly<Record<string, string>>;
-  readonly fonts: Readonly<Record<string, string>>;
-  /** `project` → `.avodado/themes`; `global` → `~/.avodado/themes`. */
-  readonly scope: 'project' | 'global';
+export function saveTheme(input: ThemeInput): Promise<{ slug: string; path: string }> {
+  return backend.saveTheme(input);
 }
 
 /**
- * Writes a generated theme file to disk via the file bridge and returns its
- * slug. The server watcher then broadcasts a meta change, so the picker picks
- * it up. Throws with the server's message on failure.
+ * Stores a document that arrived from outside — today, a share link.
+ *
+ * Backend-agnostic on purpose: in the hosted studio this lands in the vault,
+ * and in `avo studio` it becomes a real file in `docs/`, which is exactly what
+ * someone opening a colleague's link locally would want.
+ *
+ * @param hint - Preferred slug (a title, usually). Sanitised, and suffixed
+ *   until it doesn't collide with something already there.
  */
-export async function saveTheme(input: ThemeInput): Promise<{ slug: string; path: string }> {
-  const res = await fetch('/api/theme', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    let message = `theme install failed (${res.status})`;
-    try {
-      const body = (await res.json()) as { error?: unknown };
-      if (typeof body.error === 'string') message = body.error;
-    } catch {
-      /* non-JSON error */
-    }
-    throw new Error(message);
-  }
-  return (await res.json()) as { slug: string; path: string };
+export async function importDoc(source: string, hint = 'shared'): Promise<string> {
+  const base =
+    hint
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 60) || 'shared';
+  const taken = new Set((await backend.fetchDocs()).map((d) => d.slug));
+  let slug = base;
+  for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`;
+  const res = await backend.saveDoc(slug, source);
+  if (!res.ok) throw new Error('could not store the shared document');
+  return slug;
 }

@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { removeSegment } from '@avodado/core';
+import { hasServer } from './api/client.js';
 import { useServerEvents } from './api/events.js';
 import { keySurface } from './direct/partSelect.js';
 import { duplicateSegment, insertBlockAt, moveSegmentDown, moveSegmentUp } from './lib/actions.js';
@@ -119,7 +120,9 @@ export function App(): JSX.Element {
 
   // Stale-tab guard: re-check the studio version whenever the SSE stream
   // (re)connects and whenever the window regains focus.
-  useServerEvents(handleServerEvent, () => void useStudio.getState().checkVersion());
+  // Nothing outside the browser edits a vault document, so there is no
+  // change stream to subscribe to — and no /__events to retry forever.
+  useServerEvents(handleServerEvent, () => void useStudio.getState().checkVersion(), hasServer);
   useEffect(() => {
     const onFocus = (): void => void useStudio.getState().checkVersion();
     window.addEventListener('focus', onFocus);

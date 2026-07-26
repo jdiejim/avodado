@@ -9,7 +9,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { themes, type ThemeName } from '@avodado/render';
 import markUrl from '../assets/mark.png';
 import { changesSummary } from '../state/changes.js';
+import { hasServer } from '../api/client.js';
 import { exportDeckHtml, exportDocHtml, exportPdf, exportPptx } from '../lib/export.js';
+import { buildShareUrl, SHARE_LIMIT } from '../lib/shareLink.js';
 import { useDerived, useStudio } from '../state/store.js';
 import {
   IconCheck,
@@ -318,24 +320,31 @@ function ExportMenu(): JSX.Element {
           <button type="button" role="menuitem" className="stu-export-item" onClick={doSlides}>
             Slide deck (HTML)
           </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="stu-export-item"
-            disabled={pdfBusy}
-            onClick={() => void doPdf()}
-          >
-            {pdfBusy ? 'Exporting PDF…' : 'PDF'}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="stu-export-item"
-            disabled={pptxBusy}
-            onClick={() => void doPptx()}
-          >
-            {pptxBusy ? 'Exporting PowerPoint…' : 'PowerPoint (.pptx)'}
-          </button>
+          {/* PDF and PowerPoint are rendered by Chromium behind the local
+              server. The hosted studio has no server, so it offers what the
+              browser can do on its own rather than buttons that fail. */}
+          {hasServer && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className="stu-export-item"
+                disabled={pdfBusy}
+                onClick={() => void doPdf()}
+              >
+                {pdfBusy ? 'Exporting PDF…' : 'PDF'}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="stu-export-item"
+                disabled={pptxBusy}
+                onClick={() => void doPptx()}
+              >
+                {pptxBusy ? 'Exporting PowerPoint…' : 'PowerPoint (.pptx)'}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -358,6 +367,53 @@ function PresentButton(): JSX.Element {
       onClick={() => setMode(presenting ? 'edit' : 'present')}
     >
       ▶ Present
+    </button>
+  );
+}
+
+/**
+ * Share — the whole document, compressed into a link.
+ *
+ * There is nothing to upload and nothing to expire: the payload rides in the
+ * URL fragment, which browsers never send to a server. Holding ⇧ shares the
+ * deck instead of the page.
+ */
+function ShareButton(): JSX.Element {
+  const [copied, setCopied] = useState(false);
+  const currentSlug = useStudio((s) => s.currentSlug);
+  const toast = useStudio((s) => s.toast);
+
+  const share = async (present: boolean): Promise<void> => {
+    const { source, docs, currentSlug: slug } = useStudio.getState();
+    const title = docs.find((d) => d.slug === slug)?.title;
+    try {
+      const url = await buildShareUrl(window.location.href.split(/[?#]/)[0] ?? '/', source, {
+        present,
+        ...(title !== undefined ? { title } : {}),
+      });
+      if (url.length > SHARE_LIMIT) {
+        toast('This document is too big to share as a link — export it instead', 'error');
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+      toast(present ? 'Deck link copied' : 'Share link copied', 'info');
+    } catch (err) {
+      toast(`Could not build a share link: ${(err as Error).message}`, 'error');
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="stu-libbtn"
+      disabled={currentSlug === null}
+      title="Copy a link to this document (hold ⇧ for the deck)"
+      onClick={(e) => void share(e.shiftKey)}
+    >
+      <IconExport size={13} />
+      {copied ? 'Copied' : 'Share'}
     </button>
   );
 }
@@ -459,7 +515,8 @@ export function TopBar(): JSX.Element {
         <IconPalette size={13} />
         Theme
       </button>
-      <SiteLink />
+      <ShareButton />
+      {hasServer && <SiteLink />}
       {!home && <ExportMenu />}
       {!home && <PresentButton />}
       {!home && (

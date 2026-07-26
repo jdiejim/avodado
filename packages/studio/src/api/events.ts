@@ -36,16 +36,20 @@ export function parseServerEvent(data: string): ServerEvent | null {
  * @param onConnect - Called on every (re)connect of the stream — the moment
  *   to re-check server state that may have changed while disconnected (e.g.
  *   the studio version, for the stale-tab guard).
+ * @param enabled - False when there is no server behind the documents (the
+ *   hosted studio), where subscribing would retry a 404 forever.
  */
 export function useServerEvents(
   onEvent: (ev: ServerEvent) => void,
   onConnect?: () => void,
+  enabled = true,
 ): void {
   const handler = useRef(onEvent);
   handler.current = onEvent;
   const connect = useRef(onConnect);
   connect.current = onConnect;
   useEffect(() => {
+    if (!enabled) return;
     const es = new EventSource('/__events');
     es.onopen = () => connect.current?.();
     es.onmessage = (msg: MessageEvent<string>) => {
@@ -53,5 +57,5 @@ export function useServerEvents(
       if (ev !== null) handler.current(ev);
     };
     return () => es.close();
-  }, []);
+  }, [enabled]);
 }

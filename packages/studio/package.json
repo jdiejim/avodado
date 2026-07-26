@@ -18,9 +18,11 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsup",
+    "build": "vite build && pnpm build:web && tsup",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:web": "VITE_STUDIO_BACKEND=vault vite build",
+    "dev:web": "VITE_STUDIO_BACKEND=vault vite"
   },
   "devDependencies": {
     "@avodado/core": "workspace:*",
