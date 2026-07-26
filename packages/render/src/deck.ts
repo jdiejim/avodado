@@ -303,7 +303,10 @@ const DECK_JS = `(function(){
     for(var k=0;k<slides.length;k++)slides[k].classList.toggle('active',k===i);
     cur.textContent=i+1; jump.value=String(i);
     fit(slides[i]);
-    history.replaceState(null,'','#'+(i+1));
+    // A deck embedded with <iframe srcdoc> has an opaque origin, where
+    // replaceState throws a SecurityError. The hash is a convenience, not the
+    // navigation itself, so an embedded deck simply goes without it.
+    try{history.replaceState(null,'','#'+(i+1));}catch(e){}
   }
   document.getElementById('deck-prev').onclick=function(){show(i-1);};
   document.getElementById('deck-next').onclick=function(){show(i+1);};
