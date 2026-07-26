@@ -16,7 +16,7 @@ In short:
 - Prose is plain Markdown; structure goes in typed blocks (e.g. `sequence`, `erd`,
   `table`, `callout`, `c4`, `flow`, `timeline`, `userstory`). Never paste raw HTML
   or inline SVG.
-- Use only the documented block types (86 of them, plus 12 permanent aliases for
+- Use only the documented block types (87 of them, plus 12 permanent aliases for
   merged old names) and their documented fields —
   the schemas are strict. Bodies are YAML.
 - Give a block an `id:` when it needs to be referenced; reference it as `doc#id`.

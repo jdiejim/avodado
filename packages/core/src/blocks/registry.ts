@@ -139,4 +139,5 @@ export const blockRegistry: BlockRegistry = {
   wardley: { type: 'wardley', schema: blockSchemas.wardley },
   harvey: { type: 'harvey', schema: blockSchemas.harvey },
   scqa: { type: 'scqa', schema: blockSchemas.scqa },
+  scenarios: { type: 'scenarios', schema: blockSchemas.scenarios },
 };

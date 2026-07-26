@@ -1117,6 +1117,31 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .bm-table th.bm-feat,.docskin .bm-table td.bm-feat{border-left:1.5px solid var(--highlight);border-right:1.5px solid var(--highlight);}
 .docskin .bm-table thead th.bm-feat{border-top:1.5px solid var(--highlight);border-radius:14px 14px 0 0;}
 .docskin .bm-table tbody tr:last-child td.bm-feat{border-bottom:1.5px solid var(--highlight);border-radius:0 0 14px 14px;}
+/* tree values — the driver-tree treatment: the number, then its share of the parent */
+.docskin .tvalue{margin-left:10px;font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--navy);}
+.docskin .tshare{margin-left:6px;font-family:var(--font-mono);font-size:10.5px;color:var(--gray);}
+/* scenarios — assumptions in columns, the outcome on its own row */
+.docskin .scenarios{margin:26px 0 34px;}
+.docskin .sn-head{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--charcoal);margin-bottom:2px;}
+.docskin .sn-desc{font-size:13px;color:var(--slate);margin:2px 0 12px;line-height:1.5;}
+.docskin .sn-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--white);box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 24px -12px rgba(0,0,0,.13);}
+.docskin .sn-table{width:100%;border-collapse:collapse;font-size:13px;}
+.docskin .sn-table thead th{background:var(--navy);color:#fff;padding:10px 12px;text-align:center;font-family:var(--font-display);font-size:13px;font-weight:700;vertical-align:top;}
+.docskin .sn-table th.sn-driver,.docskin .sn-table td.sn-driver{text-align:left;font-family:var(--font-body);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--gray);}
+.docskin .sn-table thead th.sn-driver{color:rgba(255,255,255,.75);}
+.docskin .sn-table td{padding:9px 12px;border-bottom:1px solid var(--rule);text-align:center;font-family:var(--font-mono);}
+.docskin .sn-table td.sn-driver{font-family:var(--font-body);color:var(--slate);}
+.docskin .sn-badge{display:block;font-family:var(--font-mono);font-size:8.5px;font-weight:700;letter-spacing:.08em;color:var(--navy);background:#fff;border-radius:8px;padding:1px 7px;margin-top:5px;}
+.docskin .sn-note{display:block;font-family:var(--font-body);font-size:10.5px;font-weight:400;color:rgba(255,255,255,.8);text-transform:none;letter-spacing:0;margin-top:3px;}
+.docskin .sn-blank{color:var(--rule);}
+.docskin .sn-table .sc-pos{background:var(--positive-soft);}
+.docskin .sn-table .sc-neg{background:var(--negative-soft);}
+.docskin .sn-table .sc-base{background:var(--light-blue);}
+.docskin .sn-table thead th.sc-pos{background:var(--positive);}
+.docskin .sn-table thead th.sc-neg{background:var(--negative);}
+.docskin .sn-table thead th.sc-base{background:var(--blue);}
+.docskin .sn-outcome td{border-bottom:none;border-top:2px solid var(--navy);font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--charcoal);padding:11px 12px;}
+.docskin .sn-outcome td:first-child{font-family:var(--font-body);font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);text-align:left;}
 /* harvey — the rated comparison grid: options across, criteria down */
 .docskin .harvey{margin:26px 0 34px;}
 .docskin .hv-head{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--charcoal);margin-bottom:2px;}

@@ -1246,6 +1246,17 @@ because:
   - No schema change, so it ships inside one quarter
 ```
 
+```scenarios
+title: Three ways next year goes
+description: "Cases in columns; read across a driver row to see how much of the outcome hangs on it."
+drivers: [Capture moved async, Conversion recovery, Volume growth]
+outcomeLabel: FY27 revenue
+cases:
+  - { label: Downside, values: ["Q4 slip", "+0.8pp", "5%"], outcome: "$18M", tone: neg }
+  - { label: Base, values: ["Q3", "+2.1pp", "8%"], outcome: "$24M", tone: base }
+  - { label: Upside, values: ["Q3", "+3.4pp", "15%"], outcome: "$31M", tone: pos }
+```
+
 ```harvey
 title: Queue vendor fit
 description: "Ratings are judgements, 0-4; the WEIGHTED row is computed, so the recommendation and the arithmetic agree."

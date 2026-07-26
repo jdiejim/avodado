@@ -162,6 +162,7 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   wardley: 'Strategy map',
   harvey: 'Comparison',
   scqa: 'Summary',
+  scenarios: 'Scenarios',
 };
 
 /**

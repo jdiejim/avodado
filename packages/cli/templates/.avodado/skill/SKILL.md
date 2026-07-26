@@ -7,7 +7,7 @@ description: >-
   data model · charts & overviews · planning & backlogs · business & decisions ·
   design system · algorithms · AI & agents. High-signal types: sequence · erd ·
   c4 · table · callout · timeline · userstory · flow · chart · agentloop ·
-  archmap · block · endpoint · kanban · stats · divider — and 70 more, mapped in
+  archmap · block · endpoint · kanban · stats · divider — and 71 more, mapped in
   reference/blocks/INDEX.md.
   Trigger on any of: docs/**/*.md in an Avodado repo, the `avo` CLI, any block
   type above, `doc#id` cross-references, presence of `avodado.config.*` or
@@ -16,7 +16,7 @@ description: >-
   the validate workflow.
   Detailed references live beside this file — read them on demand:
   reference/blocks/INDEX.md (block → family file map),
-  reference/blocks/contract.md (the exact field contract for all 86 blocks),
+  reference/blocks/contract.md (the exact field contract for all 87 blocks),
   reference/blocks/<family>.md (fields + examples per family),
   reference/system-design.md, reference/decks.md, reference/intake.md,
   reference/organizing.md.
@@ -96,7 +96,7 @@ rewrite them in this document's terms.
 ### 3 · Cast blocks from the catalog
 
 Now, per heading, pick the **one block that carries that beat best** — shop the
-*Block glossary* below (`avo catalog` prints all 86 with descriptions). Casting
+*Block glossary* below (`avo catalog` prints all 87 with descriptions). Casting
 rules:
 
 - **One lens per beat.** Structure (`c4`/`block`), behavior
@@ -159,9 +159,9 @@ full contracts this hub only summarises:
 
 | File | Read it when |
 |---|---|
-| `reference/blocks/INDEX.md` | To find which family file documents a block — the map of all 86 types → family file, one line each, plus the alias table (old names → canonical). |
+| `reference/blocks/INDEX.md` | To find which family file documents a block — the map of all 87 types → family file, one line each, plus the alias table (old names → canonical). |
 | `reference/blocks/<family>.md` | Before writing any block you haven't used in this session — read the family file you need (examples + field semantics), or `contract.md` for exact fields. |
-| `reference/blocks/contract.md` | The strict at-a-glance field contract for all 86 blocks — required vs optional fields, enums, number rules. |
+| `reference/blocks/contract.md` | The strict at-a-glance field contract for all 87 blocks — required vs optional fields, enums, number rules. |
 | `reference/system-design.md` | Any architecture / design ask — the 8-step design method, which architecture block when, node kinds & shapes, C4 extras, the 106 `avo design` slugs. |
 | `reference/decks.md` | Any slides / deck ask — slide markers, alignment, pagination, consulting-style decks. |
 | `reference/intake.md` | Move 1 of every new document — the ask-back protocol, per-document-type checklists, and the review checklist for existing docs. |
@@ -356,7 +356,7 @@ A `quadrant` is not "only for effort/impact"; it's *any* two-axis 2×2.
 
 A good Avodado doc is **2-5 blocks, each a different lens** on the subject —
 *orient → big picture → detail → plan*. Don't show the same thing in two block
-types, and don't reach for all 86. Start from the doc's job and pick a stack:
+types, and don't reach for all 87. Start from the doc's job and pick a stack:
 
 | Doc job | Core blocks (always) | Add when relevant | Skip / fold into prose when… |
 |---|---|---|---|
@@ -523,7 +523,7 @@ messages:
 
 Rules:
 
-- The info-string is exactly one of the **86 block types** catalogued in the
+- The info-string is exactly one of the **87 block types** catalogued in the
   glossary above and specified field-by-field in `reference/blocks/` (the
   `contract.md` table + one family file per block, mapped in `INDEX.md`) —
   never invent new ones. (The 12 old merged names — `infra`, `waterfall`,
@@ -624,7 +624,7 @@ Every diagnostic carries a stable code so you can mechanically apply a fix.
 | `E_DANGLING_REF` | A `userstory.links[].ref` points at an id that doesn't exist anywhere in the repo. `value` is the bad ref. | Either fix the ref string, or add the missing `id:` to the target block. Bare `#id` is current-doc; `doc#id` is path-under-docs-root + `#id`. |
 | `E_DUP_ID` | The same `id:` was used in two blocks. Message names both files + lines. | Ids are repo-global. Rename one. |
 | `E_BAD_REF_FORMAT` | A `ref:` string isn't `doc#id` or `#id` shape. | Match the format exactly. The id slug is `[\w-]+`. |
-| `E_UNKNOWN_BLOCK` | A segment claims a block type the registry doesn't know. Defensive — you should rarely see it (unknown fences normally fall through to plain code, and near-miss typos surface as `W_SUSPECT_BLOCK`). | Make the fence info-string exactly one of the 86 documented types (`reference/blocks/INDEX.md`). |
+| `E_UNKNOWN_BLOCK` | A segment claims a block type the registry doesn't know. Defensive — you should rarely see it (unknown fences normally fall through to plain code, and near-miss typos surface as `W_SUSPECT_BLOCK`). | Make the fence info-string exactly one of the 87 documented types (`reference/blocks/INDEX.md`). |
 | `W_EMPTY_BLOCK` | A typed block had an empty body. | Add fields or remove the block. |
 | `W_SUSPECT_BLOCK` | A fence tag isn't a documented block type but is within typo distance of one (e.g. ` ```sequnce `) — the block silently rendered as plain text. `value` is the bad tag. | Rename the fence to the suggested type in the "did you mean" hint. |
 | `W_ALIAS_TYPE` | The fence uses one of the 12 old merged names (e.g. ` ```waterfall ` — now `chart` with `kind: waterfall`). The block parsed and rendered fine. | Nothing — both spellings work forever. Use the canonical name in new blocks; don't churn existing fences just to silence this. |

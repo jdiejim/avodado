@@ -368,10 +368,18 @@ const treeNodeSchema = z
     parent: z.string().optional(),
     label: z.string(),
     note: z.string().optional(),
+    /**
+     * The node's measured value. Give the nodes values and the hierarchy
+     * becomes a DRIVER TREE — p95 = queue + compute + network, revenue =
+     * price × volume — with each child's share of its parent computed.
+     */
+    value: z.number().optional(),
   })
   .strict();
 export const treeSchema = z
   .object({
+    /** Display suffix for node values — `ms`, `%`, `$`. */
+    unit: z.string().optional(),
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
@@ -2385,6 +2393,35 @@ export const scqaSchema = z
   })
   .strict();
 
+// ─── scenarios (base / upside / downside against the drivers) ───────────────
+// The table a plan is defended with: the same handful of drivers, moved three
+// ways, and what each set of assumptions produces. Keeping the cases in
+// columns makes the comparison the point; `outcome` is the number the room
+// actually argues about, so it gets its own emphasised row.
+const scenarioCaseSchema = z
+  .object({
+    label: z.string(),
+    /** One assumption per driver, in `drivers` order. */
+    values: z.array(z.string()),
+    /** What this set of assumptions produces. */
+    outcome: z.string().optional(),
+    tone: z.enum(['pos', 'neg', 'base']).optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+export const scenariosSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    drivers: z.array(z.string()).min(1),
+    cases: z.array(scenarioCaseSchema).min(2),
+    /** Label for the outcome row. Default `Outcome`. */
+    outcomeLabel: z.string().optional(),
+  })
+  .strict();
+
 // ─── registry source-of-truth ───────────────────────────────────────────────
 /**
  * The schema map. `as const satisfies Record<BlockType, ...>` enforces that
@@ -2477,6 +2514,7 @@ export const blockSchemas = {
   wardley: wardleySchema,
   harvey: harveySchema,
   scqa: scqaSchema,
+  scenarios: scenariosSchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

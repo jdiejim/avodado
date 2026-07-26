@@ -152,6 +152,13 @@ function renderIssueTree(data: TreeData): string {
 
 // ─── default: indented folder tree ───────────────────────────────────────────
 
+/** A node's value with the block's unit — integers stay integers. */
+function fmtValue(v: number, unit: string | undefined): string {
+  const rounded = Math.round(v * 100) / 100;
+  const text = Number.isInteger(rounded) ? String(rounded) : String(rounded);
+  return unit !== undefined ? `${text}${unit}` : text;
+}
+
 export function renderTree(data: TreeData): string {
   if (data.variant === 'issue') return renderIssueTree(data);
   const nodes = data.nodes ?? [];
@@ -174,17 +181,17 @@ export function renderTree(data: TreeData): string {
     }
   }
 
-  type Out = { node: Node; depth: number; branch: boolean };
+  type Out = { node: Node; depth: number; branch: boolean; parent?: Node };
   const out: Out[] = [];
   const seen = new Set<string>();
-  const walk = (id: string, depth: number): void => {
+  const walk = (id: string, depth: number, parent?: Node): void => {
     if (seen.has(id)) return;
     seen.add(id);
     const node = byId.get(id);
     if (node === undefined) return;
     const kids = children.get(id) ?? [];
-    out.push({ node, depth, branch: kids.length > 0 });
-    for (const c of kids) walk(c, depth + 1);
+    out.push({ node, depth, branch: kids.length > 0, ...(parent !== undefined ? { parent } : {}) });
+    for (const c of kids) walk(c, depth + 1, node);
   };
   for (const r of roots) walk(r, 0);
 
@@ -197,11 +204,25 @@ export function renderTree(data: TreeData): string {
         row.node.note !== undefined
           ? `<span class="tnote"${bp(`nodes.${ni}.note`)}>${escapeHtml(row.node.note)}</span>`
           : '';
+      // Values turn the hierarchy into a DRIVER TREE: the number itself, plus
+      // its share of the parent — which is the figure that says where the
+      // total actually comes from.
+      let value = '';
+      if (typeof row.node.value === 'number') {
+        const own = fmtValue(row.node.value, data.unit);
+        const parentValue = row.parent?.value;
+        const share =
+          typeof parentValue === 'number' && parentValue > 0
+            ? `<span class="tshare">${Math.round((row.node.value / parentValue) * 100)}%</span>`
+            : '';
+        value = `<span class="tvalue"${bp(`nodes.${ni}.value`)}>${escapeHtml(own)}</span>${share}`;
+      }
       return (
         `<div class="tree-row${branchCls}" style="padding-left:${row.depth * 22}px"${bp(`nodes.${ni}`)}>` +
         `<span class="tw">${glyph}</span>` +
         `<span class="tlabel"${bp(`nodes.${ni}.label`)}>${escapeHtml(row.node.label)}</span>` +
         note +
+        value +
         `</div>`
       );
     })

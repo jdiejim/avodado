@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 86 blocks is `contract.md` beside this file; the block → family
+table for all 87 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Charts & overviews
@@ -49,6 +49,19 @@ nodes:
   - { id: f1, parent: friction, label: Slow checkout, note: p95 > 4s }
 ```
 
+**Give the nodes a `value` and it becomes a driver tree.** The hierarchy stops
+being an outline and starts being arithmetic: each node shows its number and
+its share of its parent, so the row that owns the total is obvious.
+```tree
+unit: ms
+nodes:
+  - { id: p95, label: Checkout p95, value: 2400 }
+  - { id: cap, parent: p95, label: Payment capture, value: 1780 }
+  - { id: psp, parent: cap, label: PSP round trip, value: 1520 }
+  - { id: db, parent: p95, label: Order write, value: 380 }
+```
+p95 = capture (74%) + order write (16%) + the rest — the same move works for
+revenue = price × volume, or cost by component.
 #### `gantt` — schedule bars
 ```gantt
 periods: [Q1, Q2, Q3, Q4]
@@ -242,6 +255,20 @@ from light (low) to deep blue (high), normalized between the data min and max
 Short rows pad missing cells as blank tiles. Use `heatmap` for a dense value
 grid (latency × hour, load × region); use `matrix` for *categorical*
 capability cells and `table` when the reader needs exact rows.
+
+Give the nodes a `value` and the hierarchy stops being an outline and starts
+being arithmetic: each node shows its number and its share of its parent, so
+the row that owns the total is obvious.
+```tree
+unit: ms
+nodes:
+  - { id: p95, label: Checkout p95, value: 2400 }
+  - { id: cap, parent: p95, label: Payment capture, value: 1780 }
+  - { id: psp, parent: cap, label: PSP round trip, value: 1520 }
+  - { id: db, parent: p95, label: Order write, value: 380 }
+```
+p95 = capture (74%) + order write (16%) + the rest — the same move works for
+revenue = price × volume, or cost by component.
 
 #### `pyramid` — stacked hierarchy (top → bottom widening)
 ```pyramid

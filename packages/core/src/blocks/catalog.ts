@@ -179,6 +179,8 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```harvey\ntitle: Vendor fit\ncolumns: [Kafka, SQS, RabbitMQ]\nscale: [poor, excellent]\nrows:\n  - { label: Throughput, ratings: [4, 2, 3], weight: 2 }\n  - { label: Ops burden, ratings: [1, 4, 3] }\n  - { label: Team familiarity, ratings: [2, 4, 3] }\nrecommend: SQS\n```\n',
   scqa:
     '```scqa\nsituation: We process 12k orders a day across three regions.\ncomplication: p95 checkout crossed 2s in March and conversion fell 3.1pp.\nquestion: Where does the next quarter of platform work go?\nanswer: Move payment capture off the request path — it returns 1.8s of the 2.4s.\nbecause:\n  - Capture is 74% of p95 and is fully async-able\n  - No schema change, so it ships in one quarter\n```\n',
+  scenarios:
+    '```scenarios\ntitle: Three ways next year goes\ndrivers: [Volume growth, Price, Churn]\ncases:\n  - { label: Downside, values: ["-5%", flat, "12%"], outcome: "$18M", tone: neg }\n  - { label: Base, values: ["8%", "+2%", "9%"], outcome: "$24M", tone: base }\n  - { label: Upside, values: ["15%", "+4%", "7%"], outcome: "$31M", tone: pos }\n```\n',
 };
 
 /**
@@ -300,6 +302,7 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   wardley: 'business',
   harvey: 'business',
   scqa: 'business',
+  scenarios: 'business',
   matrix: 'business',
   anatomy: 'business',
   composition: 'business',
@@ -427,6 +430,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   wardley: 'Wardley map',
   harvey: 'Rated comparison',
   scqa: 'Executive summary',
+  scenarios: 'Scenario table',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -543,4 +547,6 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'A rated comparison — options across the top, criteria down the side, a Harvey ball for each judgement; the recommended column is marked.',
   scqa:
     'An executive summary in Minto order — situation, complication, question, and the answer the deck exists to deliver.',
+  scenarios:
+    'Base, upside and downside against the same drivers — assumptions in columns, with the outcome each set produces on its own row.',
 };

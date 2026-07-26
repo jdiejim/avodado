@@ -180,3 +180,14 @@ What the arc encodes (keep these even when you reshape it):
 - **The commitment close never changes**: objectives (`slo`) → the money
   number (`bignumber`, echoing slide 4's target) → `takeaways`. The last
   takeaway carries the ask (effort, flag, rollback).
+
+## Provenance and position
+
+`## Title {source: production traces, 14 Oct 2026}` puts a source line in the
+slide footer, where every consulting exhibit carries one. It sits in the
+footer rather than under the block on purpose: the fitter scales the exhibit,
+and a source line that shrinks with it stops being readable.
+
+A deck with two or more `divider` bands also grows a **tracker** in the slide
+header — the parts of the deck with the current one lit, so the room always
+knows where it is. One divider draws nothing: a strip of one says nothing.

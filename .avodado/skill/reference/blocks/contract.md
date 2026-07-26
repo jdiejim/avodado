@@ -1,7 +1,7 @@
 # Avodado blocks — the strict field contract
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up). The
-strict field contract for all 86 blocks. Schemas reject unknown fields — use
+strict field contract for all 87 blocks. Schemas reject unknown fields — use
 exactly these. Twelve old block names remain valid as permanent aliases — see
 the **Alias table** at the bottom.
 
@@ -54,7 +54,7 @@ required**, so they're left out of the table below, which shows only the
 | `trace` | `turns*[]`: `role*` `text` `thinking` `tool` `args` `result` | role: user · assistant · tool · system — `thinking` renders before `text` (assistant); `tool`+`args`+`result` shape a tool turn; multi-line strings keep their line breaks |
 | `prompt` | `segments*[]`: `kind*` `label` `text*` · `vars[]`: `name*` `desc` | kind: system · user · assistant · tool — any `{{variable}}` in `text` renders as an amber chip. **Quote `text` containing `{{ }}`** — bare braces are YAML flow syntax |
 | `context` | `window*`(n) `unit` (default tokens) · `segments*[]`: `label*` `tokens*`(n) `accent` `desc` | accent as in `drivers` — zero-token segments are skipped; leftover space renders as a dim "free (N)" segment; a sum past `window` renders in red past a dashed boundary with an "over budget" chip |
-| `tree` | `variant` · `nodes[]`: `id*` `parent` `label*` `note` | variant: issue (MECE issue-tree presentation) |
+| `tree` | `variant` `unit` · `nodes[]`: `id*` `parent` `label*` `note` `value`(n) | variant: issue (MECE issue-tree presentation). Give the nodes `value` and the hierarchy reads as a DRIVER TREE — each node shows its value and its share of its parent (`unit` suffixes them) |
 | `pyramid` | `levels[]`: `label*` `desc` | — |
 | `quadrant` | `xAxis{label, low, high}` `yAxis{label, low, high}` · `items[]`: `x*`(n, 0..1) `y*`(n, 0..1) `label*` | — |
 | `wireframe` | `screens[]`: `device` `title` `url` `label` `elements[]`: `type` `label` `rows`(n) `align` `tone` | device: desktop · browser · phone — element type: header · subheader · text · button · input · search · image · avatar · card · list · nav · tabs · divider · badge · toggle · spacer — align: l · c · r — tone: accent · muted · danger |
@@ -83,6 +83,7 @@ required**, so they're left out of the table below, which shows only the
 | `wardley` | `components*[]`: `id` `label*` `x*`(n, 0–1) `y*`(n, 0–1) `kind` `movement`(n) · `links[]`: `from*` `to*` `label` | kind: user · component · commodity · build · buy. `x` is evolution (0 genesis → 1 commodity), `y` is visibility to the user (0 invisible → 1 visible); both clamp to 0–1. `movement` draws a dashed arrow that far along the evolution axis. `links` join components by `id` (else `label`) into the value chain |
 | `harvey` | `columns*[]` · `rows*[]`: `label*` `ratings*[]`(n, 0–4) `note` `weight`(n) · `recommend` `scale`[2] | Ratings are 0–4 (empty → full ball). A row shorter than `columns` reads as **not assessed** (`—`), not as a zero. `weight` multiplies a row in the WEIGHTED footer, which is computed — so the marked `recommend` column and the arithmetic can be seen to agree. `scale` labels the two ends in the legend. Use `benchmark` for measured numbers, `harvey` for judgements |
 | `scqa` | `situation` `complication` `question` `answer` · `because[]` | All fields optional, but the order is fixed — the block's job is to keep it. The first three render as a numbered ladder; `answer` is the recommendation and gets the filled card, with `because` as supporting points beneath it. Inline Markdown works in every field |
+| `scenarios` | `drivers*[]` · `cases*[]` (2+): `label*` `values*[]` `outcome` `tone` `note` · `outcomeLabel` | tone: pos · neg · base (base draws a BASE CASE badge). `values` are positional against `drivers`; a case that omits one shows `·` — silent about that driver, which is not the same as "no change". `outcome` gets its own emphasised row |
 | `figure` | `src*` `alt` `caption` `width`(n, px) | — |
 | `steps` | `title` `description` · `items[]`: `title*` `body` `code` `lang` `note` | string items: `Title` or `Title — body` |
 | `cycle` | `id` `title` `description` · `steps*[]` (string \| `label*` `desc`) · `center` | 2-8 steps; stages render clockwise from 12 o'clock, last feeds first; `desc`s become the numbered legend |

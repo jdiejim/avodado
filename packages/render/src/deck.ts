@@ -35,7 +35,13 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 /* The supporting line under an action title: the sentence that makes the
    title an argument. Fixed size — it belongs to the header, not the exhibit. */
 .slide-hd-sub{font-family:var(--font-body);font-weight:400;font-size:15px;line-height:1.45;color:var(--slate);letter-spacing:0;margin-top:6px;max-width:78ch;}
-.slide-hd-r{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray);font-weight:700;white-space:nowrap;}
+.slide-hd-r{display:flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray);font-weight:700;white-space:nowrap;}
+/* Deck tracker: the parts of the deck with the current one lit — "you are
+   here", the strip every long consulting deck carries. */
+.slide-track{display:flex;align-items:center;gap:6px;}
+.slide-track-part{font-size:9.5px;letter-spacing:.08em;color:var(--gray);opacity:.55;padding:2px 8px;border-radius:9px;background:var(--light-gray);}
+.slide-track-part.on{opacity:1;color:var(--white);background:var(--navy);}
+.slide-ft-src{flex:1 1 auto;text-align:center;color:var(--gray);text-transform:none;letter-spacing:.02em;}
 /* Text on a stage reads at presentation scale with a comfortable measure —
    never stretched edge to edge. */
 /* Presentation sizes, not page sizes: a stage is read from across a room, so
@@ -338,6 +344,11 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
   const { css, themeVars, title, defs, slides } = renderSlides(doc, opts);
 
   let secNum = 0;
+  // The deck's parts, in order — the tracker's contents.
+  const parts: string[] = [];
+  for (const sl of slides) {
+    if (sl.part !== undefined && !parts.includes(sl.part)) parts.push(sl.part);
+  }
   const slideEls = slides
     .map((sl, i) => {
       const isCover = i === 0 && sl.label === 'Cover';
@@ -359,16 +370,36 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
           // header at a fixed size, so neither scales with the exhibit.
           const sub =
             sl.lede !== undefined ? `<div class="slide-hd-sub">${esc(sl.lede)}</div>` : '';
+          // Where we are in the deck. Only drawn once the deck actually has
+          // parts (two or more `divider` bands) — on a deck without them the
+          // strip would be a row of one, which says nothing.
+          const tracker =
+            parts.length >= 2
+              ? `<div class="slide-track">` +
+                parts
+                  .map(
+                    (p) =>
+                      `<span class="slide-track-part${p === sl.part ? ' on' : ''}">${esc(p)}</span>`,
+                  )
+                  .join('') +
+                `</div>`
+              : '';
           header =
             `<div class="slide-hd"><div class="slide-hd-l">${esc(heading)}${sub}</div>` +
-            `<div class="slide-hd-r">${nn} · ${esc(sl.label)}</div></div>`;
+            `<div class="slide-hd-r">${tracker}<span>${nn} · ${esc(sl.label)}</span></div></div>`;
         }
       }
       const alignCls = sl.align === 'top' ? ' sl-top' : sl.align === 'bottom' ? ' sl-bottom' : '';
       const layoutCls = sl.layout === 'split' ? ' sl-split' : '';
+      // Footer: the deck title, the exhibit's source, and the page number.
+      // Provenance belongs here — under the exhibit it would scale away with
+      // it, and a source line has to stay readable to be worth printing.
+      const source =
+        sl.source !== undefined ? `<span class="slide-ft-src">Source: ${esc(sl.source)}</span>` : '';
       const footer = isCover
         ? ''
-        : `<div class="slide-ft"><span>${esc(title)}</span><span>${i + 1} / ${slides.length}</span></div>`;
+        : `<div class="slide-ft"><span>${esc(title)}</span>${source}` +
+          `<span>${i + 1} / ${slides.length}</span></div>`;
       return `<div class="docskin slide${isCover ? ' slide-cover' : ''}">${header}<div class="slide-content${alignCls}${layoutCls}"><div class="slide-inner">${sl.html}</div></div>${footer}</div>`;
     })
     .join('');

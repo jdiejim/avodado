@@ -1,4 +1,4 @@
-# The 86 block types — by family
+# The 87 block types — by family
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 The map from block type → the family file beside this one that holds its full
@@ -76,6 +76,7 @@ permanent aliases — see the alias table at the bottom.
 | `wardley` | `business.md` | A Wardley map — components placed by visibility to the user and by evolution (genesis → commodity), joined into a value chain. |
 | `harvey` | `business.md` | A rated comparison — options across the top, criteria down the side, a Harvey ball per judgement, and the recommended column marked. |
 | `scqa` | `business.md` | An executive summary in Minto order — situation, complication, question, and the answer the deck exists to deliver. |
+| `scenarios` | `business.md` | Base, upside and downside against the same drivers — assumptions in columns, the outcome each produces on its own row. |
 | `scorecard` | `business.md` | A weighted decision matrix — criteria rows × option columns, weighted totals, winner highlighted. |
 | `risk` | `planning.md` | A risk register — severity derived from likelihood × impact, with mitigation, owner, status. |
 | `palette` | `design-system.md` | Color-token swatches — name, hex value, and usage per color, on a card grid. |

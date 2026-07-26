@@ -331,6 +331,14 @@ export interface Slide {
    * it with the exhibit.
    */
   readonly lede?: string;
+  /**
+   * Provenance for the exhibit — `## Title {source: internal QA, Oct 2026}`.
+   * Every consulting exhibit carries one, and it belongs in the slide footer
+   * rather than under the block, where the fitter would scale it away.
+   */
+  readonly source?: string;
+  /** The part (divider band) this slide belongs to, for the deck tracker. */
+  readonly part?: string;
   /** Inner HTML for a `<div class="docskin slide">`. */
   readonly html: string;
   /** Vertical alignment of the content (auto by weight, or forced via a heading marker). */
@@ -444,6 +452,7 @@ const ITEM_WEIGHT: Partial<Record<BlockType, number>> = {
   packet: 1.4,
   wardley: 1.2,
   harvey: 1.4,
+  scenarios: 1.4,
   scqa: 1.6,
   matrix: 1.2,
   // node diagrams (block/graph layout engines + aliases)
@@ -561,6 +570,10 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
     let label: string | undefined;
     let forced: 'top' | 'center' | 'bottom' | undefined;
     let forcedLayout: 'split' | undefined;
+    let sourceNote: string | undefined;
+    // A `divider` block opens a part of the deck; every slide after it belongs
+    // to that part until the next one, which is what the tracker walks.
+    let part: string | undefined;
     // `keep` = true for a continuation slide (same heading spilled over): keep the
     // title/marker, reset only the content. `false` = a real new heading boundary.
     const pushSlide = (keep: boolean): void => {
@@ -599,6 +612,8 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
           label: label ?? 'Slide',
           ...(heading !== undefined ? { title: heading } : {}),
           ...(lede !== undefined ? { lede } : {}),
+          ...(sourceNote !== undefined ? { source: sourceNote } : {}),
+          ...(part !== undefined ? { part } : {}),
           html,
           align,
           ...(forcedLayout !== undefined ? { layout: forcedLayout } : {}),
@@ -611,6 +626,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
         heading = undefined;
         forced = undefined;
         forcedLayout = undefined;
+        sourceNote = undefined;
       }
     };
     const pendingWeight = (): number => parts.reduce((a, p) => a + p.w, 0);
@@ -677,6 +693,13 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
             // Optional marker, e.g. `## Title {top}` or `## Title {split}` —
             // stripped from the title.
             let title = m[2] ?? '';
+            // `{source: …}` carries free text (commas, colons, a date), so it
+            // is matched before the single-word markers and stripped first.
+            const src = /\s*\{source:\s*([^}]+)\}\s*$/i.exec(title);
+            if (src !== null) {
+              title = title.slice(0, src.index).replace(/\s+$/, '');
+              sourceNote = (src[1] ?? '').trim();
+            }
             const mark = /\s*\{(top|center|middle|bottom|split)\}\s*$/i.exec(title);
             if (mark !== null) {
               title = title.slice(0, mark.index).replace(/\s+$/, '');
@@ -691,6 +714,17 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
         }
         flushBuf();
       } else {
+        if (seg.kind === 'divider') {
+          const d = seg.data as { label?: unknown; title?: unknown } | undefined;
+          const name =
+            typeof d?.label === 'string' ? d.label : typeof d?.title === 'string' ? d.title : undefined;
+          if (name !== undefined && name !== '') {
+            // Flush whatever is pending FIRST: that content belongs to the
+            // part it was written under, not to the one this divider opens.
+            if (parts.length > 0) pushSlide(false);
+            part = name;
+          }
+        }
         addPart(
           { kind: 'block', html: renderSegment(seg, ctx), type: seg.kind, data: seg.data },
           blockWeight(seg),

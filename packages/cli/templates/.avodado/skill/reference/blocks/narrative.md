@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 86 blocks is `contract.md` beside this file; the block → family
+table for all 87 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Document & meta

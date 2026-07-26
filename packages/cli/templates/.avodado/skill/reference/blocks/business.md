@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 86 blocks is `contract.md` beside this file; the block → family
+table for all 87 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Access control / RBAC
@@ -269,3 +269,21 @@ job. The first three render as a numbered ladder; `answer` is the
 recommendation and takes the filled card, with `because` as the support under
 it. Pair it with a `lede` on the block: on a slide that line pins under the
 action title as the supporting sentence.
+
+#### `scenarios` — base, upside and downside
+
+The table a plan is defended with. Cases go in columns, so reading across a
+driver row shows how much of the outcome hangs on that one assumption.
+```scenarios
+title: Three ways next year goes
+drivers: [Capture moved async, Conversion recovery, Volume growth]
+outcomeLabel: FY27 revenue
+cases:
+  - { label: Downside, values: ["Q4 slip", "+0.8pp", "5%"], outcome: "$18M", tone: neg }
+  - { label: Base, values: ["Q3", "+2.1pp", "8%"], outcome: "$24M", tone: base }
+  - { label: Upside, values: ["Q3", "+3.4pp", "15%"], outcome: "$31M", tone: pos }
+```
+`tone` is `pos | neg | base`, and the base case is badged because every other
+column is read relative to it. `values` are positional against `drivers`; a
+case that omits one renders `·` — silent about that driver, which is not the
+same as claiming no change. `outcome` gets its own emphasised row.
