@@ -88,6 +88,11 @@ import { renderStatustable } from './blocks/statustable.js';
 import { renderCycle } from './blocks/cycle.js';
 import { renderBenchmark } from './blocks/benchmark.js';
 import { renderSankey } from './blocks/sankey.js';
+import { renderGitgraph } from './blocks/gitgraph.js';
+import { renderTreemap } from './blocks/treemap.js';
+import { renderPacket } from './blocks/packet.js';
+import { renderVenn } from './blocks/venn.js';
+import { renderWardley } from './blocks/wardley.js';
 
 /** Per-block HTML renderer signature. */
 export type HtmlRenderer<K extends BlockType> = (data: BlockDataMap[K]) => string;
@@ -176,4 +181,9 @@ export const htmlRenderers: HtmlRendererRegistry = {
   cycle: renderCycle,
   benchmark: renderBenchmark,
   sankey: renderSankey,
+  gitgraph: renderGitgraph,
+  treemap: renderTreemap,
+  packet: renderPacket,
+  venn: renderVenn,
+  wardley: renderWardley,
 };

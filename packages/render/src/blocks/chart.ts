@@ -63,11 +63,17 @@ interface Frame {
 
 const TICKS = 4;
 
-function frameFor(data: ChartData, cats: number): Frame {
+function frameFor(data: ChartData, cats: number, stacked = false): Frame {
   const width = Math.max(420, Math.min(680, 120 + cats * 84));
   const height = 240;
-  const values = (data.series ?? []).flatMap((s) => s.values.map(pos));
-  const dataMax = values.length > 0 ? Math.max(...values) : 0;
+  const series = data.series ?? [];
+  const values = series.flatMap((s) => s.values.map(pos));
+  // A stacked column is as tall as its total, so that is what the axis has to
+  // fit — scaling to the tallest single value would run the stack off the top.
+  const totals = stacked
+    ? Array.from({ length: cats }, (_v, i) => series.reduce((a, sr) => a + pos(sr.values[i] ?? 0), 0))
+    : [];
+  const dataMax = Math.max(0, ...values, ...totals);
   const yMax = data.max !== undefined && data.max > 0 ? data.max : dataMax > 0 ? dataMax : 1;
   return { width, height, x0: 52, x1: width - 18, y0: 18, y1: height - 32, yMax };
 }
@@ -241,6 +247,71 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): string {
  * become concentric rings, outermost first, each with the track behind it so
  * an empty arc still reads as "nearly none of it" instead of as missing.
  */
+/**
+ * `kind: stacked` — bars that sum instead of standing side by side, for the
+ * case where the total matters as much as the split (spend by team per
+ * quarter, requests by status per day).
+ */
+function renderStacked(
+  data: ChartData,
+  labels: readonly string[],
+  series: readonly Series[],
+  tagLabels: boolean,
+): string {
+  const f = frameFor(data, labels.length, true);
+  const n = Math.max(labels.length, 1);
+  const slot = (f.x1 - f.x0) / n;
+  const barW = Math.max(10, Math.min(56, slot * 0.55));
+  let s = `<g${bl('series')}>`;
+  for (let ci = 0; ci < labels.length; ci++) {
+    const x = Math.round(f.x0 + slot * ci + (slot - barW) / 2);
+    let top = f.y1;
+    series.forEach((sr, si) => {
+      const v = pos(sr.values[ci] ?? 0);
+      if (v === 0) return;
+      const h = Math.round(((f.y1 - f.y0) * v) / f.yMax);
+      top -= h;
+      s += `<rect x="${x}" y="${top}" width="${Math.round(barW)}" height="${h}" fill="${colorAt(sr.accent, si)}"${bp(`series.${si}.values.${ci}`)}><title>${escapeHtml(`${sr.label} — ${fmt(v, data.unit)}`)}</title></rect>`;
+    });
+    // The column total sits above the stack, which is the number people read.
+    const total = series.reduce((a, sr) => a + pos(sr.values[ci] ?? 0), 0);
+    if (total > 0) {
+      s += `<text x="${x + Math.round(barW / 2)}" y="${top - 5}" class="chart-val">${escapeHtml(fmt(total, data.unit))}</text>`;
+    }
+  }
+  s += `</g>`;
+  return svgOpen(f) + axes(f, labels, data.unit, tagLabels) + s + `</svg>`;
+}
+
+/**
+ * `kind: scatter` — points instead of a joined line, for the case where the
+ * x order carries no meaning and the question is where things cluster.
+ */
+function renderScatter(
+  data: ChartData,
+  labels: readonly string[],
+  series: readonly Series[],
+  tagLabels: boolean,
+): string {
+  const f = frameFor(data, labels.length);
+  const n = Math.max(labels.length, 1);
+  const slot = (f.x1 - f.x0) / n;
+  const xAt = (i: number): number => Math.round(f.x0 + slot * i + slot / 2);
+  const yAt = (v: number): number =>
+    Math.round(f.y1 - ((f.y1 - f.y0) * Math.min(pos(v), f.yMax)) / f.yMax);
+  let s = `<g${bl('series')}>`;
+  series.forEach((sr, si) => {
+    const color = colorAt(sr.accent, si);
+    s += `<g${bp(`series.${si}`)}>`;
+    sr.values.slice(0, labels.length).forEach((v, i) => {
+      s += `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="5" fill="${color}" fill-opacity="0.75" stroke="${color}" stroke-width="1.5"><title>${escapeHtml(`${sr.label} — ${fmt(pos(v), data.unit)}`)}</title></circle>`;
+    });
+    s += `</g>`;
+  });
+  s += `</g>`;
+  return svgOpen(f) + axes(f, labels, data.unit, tagLabels) + s + `</svg>`;
+}
+
 function renderGauge(data: ChartData, items: readonly DonutItem[]): string {
   const width = 420;
   const solo = items.length <= 1;
@@ -643,7 +714,11 @@ export function renderChart(data: ChartData): string {
     const body =
       kind === 'bar'
         ? renderBars(data, cats, series, tagLabels)
-        : renderLineArea(data, cats, series, kind === 'area', tagLabels);
+        : kind === 'stacked'
+          ? renderStacked(data, cats, series, tagLabels)
+          : kind === 'scatter'
+            ? renderScatter(data, cats, series, tagLabels)
+            : renderLineArea(data, cats, series, kind === 'area', tagLabels);
     const legend =
       series.length > 1
         ? legendRow(

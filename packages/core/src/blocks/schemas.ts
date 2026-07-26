@@ -1234,7 +1234,8 @@ export const gallerySchema = z
   });
 
 // ─── chart (declarative data chart) ─────────────────────────────────────────
-// `labels` + `series` drive bar / line / area; `items` drives donut, radar,
+// `labels` + `series` drive bar / stacked / line / area / scatter; `items`
+// drives donut, radar,
 // gauge (radial progress against `max` — one big dial, or several as
 // concentric rings), waterfall (a budget cascade — `budget` draws the dashed
 // cap line), and funnel (stacked conversion bands). Values are plain numbers;
@@ -1264,7 +1265,7 @@ export const chartSchema = z
     description: z.string().optional(),
     lede: z.string().optional(),
     kind: z
-      .enum(['bar', 'line', 'area', 'donut', 'gauge', 'radar', 'waterfall', 'funnel'])
+      .enum(['bar', 'stacked', 'line', 'area', 'scatter', 'donut', 'gauge', 'radar', 'waterfall', 'funnel'])
       .optional(),
     labels: z.array(z.string()).optional(),
     series: z.array(chartSeriesSchema).optional(),
@@ -2173,6 +2174,158 @@ export const benchmarkSchema = z
   })
   .strict();
 
+// ─── gitgraph (branching and release model) ─────────────────────────────────
+// The picture every branching policy doc draws by hand: lanes for branches,
+// dots for commits, curves where a branch starts and where it merges back.
+// Commits are a sequence — the first mention of a branch opens its lane off
+// whatever the parent branch's head is at that moment, and `merge` closes one
+// back into the branch the commit is on.
+const gitBranchSchema = z
+  .object({
+    name: z.string(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+const gitCommitSchema = z
+  .object({
+    /** Lane this commit lands on. Defaults to the first branch. */
+    branch: z.string().optional(),
+    label: z.string().optional(),
+    /** Release marker drawn above the dot. */
+    tag: z.string().optional(),
+    /** Branch merged INTO this commit's branch here. */
+    merge: z.string().optional(),
+    /** Branch this one forks from, when it isn't the previous lane. */
+    from: z.string().optional(),
+    kind: z.enum(['normal', 'release', 'hotfix', 'revert']).optional(),
+  })
+  .strict();
+export const gitgraphSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    branches: z.array(gitBranchSchema).optional(),
+    commits: z.array(gitCommitSchema).min(1),
+  })
+  .strict();
+
+// ─── treemap (proportional composition) ─────────────────────────────────────
+// Where a donut gives up. Six slices is a donut; thirty services by spend, or
+// a bundle by module, is a treemap — area is the value, so the big tiles are
+// the answer and the small ones still have a place to sit.
+const treemapItemSchema = z
+  .object({
+    label: z.string(),
+    value: z.number(),
+    accent: accentEnum.optional(),
+    /** Second line inside the tile, when it fits. */
+    desc: z.string().optional(),
+  })
+  .strict();
+export const treemapSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    unit: z.string().optional(),
+    items: z.array(treemapItemSchema).min(1),
+  })
+  .strict();
+
+// ─── packet (wire format / bit layout) ──────────────────────────────────────
+// A header laid out bit by bit, the way an RFC draws it. `width` is the bits
+// per row (32 by default); each field takes `bits` and wraps across rows when
+// it has to, so the picture is arithmetic rather than ASCII art.
+const packetFieldSchema = z
+  .object({
+    label: z.string(),
+    bits: z.number(),
+    accent: accentEnum.optional(),
+    /** Fixed value or note, shown under the name when the cell is wide. */
+    value: z.string().optional(),
+  })
+  .strict();
+export const packetSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** Bits per row. Default 32. */
+    width: z.number().optional(),
+    fields: z.array(packetFieldSchema).min(1),
+  })
+  .strict();
+
+// ─── venn (two or three overlapping sets) ───────────────────────────────────
+// Scope, ownership, responsibility: the cases where the interesting part is
+// what two groups share. Two or three sets; `shared` names a region by the
+// sets it belongs to, so the overlap carries a label instead of a guess.
+const vennSetSchema = z
+  .object({
+    label: z.string(),
+    accent: accentEnum.optional(),
+    /** Line under the set name, inside its own region. */
+    desc: z.string().optional(),
+  })
+  .strict();
+const vennSharedSchema = z
+  .object({
+    /** Set labels this region belongs to — two, or all three. */
+    sets: z.array(z.string()).min(2),
+    label: z.string(),
+  })
+  .strict();
+export const vennSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    sets: z.array(vennSetSchema).min(2).max(3),
+    shared: z.array(vennSharedSchema).optional(),
+  })
+  .strict();
+
+// ─── wardley (value chain × evolution) ──────────────────────────────────────
+// Strategy on two axes: how visible a component is to the user (up) and how
+// evolved it is (right, genesis → custom → product → commodity). Both are
+// 0..1 so the map is the author's judgement, plainly stated, and `links` draw
+// the value chain between components.
+const wardleyComponentSchema = z
+  .object({
+    id: z.string().optional(),
+    label: z.string(),
+    /** Evolution, 0 (genesis) → 1 (commodity). */
+    x: z.number(),
+    /** Visibility to the user, 0 (invisible) → 1 (visible). */
+    y: z.number(),
+    kind: z.enum(['user', 'component', 'commodity', 'build', 'buy']).optional(),
+    /** Where this component is heading, as an evolution delta. */
+    movement: z.number().optional(),
+  })
+  .strict();
+const wardleyLinkSchema = z
+  .object({
+    from: z.string(),
+    to: z.string(),
+    label: z.string().optional(),
+  })
+  .strict();
+export const wardleySchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    components: z.array(wardleyComponentSchema).min(1),
+    links: z.array(wardleyLinkSchema).optional(),
+  })
+  .strict();
+
 // ─── registry source-of-truth ───────────────────────────────────────────────
 /**
  * The schema map. `as const satisfies Record<BlockType, ...>` enforces that
@@ -2258,6 +2411,11 @@ export const blockSchemas = {
   cycle: cycleSchema,
   benchmark: benchmarkSchema,
   sankey: sankeySchema,
+  gitgraph: gitgraphSchema,
+  treemap: treemapSchema,
+  packet: packetSchema,
+  venn: vennSchema,
+  wardley: wardleySchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

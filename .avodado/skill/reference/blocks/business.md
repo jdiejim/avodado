@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 79 blocks is `contract.md` beside this file; the block → family
+table for all 84 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Access control / RBAC
@@ -207,3 +207,25 @@ A 2-column grid of cards — initials avatar (from `name`), role, an italic
 `quote` with an accent bar, then GOALS / FRUSTRATIONS lists and TOOLS chips
 (sections with no data are omitted). Use `persona` for user archetypes; use
 `team` for real people and ownership.
+
+#### `wardley` — value chain against evolution
+
+Strategy on two axes: how visible a component is to the user (up) and how
+evolved it is (right — genesis, custom-built, product, commodity). The value of
+the map is that it forces both judgements to be stated as numbers, so "we
+should stop building this" becomes a position rather than an opinion.
+```wardley
+title: Where to build, where to buy
+components:
+  - { id: analyst, label: Analyst, x: 0.72, y: 0.96, kind: user }
+  - { id: reports, label: Reporting UI, x: 0.42, y: 0.74 }
+  - { id: model, label: Scoring model, x: 0.22, y: 0.54, kind: build, movement: 0.18 }
+  - { id: warehouse, label: Warehouse, x: 0.78, y: 0.32, kind: commodity }
+links:
+  - { from: analyst, to: reports }
+  - { from: reports, to: model }
+  - { from: model, to: warehouse }
+```
+`x` and `y` are 0–1 and clamp; `kind` tints the dot (`user` · `component` ·
+`commodity` · `build` · `buy`) and `movement` draws a dashed arrow that far
+along the evolution axis — where the component is heading.

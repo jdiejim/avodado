@@ -132,4 +132,9 @@ export const blockRegistry: BlockRegistry = {
   cycle: { type: 'cycle', schema: blockSchemas.cycle },
   benchmark: { type: 'benchmark', schema: blockSchemas.benchmark },
   sankey: { type: 'sankey', schema: blockSchemas.sankey },
+  gitgraph: { type: 'gitgraph', schema: blockSchemas.gitgraph },
+  treemap: { type: 'treemap', schema: blockSchemas.treemap },
+  packet: { type: 'packet', schema: blockSchemas.packet },
+  venn: { type: 'venn', schema: blockSchemas.venn },
+  wardley: { type: 'wardley', schema: blockSchemas.wardley },
 };

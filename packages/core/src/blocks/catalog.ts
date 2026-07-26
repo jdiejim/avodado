@@ -165,6 +165,16 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```benchmark\ntitle: Retrieval engines, measured\nmetricLabel: Benchmark\nsubjects:\n  - { label: Ours, sub: v2.1, featured: true }\n  - { label: Vendor A }\n  - { label: Vendor B, tone: muted }\nrows:\n  - { label: Answer accuracy, sub: internal QA set, cells: ["82.4%", "79.1%", "74.8%"] }\n  - { label: p95 latency, sub: 500 rps soak, better: low, cells: ["310 ms", "420 ms", "290 ms"] }\n  - label: Cost per 1k queries\n    variants: [cached, cold]\n    better: low\n    cells:\n      - ["$0.14", "$0.90"]\n      - ["$0.21", "$1.10"]\n      - ["$0.18", "—"]\nnote: Single region, same corpus, October run.\n```\n',
   sankey:
     '```sankey\ntitle: Where the cloud bill goes\nunit: "k"\nlinks:\n  - { from: Bill, to: Compute, value: 62 }\n  - { from: Bill, to: Storage, value: 28 }\n  - { from: Bill, to: Network, value: 10 }\n  - { from: Compute, to: Batch, value: 24 }\n  - { from: Compute, to: Serving, value: 38 }\n```\n',
+  gitgraph:
+    '```gitgraph\ntitle: Release model\nbranches:\n  - { name: main, accent: navy }\n  - { name: feature, accent: teal }\ncommits:\n  - { label: baseline }\n  - { branch: feature, label: spike }\n  - { branch: feature, label: review fixes }\n  - { merge: feature, label: ship it, tag: v1.2.0, kind: release }\n```\n',
+  treemap:
+    '```treemap\ntitle: Cloud spend by service\nunit: k\nitems:\n  - { label: Compute, value: 62, desc: EC2 + Lambda }\n  - { label: Storage, value: 28 }\n  - { label: Network, value: 10 }\n  - { label: Observability, value: 7, accent: amber }\n```\n',
+  packet:
+    '```packet\ntitle: Request header\nwidth: 32\nfields:\n  - { label: Version, bits: 4, value: "1" }\n  - { label: Flags, bits: 4 }\n  - { label: Length, bits: 24 }\n  - { label: Request id, bits: 32, accent: teal }\n```\n',
+  venn:
+    '```venn\ntitle: Who owns what\nsets:\n  - { label: Platform, desc: runtime and CI }\n  - { label: Product, desc: features }\nshared:\n  - { sets: [Platform, Product], label: Release process }\n```\n',
+  wardley:
+    '```wardley\ntitle: Where to build\ncomponents:\n  - { id: user, label: Analyst, x: 0.75, y: 0.96, kind: user }\n  - { id: reports, label: Reporting, x: 0.45, y: 0.7 }\n  - { id: store, label: Warehouse, x: 0.82, y: 0.35, kind: commodity }\nlinks:\n  - { from: user, to: reports }\n  - { from: reports, to: store }\n```\n',
 };
 
 /**
@@ -279,6 +289,11 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   cycle: 'flows',
   benchmark: 'tables-data',
   sankey: 'charts',
+  gitgraph: 'flows',
+  treemap: 'charts',
+  packet: 'api',
+  venn: 'charts',
+  wardley: 'business',
   matrix: 'business',
   anatomy: 'business',
   composition: 'business',
@@ -399,6 +414,11 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   cycle: 'Cycle',
   benchmark: 'Benchmark table',
   sankey: 'Flow volumes',
+  gitgraph: 'Branch graph',
+  treemap: 'Treemap',
+  packet: 'Packet layout',
+  venn: 'Venn overlap',
+  wardley: 'Wardley map',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -501,4 +521,14 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'Measured results side by side — subject columns (one can be outlined as the focus) × metric rows, best in each row derived and highlighted, several conditions per row supported.',
   sankey:
     'A flow diagram weighted by volume — node height and ribbon thickness are the value, so the widest ribbon leaving a stage is where the volume actually goes.',
+  gitgraph:
+    'A branching and release model — lanes for branches, dots for commits, curves where one forks and merges back; tags mark releases.',
+  treemap:
+    'Proportional composition as nested tiles — area is the value, so thirty items stay readable where a donut gives up at six.',
+  packet:
+    'A wire format laid out bit by bit — fields wrap across rows of `width` bits, the way an RFC header diagram reads.',
+  venn:
+    'Two or three overlapping sets, with the shared regions labelled — scope, ownership, responsibility.',
+  wardley:
+    'A Wardley map — components placed by visibility to the user and by evolution (genesis → commodity), joined into a value chain.',
 };

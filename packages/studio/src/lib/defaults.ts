@@ -18,7 +18,9 @@ export function defaultValue(node: FieldNode): unknown {
     case 'enum':
       return node.options[0] ?? '';
     case 'array':
-      return [];
+      // An array with a declared minimum is seeded to that length — anything
+      // shorter is a value the schema will reject the moment it is saved.
+      return Array.from({ length: node.min ?? 0 }, () => defaultValue(node.element));
     case 'object':
       return defaultObject(node);
     case 'union': {

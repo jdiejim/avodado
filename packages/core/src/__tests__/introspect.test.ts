@@ -145,7 +145,18 @@ describe('describeBlockSchema', () => {
     expect(kind).toEqual({
       kind: 'enum',
       optional: true,
-      options: ['bar', 'line', 'area', 'donut', 'gauge', 'radar', 'waterfall', 'funnel'],
+      options: [
+        'bar',
+        'stacked',
+        'line',
+        'area',
+        'scatter',
+        'donut',
+        'gauge',
+        'radar',
+        'waterfall',
+        'funnel',
+      ],
     });
     const preset = field(describeBlockSchema('block'), 'preset');
     expect(preset).toEqual({

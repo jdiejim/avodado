@@ -117,6 +117,14 @@ export const BLOCK_TYPES = [
   'benchmark',
   // Phase 24 — flow volumes: how much moves between stages, not just whether
   'sankey',
+  // Phase 25 — the shapes a technical doc still had to draw by hand:
+  // branching models, proportional composition, wire formats, set overlap,
+  // and strategy position.
+  'gitgraph',
+  'treemap',
+  'packet',
+  'venn',
+  'wardley',
 ] as const;
 
 /** A block type literal. Adding a new type here is a one-place change. */

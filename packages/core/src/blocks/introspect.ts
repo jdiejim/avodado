@@ -34,7 +34,13 @@ import type { BlockType } from '../types.js';
 export type FieldNode =
   | { readonly kind: 'string' | 'number' | 'boolean'; readonly optional: boolean }
   | { readonly kind: 'enum'; readonly optional: boolean; readonly options: readonly string[] }
-  | { readonly kind: 'array'; readonly optional: boolean; readonly element: FieldNode }
+  | {
+      readonly kind: 'array';
+      readonly optional: boolean;
+      readonly element: FieldNode;
+      /** Declared `.min(n)`, when the schema sets one — a form has to seed that many. */
+      readonly min?: number;
+    }
   | {
       readonly kind: 'object';
       readonly optional: boolean;
@@ -71,7 +77,15 @@ function describe(schema: z.ZodTypeAny): FieldNode {
     return { kind: 'enum', optional, options: [cur.value] };
   }
   if (cur instanceof z.ZodArray) {
-    return { kind: 'array', optional, element: describe(cur.element as z.ZodTypeAny) };
+    // `.min(n)` is part of the contract: a form that seeds fewer items than
+    // the schema demands produces a value that cannot validate.
+    const min = (cur._def as { minLength?: { value?: number } | null }).minLength?.value;
+    return {
+      kind: 'array',
+      optional,
+      element: describe(cur.element as z.ZodTypeAny),
+      ...(typeof min === 'number' && min > 0 ? { min } : {}),
+    };
   }
   if (cur instanceof z.ZodObject) {
     // A passthrough object admits arbitrary extra keys (gallery's nested

@@ -1117,6 +1117,30 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .bm-table th.bm-feat,.docskin .bm-table td.bm-feat{border-left:1.5px solid var(--highlight);border-right:1.5px solid var(--highlight);}
 .docskin .bm-table thead th.bm-feat{border-top:1.5px solid var(--highlight);border-radius:14px 14px 0 0;}
 .docskin .bm-table tbody tr:last-child td.bm-feat{border-bottom:1.5px solid var(--highlight);border-radius:0 0 14px 14px;}
+/* treemap — area is the value; text only where the tile can hold it */
+.docskin .tm-name{font-family:var(--font-body);font-size:12.5px;font-weight:700;fill:#fff;}
+.docskin .tm-value{font-family:var(--font-mono);font-size:10.5px;fill:#fff;fill-opacity:.85;}
+.docskin .tm-desc{font-family:var(--font-body);font-size:10.5px;fill:#fff;fill-opacity:.75;}
+/* packet — the bit ruler, field cells, and each cell's bit count */
+.docskin .pk-tick{font-family:var(--font-mono);font-size:8.5px;fill:var(--gray);}
+.docskin .pk-off{font-family:var(--font-mono);font-size:9px;fill:var(--gray);text-anchor:end;dominant-baseline:middle;}
+.docskin .pk-name{font-family:var(--font-body);font-size:11.5px;font-weight:700;fill:var(--charcoal);text-anchor:middle;}
+.docskin .pk-value{font-family:var(--font-mono);font-size:10px;fill:var(--slate);text-anchor:middle;}
+.docskin .pk-bits{font-family:var(--font-mono);font-size:8.5px;fill:var(--gray);text-anchor:middle;}
+.docskin .pk-total{font-family:var(--font-mono);font-size:11px;color:var(--gray);margin:10px 0 0;letter-spacing:.03em;}
+/* venn — set names in their own lobe, shared labels in the overlaps */
+.docskin .vn-name{font-family:var(--font-display);font-size:14px;font-weight:700;text-anchor:middle;}
+.docskin .vn-desc{font-family:var(--font-body);font-size:11px;fill:var(--slate);text-anchor:middle;}
+.docskin .vn-shared{font-family:var(--font-body);font-size:12px;font-weight:600;fill:var(--charcoal);text-anchor:middle;}
+/* wardley — evolution bands, axis captions, component names */
+.docskin .wm-band{font-family:var(--font-mono);font-size:9.5px;font-weight:700;fill:var(--gray);text-anchor:middle;letter-spacing:.1em;}
+.docskin .wm-axis{font-family:var(--font-mono);font-size:9.5px;font-weight:700;fill:var(--slate);text-anchor:middle;letter-spacing:.12em;}
+.docskin .wm-name{font-family:var(--font-body);font-size:11.5px;font-weight:600;fill:var(--charcoal);text-anchor:middle;}
+.docskin .wm-link{font-family:var(--font-mono);font-size:9.5px;fill:var(--gray);text-anchor:middle;}
+/* gitgraph — lane names, commit messages, release tags */
+.docskin .gg-branch{font-family:var(--font-mono);font-size:11px;font-weight:700;text-anchor:end;}
+.docskin .gg-msg{font-family:var(--font-body);font-size:11px;fill:var(--slate);text-anchor:middle;}
+.docskin .gg-tag{font-family:var(--font-mono);font-size:10px;font-weight:700;fill:var(--highlight);text-anchor:middle;}
 /* sankey (flow volumes): node labels outside the bar, value under the name,
    and the flow figure riding a ribbon thick enough to carry it. */
 .docskin .sk-name{font-family:var(--font-body);font-size:12px;font-weight:700;fill:var(--charcoal);dominant-baseline:middle;}

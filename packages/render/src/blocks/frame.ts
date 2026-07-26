@@ -155,6 +155,11 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   cycle: 'Cycle',
   benchmark: 'Benchmark',
   sankey: 'Flow volumes',
+  gitgraph: 'Branch model',
+  treemap: 'Composition',
+  packet: 'Wire format',
+  venn: 'Overlap',
+  wardley: 'Strategy map',
 };
 
 /**

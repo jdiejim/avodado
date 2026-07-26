@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 79 blocks is `contract.md` beside this file; the block → family
+table for all 84 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Sequence & state
@@ -144,6 +144,27 @@ edges:
 `kind` is `process | external | store | datastore`. Optional `num` on
 processes. Optional `groups` draw dashed zone wrappers around cell ranges
 (same shape as on `flow`).
+
+#### `gitgraph` — the branching and release model
+
+The picture every branching-policy doc draws by hand. Commits are a plain
+sequence, so the YAML reads in the order the history happened:
+```gitgraph
+title: Release model
+branches:
+  - { name: main, accent: navy }
+  - { name: release, accent: teal }
+commits:
+  - { label: baseline }
+  - { branch: release, label: cut 1.2 }
+  - { branch: release, label: rc fixes }
+  - { merge: release, label: ship, tag: v1.2.0, kind: release }
+```
+The first commit on a branch nobody has seen yet OPENS its lane, forking from
+`from` (or from the lane above it); `merge: <branch>` closes that branch back
+into the branch the commit is on. `tag` draws a release marker above the dot,
+and `kind` is `normal | release | hotfix | revert` (a hotfix dot is ringed, a
+revert dot hollow). Declare `branches` to fix the lane order and colours.
 
 #### `swimlane` — cross-functional process
 ```swimlane

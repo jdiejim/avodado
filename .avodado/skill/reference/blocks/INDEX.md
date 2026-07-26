@@ -1,4 +1,4 @@
-# The 79 block types — by family
+# The 84 block types — by family
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 The map from block type → the family file beside this one that holds its full
@@ -69,6 +69,11 @@ permanent aliases — see the alias table at the bottom.
 | `team` | `business.md` | Compact people cards — initials avatar, name, role, focus area. |
 | `heatmap` | `charts-overviews.md` | A numeric grid with an intensity ramp — rows × columns of tiles tinted by value. |
 | `sankey` | `charts-overviews.md` | Flow volumes between stages — node height and ribbon thickness are the value, so the widest ribbon is where the volume goes. |
+| `gitgraph` | `flows.md` | A branching and release model — lanes for branches, dots for commits, curves where one forks and merges back; tags mark releases. |
+| `treemap` | `charts-overviews.md` | Proportional composition as nested tiles — area is the value, so thirty items stay readable where a donut gives up at six. |
+| `packet` | `api.md` | A wire format laid out bit by bit — fields wrap across rows of `width` bits, the way an RFC header diagram reads. |
+| `venn` | `charts-overviews.md` | Two or three overlapping sets with the shared regions labelled — scope, ownership, responsibility. |
+| `wardley` | `business.md` | A Wardley map — components placed by visibility to the user and by evolution (genesis → commodity), joined into a value chain. |
 | `scorecard` | `business.md` | A weighted decision matrix — criteria rows × option columns, weighted totals, winner highlighted. |
 | `risk` | `planning.md` | A risk register — severity derived from likelihood × impact, with mitigation, owner, status. |
 | `palette` | `design-system.md` | Color-token swatches — name, hex value, and usage per color, on a card grid. |

@@ -244,6 +244,20 @@ links:
   - { from: deploy, to: done }
 ```
 
+```gitgraph
+title: Release model
+description: "Commits are a sequence; the first commit on a new branch opens its lane, and merge closes it back."
+branches:
+  - { name: main, accent: navy }
+  - { name: release, accent: teal }
+commits:
+  - { label: baseline }
+  - { label: feature A }
+  - { branch: release, label: cut 1.2 }
+  - { merge: release, label: ship, tag: v1.2.0, kind: release }
+```
+
+
 ```c4
 title: System context
 description: Who uses ShopCo and which external systems it depends on.
@@ -778,6 +792,16 @@ response: |
   { "id": "ord_123", "status": "pending", "total": 42.00 }
 ```
 
+```packet
+title: Wire format of the request header
+width: 32
+fields:
+  - { label: Version, bits: 4, value: "1" }
+  - { label: Flags, bits: 4 }
+  - { label: Total length, bits: 24 }
+  - { label: Request id, bits: 32, accent: teal }
+```
+
 ## Pull quote
 
 ```pullquote
@@ -1029,6 +1053,28 @@ links:
   - { from: Storage, to: Archive, value: 9 }
 ```
 
+```treemap
+title: Cloud spend by service
+description: "Area is the value — a treemap keeps working where a donut gives up at six slices."
+unit: k
+items:
+  - { label: Compute, value: 62, desc: EC2 + Lambda }
+  - { label: Storage, value: 28, desc: S3 and snapshots }
+  - { label: Databases, value: 24 }
+  - { label: Network, value: 16 }
+  - { label: Observability, value: 11, accent: amber }
+  - { label: CI runners, value: 9 }
+```
+
+```venn
+title: Who owns the release process
+sets:
+  - { label: Platform, desc: runtime and CI }
+  - { label: Product, desc: features and UX }
+shared:
+  - { sets: [Platform, Product], label: Release process }
+```
+
 ```chart
 title: Queue vendors at a glance
 kind: radar
@@ -1187,6 +1233,21 @@ threats:
   - Incumbent wikis bundle "good enough" diagrams
   - Long procurement cycles slow adoption
 ```
+
+```wardley
+title: Where to build, where to buy
+description: "Visibility to the user up, evolution right — the map makes both judgements explicit."
+components:
+  - { id: analyst, label: Analyst, x: 0.72, y: 0.96, kind: user }
+  - { id: reports, label: Reporting UI, x: 0.42, y: 0.74 }
+  - { id: model, label: Scoring model, x: 0.22, y: 0.54, kind: build, movement: 0.18 }
+  - { id: warehouse, label: Warehouse, x: 0.78, y: 0.32, kind: commodity }
+links:
+  - { from: analyst, to: reports }
+  - { from: reports, to: model }
+  - { from: model, to: warehouse }
+```
+
 
 ## Conversion funnel
 

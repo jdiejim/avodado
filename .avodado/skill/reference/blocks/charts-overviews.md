@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 79 blocks is `contract.md` beside this file; the block → family
+table for all 84 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Charts & overviews
@@ -59,10 +59,10 @@ tasks:
 ```
 Task `kind` is `done | active | current | milestone` (drives bar colour).
 
-#### `chart` — a data chart (bar / line / area / donut / gauge / radar / waterfall / funnel)
+#### `chart` — a data chart (bar / stacked / line / area / scatter / donut / gauge / radar / waterfall / funnel)
 ```chart
 title: p95 latency by week
-kind: line               # bar (default) | line | area | donut | gauge | radar | waterfall | funnel
+kind: line               # bar (default) | stacked | line | area | scatter | donut | gauge | radar | waterfall | funnel
 unit: ms                 # optional value suffix
 labels: [W1, W2, W3, W4]
 series:
@@ -80,6 +80,12 @@ items:
   - { label: iOS, value: 23, accent: teal }
   - { label: Android, value: 15, accent: amber }
 ```
+**`kind: stacked`** sums each column instead of standing the series side by
+side — for when the total matters as much as the split; the y-axis scales to
+the totals and each column is labelled with its own. **`kind: scatter`** plots
+the same `labels` + `series` as unjoined points, for when the x order carries
+no meaning and the question is where things cluster.
+
 **`kind: gauge`** — radial progress against a ceiling. A donut says how a
 whole splits up; a gauge says how far along one number is, which is the shape
 an SLO, a quota, a migration or a rollout actually has. `max` is the full
@@ -183,6 +189,42 @@ A node's column is the longest chain of links reaching it, so a stage always
 sits right of everything feeding it; `col` (1-indexed) pins one when the
 derived depth reads wrong. Use `sankey` for volumes, `funnel` (a `chart` kind)
 for a single ordered drop-off, and `flow` when only the path matters.
+
+#### `treemap` — proportional composition
+
+Where a donut gives up. Six slices is a donut; thirty services by spend, or a
+bundle by module, is a treemap — area is the value, so the big tiles are the
+answer and the small ones still have a place to sit.
+```treemap
+title: Cloud spend by service
+unit: k
+items:
+  - { label: Compute, value: 62, desc: EC2 + Lambda }
+  - { label: Storage, value: 28 }
+  - { label: Databases, value: 24 }
+  - { label: Network, value: 16 }
+  - { label: Observability, value: 11, accent: amber }
+```
+Tiles are laid out squarified — near-square and biggest-first — which is what
+makes their areas comparable by eye. Each shows its value and share of the
+total; the label, value and `desc` appear only where the tile can hold them,
+and the tooltip always carries all three.
+
+#### `venn` — two or three overlapping sets
+
+For scope, ownership and responsibility, where the interesting part is what two
+groups share:
+```venn
+title: Who owns what
+sets:
+  - { label: Platform, desc: runtime and CI }
+  - { label: Product, desc: features and UX }
+shared:
+  - { sets: [Platform, Product], label: Release process }
+```
+Positions are fixed (two circles, or three on a triangle) because a Venn names
+regions rather than measuring them. `shared.sets` matches set **labels**: two
+names put the label in that lens, all three put it in the middle.
 
 #### `heatmap` — a numeric grid with an intensity ramp
 ```heatmap
