@@ -125,6 +125,10 @@ export const BLOCK_TYPES = [
   'packet',
   'venn',
   'wardley',
+  // Phase 26 — the two moves a consulting deck opens and closes with:
+  // a rated comparison, and the argument in Minto order.
+  'harvey',
+  'scqa',
 ] as const;
 
 /** A block type literal. Adding a new type here is a one-place change. */

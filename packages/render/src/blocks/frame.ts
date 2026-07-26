@@ -160,6 +160,8 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   packet: 'Wire format',
   venn: 'Overlap',
   wardley: 'Strategy map',
+  harvey: 'Comparison',
+  scqa: 'Summary',
 };
 
 /**

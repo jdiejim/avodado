@@ -93,6 +93,8 @@ import { renderTreemap } from './blocks/treemap.js';
 import { renderPacket } from './blocks/packet.js';
 import { renderVenn } from './blocks/venn.js';
 import { renderWardley } from './blocks/wardley.js';
+import { renderHarvey } from './blocks/harvey.js';
+import { renderScqa } from './blocks/scqa.js';
 
 /** Per-block HTML renderer signature. */
 export type HtmlRenderer<K extends BlockType> = (data: BlockDataMap[K]) => string;
@@ -186,4 +188,6 @@ export const htmlRenderers: HtmlRendererRegistry = {
   packet: renderPacket,
   venn: renderVenn,
   wardley: renderWardley,
+  harvey: renderHarvey,
+  scqa: renderScqa,
 };

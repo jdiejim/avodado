@@ -137,4 +137,6 @@ export const blockRegistry: BlockRegistry = {
   packet: { type: 'packet', schema: blockSchemas.packet },
   venn: { type: 'venn', schema: blockSchemas.venn },
   wardley: { type: 'wardley', schema: blockSchemas.wardley },
+  harvey: { type: 'harvey', schema: blockSchemas.harvey },
+  scqa: { type: 'scqa', schema: blockSchemas.scqa },
 };

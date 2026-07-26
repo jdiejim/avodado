@@ -324,6 +324,13 @@ export interface Slide {
   readonly label: string;
   /** The block's title, if any. */
   readonly title?: string;
+  /**
+   * The exhibit's supporting line — a block's `lede`. On a page it sits in the
+   * section head; on a stage the deck pins it under the slide title, where an
+   * action title's supporting line belongs and where the fitter can't shrink
+   * it with the exhibit.
+   */
+  readonly lede?: string;
   /** Inner HTML for a `<div class="docskin slide">`. */
   readonly html: string;
   /** Vertical alignment of the content (auto by weight, or forced via a heading marker). */
@@ -436,6 +443,8 @@ const ITEM_WEIGHT: Partial<Record<BlockType, number>> = {
   treemap: 1.2,
   packet: 1.4,
   wardley: 1.2,
+  harvey: 1.4,
+  scqa: 1.6,
   matrix: 1.2,
   // node diagrams (block/graph layout engines + aliases)
   flow: 1.2,
@@ -577,9 +586,19 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
             ? `<div class="sl-msg">${parts.filter((p) => !p.block).map((p) => p.h).join('')}</div>` +
               `<div class="sl-exhibit">${parts.filter((p) => p.block).map((p) => p.h).join('')}</div>`
             : raw;
+        // The first exhibit's lede becomes the slide's supporting line. It is
+        // hidden inside the (display:none) section head otherwise — a line the
+        // author wrote and the deck silently dropped.
+        const ledeOf = (part: SlidePart): string | undefined => {
+          if (part.kind !== 'block') return undefined;
+          const d = part.data as { lede?: unknown } | undefined;
+          return typeof d?.lede === 'string' && d.lede.length > 0 ? d.lede : undefined;
+        };
+        const lede = parts.map((p) => ledeOf(p.part)).find((l) => l !== undefined);
         slides.push({
           label: label ?? 'Slide',
           ...(heading !== undefined ? { title: heading } : {}),
+          ...(lede !== undefined ? { lede } : {}),
           html,
           align,
           ...(forcedLayout !== undefined ? { layout: forcedLayout } : {}),

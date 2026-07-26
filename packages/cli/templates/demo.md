@@ -1234,6 +1234,31 @@ threats:
   - Long procurement cycles slow adoption
 ```
 
+```scqa
+title: Why this quarter goes to checkout
+lede: The one decision this review needs.
+situation: We process 12k orders a day across three regions.
+complication: p95 checkout crossed 2s in March and conversion fell 3.1pp with it.
+question: Where does the next quarter of platform work go?
+answer: Move payment capture off the request path — it returns 1.8s of the 2.4s.
+because:
+  - Capture is 74% of p95 and is fully async-able
+  - No schema change, so it ships inside one quarter
+```
+
+```harvey
+title: Queue vendor fit
+description: "Ratings are judgements, 0-4; the WEIGHTED row is computed, so the recommendation and the arithmetic agree."
+columns: [Kafka, SQS, RabbitMQ]
+scale: [poor, excellent]
+rows:
+  - { label: Throughput, ratings: [4, 2, 3], weight: 2, note: sustained messages per second }
+  - { label: Operational burden, ratings: [1, 4, 3], weight: 2 }
+  - { label: Team familiarity, ratings: [2, 4, 3] }
+  - { label: Ecosystem, ratings: [4, 3, 3] }
+recommend: SQS
+```
+
 ```wardley
 title: Where to build, where to buy
 description: "Visibility to the user up, evolution right — the map makes both judgements explicit."

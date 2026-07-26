@@ -28,9 +28,9 @@ const ALIAS_BODIES: Record<string, string> = {
 };
 
 describe('BLOCK_ALIASES shape', () => {
-  it('there are exactly 12 aliases and 84 canonical types, with no overlap', () => {
+  it('there are exactly 12 aliases and 86 canonical types, with no overlap', () => {
     expect(Object.keys(BLOCK_ALIASES)).toHaveLength(12);
-    expect(BLOCK_TYPES).toHaveLength(84);
+    expect(BLOCK_TYPES).toHaveLength(86);
     for (const name of Object.keys(BLOCK_ALIASES)) {
       expect(BLOCK_TYPE_SET.has(name), `${name} must not be a canonical type`).toBe(false);
       expect(ALIAS_TYPE_SET.has(name)).toBe(true);

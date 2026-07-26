@@ -1,7 +1,7 @@
 # Avodado blocks — the strict field contract
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up). The
-strict field contract for all 84 blocks. Schemas reject unknown fields — use
+strict field contract for all 86 blocks. Schemas reject unknown fields — use
 exactly these. Twelve old block names remain valid as permanent aliases — see
 the **Alias table** at the bottom.
 
@@ -81,6 +81,8 @@ required**, so they're left out of the table below, which shows only the
 | `packet` | `width`(n, default 32) · `fields*[]`: `label*` `bits*`(n) `accent` `value` | accent as in `drivers`. Cell width IS the bit count; a field that doesn't fit the rest of its row wraps and continues on the next one (marked `→` / `(cont.)`). The footer totals bits and bytes and flags a partial last row |
 | `venn` | `sets*[]` (2–3): `label*` `accent` `desc` · `shared[]`: `sets*[]` `label*` | accent as in `drivers`. Positions are fixed (two circles, or three on a triangle) — a Venn names regions rather than measuring them. `shared.sets` matches set LABELS (case-insensitive): two names land in that lens, all three in the middle |
 | `wardley` | `components*[]`: `id` `label*` `x*`(n, 0–1) `y*`(n, 0–1) `kind` `movement`(n) · `links[]`: `from*` `to*` `label` | kind: user · component · commodity · build · buy. `x` is evolution (0 genesis → 1 commodity), `y` is visibility to the user (0 invisible → 1 visible); both clamp to 0–1. `movement` draws a dashed arrow that far along the evolution axis. `links` join components by `id` (else `label`) into the value chain |
+| `harvey` | `columns*[]` · `rows*[]`: `label*` `ratings*[]`(n, 0–4) `note` `weight`(n) · `recommend` `scale`[2] | Ratings are 0–4 (empty → full ball). A row shorter than `columns` reads as **not assessed** (`—`), not as a zero. `weight` multiplies a row in the WEIGHTED footer, which is computed — so the marked `recommend` column and the arithmetic can be seen to agree. `scale` labels the two ends in the legend. Use `benchmark` for measured numbers, `harvey` for judgements |
+| `scqa` | `situation` `complication` `question` `answer` · `because[]` | All fields optional, but the order is fixed — the block's job is to keep it. The first three render as a numbered ladder; `answer` is the recommendation and gets the filled card, with `because` as supporting points beneath it. Inline Markdown works in every field |
 | `figure` | `src*` `alt` `caption` `width`(n, px) | — |
 | `steps` | `title` `description` · `items[]`: `title*` `body` `code` `lang` `note` | string items: `Title` or `Title — body` |
 | `cycle` | `id` `title` `description` · `steps*[]` (string \| `label*` `desc`) · `center` | 2-8 steps; stages render clockwise from 12 o'clock, last feeds first; `desc`s become the numbered legend |

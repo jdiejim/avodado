@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 84 blocks is `contract.md` beside this file; the block → family
+table for all 86 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Access control / RBAC
@@ -229,3 +229,43 @@ links:
 `x` and `y` are 0–1 and clamp; `kind` tints the dot (`user` · `component` ·
 `commodity` · `build` · `buy`) and `movement` draws a dashed arrow that far
 along the evolution axis — where the component is heading.
+
+#### `harvey` — the rated comparison
+
+Options across the top, criteria down the side, a filled circle for each
+judgement. A steering committee reads it faster than any table of numbers,
+because a column of nearly-full circles argues for itself.
+```harvey
+title: Vendor fit
+columns: [Kafka, SQS, RabbitMQ]
+scale: [poor, excellent]
+rows:
+  - { label: Throughput, ratings: [4, 2, 3], weight: 2, note: sustained messages per second }
+  - { label: Operational burden, ratings: [1, 4, 3], weight: 2 }
+  - { label: Team familiarity, ratings: [2, 4, 3] }
+recommend: SQS
+```
+Ratings run 0–4, empty ball to full. A row shorter than `columns` reads as
+**not assessed** (`—`) rather than a zero — those are different claims.
+`weight` multiplies a row into the WEIGHTED footer, which is computed from the
+balls, so the column you mark with `recommend` and the arithmetic can be seen
+to agree. Use `benchmark` when the cells are measured numbers.
+
+#### `scqa` — the executive summary, in Minto order
+
+Situation, complication, question, answer: the four moves that make an opening
+slide argue instead of describe.
+```scqa
+situation: We process 12k orders a day across three regions.
+complication: p95 checkout crossed 2s in March and conversion fell 3.1pp.
+question: Where does the next quarter of platform work go?
+answer: Move payment capture off the request path — it returns 1.8s of the 2.4s.
+because:
+  - Capture is 74% of p95 and is fully async-able
+  - No schema change, so it ships inside one quarter
+```
+Every field is optional, but the order is fixed — keeping it is the block's
+job. The first three render as a numbered ladder; `answer` is the
+recommendation and takes the filled card, with `because` as the support under
+it. Pair it with a `lede` on the block: on a slide that line pins under the
+action title as the supporting sentence.

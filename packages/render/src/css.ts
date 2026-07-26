@@ -1117,6 +1117,43 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .bm-table th.bm-feat,.docskin .bm-table td.bm-feat{border-left:1.5px solid var(--highlight);border-right:1.5px solid var(--highlight);}
 .docskin .bm-table thead th.bm-feat{border-top:1.5px solid var(--highlight);border-radius:14px 14px 0 0;}
 .docskin .bm-table tbody tr:last-child td.bm-feat{border-bottom:1.5px solid var(--highlight);border-radius:0 0 14px 14px;}
+/* harvey — the rated comparison grid: options across, criteria down */
+.docskin .harvey{margin:26px 0 34px;}
+.docskin .hv-head{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--charcoal);margin-bottom:2px;}
+.docskin .hv-desc{font-size:13px;color:var(--slate);margin:2px 0 12px;line-height:1.5;}
+.docskin .hv-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--white);box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 24px -12px rgba(0,0,0,.13);}
+.docskin .hv-table{width:100%;border-collapse:collapse;font-size:13px;}
+.docskin .hv-table thead th{background:var(--navy);color:#fff;padding:10px 12px;text-align:center;font-family:var(--font-body);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;vertical-align:top;}
+.docskin .hv-table th.hv-crit{text-align:left;}
+.docskin .hv-table td{padding:9px 12px;border-bottom:1px solid var(--rule);text-align:center;vertical-align:middle;}
+.docskin .hv-table td.hv-crit{text-align:left;}
+.docskin .hv-label{font-weight:600;color:var(--charcoal);}
+.docskin .hv-note{display:block;font-size:11.5px;color:var(--gray);margin-top:2px;}
+.docskin .hv-weight{display:inline-block;font-family:var(--font-mono);font-size:9.5px;font-weight:700;color:var(--navy);background:var(--light-blue);border-radius:8px;padding:1px 7px;margin-left:8px;}
+.docskin .hv-rec{display:block;font-family:var(--font-mono);font-size:8.5px;font-weight:700;letter-spacing:.08em;color:var(--positive);background:var(--positive-soft);border-radius:8px;padding:1px 7px;margin-top:5px;}
+.docskin .hv-table .hv-is-rec{background:var(--highlight-soft);}
+.docskin .hv-table thead th.hv-is-rec{background:var(--highlight);}
+.docskin .hv-na{color:var(--gray);font-family:var(--font-mono);}
+.docskin .hv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+.docskin .hv-foot td{border-bottom:none;border-top:2px solid var(--navy);font-family:var(--font-mono);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);text-align:center;}
+.docskin .hv-foot td:first-child{text-align:left;}
+.docskin .hv-foot td.hv-lead{color:var(--positive);}
+.docskin .hv-scale{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:11.5px;color:var(--gray);}
+.docskin .hv-scale span{margin-right:12px;}
+/* scqa — the executive summary ladder; the answer carries the weight */
+.docskin .scqa{margin:26px 0 34px;}
+.docskin .sq-head{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--charcoal);margin-bottom:2px;}
+.docskin .sq-desc{font-size:13px;color:var(--slate);margin:2px 0 14px;line-height:1.5;}
+.docskin .sq-row{display:flex;gap:14px;padding:11px 0;border-bottom:1px dashed var(--rule);}
+.docskin .sq-num{flex:none;width:22px;height:22px;border-radius:50%;background:var(--light-gray);color:var(--slate);font-family:var(--font-mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.docskin .sq-body{min-width:0;}
+.docskin .sq-label{display:block;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:3px;}
+.docskin .sq-text{font-size:15px;line-height:1.55;color:var(--charcoal);margin:0;}
+.docskin .sq-answer{margin-top:16px;padding:16px 20px;background:var(--light-blue);border-left:4px solid var(--navy);border-radius:0 var(--radius) var(--radius) 0;}
+.docskin .sq-label-answer{color:var(--navy);}
+.docskin .sq-text-answer{font-family:var(--font-display);font-size:19px;font-weight:700;line-height:1.4;color:var(--navy);}
+.docskin .sq-because{margin:10px 0 0;padding-left:18px;}
+.docskin .sq-because li{font-size:13.5px;line-height:1.55;color:var(--slate);margin-bottom:3px;}
 /* treemap — area is the value; text only where the tile can hold it */
 .docskin .tm-name{font-family:var(--font-body);font-size:12.5px;font-weight:700;fill:#fff;}
 .docskin .tm-value{font-family:var(--font-mono);font-size:10.5px;fill:#fff;fill-opacity:.85;}

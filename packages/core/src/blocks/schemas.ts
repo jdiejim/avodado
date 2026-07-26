@@ -2326,6 +2326,65 @@ export const wardleySchema = z
   })
   .strict();
 
+// ─── harvey (rated comparison — the consulting Harvey-ball grid) ────────────
+// Options across the top, criteria down the side, and a filled circle for how
+// well each option meets each one: 0 empty, 4 full. It is the shape a steering
+// committee reads fastest, because a column of nearly-full circles argues for
+// itself. Use `benchmark` when the cells are measured numbers and `harvey`
+// when they are judgements.
+const harveyRowSchema = z
+  .object({
+    label: z.string(),
+    /** 0–4 per column, in column order. Short rows read as "not assessed". */
+    ratings: z.array(z.number()),
+    /** What the row is actually measuring. */
+    note: z.string().optional(),
+    /** Relative importance, shown as a ×N chip. */
+    weight: z.number().optional(),
+  })
+  .strict();
+export const harveySchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    columns: z.array(z.string()).min(1),
+    rows: z.array(harveyRowSchema).min(1),
+    /** Column to mark as the recommendation — matched by label. */
+    recommend: z.string().optional(),
+    /**
+     * Legend for what 0 and 4 mean, e.g. `[poor, excellent]`. An array of two
+     * rather than a tuple: schema introspection can describe an array, so the
+     * Studio form gets real fields for it instead of falling back to raw YAML.
+     */
+    scale: z.array(z.string()).min(2).max(2).optional(),
+  })
+  .strict();
+
+// ─── scqa (executive summary, Minto's structure) ────────────────────────────
+// Situation, complication, question, answer: the four moves that make an
+// opening slide argue instead of describe. The answer is the recommendation,
+// so it carries the emphasis — everything above it exists to make it land.
+export const scqaSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** What everyone already agrees on. */
+    situation: z.string().optional(),
+    /** What changed, or what is now at stake. */
+    complication: z.string().optional(),
+    /** The one question the work has to settle. */
+    question: z.string().optional(),
+    /** The recommendation — the line the deck exists to deliver. */
+    answer: z.string().optional(),
+    /** Optional supporting points under the answer. */
+    because: z.array(z.string()).optional(),
+  })
+  .strict();
+
 // ─── registry source-of-truth ───────────────────────────────────────────────
 /**
  * The schema map. `as const satisfies Record<BlockType, ...>` enforces that
@@ -2416,6 +2475,8 @@ export const blockSchemas = {
   packet: packetSchema,
   venn: vennSchema,
   wardley: wardleySchema,
+  harvey: harveySchema,
+  scqa: scqaSchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

@@ -175,6 +175,10 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```venn\ntitle: Who owns what\nsets:\n  - { label: Platform, desc: runtime and CI }\n  - { label: Product, desc: features }\nshared:\n  - { sets: [Platform, Product], label: Release process }\n```\n',
   wardley:
     '```wardley\ntitle: Where to build\ncomponents:\n  - { id: user, label: Analyst, x: 0.75, y: 0.96, kind: user }\n  - { id: reports, label: Reporting, x: 0.45, y: 0.7 }\n  - { id: store, label: Warehouse, x: 0.82, y: 0.35, kind: commodity }\nlinks:\n  - { from: user, to: reports }\n  - { from: reports, to: store }\n```\n',
+  harvey:
+    '```harvey\ntitle: Vendor fit\ncolumns: [Kafka, SQS, RabbitMQ]\nscale: [poor, excellent]\nrows:\n  - { label: Throughput, ratings: [4, 2, 3], weight: 2 }\n  - { label: Ops burden, ratings: [1, 4, 3] }\n  - { label: Team familiarity, ratings: [2, 4, 3] }\nrecommend: SQS\n```\n',
+  scqa:
+    '```scqa\nsituation: We process 12k orders a day across three regions.\ncomplication: p95 checkout crossed 2s in March and conversion fell 3.1pp.\nquestion: Where does the next quarter of platform work go?\nanswer: Move payment capture off the request path — it returns 1.8s of the 2.4s.\nbecause:\n  - Capture is 74% of p95 and is fully async-able\n  - No schema change, so it ships in one quarter\n```\n',
 };
 
 /**
@@ -294,6 +298,8 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   packet: 'api',
   venn: 'charts',
   wardley: 'business',
+  harvey: 'business',
+  scqa: 'business',
   matrix: 'business',
   anatomy: 'business',
   composition: 'business',
@@ -419,6 +425,8 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   packet: 'Packet layout',
   venn: 'Venn overlap',
   wardley: 'Wardley map',
+  harvey: 'Rated comparison',
+  scqa: 'Executive summary',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -531,4 +539,8 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'Two or three overlapping sets, with the shared regions labelled — scope, ownership, responsibility.',
   wardley:
     'A Wardley map — components placed by visibility to the user and by evolution (genesis → commodity), joined into a value chain.',
+  harvey:
+    'A rated comparison — options across the top, criteria down the side, a Harvey ball for each judgement; the recommended column is marked.',
+  scqa:
+    'An executive summary in Minto order — situation, complication, question, and the answer the deck exists to deliver.',
 };

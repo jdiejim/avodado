@@ -31,13 +31,20 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 /* Slide header: title top-left, section top-right, hairline rule beneath. */
 .slide-hd{flex:0 0 auto;display:flex;justify-content:space-between;align-items:baseline;gap:18px;
   margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--rule);}
-.slide-hd-l{font-family:var(--font-display);font-weight:700;font-size:25px;line-height:1.15;letter-spacing:-.01em;color:var(--navy);}
+.slide-hd-l{font-family:var(--font-display);font-weight:700;font-size:25px;line-height:1.15;letter-spacing:-.01em;color:var(--navy);min-width:0;}
+/* The supporting line under an action title: the sentence that makes the
+   title an argument. Fixed size — it belongs to the header, not the exhibit. */
+.slide-hd-sub{font-family:var(--font-body);font-weight:400;font-size:15px;line-height:1.45;color:var(--slate);letter-spacing:0;margin-top:6px;max-width:78ch;}
 .slide-hd-r{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray);font-weight:700;white-space:nowrap;}
 /* Text on a stage reads at presentation scale with a comfortable measure —
    never stretched edge to edge. */
-.docskin.slide .slide-inner p{font-size:16.5px;line-height:1.65;max-width:62ch;}
-.docskin.slide .slide-inner li{font-size:15.5px;line-height:1.6;max-width:58ch;}
-.docskin.slide .slide-inner .section-lede{font-size:17px;max-width:60ch;}
+/* Presentation sizes, not page sizes: a stage is read from across a room, so
+   body copy runs a few points larger than the 15px a page column uses. The
+   measure stays capped — long lines are harder to follow on a screen than on
+   paper, not easier. */
+.docskin.slide .slide-inner p{font-size:19px;line-height:1.6;max-width:58ch;}
+.docskin.slide .slide-inner li{font-size:17.5px;line-height:1.55;max-width:56ch;}
+.docskin.slide .slide-inner .section-lede{font-size:19px;max-width:58ch;}
 /* Content is scaled to fit the slide (JS), so there's no scrolling. */
 .slide-content{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;}
 /* Heavier slides (stacked blocks / lots of prose) sit at the top; light ones stay
@@ -93,8 +100,8 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 /* Consulting split layout ({split} heading marker): message left, exhibit right. */
 .slide-content.sl-split .slide-inner{display:grid;grid-template-columns:2fr 3fr;gap:38px;align-items:center;width:100%;}
 .sl-msg{display:flex;flex-direction:column;gap:8px;min-width:0;}
-.docskin.slide .sl-msg p{font-size:17.5px;line-height:1.6;max-width:none;}
-.docskin.slide .sl-msg li{font-size:16px;max-width:none;}
+.docskin.slide .sl-msg p{font-size:19.5px;line-height:1.55;max-width:none;}
+.docskin.slide .sl-msg li{font-size:18px;max-width:none;}
 .sl-exhibit{min-width:0;}
 .sl-exhibit .diagram{margin:0;}
 /* Slide footer: doc title left, page number right. */
@@ -348,8 +355,12 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
         const nn = String(secNum).padStart(2, '0');
         const heading = sl.title ?? sl.label;
         if (!onlyDivider && !untitled) {
+          // Action title, then the line that supports it — both pinned in the
+          // header at a fixed size, so neither scales with the exhibit.
+          const sub =
+            sl.lede !== undefined ? `<div class="slide-hd-sub">${esc(sl.lede)}</div>` : '';
           header =
-            `<div class="slide-hd"><div class="slide-hd-l">${esc(heading)}</div>` +
+            `<div class="slide-hd"><div class="slide-hd-l">${esc(heading)}${sub}</div>` +
             `<div class="slide-hd-r">${nn} · ${esc(sl.label)}</div></div>`;
         }
       }
