@@ -115,6 +115,8 @@ export const BLOCK_TYPES = [
   'cycle',
   // Phase 23 — benchmark scoreboards: measured results per subject, best derived
   'benchmark',
+  // Phase 24 — flow volumes: how much moves between stages, not just whether
+  'sankey',
 ] as const;
 
 /** A block type literal. Adding a new type here is a one-place change. */

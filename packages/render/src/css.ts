@@ -1117,4 +1117,9 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .bm-table th.bm-feat,.docskin .bm-table td.bm-feat{border-left:1.5px solid var(--highlight);border-right:1.5px solid var(--highlight);}
 .docskin .bm-table thead th.bm-feat{border-top:1.5px solid var(--highlight);border-radius:14px 14px 0 0;}
 .docskin .bm-table tbody tr:last-child td.bm-feat{border-bottom:1.5px solid var(--highlight);border-radius:0 0 14px 14px;}
+/* sankey (flow volumes): node labels outside the bar, value under the name,
+   and the flow figure riding a ribbon thick enough to carry it. */
+.docskin .sk-name{font-family:var(--font-body);font-size:12px;font-weight:700;fill:var(--charcoal);dominant-baseline:middle;}
+.docskin .sk-value{font-family:var(--font-mono);font-size:10.5px;fill:var(--gray);dominant-baseline:middle;}
+.docskin .sk-flow{font-family:var(--font-mono);font-size:10px;fill:var(--slate);text-anchor:middle;}
 .docskin .bm-foot{font-size:12px;color:var(--gray);margin:12px 0 0;line-height:1.5;}`;

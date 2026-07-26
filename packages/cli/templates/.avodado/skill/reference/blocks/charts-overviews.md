@@ -2,7 +2,7 @@
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 78 blocks is `contract.md` beside this file; the block → family
+table for all 79 blocks is `contract.md` beside this file; the block → family
 map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 ### Charts & overviews
@@ -59,10 +59,10 @@ tasks:
 ```
 Task `kind` is `done | active | current | milestone` (drives bar colour).
 
-#### `chart` — a data chart (bar / line / area / donut / radar / waterfall / funnel)
+#### `chart` — a data chart (bar / line / area / donut / gauge / radar / waterfall / funnel)
 ```chart
 title: p95 latency by week
-kind: line               # bar (default) | line | area | donut | radar | waterfall | funnel
+kind: line               # bar (default) | line | area | donut | gauge | radar | waterfall | funnel
 unit: ms                 # optional value suffix
 labels: [W1, W2, W3, W4]
 series:
@@ -80,6 +80,22 @@ items:
   - { label: iOS, value: 23, accent: teal }
   - { label: Android, value: 15, accent: amber }
 ```
+**`kind: gauge`** — radial progress against a ceiling. A donut says how a
+whole splits up; a gauge says how far along one number is, which is the shape
+an SLO, a quota, a migration or a rollout actually has. `max` is the full
+sweep (default 100, the percentage case):
+```chart
+title: Migration progress
+kind: gauge
+unit: "%"
+items:
+  - { label: Services migrated, value: 68, desc: of 42 services }
+```
+One item draws a single dial with the value in the middle and `desc` under it;
+several become concentric rings, outermost first, with a legend — good for
+three or four related percentages, not for a breakdown that should sum to a
+whole (that is `donut`).
+
 `radar` draws a polygon web — `labels` become the axes (3+ required) and each
 series is a stroked polygon over concentric rings:
 ```chart
@@ -135,6 +151,38 @@ labels fit); a mono `↓ NN%` chip between bands shows stage-to-stage conversion
 `unit` suffixes the value. Use `kind: funnel` when the story is *drop-off
 between ordered stages*; use `journey` for the qualitative experience across
 stages.
+
+#### `sankey` — how much moves between stages
+
+`flow` and `dfd` show that a path exists; `sankey` shows how heavy it is. Node
+height and ribbon thickness are the same scale, so the widest ribbon leaving a
+stage IS where the volume goes — cloud spend, traffic by route, a funnel with
+its drop-off.
+```sankey
+title: Where the cloud bill goes
+unit: k
+links:
+  - { from: Bill, to: Compute, value: 62 }
+  - { from: Bill, to: Storage, value: 28 }
+  - { from: Compute, to: Serving, value: 38 }
+  - { from: Compute, to: Batch, value: 24 }
+```
+Nodes are inferred from the links, so a bare link list is a complete block.
+Declare `nodes` only to give one a nicer label, an accent, or a fixed column:
+```sankey
+title: Signup funnel with drop-off
+unit: k
+nodes:
+  - { id: visits, label: Visits, accent: navy }
+  - { id: bounced, label: Bounced, accent: red }
+links:
+  - { from: visits, to: signup, value: 32 }
+  - { from: visits, to: bounced, value: 68 }
+```
+A node's column is the longest chain of links reaching it, so a stage always
+sits right of everything feeding it; `col` (1-indexed) pins one when the
+derived depth reads wrong. Use `sankey` for volumes, `funnel` (a `chart` kind)
+for a single ordered drop-off, and `flow` when only the path matters.
 
 #### `heatmap` — a numeric grid with an intensity ramp
 ```heatmap

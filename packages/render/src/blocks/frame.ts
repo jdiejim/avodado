@@ -154,6 +154,7 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   statustable: 'Status',
   cycle: 'Cycle',
   benchmark: 'Benchmark',
+  sankey: 'Flow volumes',
 };
 
 /**

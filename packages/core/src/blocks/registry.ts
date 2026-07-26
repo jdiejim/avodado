@@ -131,4 +131,5 @@ export const blockRegistry: BlockRegistry = {
   statustable: { type: 'statustable', schema: blockSchemas.statustable },
   cycle: { type: 'cycle', schema: blockSchemas.cycle },
   benchmark: { type: 'benchmark', schema: blockSchemas.benchmark },
+  sankey: { type: 'sankey', schema: blockSchemas.sankey },
 };

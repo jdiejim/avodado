@@ -431,6 +431,7 @@ const ITEM_WEIGHT: Partial<Record<BlockType, number>> = {
   // tabular
   table: 1.4,
   benchmark: 1.4,
+  sankey: 1.2,
   matrix: 1.2,
   // node diagrams (block/graph layout engines + aliases)
   flow: 1.2,

@@ -228,6 +228,91 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): string {
   return s + legend;
 }
 
+/**
+ * `kind: gauge` — radial progress against a ceiling.
+ *
+ * A donut answers "how does the whole split up"; a gauge answers "how far
+ * along is this one number", which is the shape an SLO, a quota, a migration
+ * or a rollout actually has. Each item is an arc over the same 270° sweep
+ * (open at the bottom, so the dial reads as a dial rather than a ring), swept
+ * to `value / max` — `max` defaults to 100, the percentage case.
+ *
+ * One item draws a single big dial with the value in the middle; several
+ * become concentric rings, outermost first, each with the track behind it so
+ * an empty arc still reads as "nearly none of it" instead of as missing.
+ */
+function renderGauge(data: ChartData, items: readonly DonutItem[]): string {
+  const width = 420;
+  const solo = items.length <= 1;
+  const height = solo ? 246 : 264;
+  const cx = Math.round(width / 2);
+  const cy = solo ? 150 : 158;
+  const max = data.max !== undefined && data.max > 0 ? data.max : 100;
+  // 270°: from 135° past the bottom-left, clockwise to 45°.
+  const START = 135;
+  const SWEEP = 270;
+  const outer = solo ? 92 : 96;
+  const band = solo ? 26 : 16;
+  const gap = 7;
+
+  const pointOn = (r: number, deg: number): string => {
+    const a = (deg * Math.PI) / 180;
+    return `${Math.round((cx + r * Math.cos(a)) * 10) / 10} ${Math.round((cy + r * Math.sin(a)) * 10) / 10}`;
+  };
+  const arc = (r: number, fraction: number): string => {
+    const sweep = SWEEP * Math.min(Math.max(fraction, 0), 1);
+    if (sweep <= 0) return '';
+    const large = sweep > 180 ? 1 : 0;
+    return `M ${pointOn(r, START)} A ${r} ${r} 0 ${large} 1 ${pointOn(r, START + sweep)}`;
+  };
+
+  let s = svgOpenSize(width, height);
+  s += `<g${bl('items')}>`;
+  items.forEach((it, i) => {
+    const r = outer - i * (band + gap);
+    if (r <= band) return; // out of rings — the legend still names the item
+    const color = colorAt(it.accent, i);
+    const fraction = pos(it.value) / max;
+    s += `<g${bp(`items.${i}`)}>`;
+    s += `<path d="${arc(r, 1)}" fill="none" stroke="var(--light-gray)" stroke-width="${band}" stroke-linecap="round"/>`;
+    const filled = arc(r, fraction);
+    if (filled !== '') {
+      s += `<path d="${filled}" fill="none" stroke="${color}" stroke-width="${band}" stroke-linecap="round"/>`;
+    }
+    s += `</g>`;
+  });
+  s += `</g>`;
+
+  const lead = items[0];
+  if (lead !== undefined) {
+    // The middle carries the leading item: its value big, then what it is.
+    s += `<text x="${cx}" y="${cy + (solo ? 6 : 2)}" class="chart-total">${escapeHtml(fmt(pos(lead.value), data.unit))}</text>`;
+    const caption = solo ? (lead.desc ?? lead.label) : 'OF ' + fmt(max, data.unit);
+    s += `<text x="${cx}" y="${cy + (solo ? 26 : 20)}" class="chart-total-label">${escapeHtml(caption.toUpperCase())}</text>`;
+  }
+  // Scale ends, just outside the two open ends of the dial (135° and 45°) —
+  // clear of the stroke, so a full arc never runs over its own labels.
+  const scaleR = outer + band / 2 + 13;
+  const scaleX = Math.round(scaleR * Math.cos((135 * Math.PI) / 180));
+  const scaleY = Math.round(cy + scaleR * Math.sin((135 * Math.PI) / 180));
+  s += `<text x="${cx + scaleX}" y="${scaleY}" class="chart-label">0</text>`;
+  s += `<text x="${cx - scaleX}" y="${scaleY}" class="chart-label">${escapeHtml(fmt(max, data.unit))}</text>`;
+  s += `</svg>`;
+
+  const legend =
+    items.length > 1 || (items[0]?.desc !== undefined && !solo)
+      ? legendRow(
+          items.map((it, i) => ({
+            label: `${it.label} — ${fmt(pos(it.value), data.unit)}`,
+            color: colorAt(it.accent, i),
+            path: `items.${i}`,
+          })),
+          'items',
+        )
+      : '';
+  return s + legend;
+}
+
 function renderRadar(data: ChartData, labels: readonly string[], series: readonly Series[]): string {
   const width = 420;
   const height = 280;
@@ -537,6 +622,8 @@ export function renderChart(data: ChartData): string {
   let inner: string;
   if (kind === 'donut') {
     inner = renderDonut(data, data.items ?? []);
+  } else if (kind === 'gauge') {
+    inner = renderGauge(data, data.items ?? []);
   } else if (kind === 'radar') {
     // Radar uses `labels` as the axes (3+ required to draw a web).
     const body = renderRadar(data, labels, series);

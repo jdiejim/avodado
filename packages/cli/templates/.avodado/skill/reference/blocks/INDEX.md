@@ -1,4 +1,4 @@
-# The 78 block types — by family
+# The 79 block types — by family
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 The map from block type → the family file beside this one that holds its full
@@ -68,6 +68,7 @@ permanent aliases — see the alias table at the bottom.
 | `changelog` | `planning.md` | Release history on a vertical rail — version pills, dates, and typed change chips. |
 | `team` | `business.md` | Compact people cards — initials avatar, name, role, focus area. |
 | `heatmap` | `charts-overviews.md` | A numeric grid with an intensity ramp — rows × columns of tiles tinted by value. |
+| `sankey` | `charts-overviews.md` | Flow volumes between stages — node height and ribbon thickness are the value, so the widest ribbon is where the volume goes. |
 | `scorecard` | `business.md` | A weighted decision matrix — criteria rows × option columns, weighted totals, winner highlighted. |
 | `risk` | `planning.md` | A risk register — severity derived from likelihood × impact, with mitigation, owner, status. |
 | `palette` | `design-system.md` | Color-token swatches — name, hex value, and usage per color, on a card grid. |

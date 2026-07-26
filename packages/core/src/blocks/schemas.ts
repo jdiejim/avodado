@@ -1235,10 +1235,12 @@ export const gallerySchema = z
 
 // ─── chart (declarative data chart) ─────────────────────────────────────────
 // `labels` + `series` drive bar / line / area; `items` drives donut, radar,
-// waterfall (a budget cascade — `budget` draws the dashed cap line), and
-// funnel (stacked conversion bands). Values are plain numbers; `unit` is an
-// optional display suffix (ms, %, $) and `max` caps the y-axis instead of
-// auto-scaling to the data. The former `waterfall` and `funnel` types are
+// gauge (radial progress against `max` — one big dial, or several as
+// concentric rings), waterfall (a budget cascade — `budget` draws the dashed
+// cap line), and funnel (stacked conversion bands). Values are plain numbers;
+// `unit` is an optional display suffix (ms, %, $) and `max` caps the y-axis
+// instead of auto-scaling to the data (for `gauge` it is the full sweep,
+// default 100). The former `waterfall` and `funnel` types are
 // permanent aliases for `chart` with the matching `kind`; `stages` is the
 // funnel-era legacy synonym for `items`.
 const chartSeriesSchema = z
@@ -1261,7 +1263,9 @@ export const chartSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
-    kind: z.enum(['bar', 'line', 'area', 'donut', 'radar', 'waterfall', 'funnel']).optional(),
+    kind: z
+      .enum(['bar', 'line', 'area', 'donut', 'gauge', 'radar', 'waterfall', 'funnel'])
+      .optional(),
     labels: z.array(z.string()).optional(),
     series: z.array(chartSeriesSchema).optional(),
     items: z.array(chartItemSchema).optional(),
@@ -2071,6 +2075,43 @@ export const cycleSchema = z
   })
   .strict();
 
+// ─── sankey (flow volumes between stages) ───────────────────────────────────
+// The one shape the diagram blocks could not draw: how much of something moves
+// from where to where. `flow` and `dfd` show that a path exists; a sankey
+// shows how heavy it is — spend by service, traffic by route, a funnel with
+// its drop-off, energy or data volumes. Nodes are inferred from the links, so
+// the minimum body is a list of `from -> to: value`; declare `nodes` only to
+// give one a nicer label, an accent, or a fixed column.
+const sankeyNodeSchema = z
+  .object({
+    id: z.string(),
+    label: z.string().optional(),
+    accent: accentEnum.optional(),
+    /** 1-indexed column, when the derived depth reads wrong. */
+    col: z.number().optional(),
+  })
+  .strict();
+const sankeyLinkSchema = z
+  .object({
+    from: z.string(),
+    to: z.string(),
+    value: z.number(),
+    label: z.string().optional(),
+  })
+  .strict();
+export const sankeySchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** Display suffix for every volume — `$`, `GB`, ` req/s`. */
+    unit: z.string().optional(),
+    nodes: z.array(sankeyNodeSchema).optional(),
+    links: z.array(sankeyLinkSchema).min(1),
+  })
+  .strict();
+
 // ─── benchmark (measured results: subject columns × metric rows) ────────────
 // A scoreboard, not a decision matrix: `scorecard` asks you to score options
 // against weighted criteria, `benchmark` reports numbers you measured. One
@@ -2216,6 +2257,7 @@ export const blockSchemas = {
   statustable: statustableSchema,
   cycle: cycleSchema,
   benchmark: benchmarkSchema,
+  sankey: sankeySchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

@@ -163,6 +163,8 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```cycle\ntitle: Build–measure–learn\nsteps:\n  - { label: Build, desc: Ship the smallest testable change }\n  - { label: Measure, desc: Watch the one metric the change should move }\n  - { label: Learn, desc: Keep the change or roll it back }\ncenter: every release\n```\n',
   benchmark:
     '```benchmark\ntitle: Retrieval engines, measured\nmetricLabel: Benchmark\nsubjects:\n  - { label: Ours, sub: v2.1, featured: true }\n  - { label: Vendor A }\n  - { label: Vendor B, tone: muted }\nrows:\n  - { label: Answer accuracy, sub: internal QA set, cells: ["82.4%", "79.1%", "74.8%"] }\n  - { label: p95 latency, sub: 500 rps soak, better: low, cells: ["310 ms", "420 ms", "290 ms"] }\n  - label: Cost per 1k queries\n    variants: [cached, cold]\n    better: low\n    cells:\n      - ["$0.14", "$0.90"]\n      - ["$0.21", "$1.10"]\n      - ["$0.18", "—"]\nnote: Single region, same corpus, October run.\n```\n',
+  sankey:
+    '```sankey\ntitle: Where the cloud bill goes\nunit: "k"\nlinks:\n  - { from: Bill, to: Compute, value: 62 }\n  - { from: Bill, to: Storage, value: 28 }\n  - { from: Bill, to: Network, value: 10 }\n  - { from: Compute, to: Batch, value: 24 }\n  - { from: Compute, to: Serving, value: 38 }\n```\n',
 };
 
 /**
@@ -276,6 +278,7 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   statustable: 'planning',
   cycle: 'flows',
   benchmark: 'tables-data',
+  sankey: 'charts',
   matrix: 'business',
   anatomy: 'business',
   composition: 'business',
@@ -395,6 +398,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   statustable: 'Status table',
   cycle: 'Cycle',
   benchmark: 'Benchmark table',
+  sankey: 'Flow volumes',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -444,7 +448,8 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
   stories: 'A collapsible backlog of user stories (accordions) in one section.',
   pattern: 'A design-pattern card — intent · forces · participants · consequences.',
   gallery: 'A responsive grid of cards — code snippets or notes (e.g. a bug gallery or comparison).',
-  chart: 'A data chart — bar / line / area / donut / radar / waterfall / funnel, pure SVG, series coloured by accent.',
+  chart:
+    'A data chart — bar / line / area / donut / gauge / radar / waterfall / funnel, pure SVG, series coloured by accent.',
   figure: 'An image with a caption in a bordered card (optional pixel width cap).',
   steps: 'A numbered how-to / runbook stepper — title, body, command, note per step.',
   faq: 'Q&A accordions — native details/summary, no JavaScript.',
@@ -494,4 +499,6 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'A closed loop of stages arranged in a circle — build–measure–learn, PDCA, an incident loop; step descriptions become a numbered legend.',
   benchmark:
     'Measured results side by side — subject columns (one can be outlined as the focus) × metric rows, best in each row derived and highlighted, several conditions per row supported.',
+  sankey:
+    'A flow diagram weighted by volume — node height and ribbon thickness are the value, so the widest ribbon leaving a stage is where the volume actually goes.',
 };

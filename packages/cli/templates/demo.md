@@ -1006,6 +1006,30 @@ items:
 ```
 
 ```chart
+title: Migration progress
+description: "A gauge answers how far along one number is; max is the full sweep (default 100)."
+kind: gauge
+unit: "%"
+items:
+  - { label: Services migrated, value: 68, desc: of 42 services }
+  - { label: Traffic cut over, value: 41, accent: teal }
+```
+
+```sankey
+title: Where the cloud bill goes
+description: "Node height and ribbon thickness are the same scale — the widest ribbon is where the money actually goes."
+unit: k
+links:
+  - { from: Bill, to: Compute, value: 62 }
+  - { from: Bill, to: Storage, value: 28 }
+  - { from: Bill, to: Network, value: 10 }
+  - { from: Compute, to: Serving, value: 38 }
+  - { from: Compute, to: Batch, value: 24 }
+  - { from: Storage, to: Hot, value: 19 }
+  - { from: Storage, to: Archive, value: 9 }
+```
+
+```chart
 title: Queue vendors at a glance
 kind: radar
 labels: [Throughput, Latency, Cost, Ops burden, Ecosystem]
