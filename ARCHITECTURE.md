@@ -1,6 +1,6 @@
 # Architecture
 
-Avodado is a documentation-as-code system. A pnpm monorepo of five published packages — `@avodado/core`, `render`, `studio`, `mcp`, `cli` — plus one private workspace package (`@avodado/website`, the hosted site), where dependencies always point inward toward a pure `@avodado/core`. **76 canonical block types** (plus 12 permanent aliases for merged old names) ported from `resources/doc-studio.jsx`, each with a zod schema, a typed renderer entry, and (where applicable) shared layout / SVG utilities.
+Avodado is a documentation-as-code system. A pnpm monorepo of five published packages — `@avodado/core`, `render`, `studio`, `mcp`, `cli` — where dependencies always point inward toward a pure `@avodado/core`. **87 canonical block types** (plus 12 permanent aliases for merged old names) ported from `resources/doc-studio.jsx`, each with a zod schema, a typed renderer entry, and (where applicable) shared layout / SVG utilities.
 
 ## Guiding principle
 
@@ -9,21 +9,21 @@ Avodado is a documentation-as-code system. A pnpm monorepo of five published pac
 ## Layering
 
 ```
-@avodado/core   ← pure: parse, schemas (76 + aliases), validate, resolve, edit ops. No I/O.
+@avodado/core   ← pure: parse, schemas (87 + aliases), validate, resolve, edit ops. No I/O.
 @avodado/render ← @avodado/core. HTML + slide decks out. No DOM, no browser. Theme support.
 @avodado/studio ← @avodado/{core, render}. Browser SPA (Vite/React), ships built static assets.
 @avodado/mcp    ← @avodado/{core, render}. MCP server over stdio.
 @avodado/cli    ← @avodado/{core, render, studio}. Ink TUI. PDF (Playwright) + sync I/O (OpenAPI, CSV). Owns process.exit.
 ```
 
-One private workspace package sits outside the published graph: `@avodado/website` (avodado.dev — a hosted Next.js app with its own toolchain).
+The marketing + docs site (avodado.dev) lives in its own repository and consumes `@avodado/*` from npm like any other user, so nothing in this monorepo depends on it.
 
 Rules:
 
 - `@avodado/core` does **no I/O**: no file system, no network, no `process`, no DOM. It reads strings and returns models and diagnostics.
 - All I/O lives in the **outer ring** (`cli`) — including PDF export (Playwright, an optional dependency imported lazily) and the file reads/writes behind `avo sync openapi` / `avo sync csv`. The importers themselves (OpenAPI → markdown, CSV → block fences, `core/src/import/`) are pure and live in `core`, so the studio and MCP server share them.
 - Libraries **return diagnostics** as values. They don't `throw` for expected conditions (parse errors, schema violations, dangling refs). The CLI is the only layer that maps diagnostics to console output and exit codes.
-- `@avodado/studio` is an outermost consumer of `core` + `render` only (never the CLI's Node/Playwright-bound PDF code). The whole parse → validate → render pipeline runs client-side in the browser; the published package contains only built static assets plus a tiny Node entry (`assetsPath()`) the CLI uses to serve them. The `avo studio` server is a **file bridge** — JSON read/write API + SSE change events, bound to `127.0.0.1` — and never renders. Editing goes through core's surgical edit ops (`replaceBlockBody`, `insertBlock`, `setYamlPath`, …) — including direct on-diagram interactions (click to select a part, Enter to edit it, arrow keys or drag to move it), which compile down to the same ops — so a studio session rewrites individual fenced blocks in place and the files on disk stay the single source of truth.
+- `@avodado/studio` is an outermost consumer of `core` + `render` only (never the CLI's Node/Playwright-bound PDF code). The whole parse → validate → render pipeline runs client-side in the browser; the published package contains only built static assets plus a tiny Node entry (`assetsPath()`) the CLI uses to serve them. The `avo studio` server is a **file bridge** — JSON read/write API + SSE change events, bound to `127.0.0.1` — and never renders. Editing goes through core's surgical edit ops (`replaceBlockBody`, `insertBlock`, `setYamlPath`, …) — including direct on-diagram interactions (click to select a part, Enter to edit it, arrow keys or drag to move it), which compile down to the same ops — so a studio session rewrites individual fenced blocks in place and the files on disk stay the single source of truth. Storage itself sits behind one interface — `StudioBackend` in `studio/src/api/backend.ts`, five methods — with two implementations: the file bridge above, and an in-tab vault with no server behind it. The package builds both (`dist/app` for the CLI, `dist/web` for a static host), so a hosted studio is a choice of backend at boot rather than a second application; the hosted build hides what needs a server (PDF, PowerPoint, the built site, change events) and shares documents by putting the source in a URL fragment instead.
 
 ## The block registry
 
@@ -32,7 +32,7 @@ The block registry in `@avodado/core` is the architectural backbone:
 ```ts
 export const blockSchemas = {
   meta, callout, table, sequence, erd, userstory, timeline, kanban, statustable,
-  // … one entry per block type — 76 in total, across 12 families.
+  // … one entry per block type — 87 in total, across 12 families.
   // The full list is `BLOCK_TYPES` in `core/src/types.ts`.
 } as const satisfies Record<BlockType, ZodTypeAny>;
 
@@ -143,7 +143,7 @@ The top-level always `process.exit(code)` after `waitUntilExit()`.
 
 ## Shipped seams and remaining extension points
 
-The 76-block renderer is complete. Several of the original post-v1 seams have since shipped as workspace packages:
+The 87-block renderer is complete. Several of the original post-v1 seams have since shipped as workspace packages:
 
 - **`@avodado/mcp`** — Model Context Protocol server (published). Tools: `check_document`, `render_document`, `list_block_types`, `get_block_schema`, `resolve_refs`, `sync_openapi`, `get_authoring_guide`. The OpenAPI generator it uses comes straight from `@avodado/core` (`core/src/import/openapi/`) — no vendored copies.
 - **`@avodado/studio`** — the visual editor served by `avo studio` (see the layering rules above).
