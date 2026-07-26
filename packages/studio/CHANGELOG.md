@@ -1,5 +1,108 @@
 # @avodado/studio
 
+## 0.10.5
+
+### Patch Changes
+
+- 7f969a3: Two blocks a consulting deck opens and closes with, and three fixes to how a
+  slide handles text. 84 → 86 types.
+  - **`harvey`** — the rated comparison grid: options across the top, criteria
+    down the side, a Harvey ball (0–4) for each judgement. The WEIGHTED footer is
+    computed from the balls, so the column marked `recommend` and the arithmetic
+    can be seen to agree. A row shorter than `columns` reads as _not assessed_
+    rather than as a zero — different claims. Use `benchmark` for measured
+    numbers, `harvey` for judgements.
+  - **`scqa`** — the executive summary in Minto order: situation, complication,
+    question, answer. Every field is optional but the order is fixed, which is
+    the block's job; `answer` takes the filled card and `because` hangs the
+    support beneath it.
+
+  **Slides:** a block's `lede` used to vanish on a slide — it lives in the
+  section head, which the stage hides. It now pins under the slide title as the
+  supporting line of an action title, at a fixed size so the fitter can't shrink
+  it with the exhibit. Body copy also moves to presentation sizes (19px prose,
+  17.5px list items, 19.5px in a `{split}` message column) with the measure still
+  capped, because long lines are harder to follow on a screen, not easier.
+
+- f56bbac: The four pieces a consulting deck still needed. 86 → 87 types.
+  - **`scenarios`** — base, upside and downside against the same drivers. Cases
+    in columns, so reading across a driver row shows how much of the outcome
+    hangs on that assumption; the base case is badged because every other column
+    is read relative to it, and `outcome` gets its own emphasised row. A case
+    that omits a driver renders `·` — silent about it, which is not the same as
+    claiming no change.
+  - **`tree` becomes a driver tree** when its nodes carry `value`. Each node
+    shows its number and **its share of its parent** — p95 = capture (74%) +
+    order write (16%) + the rest. No new block: values turn the hierarchy into
+    arithmetic, the way `gauge` went into `chart`.
+  - **`## Title {source: production traces, 14 Oct 2026}`** puts a source line in
+    the slide footer, where every consulting exhibit carries one. It lives in the
+    footer rather than under the block on purpose: the fitter scales the exhibit,
+    and provenance that shrinks with it stops being readable.
+  - **A deck tracker.** Two or more `divider` bands and the slide header grows a
+    "you are here" strip — the parts of the deck with the current one lit. One
+    divider draws nothing; a strip of one says nothing.
+
+- 4f4811e: Five new block types and two new chart kinds — the shapes a technical doc still
+  had to draw somewhere else. The library goes 79 → 84.
+  - **`gitgraph`** — the branching and release model. Lanes for branches, dots
+    for commits, a solid curve where one forks and a dashed one where it merges
+    back, tags for releases. Commits are a plain sequence, so the YAML reads in
+    the order the history happened; the first commit on an unseen branch opens
+    its lane.
+  - **`treemap`** — proportional composition where a donut gives up. Squarified
+    layout (near-square tiles, biggest first) makes areas comparable by eye, so
+    thirty services by spend stay readable.
+  - **`packet`** — a wire format bit by bit, the diagram an RFC draws in ASCII.
+    Cell width IS the bit count, and a field that overruns its row wraps and
+    continues on the next, marked `→` / `(cont.)`.
+  - **`venn`** — two or three overlapping sets with the shared regions labelled,
+    for scope, ownership and responsibility.
+  - **`wardley`** — components placed by visibility to the user and by evolution
+    (genesis → commodity), joined into a value chain, with `movement` for where
+    one is heading.
+  - **`chart` `kind: stacked`** — columns that sum instead of standing side by
+    side; the axis scales to the totals and each column is labelled with its own.
+  - **`chart` `kind: scatter`** — the same series as unjoined points, for when x
+    order carries no meaning.
+
+  Also: schema introspection now reports an array's declared `.min(n)`, and the
+  Studio form seeds that many items when it adds one. A form that produced fewer
+  was building a value its own schema would reject — `venn.shared.sets` (min 2)
+  is the first field to require it.
+
+- a9213cf: `{source: …}` no longer leaks into a page heading. The deck stripped it; the
+  document renderer only knew the alignment markers, so `## Title {source: …}`
+  rendered the marker verbatim on the page.
+
+  The three places that had to agree about what a heading says now share one
+  definition in `@avodado/core` (`stripHeadingMarkers`, `readSourceMarker`,
+  `readAlignMarker`) — the page renderer, the deck, and `trailingHeading`, which
+  feeds block titles and the sections nav and stripped nothing at all.
+
+  On a page the source isn't dropped, it's printed: a small provenance line under
+  the heading, matching what the deck puts in the slide footer.
+
+- 35059ea: Two additions from a pass over the whole library, looking for what a technical
+  doc still can't draw.
+
+  **New `sankey` block — how much moves between stages.** `flow` and `dfd` show
+  that a path exists; nothing showed how heavy it is. Node height and ribbon
+  thickness are the same scale, so the widest ribbon leaving a stage IS where the
+  volume goes: cloud spend by service, traffic by route, a funnel with its
+  drop-off. Nodes are inferred from the links, so the minimum body is a list of
+  `from -> to: value`; declare `nodes` only to relabel, colour, or pin a column.
+  A node's column is the longest link chain reaching it, so a stage always sits
+  right of everything feeding it.
+
+  **New `chart` kind: `gauge` — radial progress against a ceiling.** A donut says
+  how a whole splits up; a gauge says how far along one number is, which is the
+  shape an SLO, a quota, a migration or a rollout actually has. `max` is the full
+  sweep (default 100, the percentage case). One item draws a single dial with the
+  value in the middle; several become concentric rings with a legend.
+
+  The block count goes 78 → 79.
+
 ## 0.10.4
 
 ### Patch Changes
