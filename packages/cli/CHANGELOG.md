@@ -1,5 +1,14 @@
 # @avodado/cli
 
+## 0.42.2
+
+### Patch Changes
+
+- Updated dependencies [4eceaec]
+  - @avodado/core@0.20.2
+  - @avodado/render@0.29.3
+  - @avodado/studio@0.12.1
+
 ## 0.42.1
 
 ### Patch Changes

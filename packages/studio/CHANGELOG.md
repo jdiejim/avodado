@@ -1,5 +1,17 @@
 # @avodado/studio
 
+## 0.12.1
+
+### Patch Changes
+
+- 4eceaec: Each package now exports its own `package.json`.
+
+  An `exports` map that omits `./package.json` makes
+  `require.resolve('@avodado/core/package.json')` throw, which is the ordinary way
+  a consumer reads a dependency's version. The website hit exactly this: its
+  version badge fell back to a hard-coded string and advertised v0.41.0 for a
+  0.42.0 release. Adding the subpath costs nothing and removes the trap.
+
 ## 0.12.0
 
 ### Minor Changes
