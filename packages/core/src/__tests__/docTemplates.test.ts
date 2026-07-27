@@ -50,6 +50,21 @@ describe('DOC_TEMPLATES', () => {
     }
   });
 
+  /**
+   * A YAML flow mapping splits on commas, so an unquoted value containing one
+   * swallows the keys after it — `mitigation: A, owner: X` parses as a single
+   * `mitigation` string. It still validates (those fields are optional), so
+   * only the rendered text gives it away. This catches it at the source.
+   */
+  it('never lets a quoted value swallow the keys after it', () => {
+    const swallowed = /(\w+): "[^"]*, (?:owner|status|kind|tone|accent|icon|tag|done|type|trend|delta|note|color|desc|priority|lead|verdict|how|kicker|budget|window|target|current|sli|role|focus): /;
+    for (const [name, template] of Object.entries(DOC_TEMPLATES)) {
+      for (const [i, line] of template.split('\n').entries()) {
+        expect(swallowed.test(line), `${name}:${String(i + 1)} — ${line}`).toBe(false);
+      }
+    }
+  });
+
   it('isDocTemplate guards template names (and does not leak Object.prototype)', () => {
     for (const name of EXPECTED_NAMES) expect(isDocTemplate(name)).toBe(true);
     expect(isDocTemplate('sequence')).toBe(false);
