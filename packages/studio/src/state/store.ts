@@ -13,6 +13,7 @@
 
 import { create } from 'zustand';
 import {
+  DOC_TEMPLATES,
   moveSegment,
   parseDocument,
   replaceBlockBody,
@@ -349,8 +350,29 @@ export const useStudio = create<StudioState>()((set, get) => {
             // is an empty deck.
             sharedMode = link.present ? 'present' : 'edit';
           }
+          /**
+           * `?template=adr` opens straight into that template, already filled
+           * in — the templates gallery links here, so a reader lands in a
+           * finished document with no picker in between. A share link wins if
+           * both are present: it carries a real document, and a template is
+           * only ever a starting point.
+           */
+          const wanted =
+            shared === null
+              ? new URLSearchParams(window.location.search).get('template')
+              : null;
+          if (wanted !== null && wanted !== '') {
+            const source = DOC_TEMPLATES[wanted];
+            if (source === undefined) {
+              get().toast(`There is no “${wanted}” template.`, 'error');
+            } else {
+              shared = await importDoc(source, wanted);
+              window.history.replaceState(null, '', window.location.pathname);
+              sharedMode = 'edit';
+            }
+          }
         } catch (err) {
-          get().toast(`That share link could not be read: ${(err as Error).message}`, 'error');
+          get().toast(`That link could not be opened: ${(err as Error).message}`, 'error');
         }
 
         const [meta, docs] = await Promise.all([fetchMeta(), fetchDocs()]);

@@ -250,7 +250,11 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     try {
       const adr = await runBin(['new', 'adr'], tmp);
       expect(adr.code).toBe(0);
-      expect(adr.stdout).toContain('ADR-NNN');
+      // Templates are finished example docs, not forms — an ADR arrives with a
+      // real decision in it, and the author edits rather than fills in.
+      expect(adr.stdout).toContain('```meta');
+      expect(adr.stdout).toContain('## Consequences');
+      expect(adr.stdout).not.toMatch(/TODO|ADR-NNN|YYYY-MM-DD/);
 
       const seq = await runBin(['new', 'sequence'], tmp);
       expect(seq.code).toBe(0);

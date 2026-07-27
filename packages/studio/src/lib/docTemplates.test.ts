@@ -20,7 +20,16 @@ describe('TEMPLATE_CARDS', () => {
 
   it('derives the block-type list from the template body fences (meta excluded, deduped)', () => {
     const adr = TEMPLATE_CARDS.find((c) => c.id === 'adr');
-    expect(adr?.blockTypes).toEqual(['callout', 'proscons', 'block', 'statustable']);
+    expect(adr?.blockTypes).toEqual([
+      'callout',
+      'drivers',
+      'sequence',
+      'options',
+      'block',
+      'statustable',
+      'risk',
+      'steps',
+    ]);
     for (const card of TEMPLATE_CARDS) {
       expect(card.blockTypes).not.toContain('meta');
       expect(new Set(card.blockTypes).size).toBe(card.blockTypes.length);

@@ -26,10 +26,17 @@ const EXPECTED_NAMES = [
   'postmortem',
   'data-model',
   'deck',
+  'migration-plan',
+  'threat-model',
+  'service-overview',
+  'release-notes',
+  'test-plan',
+  'onboarding',
+  'status-update',
 ];
 
 describe('DOC_TEMPLATES', () => {
-  it('contains exactly the 11 known templates', () => {
+  it('contains exactly the 18 known templates', () => {
     expect(Object.keys(DOC_TEMPLATES).sort()).toEqual([...EXPECTED_NAMES].sort());
   });
 

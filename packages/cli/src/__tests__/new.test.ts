@@ -41,6 +41,13 @@ describe('DOC_TEMPLATES', () => {
         'roadmap',
         'runbook',
         'system-design',
+        'migration-plan',
+        'threat-model',
+        'service-overview',
+        'release-notes',
+        'test-plan',
+        'onboarding',
+        'status-update',
       ].sort(),
     );
   });

@@ -408,8 +408,11 @@ the same section list, you skipped moves 1-2 and templated.
 > Most playbooks ship as a ready skeleton: `avo template <name>` scaffolds a
 > valid starting doc — `adr`, `design-doc` (design doc / RFC), `runbook`,
 > `roadmap`, `api-spec`, `system-design`, `agent-system`, `design-system`,
-> `postmortem`, `data-model`, `deck` (the consulting formula). It's a first
-> draft of move 2's outline — still rework it through moves 1-2.
+> `postmortem`, `data-model`, `deck` (the consulting formula), `migration-plan`,
+> `threat-model`, `service-overview`, `release-notes`, `test-plan`, `onboarding`
+> and `status-update`. Each is a *finished* example doc, not a form — edit the
+> content in place. It's a first draft of move 2's outline — still rework it
+> through moves 1-2.
 
 ## Designing a system — reason it, don't template it
 

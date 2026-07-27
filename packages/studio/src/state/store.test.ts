@@ -580,6 +580,56 @@ describe('newDocTemplate', () => {
   });
 });
 
+/**
+ * `?template=<name>` — the link the website's templates gallery points at.
+ * `window` is stubbed because these tests run in the node environment; the
+ * point is that boot reads the query, imports that template and lands on it.
+ */
+describe('init with ?template=', () => {
+  function stubWindow(search: string): void {
+    vi.stubGlobal('window', {
+      location: { href: `https://studio.avodado.dev/${search}`, search, pathname: '/' },
+      history: { replaceState: vi.fn() },
+    });
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    stubFetch();
+  });
+
+  it('opens the named template, filled in, in edit mode', async () => {
+    stubWindow('?template=migration-plan');
+    useStudio.setState({ currentSlug: null, mode: 'home' });
+    await useStudio.getState().init();
+
+    const s = useStudio.getState();
+    expect(s.mode).toBe('edit');
+    expect(s.currentSlug).toBe('migration-plan');
+    expect(s.source).toBe(DOC_TEMPLATES['migration-plan']);
+  });
+
+  it('says so when the template does not exist, and still boots', async () => {
+    stubWindow('?template=nope');
+    useStudio.setState({ currentSlug: null, mode: 'home' });
+    await useStudio.getState().init();
+
+    const s = useStudio.getState();
+    expect(s.loaded).toBe(true);
+    expect(s.toasts.some((t) => t.message.includes('nope'))).toBe(true);
+    expect(s.mode).toBe('home');
+  });
+
+  it('ignores the query when there is nothing to open', async () => {
+    stubWindow('');
+    useStudio.setState({ currentSlug: null, mode: 'home' });
+    await useStudio.getState().init();
+
+    expect(useStudio.getState().currentSlug).toBe('guide');
+    expect(useStudio.getState().mode).toBe('home');
+  });
+});
+
 describe('newDoc', () => {
   it('a blank doc opens the cover editor in fresh mode', async () => {
     await useStudio.getState().newDoc('fresh-blank');

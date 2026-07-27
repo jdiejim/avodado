@@ -9,7 +9,7 @@
  * Enter in the slug field creates, Esc closes.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DOC_TEMPLATES } from '@avodado/core';
 import { TEMPLATE_CARDS } from '../lib/docTemplates.js';
 import { useStudio } from '../state/store.js';
@@ -22,6 +22,7 @@ export function TemplatePicker({ onClose }: { onClose: () => void }): JSX.Elemen
   const newDoc = useStudio((s) => s.newDoc);
   const [selected, setSelected] = useState<string>('blank');
   const [slug, setSlug] = useState('');
+  const [query, setQuery] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const slugRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -40,6 +41,26 @@ export function TemplatePicker({ onClose }: { onClose: () => void }): JSX.Elemen
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [onClose]);
+
+  /**
+   * Cards matching the filter. Block types are searchable too, so "sequence"
+   * finds every template that draws one — which is often how you know which
+   * starting point you want.
+   */
+  const q = query.trim().toLowerCase();
+  const shown = useMemo(
+    () =>
+      q === ''
+        ? TEMPLATE_CARDS
+        : TEMPLATE_CARDS.filter(
+            (c) =>
+              c.id.includes(q) ||
+              c.title.toLowerCase().includes(q) ||
+              c.description.toLowerCase().includes(q) ||
+              c.blockTypes.some((t) => t.includes(q)),
+          ),
+    [q],
+  );
 
   const pickCard = (id: string): void => {
     setSelected(id);
@@ -94,7 +115,17 @@ export function TemplatePicker({ onClose }: { onClose: () => void }): JSX.Elemen
             }}
           />
         </div>
+        <label className="stu-tpl-filter">
+          <input
+            type="text"
+            placeholder="Filter — adr, migration, sequence…"
+            aria-label="Filter templates"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
         <div className="stu-tpl-body" role="radiogroup" aria-label="Starting point">
+          {q === '' && (
           <button
             type="button"
             role="radio"
@@ -111,7 +142,8 @@ export function TemplatePicker({ onClose }: { onClose: () => void }): JSX.Elemen
               Just the cover — start from nothing and insert blocks with “/”.
             </span>
           </button>
-          {TEMPLATE_CARDS.map((card) => (
+          )}
+          {shown.map((card) => (
             <button
               key={card.id}
               type="button"
@@ -136,6 +168,9 @@ export function TemplatePicker({ onClose }: { onClose: () => void }): JSX.Elemen
               </span>
             </button>
           ))}
+          {shown.length === 0 && (
+            <p className="stu-tpl-none">Nothing matches “{query}”.</p>
+          )}
         </div>
         <div className="stu-tpl-foot">
           <span className="stu-tpl-hint">
