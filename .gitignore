@@ -21,6 +21,8 @@ next-env.d.ts
 
 # local scratch / personal references (not part of the project)
 ref.png
+.scratch/
+graphify-out/
 
 # VS Code extension build artifact
 *.vsix

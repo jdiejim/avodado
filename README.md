@@ -53,7 +53,7 @@ One grammar covers the docs a software team actually writes:
 | **Charts & overviews** | `chart` · `stats` · `heatmap` · `quadrant` · `journey` |
 | **Slide presentations** | any doc → `avo slides` (one slide per heading) |
 
-Full list: **[87 block types](#the-87-block-types)** across 12 families.
+Full list: **[90 block types](#the-90-block-types)** across 12 families.
 
 ## Quick start
 
@@ -84,7 +84,7 @@ avo init --yes      # defaults, no prompts (great for CI)
 You get:
 
 - **`docs/getting-started.md` + `docs/tutorial.md`** — an 80/20 quick start and a deck-first tour of every block (`avo slides docs/tutorial.md`).
-- **`.avodado/skill/SKILL.md`** — the authoring skill: the full block grammar with a worked example for all 87 blocks.
+- **`.avodado/skill/SKILL.md`** — the authoring skill: the full block grammar with a worked example for all 90 blocks.
 - **Editor adapters** for the tools you picked — Claude Code (`CLAUDE.md`), Cursor (`.cursor/rules/avodado.mdc`), GitHub Copilot (`.github/copilot-instructions.md`), Windsurf (`.windsurfrules`).
 - **`avodado.theme.json`** if you chose a custom theme.
 
@@ -190,7 +190,7 @@ Exits non-zero on any error, so it drops straight into CI. It catches bad fields
 
 ---
 
-## The 87 block types
+## The 90 block types
 
 | Family | Blocks |
 |---|---|
@@ -203,14 +203,14 @@ Exits non-zero on any error, so it drops straight into CI. It catches bad fields
 | Architecture | `c4` `block` `cluster` `archmap` |
 | Code-flavoured | `felogic` `frontend` `uml` `pattern` |
 | Flow & process | `flow` `dfd` `swimlane` `steps` `gitgraph` |
-| Charts & overviews | `graph` `tree` `gantt` `pyramid` `quadrant` `journey` `chart` `heatmap` `sankey` `treemap` `venn` |
+| Charts & overviews | `graph` `tree` `gantt` `pyramid` `quadrant` `journey` `chart` `heatmap` `sankey` `treemap` `venn` `fishbone` `slopegraph` |
 | Business & strategy | `swot` `okr` `persona` `wardley` `harvey` `scqa` `scenarios` |
 | Design system | `palette` `typescale` `dodont` `inventory` |
 | Algorithms & data structures | `array` `linkedlist` `bintree` `hashmap` |
 | AI & agents | `agentloop` `trace` `prompt` `context` |
 | Access control / RBAC | `matrix` `anatomy` `composition` |
 | Presentation cards | `drivers` `options` `scorecard` `spec` `envelope` `team` |
-| Planning & meta | `userstory` `stories` `timeline` `changelog` `kanban` `statustable` `risk` `cvt` `proscons` `agenda` |
+| Planning & meta | `userstory` `stories` `timeline` `changelog` `kanban` `storymap` `statustable` `risk` `cvt` `proscons` `agenda` |
 | UI mockups | `wireframe` |
 
 Some blocks fold former separate types into a variant — `block` takes `preset: infra | event | ddd | network`, `chart` takes `kind: waterfall | funnel`, `code` takes `kind: diff | terminal`, and so on. The 12 old names (`infra` `event` `ddd` `network` `belogic` `dag` `waterfall` `funnel` `diff` `terminal` `mece` `tracker`) stay **permanent aliases**: existing docs keep validating and rendering byte-for-byte, with only an informational `W_ALIAS_TYPE` warning. Full schemas with worked examples live in `.avodado/skill/SKILL.md`.
@@ -237,7 +237,7 @@ CI gates on this for free.
 
 | Package | Purpose |
 | --- | --- |
-| [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 87 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
+| [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 90 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
 | [`@avodado/render`](./packages/render) | All rendering: `renderDocument` (standalone HTML) + `renderDocumentParts` (embeddable) + `toSlides` (self-contained decks). Inline CSS + SVG, 6 themes. |
 | [`avodado`](./packages/cli) | The `avo` CLI (also runs as `avodado`) — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · theme · sync` + per-tool installers. PDF export (Playwright) lives here. |
 | [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` — a Home page of your docs, in-place editing, Present, plus HTML / slides / PDF export. |
