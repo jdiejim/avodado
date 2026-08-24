@@ -82,6 +82,60 @@ describe('runCheck', () => {
     }
   });
 
+  it('reports prose findings as warnings and still exits 0', async () => {
+    const { root, cleanup } = await tempProject({
+      'docs/prose.md': '```meta\ntitle: Prose\n```\n\nIn this section we look at the parser.\n',
+    });
+    try {
+      const result = await runCheck({ patterns: ['docs/**/*.md'], cwd: root, docsRoot: 'docs' });
+      expect(result.exitCode).toBe(0);
+      const filler = result.diagnostics.find((d) => d.code === 'W_PROSE_FILLER_OPENER');
+      expect(filler).toBeDefined();
+      expect(filler?.level).toBe('warn');
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('escalates prose findings to errors under strictProse', async () => {
+    const { root, cleanup } = await tempProject({
+      'docs/prose.md': '```meta\ntitle: Prose\n```\n\nIn this section we look at the parser.\n',
+    });
+    try {
+      const result = await runCheck({
+        patterns: ['docs/**/*.md'],
+        cwd: root,
+        docsRoot: 'docs',
+        strictProse: true,
+      });
+      expect(result.exitCode).toBe(1);
+      const filler = result.diagnostics.find((d) => d.code === 'W_PROSE_FILLER_OPENER');
+      expect(filler?.level).toBe('error');
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('does not escalate non-prose warnings under strictProse', async () => {
+    const { root, cleanup } = await tempProject({
+      'docs/empty.md': '```callout\n```\n',
+    });
+    try {
+      const result = await runCheck({
+        patterns: ['docs/**/*.md'],
+        cwd: root,
+        docsRoot: 'docs',
+        strictProse: true,
+      });
+      const empty = result.diagnostics.find((d) => d.code === 'W_EMPTY_BLOCK');
+      expect(empty).toBeDefined();
+      expect(empty?.level).toBe('warn');
+      expect(result.exitCode).toBe(0);
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('sorts diagnostics by file then line', async () => {
     const { root, cleanup } = await tempProject({
       'docs/a.md': '\n\n```callout\nkind: invalid\n```\n',

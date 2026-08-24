@@ -161,6 +161,15 @@ describe('buildSite', () => {
     expect(deck?.html).toContain('class="deck-doc-link" href="x.html"');
   });
 
+  it('keeps the plain index unchanged when richIndex is off', () => {
+    const { pages } = buildSite(load());
+    const index = pages.find((p) => p.path === 'index.html');
+    expect(index?.html).not.toContain('idx-tldr');
+    expect(index?.html).not.toContain('idx-group');
+    expect(index?.html).not.toContain('idx-graph');
+    expect(index?.html).not.toContain('<svg');
+  });
+
   it('injects the live-reload script only when liveReload is set', () => {
     const docs = load();
     const built = buildSite(docs);
@@ -168,6 +177,172 @@ describe('buildSite', () => {
     for (const p of built.pages) expect(p.html).not.toContain('EventSource');
     for (const p of served.pages) {
       expect(p.html).toContain(`new EventSource('/__events').onmessage=()=>location.reload()`);
+    }
+  });
+});
+
+// ─── Rich index (`--rich-index`) ─────────────────────────────────────────────
+
+const RICH_R1 = `\`\`\`meta
+title: Parser guide
+subtitle: Parser walkthrough
+tag: Guide
+\`\`\`
+
+\`\`\`sequence
+id: seq-r1
+title: Parse flow
+actors:
+  - { id: C, name: Client }
+  - { id: S, name: Server }
+messages:
+  - { from: C, to: S, label: parse, kind: sync }
+\`\`\`
+`;
+
+const RICH_R2 = `\`\`\`meta
+title: Renderer guide
+tag: GUIDE
+\`\`\`
+`;
+
+const RICH_R3 = `\`\`\`meta
+title: API reference
+tag: API
+\`\`\`
+
+\`\`\`userstory
+role: dev
+want: a link to the parser
+soThat: readers can jump
+links:
+  - { ref: "r1#seq-r1", label: Parser }
+\`\`\`
+`;
+
+const RICH_R4 = `\`\`\`meta
+title: Nested note
+subtitle: A nested note
+\`\`\`
+`;
+
+const RICH_R5 = `\`\`\`meta
+title: API cookbook
+tag: API · v2
+\`\`\`
+`;
+
+function loadRich(): SiteDoc[] {
+  return [
+    { slug: 'r1', file: 'docs/r1.md', doc: parseDocument(RICH_R1, 'r1') },
+    { slug: 'r2', file: 'docs/r2.md', doc: parseDocument(RICH_R2, 'r2') },
+    { slug: 'r3', file: 'docs/r3.md', doc: parseDocument(RICH_R3, 'r3') },
+    { slug: 'notes/r4', file: 'docs/notes/r4.md', doc: parseDocument(RICH_R4, 'notes/r4') },
+    { slug: 'r5', file: 'docs/r5.md', doc: parseDocument(RICH_R5, 'r5') },
+  ];
+}
+
+describe('buildSite rich index', () => {
+  it('puts a TLDR digest at the top: doc count plus one line per group', () => {
+    const { pages } = buildSite(loadRich(), { richIndex: true });
+    const index = pages.find((p) => p.path === 'index.html');
+    expect(index?.html).toContain('<div class="idx-eyebrow">5 documents</div>');
+    // Multi-doc group line: label + count only — no single doc's subtitle.
+    expect(index?.html).toContain(
+      '<a href="#group-guide"><strong>Guide</strong> · 2 documents</a>',
+    );
+    expect(index?.html).toContain('<a href="#group-api"><strong>API</strong> · 2 documents</a>');
+    // A group of one keeps its doc's subtitle as the one-liner.
+    expect(index?.html).toContain(
+      '<a href="#group-notes"><strong>notes</strong> · 1 document — A nested note</a>',
+    );
+  });
+
+  it('groups cards by the first tag token (case-insensitive), folder fallback, largest first', () => {
+    const { pages } = buildSite(loadRich(), { richIndex: true });
+    const index = pages.find((p) => p.path === 'index.html');
+    const html = index?.html ?? '';
+    // Guide + GUIDE merge into one group of 2; label keeps first-seen casing.
+    expect(html).toContain(
+      '<section class="idx-group" id="group-guide"><h2 class="idx-group-head">Guide<span class="idx-group-count">2</span></h2>',
+    );
+    // Compound badge "API · v2" groups by its first token with plain "API".
+    expect(html).toContain(
+      '<section class="idx-group" id="group-api"><h2 class="idx-group-head">API<span class="idx-group-count">2</span></h2>',
+    );
+    const apiSection = html.slice(html.indexOf('id="group-api"'), html.indexOf('id="group-guide"'));
+    expect(apiSection).toContain('<a class="idx-card" href="r5.html">');
+    // Untagged nested doc falls back to its top-level folder.
+    expect(html).toContain('<h2 class="idx-group-head">notes<span class="idx-group-count">1</span></h2>');
+    // Largest groups first; equal sizes order by label (API before Guide).
+    expect(html.indexOf('id="group-api"')).toBeLessThan(html.indexOf('id="group-guide"'));
+    expect(html.indexOf('id="group-guide"')).toBeLessThan(html.indexOf('id="group-notes"'));
+    // Cards keep their current look inside groups.
+    expect(html).toContain('<a class="idx-card" href="r1.html">');
+    // The full compound badge stays on the card — only grouping uses the token.
+    expect(html).toContain('<span class="idx-tag">API · v2</span>');
+  });
+
+  it('normalizes tag casing on cards inside a group to the first-seen form', () => {
+    const { pages } = buildSite(loadRich(), { richIndex: true });
+    const html = pages.find((p) => p.path === 'index.html')?.html ?? '';
+    // r2 is tagged GUIDE; inside the Guide group its pill shows Guide (r1's casing).
+    const cardStart = html.indexOf('class="idx-card" href="r2.html"');
+    const r2Card = html.slice(cardStart, html.indexOf('</a>', cardStart));
+    expect(r2Card).toContain('<span class="idx-tag">Guide</span>');
+    expect(html).not.toContain('<span class="idx-tag">GUIDE</span>');
+  });
+
+  it('falls back to the flat card grid when most groups are singletons', () => {
+    const docs = [
+      { slug: 'r1', file: 'docs/r1.md', doc: parseDocument(RICH_R1, 'r1') },
+      { slug: 'r3', file: 'docs/r3.md', doc: parseDocument(RICH_R3, 'r3') },
+      { slug: 'r5', file: 'docs/r5.md', doc: parseDocument(RICH_R5.replace('API · v2', 'RFC'), 'r5') },
+    ];
+    const { pages } = buildSite(docs, { richIndex: true });
+    const html = pages.find((p) => p.path === 'index.html')?.html ?? '';
+    // Three groups of one (Guide, API, RFC) — grouping restates the grid.
+    // (The stylesheet still carries the .idx-* rules; the markup must not.)
+    expect(html).not.toContain('class="idx-tldr"');
+    expect(html).not.toContain('class="idx-group"');
+    expect(html).toContain('<div class="idx-grid">');
+    expect(html).toContain('<a class="idx-card" href="r1.html">');
+    // The cross-reference graph (r3 → r1) still renders.
+    expect(html).toContain('class="idx-graph"');
+    expect(html).toContain('<svg');
+  });
+
+  it('renders the cross-reference graph through the graph renderer, with a link legend', () => {
+    const { pages } = buildSite(loadRich(), { richIndex: true });
+    const index = pages.find((p) => p.path === 'index.html');
+    const html = index?.html ?? '';
+    expect(html).toContain('class="idx-graph"');
+    expect(html).toContain('<svg'); // real rendered graph block
+    expect(html).toContain('Cross-references');
+    // Node labels are doc titles; only docs in an edge appear.
+    expect(html).toContain('Parser guide');
+    expect(html).toContain('API reference');
+    // Legend links each graph doc to its page.
+    expect(html).toContain('<li><a href="r3.html">API reference</a>');
+    expect(html).toContain('<li><a href="r1.html">Parser guide</a>');
+  });
+
+  it('omits the graph section when no doc references another', () => {
+    const docs = loadRich().filter((d) => d.slug !== 'r3'); // r3 holds the only cross-ref
+    const { pages } = buildSite(docs, { richIndex: true });
+    const index = pages.find((p) => p.path === 'index.html');
+    // The stylesheet still carries `.idx-graph` rules; the markup must not.
+    expect(index?.html).not.toContain('class="idx-graph"');
+    expect(index?.html).not.toContain('<svg');
+  });
+
+  it('changes only the index page — doc pages and decks stay identical', () => {
+    const docs = loadRich();
+    const plain = buildSite(docs);
+    const rich = buildSite(docs, { richIndex: true });
+    for (const p of plain.pages) {
+      if (p.path === 'index.html') continue;
+      expect(rich.pages.find((r) => r.path === p.path)?.html).toBe(p.html);
     }
   });
 });

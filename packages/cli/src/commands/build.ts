@@ -25,6 +25,9 @@ export interface BuildOptions {
   readonly cwd: string;
   /** Output directory override (defaults to config `outDir`). */
   readonly out?: string;
+  /** Build the rich index page (`--rich-index`; config `richIndex` also turns
+   * it on). Defaults to off — the plain card grid. */
+  readonly richIndex?: boolean;
 }
 
 /** Result of {@link runBuild}. */
@@ -56,6 +59,7 @@ export async function runBuild(opts: BuildOptions): Promise<BuildResult> {
   const site = buildSite(docs, {
     ...(theme !== undefined ? { theme: theme as ThemeName } : {}),
     ...(themeVars !== undefined ? { themeVars } : {}),
+    richIndex: opts.richIndex === true || config.richIndex,
   });
 
   const pages: { path: string; bytes: number }[] = [];

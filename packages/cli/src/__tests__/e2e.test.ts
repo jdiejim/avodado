@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -66,6 +66,42 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
+  it('avo check warns on a filler opener but exits 0', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(tmp, { recursive: true });
+    writeFileSync(
+      join(tmp, 'prose.md'),
+      '```meta\ntitle: Prose\n```\n\nIn this section we look at the parser.\n',
+    );
+    try {
+      const { code, stdout } = await runBin(['check', 'prose.md'], tmp);
+      expect(code).toBe(0);
+      expect(stdout).toContain('W_PROSE_FILLER_OPENER');
+      expect(stdout).toContain('warn');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo check --strict-prose exits 1 and the output quotes the span', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(tmp, { recursive: true });
+    writeFileSync(
+      join(tmp, 'prose.md'),
+      '```meta\ntitle: Prose\n```\n\nIn this section we look at the parser.\n',
+    );
+    try {
+      const { code, stdout } = await runBin(['check', 'prose.md', '--strict-prose'], tmp);
+      expect(code).toBe(1);
+      expect(stdout).toContain('W_PROSE_FILLER_OPENER');
+      expect(stdout).toContain('error');
+      // The code frame quotes the offending line.
+      expect(stdout).toContain('In this section we look at the parser.');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
   it('avo check --json emits valid JSON', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
@@ -96,6 +132,56 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
       expect(existsSync(join(tmp, 'dist', 'a.slides.html'))).toBe(true);
       expect(existsSync(join(tmp, 'dist', 'guides', 'b.html'))).toBe(true);
       expect(existsSync(join(tmp, 'dist', 'guides', 'b.slides.html'))).toBe(true);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo build --rich-index writes a grouped index with a TLDR and a cross-reference graph', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(
+      join(tmp, 'docs', 'a.md'),
+      '```meta\ntitle: Doc A\nsubtitle: First guide\ntag: GUIDE\n```\n\n' +
+        '```sequence\nid: seq-a\ntitle: A flow\nactors:\n  - { id: C, name: Client }\n' +
+        '  - { id: S, name: Server }\nmessages:\n  - { from: C, to: S, label: GET /a, kind: sync }\n```\n',
+    );
+    writeFileSync(join(tmp, 'docs', 'b.md'), '```meta\ntitle: Doc B\ntag: guide\n```\n');
+    writeFileSync(
+      join(tmp, 'docs', 'c.md'),
+      '```meta\ntitle: Doc C\ntag: API\n```\n\n' +
+        '```userstory\nrole: dev\nwant: a link\nsoThat: readers jump\nlinks:\n' +
+        '  - { ref: "a#seq-a", label: Flow }\n```\n',
+    );
+    try {
+      const { code } = await runBin(['build', '--rich-index'], tmp);
+      expect(code).toBe(0);
+      const index = readFileSync(join(tmp, 'dist', 'index.html'), 'utf8');
+      // TLDR digest line: group label + count (no subtitle on multi-doc groups).
+      expect(index).toContain('<strong>GUIDE</strong> · 2 documents</a>');
+      expect(index).toContain('<strong>API</strong> · 1 document');
+      // The two group headings.
+      expect(index).toContain('GUIDE<span class="idx-group-count">2</span>');
+      expect(index).toContain('API<span class="idx-group-count">1</span>');
+      // The cross-reference graph renders as SVG.
+      expect(index).toContain('class="idx-graph"');
+      expect(index).toContain('<svg');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo build without --rich-index keeps the plain index', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
+    try {
+      const { code } = await runBin(['build'], tmp);
+      expect(code).toBe(0);
+      const index = readFileSync(join(tmp, 'dist', 'index.html'), 'utf8');
+      expect(index).not.toContain('idx-tldr');
+      expect(index).not.toContain('idx-group');
+      expect(index).not.toContain('idx-graph');
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -352,7 +438,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo init -y writes at most 30 files (skill once + pointer stubs)', async () => {
+  it('avo init -y writes at most 43 files (skill once + exemplars + pointer stubs)', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
@@ -360,13 +446,35 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
       expect(code).toBe(0);
       const m = /Created (\d+) file\(s\)/.exec(stdout);
       expect(m).not.toBeNull();
-      expect(Number((m as RegExpExecArray)[1])).toBeLessThanOrEqual(30);
+      expect(Number((m as RegExpExecArray)[1])).toBeLessThanOrEqual(43);
       // canonical skill once; stubs where tools have a native skill format
       expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/contract.md'))).toBe(true);
       expect(existsSync(join(tmp, '.claude/skills/avodado-docs/SKILL.md'))).toBe(true);
+      // the /avo slash command lands and opens with YAML frontmatter
+      expect(existsSync(join(tmp, '.claude/commands/avo.md'))).toBe(true);
+      expect(readFileSync(join(tmp, '.claude/commands/avo.md'), 'utf8').startsWith('---')).toBe(true);
       expect(existsSync(join(tmp, '.claude/skills/avodado-docs/reference'))).toBe(false);
       expect(existsSync(join(tmp, '.cursor/skills'))).toBe(false);
       expect(existsSync(join(tmp, '.windsurf'))).toBe(false);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo init -y --scope backend skips design-system/algorithms and records the scope', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(tmp, { recursive: true });
+    try {
+      const { code } = await runBin(['init', '-y', '--scope', 'backend'], tmp);
+      expect(code).toBe(0);
+      expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/api.md'))).toBe(true);
+      expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/design-system.md'))).toBe(false);
+      expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/algorithms.md'))).toBe(false);
+      expect(existsSync(join(tmp, '.avodado/skill/reference/exemplars/backend-arch.md'))).toBe(true);
+      const config = JSON.parse(readFileSync(join(tmp, 'avodado.config.json'), 'utf8')) as {
+        skillScope?: string;
+      };
+      expect(config.skillScope).toBe('backend');
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }

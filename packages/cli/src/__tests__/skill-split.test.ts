@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { BLOCK_ALIASES, BLOCK_TYPES } from '@avodado/core';
 import { SKILL_REFERENCE_FILES, templatesDir } from '../commands/init.js';
@@ -98,7 +98,7 @@ describe('reference/blocks family files', () => {
     expect(skill).toContain(`and ${n - 16} more`);
     // The block-grammar rule names the full count.
     expect(skill).toContain(`**${n} block types**`);
-    expect(skill, 'stale block count in SKILL.md').not.toMatch(/\b88 block/);
+    expect(skill, 'stale block count in SKILL.md').not.toMatch(/\b91 block/);
     const index = readFileSync(join(BLOCKS_DIR, 'INDEX.md'), 'utf8');
     expect(index).toContain(`# The ${n} block types`);
     const contract = readFileSync(join(BLOCKS_DIR, 'contract.md'), 'utf8');
@@ -110,5 +110,23 @@ describe('reference/blocks family files', () => {
       f.slice(f.lastIndexOf('/') + 1),
     );
     expect([...listed].sort()).toEqual([...familyFiles, 'INDEX.md', 'contract.md'].sort());
+  });
+
+  it('recipes.md and style-ste.md sit in the canonical stitch list, in order', () => {
+    // recipes.md composes the family files, so it stitches immediately after them.
+    const lastFamily = Math.max(
+      ...SKILL_REFERENCE_FILES.flatMap((f, i) => (f.includes('/reference/blocks/') ? [i] : [])),
+    );
+    expect(SKILL_REFERENCE_FILES[lastFamily + 1]).toBe('.avodado/skill/reference/recipes.md');
+    // style-ste.md is authoring guidance — it stitches beside intake/organizing.
+    const idx = (f: string): number => SKILL_REFERENCE_FILES.indexOf(`.avodado/skill/reference/${f}`);
+    expect(idx('style-ste.md')).toBeGreaterThan(idx('intake.md'));
+    expect(idx('style-ste.md')).toBe(idx('organizing.md') + 1);
+  });
+
+  it('every listed reference file exists in the templates tree (stitch/embed input)', () => {
+    for (const f of SKILL_REFERENCE_FILES) {
+      expect(existsSync(join(templatesDir(), f)), `missing ${f}`).toBe(true);
+    }
   });
 });

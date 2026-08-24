@@ -6,7 +6,15 @@ import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import fg from 'fast-glob';
 import { parseDocument, validateDocument, type Diagnostic } from '@avodado/core';
-import { runInit, installTool, stubSkill } from '../commands/init.js';
+import {
+  runInit,
+  installTool,
+  stubSkill,
+  stitchSkill,
+  annotateIndex,
+  templatesDir,
+  EXEMPLAR_FILES,
+} from '../commands/init.js';
 
 async function tempDir(): Promise<{ root: string; cleanup: () => Promise<void> }> {
   const root = join(tmpdir(), `avo-init-${randomBytes(6).toString('hex')}`);
@@ -30,7 +38,7 @@ const failing = (diags: readonly Diagnostic[]): readonly Diagnostic[] =>
   diags.filter((d) => !(d.code === 'W_ALIAS_TYPE' && d.level === 'warn'));
 
 describe('runInit', () => {
-  it('scaffolds the diet tree: one canonical skill + pointer stubs, ≤30 files for all tools', async () => {
+  it('scaffolds the diet tree: one canonical skill + pointer stubs, ≤43 files for all tools', async () => {
     const { root, cleanup } = await tempDir();
     try {
       const result = await runInit({ cwd: root });
@@ -58,6 +66,7 @@ describe('runInit', () => {
         'CLAUDE.md',
         '.claude/skills/avodado-docs/SKILL.md',
         '.claude/agents/avodado-doc-writer.md',
+        '.claude/commands/avo.md',
         '.cursor/rules/avodado.mdc',
         '.github/copilot-instructions.md',
         '.github/skills/avodado-docs/SKILL.md',
@@ -74,8 +83,12 @@ describe('runInit', () => {
       expect(result.created).not.toContain('.windsurf/skills/avodado-docs/SKILL.md');
       expect(result.created).not.toContain('.github/prompts/avodado-docs.prompt.md');
 
-      // init diet: all four tools land in at most 30 files, none skipped
-      expect(result.created.length).toBeLessThanOrEqual(30);
+      // the 10 exemplars ride along with the skill
+      for (const f of EXEMPLAR_FILES) expect(result.created).toContain(f);
+
+      // init diet: all four tools land in at most 43 files, none skipped
+      // (base 24 + 10 exemplars + 9 adapter files)
+      expect(result.created.length).toBeLessThanOrEqual(43);
       expect(result.skipped).toEqual([]);
 
       // exactly ONE contract.md exists on disk — the canonical one
@@ -138,9 +151,13 @@ describe('runInit', () => {
       expect(result.created).toContain('CLAUDE.md');
       expect(result.created).toContain('.claude/skills/avodado-docs/SKILL.md');
       expect(result.created).toContain('.claude/agents/avodado-doc-writer.md');
+      expect(result.created).toContain('.claude/commands/avo.md');
       expect(result.created).not.toContain('.cursor/rules/avodado.mdc');
-      // one tool: base (22) + claude (3) = 25 files
-      expect(result.created.length).toBe(25);
+      // one tool: base (24 + 10 exemplars = 34) + claude (4) = 38 files
+      expect(result.created.length).toBe(38);
+      // the /avo slash command installs and opens with YAML frontmatter
+      const avoCmd = await readFile(join(root, '.claude/commands/avo.md'), 'utf8');
+      expect(avoCmd.startsWith('---')).toBe(true);
       expect(existsSync(join(root, '.github/agents/avodado-doc-writer.agent.md'))).toBe(false);
       expect(existsSync(join(root, '.windsurfrules'))).toBe(false);
 
@@ -150,7 +167,7 @@ describe('runInit', () => {
         // rule-file tools get exactly one pointer file each — no skill dirs
         expect(r2.created).toContain('.cursor/rules/avodado.mdc');
         expect(r2.created).toContain('.windsurfrules');
-        expect(r2.created.length).toBe(24); // base 22 + 1 + 1
+        expect(r2.created.length).toBe(36); // base 34 + 1 + 1
         expect(existsSync(join(root2, '.cursor/skills'))).toBe(false);
         expect(existsSync(join(root2, '.windsurf'))).toBe(false);
       } finally {
@@ -165,8 +182,9 @@ describe('runInit', () => {
     const { root, cleanup } = await tempDir();
     try {
       const result = await installTool({ cwd: root, tool: 'claude' });
-      // canonical skill (19) + claude adapter (3)
-      expect(result.created.length).toBe(22);
+      // canonical skill (21) + exemplars (10) + claude adapter (4)
+      expect(result.created.length).toBe(35);
+      expect(result.created).toContain('.claude/commands/avo.md');
       expect(result.created).toContain('.avodado/skill/SKILL.md');
       expect(result.created).toContain('.avodado/skill/reference/blocks/contract.md');
       expect(result.created).toContain('.claude/skills/avodado-docs/SKILL.md');
@@ -231,5 +249,138 @@ describe('runInit', () => {
     } finally {
       await cleanup();
     }
+  });
+});
+
+describe('tailored install (--scope)', () => {
+  const FAM = (f: string): string => `.avodado/skill/reference/blocks/${f}.md`;
+  const ALWAYS = [
+    '.avodado/skill/SKILL.md',
+    '.avodado/skill/reference/blocks/INDEX.md',
+    '.avodado/skill/reference/blocks/contract.md',
+    '.avodado/skill/reference/recipes.md',
+    '.avodado/skill/reference/system-design.md',
+    '.avodado/skill/reference/decks.md',
+    '.avodado/skill/reference/intake.md',
+    '.avodado/skill/reference/organizing.md',
+    '.avodado/skill/reference/style-ste.md',
+  ];
+
+  it('backend scope drops design-system + algorithms only; INDEX is annotated; config records it', async () => {
+    const { root, cleanup } = await tempDir();
+    try {
+      const result = await runInit({ cwd: root, tools: ['claude'], scope: 'backend' });
+
+      for (const f of ALWAYS) expect(result.created).toContain(f);
+      for (const f of EXEMPLAR_FILES) expect(result.created).toContain(f);
+      for (const fam of ['narrative', 'tables-data', 'api', 'architecture', 'flows', 'data-model', 'charts-overviews', 'planning', 'business', 'agentic']) {
+        expect(result.created, `backend keeps ${fam}`).toContain(FAM(fam));
+      }
+      for (const fam of ['design-system', 'algorithms']) {
+        expect(result.created, `backend drops ${fam}`).not.toContain(FAM(fam));
+        expect(existsSync(join(root, FAM(fam)))).toBe(false);
+      }
+      // full claude init is 38; backend drops exactly 2 family files
+      expect(result.created.length).toBe(36);
+
+      // the INSTALLED index marks the omitted families — the template never does
+      const index = await readFile(join(root, '.avodado/skill/reference/blocks/INDEX.md'), 'utf8');
+      expect(index).toContain('`design-system.md` (not installed — `avo install <tool> --full` adds it)');
+      expect(index).toContain('`algorithms.md` (not installed — `avo install <tool> --full` adds it)');
+      expect(index).not.toContain('`agentic.md` (not installed');
+
+      const config = JSON.parse(await readFile(join(root, 'avodado.config.json'), 'utf8')) as Record<string, unknown>;
+      expect(config['skillScope']).toBe('backend');
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('frontend + product scopes drop their families; exemplars always install', async () => {
+    const { root, cleanup } = await tempDir();
+    try {
+      const r = await runInit({ cwd: root, tools: [], scope: 'frontend' });
+      for (const fam of ['api', 'data-model', 'algorithms', 'agentic']) {
+        expect(r.created, `frontend drops ${fam}`).not.toContain(FAM(fam));
+      }
+      expect(r.created).toContain(FAM('design-system'));
+      for (const f of EXEMPLAR_FILES) expect(r.created).toContain(f);
+
+      const { root: root2, cleanup: cleanup2 } = await tempDir();
+      try {
+        const p = await runInit({ cwd: root2, tools: [], scope: 'product' });
+        for (const fam of ['narrative', 'tables-data', 'charts-overviews', 'planning', 'business', 'flows']) {
+          expect(p.created, `product keeps ${fam}`).toContain(FAM(fam));
+        }
+        for (const fam of ['api', 'architecture', 'data-model', 'design-system', 'algorithms', 'agentic']) {
+          expect(p.created, `product drops ${fam}`).not.toContain(FAM(fam));
+        }
+        for (const f of EXEMPLAR_FILES) expect(p.created).toContain(f);
+      } finally {
+        await cleanup2();
+      }
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('avo install reuses the recorded scope; --full restores everything and clears it', async () => {
+    const { root, cleanup } = await tempDir();
+    try {
+      await runInit({ cwd: root, tools: ['claude'], scope: 'backend' });
+
+      // update path without --full: still backend-scoped
+      const update = await installTool({ cwd: root, tool: 'claude' });
+      expect(update.created).not.toContain(FAM('design-system'));
+      expect(existsSync(join(root, FAM('design-system')))).toBe(false);
+
+      // --full: every family lands, the annotation goes away, the scope is cleared
+      const full = await installTool({ cwd: root, tool: 'claude', full: true });
+      expect(full.created).toContain(FAM('design-system'));
+      expect(full.created).toContain(FAM('algorithms'));
+      expect(existsSync(join(root, FAM('design-system')))).toBe(true);
+      const index = await readFile(join(root, '.avodado/skill/reference/blocks/INDEX.md'), 'utf8');
+      expect(index).not.toContain('(not installed');
+      const config = JSON.parse(await readFile(join(root, 'avodado.config.json'), 'utf8')) as Record<string, unknown>;
+      expect('skillScope' in config).toBe(false);
+
+      // a later plain install stays full
+      const again = await installTool({ cwd: root, tool: 'claude' });
+      expect(again.created).toContain(FAM('design-system'));
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('annotateIndex is the identity for full scope', () => {
+    const md = '| `c4` | `architecture.md` | C4 model |\n';
+    expect(annotateIndex(md, 'full')).toBe(md);
+    expect(annotateIndex(md, 'product')).toContain(
+      '`architecture.md` (not installed — `avo install <tool> --full` adds it)',
+    );
+  });
+});
+
+describe('exemplars stay out of the stitch and the MCP embed', () => {
+  it('stitchSkill() output carries no exemplar file content', async () => {
+    const stitched = await stitchSkill();
+    expect(stitched).not.toContain('placeholder: filled by concurrent builder');
+    // No exemplar body leaks into the single-file form (the hub may *mention*
+    // the folder — the files themselves must not be stitched in).
+    for (const f of EXEMPLAR_FILES) {
+      const md = await readFile(join(templatesDir(), f), 'utf8');
+      const longest = md.split('\n').reduce((a, b) => (b.length > a.length ? b : a), '');
+      if (longest.length > 40) {
+        expect(stitched, `${f} leaked into the stitch`).not.toContain(longest);
+      }
+    }
+  });
+
+  it('the MCP embed script lists exactly the stitch files — no exemplars', async () => {
+    const script = await readFile(
+      join(import.meta.dirname, '../../../mcp/scripts/embed-skill.mjs'),
+      'utf8',
+    );
+    expect(script).not.toContain('exemplar');
   });
 });

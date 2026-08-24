@@ -36,6 +36,9 @@ export interface ServeOptions {
   readonly port: number;
   /** Open the browser once the server is up. */
   readonly open: boolean;
+  /** Serve the rich index page (`--rich-index`; config `richIndex` also turns
+   * it on). Defaults to off — the plain card grid. */
+  readonly richIndex?: boolean;
 }
 
 const DEBOUNCE_MS = 150;
@@ -97,6 +100,7 @@ export async function runServe(opts: ServeOptions): Promise<void> {
         ...(theme !== undefined ? { theme: theme as ThemeName } : {}),
         ...(themeVars !== undefined ? { themeVars } : {}),
         liveReload: true,
+        richIndex: opts.richIndex === true || config.richIndex,
       });
       const next = new Map<string, SitePage>();
       for (const p of site.pages) next.set(p.path, p);

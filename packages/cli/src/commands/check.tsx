@@ -1,12 +1,31 @@
 /**
  * `avo check` — validate one or more documents and report diagnostics.
  *
+ * Runs schema validation, cross-doc reference resolution, the STE-informed
+ * prose lint (`lintProse`), the density-budget lint (`lintDensity`), and the
+ * on-disk convention check (`lintConventions`) over every matched doc. Prose
+ * findings are warnings by default; `--strict-prose` escalates them to errors.
+ * Density and convention findings stay warnings always.
+ *
  * Pure {@link runCheck} returns `{ diagnostics, exitCode }`. The UI layer
  * picks how to render: JSON, Ink table (interactive TTY), or plain text (CI).
  */
 
-import { parseDocument, resolveRefs, validateDocument, type Diagnostic, type Document } from '@avodado/core';
+import {
+  lintDensity,
+  lintProse,
+  parseDocument,
+  PROSE_CHECK_CODES,
+  resolveRefs,
+  validateDocument,
+  type Diagnostic,
+  type Document,
+} from '@avodado/core';
 import { loadDocs, type DocFile } from '../io/files.js';
+import { lintConventions } from './conventions.js';
+
+/** The prose-lint codes, as a set for the strict-prose escalation. */
+const PROSE_CODES: ReadonlySet<string> = new Set(PROSE_CHECK_CODES);
 
 /** Inputs to {@link runCheck}. */
 export interface CheckOptions {
@@ -16,6 +35,8 @@ export interface CheckOptions {
   readonly cwd: string;
   /** Docs root for slug derivation. */
   readonly docsRoot: string;
+  /** Escalate W_PROSE_* warnings to errors (they then affect the exit code). */
+  readonly strictProse?: boolean;
 }
 
 /** Result of running `avo check` — diagnostics aggregated across all matched docs. */
@@ -47,24 +68,42 @@ export async function runCheck(opts: CheckOptions): Promise<CheckResult> {
 
   for (const { doc, file } of parsed) {
     diagnostics.push(...validateDocument(doc, file));
+    diagnostics.push(...lintProse(doc, file));
+    // Density budgets stay warnings even under --strict-prose: W_DENSE_BLOCK
+    // is a design nudge ("split this diagram"), never a gate.
+    diagnostics.push(...lintDensity(doc, file));
+  }
+
+  // On-disk convention (path-based, so it runs here, not in core). Always a
+  // warning — `--strict-prose` does not escalate it.
+  for (const d of docs) {
+    diagnostics.push(...lintConventions(d.file, d.absolute, opts.cwd, opts.docsRoot));
   }
 
   const resolved = resolveRefs(parsed);
   diagnostics.push(...resolved.diagnostics);
 
-  diagnostics.sort((a, b) => {
+  // `--strict-prose`: prose findings become errors and gate the exit code.
+  const escalated: Diagnostic[] =
+    opts.strictProse === true
+      ? diagnostics.map((d) =>
+          d.level === 'warn' && PROSE_CODES.has(d.code) ? { ...d, level: 'error' } : d,
+        )
+      : diagnostics;
+
+  escalated.sort((a, b) => {
     const f = a.file.localeCompare(b.file);
     if (f !== 0) return f;
     return (a.line ?? 0) - (b.line ?? 0);
   });
 
-  const exitCode = diagnostics.some((d) => d.level === 'error') ? 1 : 0;
+  const exitCode = escalated.some((d) => d.level === 'error') ? 1 : 0;
 
   const sources = new Map<string, readonly string[]>();
   for (const d of docs) sources.set(d.file, d.source.split(/\r\n|\r|\n/));
 
   return {
-    diagnostics,
+    diagnostics: escalated,
     files: docs.map((d: DocFile) => d.file),
     sources,
     exitCode,

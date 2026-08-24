@@ -17,7 +17,7 @@ export type AiTool = 'claude' | 'cursor' | 'copilot' | 'windsurf';
 
 /** Display metadata for each AI tool — what the wizard lists. */
 export const AI_TOOLS: ReadonlyArray<{ id: AiTool; label: string; summary: string }> = [
-  { id: 'claude', label: 'Claude Code', summary: 'instructions + skill stub + agent' },
+  { id: 'claude', label: 'Claude Code', summary: 'instructions + skill stub + agent + /avo command' },
   { id: 'cursor', label: 'Cursor', summary: 'rule pointer' },
   { id: 'copilot', label: 'GitHub Copilot', summary: 'instructions + skill stub + agent' },
   { id: 'windsurf', label: 'Windsurf', summary: 'rules pointer' },
@@ -28,9 +28,9 @@ const CANONICAL_SKILL = '.avodado/skill/SKILL.md';
 
 /**
  * The skill's on-demand reference files, in the canonical stitch order
- * (blocks index → contract → the block families → system-design → decks →
- * intake → organizing). They ship beside `SKILL.md` so agents can read them
- * progressively instead of loading one giant file.
+ * (blocks index → contract → the block families → recipes → system-design →
+ * decks → intake → organizing → style). They ship beside `SKILL.md` so agents
+ * can read them progressively instead of loading one giant file.
  *
  * Keep this list in sync with `packages/mcp/scripts/embed-skill.mjs` (FILES).
  */
@@ -49,14 +49,86 @@ export const SKILL_REFERENCE_FILES: readonly string[] = [
   '.avodado/skill/reference/blocks/design-system.md',
   '.avodado/skill/reference/blocks/algorithms.md',
   '.avodado/skill/reference/blocks/agentic.md',
+  '.avodado/skill/reference/recipes.md',
   '.avodado/skill/reference/system-design.md',
   '.avodado/skill/reference/decks.md',
   '.avodado/skill/reference/intake.md',
   '.avodado/skill/reference/organizing.md',
+  '.avodado/skill/reference/style-ste.md',
 ];
 
-/** The complete skill folder: the hub + its reference files. */
+/**
+ * The complete skill folder: the hub + its reference files, in stitch order.
+ * Exemplars are deliberately NOT part of this list — they install to disk
+ * (see {@link EXEMPLAR_FILES}) but never enter `stitchSkill()` or the MCP embed.
+ */
 const SKILL_FILES: readonly string[] = [CANONICAL_SKILL, ...SKILL_REFERENCE_FILES];
+
+/**
+ * Finished exemplar documents — dense worked examples the skill's Reference
+ * step points at. Installed with the skill (every scope, every tool) but kept
+ * out of the single-file stitch/embed to avoid bloat.
+ */
+export const EXEMPLAR_FILES: readonly string[] = [
+  '.avodado/skill/reference/exemplars/backend-arch.md',
+  '.avodado/skill/reference/exemplars/data-pipeline.md',
+  '.avodado/skill/reference/exemplars/api-reference.md',
+  '.avodado/skill/reference/exemplars/incident-postmortem.md',
+  '.avodado/skill/reference/exemplars/migration-plan.md',
+  '.avodado/skill/reference/exemplars/agent-system.md',
+  '.avodado/skill/reference/exemplars/frontend-arch.md',
+  '.avodado/skill/reference/exemplars/adr.md',
+  '.avodado/skill/reference/exemplars/product-spec.md',
+  '.avodado/skill/reference/exemplars/onboarding.md',
+];
+
+/** Project types `avo init` can tailor the installed skill to. */
+export const SKILL_SCOPES = ['full', 'backend', 'frontend', 'product'] as const;
+export type SkillScope = (typeof SKILL_SCOPES)[number];
+
+/** Display metadata for each scope — what the wizard lists. */
+export const SCOPE_CHOICES: ReadonlyArray<{ id: SkillScope; label: string }> = [
+  { id: 'full', label: 'Full suite — every block family (default)' },
+  { id: 'backend', label: 'Backend service — skips design-system + algorithms' },
+  { id: 'frontend', label: 'Frontend app — skips api, data-model, algorithms, agentic' },
+  { id: 'product', label: 'Product & planning — narrative, tables, flows, charts, planning, business' },
+];
+
+/**
+ * The block-family files a scope OMITS. Scope filters only the 12
+ * `reference/blocks/<family>.md` files — INDEX, contract, recipes, style,
+ * intake, organizing, system-design, decks, and the exemplars always install.
+ */
+const SCOPE_DROPS: Readonly<Record<SkillScope, readonly string[]>> = {
+  full: [],
+  backend: ['design-system', 'algorithms'],
+  frontend: ['api', 'data-model', 'algorithms', 'agentic'],
+  product: ['api', 'architecture', 'data-model', 'design-system', 'algorithms', 'agentic'],
+};
+
+const familyPath = (family: string): string => `.avodado/skill/reference/blocks/${family}.md`;
+
+/** The on-disk skill for a scope: filtered families + everything else + exemplars. */
+export function installedSkillFiles(scope: SkillScope): readonly string[] {
+  const dropped = new Set(SCOPE_DROPS[scope].map(familyPath));
+  return [...SKILL_FILES.filter((f) => !dropped.has(f)), ...EXEMPLAR_FILES];
+}
+
+/**
+ * Annotates the installed copy of `reference/blocks/INDEX.md` for a scope: a
+ * family-file cell whose file was omitted gets a pointer to the restore
+ * command. Pure string transform at install time — the template is never forked.
+ */
+export function annotateIndex(md: string, scope: SkillScope): string {
+  let out = md;
+  for (const family of SCOPE_DROPS[scope]) {
+    out = out.replaceAll(
+      `\`${family}.md\``,
+      `\`${family}.md\` (not installed — \`avo install <tool> --full\` adds it)`,
+    );
+  }
+  return out;
+}
 
 /** One file `avo init` / `avo install` writes: a template copy or a generated stub. */
 interface TemplateEntry {
@@ -83,6 +155,7 @@ const TOOL_FILES: Readonly<Record<AiTool, ReadonlyArray<TemplateEntry>>> = {
     { src: 'CLAUDE.md', dest: 'CLAUDE.md' },
     { src: CANONICAL_SKILL, dest: '.claude/skills/avodado-docs/SKILL.md', kind: 'stub' },
     { src: 'agents/claude-agent.md', dest: '.claude/agents/avodado-doc-writer.md' },
+    { src: '.claude/commands/avo.md', dest: '.claude/commands/avo.md' },
   ],
   cursor: [{ src: '.cursor/rules/avodado.mdc', dest: '.cursor/rules/avodado.mdc' }],
   copilot: [
@@ -93,12 +166,12 @@ const TOOL_FILES: Readonly<Record<AiTool, ReadonlyArray<TemplateEntry>>> = {
   windsurf: [{ src: '.windsurfrules', dest: '.windsurfrules' }],
 };
 
-/** Files always written, regardless of selections. */
-const BASE_FILES: readonly string[] = [
+/** Files always written, regardless of selections (skill filtered by scope). */
+const baseFiles = (scope: SkillScope): readonly string[] => [
   'avodado.config.json',
   'docs/getting-started.md',
   'docs/tutorial.md',
-  ...SKILL_FILES,
+  ...installedSkillFiles(scope),
 ];
 
 export interface InitOptions {
@@ -114,6 +187,12 @@ export interface InitOptions {
    * When false, a theme file is only written if `theme` is a non-default theme.
    */
   readonly customTheme?: boolean;
+  /**
+   * Project type to tailor the installed skill to. Filters only the 12 block
+   * family files; recorded in `avodado.config.json` as `skillScope` when it is
+   * not `full`. Default: `full`.
+   */
+  readonly scope?: SkillScope;
 }
 
 export interface InitResult {
@@ -232,16 +311,62 @@ export async function stubSkill(srcRoot: string = templatesDir()): Promise<strin
 }
 
 /** Writes one entry to `dst`: a stub, a version-stamped skill file, or a copy. */
-async function writeTemplate(srcRoot: string, entry: TemplateEntry, dst: string, version: string): Promise<void> {
+async function writeTemplate(
+  srcRoot: string,
+  entry: TemplateEntry,
+  dst: string,
+  version: string,
+  scope: SkillScope = 'full',
+): Promise<void> {
   await mkdir(dirname(dst), { recursive: true });
   if (entry.kind === 'stub') {
     await writeFile(dst, stampSkillVersion(await stubSkill(srcRoot), version), 'utf8');
   } else if (isSkillDest(dst)) {
     const content = stampSkillVersion(await readFile(resolve(srcRoot, entry.src), 'utf8'), version);
     await writeFile(dst, content, 'utf8');
+  } else if (scope !== 'full' && entry.dest.endsWith('reference/blocks/INDEX.md')) {
+    // The installed INDEX marks the family files this scope omitted.
+    const content = annotateIndex(await readFile(resolve(srcRoot, entry.src), 'utf8'), scope);
+    await writeFile(dst, content, 'utf8');
   } else {
     await cp(resolve(srcRoot, entry.src), dst);
   }
+}
+
+/**
+ * Reads the scope recorded in the project's `avodado.config.json`
+ * (`"skillScope"`). Missing file, non-JSON config, or an unknown value all
+ * mean `full` — scope tailoring is opt-in.
+ */
+export function recordedSkillScope(cwd: string): SkillScope {
+  try {
+    const raw = JSON.parse(readFileSync(join(cwd, 'avodado.config.json'), 'utf8')) as {
+      skillScope?: unknown;
+    };
+    const s = raw.skillScope;
+    if (s === 'backend' || s === 'frontend' || s === 'product') return s;
+  } catch {
+    /* no JSON config → full */
+  }
+  return 'full';
+}
+
+/**
+ * Records (or clears, for `full`) the chosen scope in `avodado.config.json` so
+ * `avo install <tool>` updates with the same subset. No-op when the project
+ * has no JSON config.
+ */
+async function recordSkillScope(cwd: string, scope: SkillScope): Promise<void> {
+  const path = join(cwd, 'avodado.config.json');
+  if (!existsSync(path)) return;
+  const config = JSON.parse(await readFile(path, 'utf8')) as Record<string, unknown>;
+  if (scope === 'full') {
+    if (!('skillScope' in config)) return;
+    delete config['skillScope'];
+  } else {
+    config['skillScope'] = scope;
+  }
+  await writeFile(path, JSON.stringify(config, null, 2) + '\n', 'utf8');
 }
 
 /**
@@ -253,13 +378,17 @@ export async function installTool(opts: {
   readonly cwd: string;
   readonly tool: AiTool;
   readonly force?: boolean;
+  /** Install the full skill (every family) and clear a recorded project scope. */
+  readonly full?: boolean;
 }): Promise<InitResult> {
   const srcRoot = templatesDir();
   const version = readCliVersion();
   const created: string[] = [];
   const skipped: string[] = [];
+  // The update path honours the scope `avo init` recorded; --full overrides it.
+  const scope: SkillScope = opts.full === true ? 'full' : recordedSkillScope(opts.cwd);
   const files: ReadonlyArray<TemplateEntry> = [
-    ...SKILL_FILES.map((f) => ({ src: f, dest: f })),
+    ...installedSkillFiles(scope).map((f) => ({ src: f, dest: f })),
     ...TOOL_FILES[opts.tool],
   ];
   for (const entry of files) {
@@ -268,9 +397,10 @@ export async function installTool(opts: {
       skipped.push(entry.dest);
       continue;
     }
-    await writeTemplate(srcRoot, entry, dst, version);
+    await writeTemplate(srcRoot, entry, dst, version, scope);
     created.push(entry.dest);
   }
+  if (opts.full === true) await recordSkillScope(opts.cwd, 'full');
   return { created, skipped };
 }
 
@@ -286,9 +416,10 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   const created: string[] = [];
   const skipped: string[] = [];
 
+  const scope = opts.scope ?? 'full';
   const tools = opts.tools ?? AI_TOOLS.map((t) => t.id);
   const copyList: ReadonlyArray<TemplateEntry> = [
-    ...BASE_FILES.map((f) => ({ src: f, dest: f })),
+    ...baseFiles(scope).map((f) => ({ src: f, dest: f })),
     ...tools.flatMap((t) => TOOL_FILES[t]),
   ];
 
@@ -298,9 +429,13 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
       skipped.push(entry.dest);
       continue;
     }
-    await writeTemplate(srcRoot, entry, dst, version);
+    await writeTemplate(srcRoot, entry, dst, version, scope);
     created.push(entry.dest);
   }
+
+  // Record an explicit choice (backend/frontend/product sets `skillScope`,
+  // an explicit full clears one) so `avo install <tool>` reuses it.
+  if (opts.scope !== undefined) await recordSkillScope(opts.cwd, opts.scope);
 
   // Theme file: only when the user picked a non-default theme or asked for a
   // custom scaffold (the default `textbook` needs no file).

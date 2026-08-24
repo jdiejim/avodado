@@ -16,9 +16,12 @@ export interface AvodadoConfig {
   readonly docsDir: string;
   /** Where rendered output goes (relative to project root). Defaults to `dist`. */
   readonly outDir: string;
+  /** Build the rich site index (TLDR, grouped doc map, cross-reference graph).
+   * Defaults to `false`; the `--rich-index` flag also turns it on. */
+  readonly richIndex: boolean;
 }
 
-const DEFAULTS: AvodadoConfig = { docsDir: 'docs', outDir: 'dist' };
+const DEFAULTS: AvodadoConfig = { docsDir: 'docs', outDir: 'dist', richIndex: false };
 
 const CONFIG_FILES = [
   'avodado.config.ts',
@@ -62,9 +65,10 @@ async function readConfig(path: string): Promise<unknown> {
 
 function mergeWithDefaults(raw: unknown): AvodadoConfig {
   if (raw === null || typeof raw !== 'object') return DEFAULTS;
-  const r = raw as { docsDir?: unknown; outDir?: unknown };
+  const r = raw as { docsDir?: unknown; outDir?: unknown; richIndex?: unknown };
   return {
     docsDir: typeof r.docsDir === 'string' ? r.docsDir : DEFAULTS.docsDir,
     outDir: typeof r.outDir === 'string' ? r.outDir : DEFAULTS.outDir,
+    richIndex: typeof r.richIndex === 'boolean' ? r.richIndex : DEFAULTS.richIndex,
   };
 }

@@ -42,8 +42,10 @@ import {
   installTool,
   themeFileContents,
   AI_TOOLS,
+  SKILL_SCOPES,
   type InitResult,
   type AiTool,
+  type SkillScope,
 } from './commands/init.js';
 import { InitApp } from './commands/InitApp.js';
 import { ThemeApp } from './commands/ThemeApp.js';
@@ -73,6 +75,7 @@ import {
   isDocTemplate,
 } from './commands/new.js';
 import { projectStatus, formatStatus } from './commands/status.js';
+import { runAudit, formatAudit } from './commands/audit/run.js';
 import { DiagnosticsTable, formatDiagnosticsPlain } from './ui/DiagnosticsTable.js';
 import { banner, examples, commandExamples, wordmark, actionBanner, funLine } from './ui/banner.js';
 import { isInteractive } from './tty.js';
@@ -93,6 +96,9 @@ function printInitSummary(result: InitResult, theme: string): void {
   console.log(
     pc.bold(`\nCreated ${result.created.length} file(s), skipped ${result.skipped.length}.`) +
       pc.dim(` (theme: ${theme})`),
+  );
+  console.log(
+    pc.dim('Layout: docs/<area>/<doc>.md, kebab-case names · output goes to dist/ — do not commit it.'),
   );
   console.log(
     `Next: ${pc.cyan('avo check')} ${pc.dim('·')} ${pc.cyan('avo docs/getting-started.md')} ${pc.dim('(render + open)')} ${pc.dim('·')} ${pc.cyan('avo explore tour')} ${pc.dim('(guided walkthrough)')}`,
@@ -170,12 +176,26 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('init')
     .description('Scaffold a new Avodado project in the current directory')
     .option('--force', 'overwrite existing files')
-    .option('-y, --yes', 'skip the wizard — scaffold with defaults (all tools, textbook theme)')
-    .action(async (opts: { force?: boolean; yes?: boolean }) => {
+    .option('-y, --yes', 'skip the wizard — scaffold with defaults (all tools, full suite, textbook theme)')
+    .option(
+      '--scope <type>',
+      `tailor the installed skill to a project type (${SKILL_SCOPES.join(' | ')})`,
+    )
+    .action(async (opts: { force?: boolean; yes?: boolean; scope?: string }) => {
       const cwd = process.cwd();
       const force = opts.force === true;
 
-      // Interactive wizard: pick AI-tool adapters + a theme, with a logo.
+      let scope: SkillScope | undefined;
+      if (opts.scope !== undefined) {
+        if (!(SKILL_SCOPES as readonly string[]).includes(opts.scope)) {
+          console.error(pc.red(`Unknown scope: ${opts.scope}. Try one of: ${SKILL_SCOPES.join(' | ')}`));
+          exitCode = 2;
+          return;
+        }
+        scope = opts.scope as SkillScope;
+      }
+
+      // Interactive wizard: pick AI-tool adapters, a project type, + a theme.
       if (isInteractive && opts.yes !== true) {
         console.log(wordmark(version));
         let captured: { result: InitResult; theme: string } | undefined;
@@ -183,6 +203,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           <InitApp
             cwd={cwd}
             {...(force ? { force: true } : {})}
+            {...(scope !== undefined ? { scope } : {})}
             onComplete={(result, theme) => {
               captured = { result, theme };
             }}
@@ -193,8 +214,13 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
 
-      // Non-interactive (CI) or --yes: scaffold with defaults.
-      const result = await runInit({ cwd, ...(force ? { force: true } : {}) });
+      // Non-interactive (CI) or --yes: scaffold with defaults (full suite
+      // unless --scope says otherwise).
+      const result = await runInit({
+        cwd,
+        ...(force ? { force: true } : {}),
+        ...(scope !== undefined ? { scope } : {}),
+      });
       printInitSummary(result, 'textbook');
     });
 
@@ -203,11 +229,17 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('check [globs...]')
     .description('Validate documents (default: docs/**/*.md)')
     .option('--json', 'emit machine-readable JSON')
-    .action(async (globs: string[], opts: { json?: boolean }) => {
+    .option('--strict-prose', 'treat prose-lint warnings (W_PROSE_*) as errors')
+    .action(async (globs: string[], opts: { json?: boolean; strictProse?: boolean }) => {
       const cwd = process.cwd();
       const config = await loadConfig(cwd);
       const patterns = globs.length > 0 ? globs : [`${config.docsDir}/**/*.md`];
-      const result = await runCheck({ patterns, cwd, docsRoot: config.docsDir });
+      const result = await runCheck({
+        patterns,
+        cwd,
+        docsRoot: config.docsDir,
+        ...(opts.strictProse === true ? { strictProse: true } : {}),
+      });
       if (opts.json === true) {
         process.stdout.write(
           JSON.stringify({ diagnostics: result.diagnostics, files: result.files }, null, 2) + '\n',
@@ -228,6 +260,34 @@ export async function main(argv: readonly string[]): Promise<number> {
         );
       }
       exitCode = result.exitCode;
+    });
+
+  // `avo audit [path]` — evidence report + rule-derived doc recommendations.
+  // Informational: exits 0 whenever the path is usable, 2 when it is not.
+  program
+    .command('audit [path]')
+    .description('Audit a codebase and recommend which Avodado docs to write (evidence-cited)')
+    .option('--json', 'emit machine-readable JSON (schema version 1)')
+    .action(async (pathArg: string | undefined, opts: { json?: boolean }) => {
+      const result = await runAudit({
+        cwd: process.cwd(),
+        ...(pathArg !== undefined ? { path: pathArg } : {}),
+      });
+      if (!result.ok) {
+        console.error(pc.red(result.error));
+        exitCode = 2;
+        return;
+      }
+      if (opts.json === true) {
+        process.stdout.write(JSON.stringify(result.report, null, 2) + '\n');
+        return;
+      }
+      if (isInteractive) {
+        flourish('audit');
+        console.log(formatAudit(result.report, false));
+      } else {
+        process.stdout.write(formatAudit(result.report, true) + '\n');
+      }
     });
 
   // Hidden compat: `avo preview` ≡ `avo <file.md>` ≡ `avo html <file> -p`.
@@ -327,11 +387,13 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('build')
     .description('Build a static HTML site from all docs — index, sidebar nav, cross-doc links')
     .option('--out <dir>', 'output directory (default: config outDir, "dist")')
-    .action(async (opts: { out?: string }) => {
+    .option('--rich-index', 'build the rich index page — project TLDR, doc map by tag, cross-reference graph')
+    .action(async (opts: { out?: string; richIndex?: boolean }) => {
       flourish('build');
       const result = await runBuild({
         cwd: process.cwd(),
         ...(opts.out !== undefined ? { out: opts.out } : {}),
+        ...(opts.richIndex !== undefined ? { richIndex: opts.richIndex } : {}),
       });
       // Diagnostics are warnings here — `avo check` stays the gate.
       if (result.diagnostics.length > 0) {
@@ -361,13 +423,15 @@ export async function main(argv: readonly string[]): Promise<number> {
     .description('Serve the docs site locally with live reload (compat — `avo studio` includes this as Site mode)')
     .option('--port <n>', 'port to listen on (0 = pick a free port)', '4173')
     .option('--no-open', "don't open the browser")
-    .action(async (opts: { port: string; open: boolean }) => {
+    .option('--rich-index', 'serve the rich index page — project TLDR, doc map by tag, cross-reference graph')
+    .action(async (opts: { port: string; open: boolean; richIndex?: boolean }) => {
       flourish('serve');
       const parsed = Number.parseInt(opts.port, 10);
       await runServe({
         cwd: process.cwd(),
         port: Number.isNaN(parsed) ? 4173 : parsed,
         open: opts.open,
+        ...(opts.richIndex !== undefined ? { richIndex: opts.richIndex } : {}),
       });
     });
 
@@ -768,16 +832,21 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   // `avo install <tool>` — install/update the skill + one AI-tool adapter.
   const labelOf = (t: AiTool): string => AI_TOOLS.find((x) => x.id === t)?.label ?? t;
-  const runInstall = async (tool: AiTool): Promise<void> => {
+  const runInstall = async (tool: AiTool, full?: boolean): Promise<void> => {
     flourish('install');
-    const result = await installTool({ cwd: process.cwd(), tool });
+    const result = await installTool({
+      cwd: process.cwd(),
+      tool,
+      ...(full === true ? { full: true } : {}),
+    });
     for (const f of result.created) console.log(pc.green('+ ') + f);
     console.log(pc.bold(`\n${labelOf(tool)}: skill + adapter installed/updated.`));
   };
   program
     .command('install <tool>')
     .description('Install/update the Avodado skill + an AI-tool adapter (claude | cursor | copilot | windsurf)')
-    .action(async (toolArg: string) => {
+    .option('--full', 'install every block-family reference and clear a recorded project scope')
+    .action(async (toolArg: string, opts: { full?: boolean }) => {
       // `github` kept as a back-compat spelling for the Copilot adapter.
       const normalized = toolArg === 'github' ? 'copilot' : toolArg;
       const hit = AI_TOOLS.find((t) => t.id === normalized);
@@ -787,7 +856,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         exitCode = 2;
         return;
       }
-      await runInstall(hit.id);
+      await runInstall(hit.id, opts.full);
     });
 
   // `avo skill` — emit the authoring grammar as a copy-paste system prompt for

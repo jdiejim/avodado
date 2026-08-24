@@ -1,16 +1,25 @@
 /**
  * Interactive `avo init` wizard (Ink).
  *
- * Two steps: a multi-select for AI-tool adapters (space toggles, enter confirms)
- * and a single-select theme picker (with a "Custom…" option that scaffolds
- * `avodado.theme.json`). It then runs {@link runInit} and hands the result back
- * via `onComplete` so the CLI can print the summary after Ink unmounts.
+ * Three steps: a multi-select for AI-tool adapters (space toggles, enter
+ * confirms), a single-select project-type picker (tailors which block-family
+ * references install), and a single-select theme picker (with a "Custom…"
+ * option that scaffolds `avodado.theme.json`). It then runs {@link runInit}
+ * and hands the result back via `onComplete` so the CLI can print the summary
+ * after Ink unmounts.
  */
 
 import React, { useState } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
-import { runInit, AI_TOOLS, type AiTool, type InitResult } from './init.js';
+import {
+  runInit,
+  AI_TOOLS,
+  SCOPE_CHOICES,
+  type AiTool,
+  type InitResult,
+  type SkillScope,
+} from './init.js';
 
 const CUSTOM = '__custom__';
 
@@ -27,15 +36,18 @@ const THEME_ITEMS: ReadonlyArray<{ label: string; value: string }> = [
 interface InitAppProps {
   readonly cwd: string;
   readonly force?: boolean;
+  /** Pre-picked project type (from `--scope`) — skips the wizard's scope step. */
+  readonly scope?: SkillScope;
   readonly onComplete: (result: InitResult, theme: string) => void;
 }
 
-export function InitApp({ cwd, force, onComplete }: InitAppProps): React.JSX.Element {
+export function InitApp({ cwd, force, scope: presetScope, onComplete }: InitAppProps): React.JSX.Element {
   const { exit } = useApp();
-  const [step, setStep] = useState<'tools' | 'theme' | 'working'>('tools');
+  const [step, setStep] = useState<'tools' | 'scope' | 'theme' | 'working'>('tools');
   const [cursor, setCursor] = useState(0);
   // Start with nothing selected — the user toggles on only the tools they use.
   const [selected, setSelected] = useState<Set<AiTool>>(new Set());
+  const [scope, setScope] = useState<SkillScope>(presetScope ?? 'full');
 
   useInput((input, key) => {
     if (step !== 'tools') return;
@@ -60,7 +72,7 @@ export function InitApp({ cwd, force, onComplete }: InitAppProps): React.JSX.Ele
         const tool = AI_TOOLS[cursor];
         if (tool !== undefined) setSelected(new Set([tool.id]));
       }
-      setStep('theme');
+      setStep(presetScope === undefined ? 'scope' : 'theme');
     }
   });
 
@@ -73,6 +85,7 @@ export function InitApp({ cwd, force, onComplete }: InitAppProps): React.JSX.Ele
       ...(force === true ? { force: true } : {}),
       tools: AI_TOOLS.map((t) => t.id).filter((id) => selected.has(id)),
       theme,
+      scope,
       ...(custom ? { customTheme: true } : {}),
     });
     onComplete(result, theme);
@@ -102,6 +115,24 @@ export function InitApp({ cwd, force, onComplete }: InitAppProps): React.JSX.Ele
             ? 'Nothing toggled — Enter installs the highlighted tool.'
             : `${selected.size} selected — Enter to continue.`}
         </Text>
+      </Box>
+    );
+  }
+
+  if (step === 'scope') {
+    return (
+      <Box flexDirection="column">
+        <Text bold>
+          What kind of project is this?{' '}
+          <Text dimColor>{'(tailors which block references install — `avo install <tool> --full` restores the rest)'}</Text>
+        </Text>
+        <SelectInput
+          items={SCOPE_CHOICES.map((c) => ({ label: c.label, value: c.id }))}
+          onSelect={(item) => {
+            setScope(item.value);
+            setStep('theme');
+          }}
+        />
       </Box>
     );
   }

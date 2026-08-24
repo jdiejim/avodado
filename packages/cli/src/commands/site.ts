@@ -16,6 +16,7 @@
 import {
   resolveRefs,
   validateDocument,
+  type BlockDataMap,
   type Diagnostic,
   type Document,
 } from '@avodado/core';
@@ -25,6 +26,7 @@ import {
   escapeHtml,
   FAVICON_LINK,
   houseCss,
+  htmlRenderers,
   renderDocumentParts,
   type DocumentSection,
   type ThemeName,
@@ -60,6 +62,9 @@ export interface SiteOptions {
   readonly themeVars?: Readonly<Record<string, string>>;
   /** Inject the live-reload `EventSource` script (serve only, never build). */
   readonly liveReload?: boolean;
+  /** Build the rich index page: project TLDR, doc map grouped by tag, and a
+   * cross-reference graph. Off by default — the plain card grid is emitted. */
+  readonly richIndex?: boolean;
 }
 
 /** Result of {@link buildSite}. */
@@ -269,25 +274,28 @@ function pageShell(args: {
   );
 }
 
+/** Renders one index card (shared by the plain grid and the rich doc map).
+ * `tagDisplay` overrides the tag pill text (rich doc map: first-seen casing
+ * inside a group); the default renders `meta.tag` as written. */
+function indexCard(d: SiteDoc, tagDisplay?: string): string {
+  const meta = d.doc.meta;
+  const shownTag = tagDisplay ?? meta?.tag;
+  const tag = shownTag !== undefined ? `<span class="idx-tag">${escapeHtml(shownTag)}</span>` : '';
+  const title = escapeHtml(meta?.title ?? d.slug);
+  const sub = meta?.subtitle !== undefined ? `<p>${escapeHtml(meta.subtitle)}</p>` : '';
+  return (
+    `<a class="idx-card" href="${escapeHtml(d.slug)}.html">` +
+    tag +
+    `<h2>${title}</h2>` +
+    sub +
+    `<span class="idx-slug">${escapeHtml(d.slug)}</span>` +
+    `</a>`
+  );
+}
+
 /** Renders the index page's meta-card grid. */
 function indexCards(docs: readonly SiteDoc[]): string {
-  const cards = docs
-    .map((d) => {
-      const meta = d.doc.meta;
-      const tag =
-        meta?.tag !== undefined ? `<span class="idx-tag">${escapeHtml(meta.tag)}</span>` : '';
-      const title = escapeHtml(meta?.title ?? d.slug);
-      const sub = meta?.subtitle !== undefined ? `<p>${escapeHtml(meta.subtitle)}</p>` : '';
-      return (
-        `<a class="idx-card" href="${escapeHtml(d.slug)}.html">` +
-        tag +
-        `<h2>${title}</h2>` +
-        sub +
-        `<span class="idx-slug">${escapeHtml(d.slug)}</span>` +
-        `</a>`
-      );
-    })
-    .join('');
+  const cards = docs.map((d) => indexCard(d)).join('');
   return (
     `<div class="idx-head">` +
     `<div class="idx-eyebrow">${docs.length} document${docs.length === 1 ? '' : 's'}</div>` +
@@ -295,6 +303,221 @@ function indexCards(docs: readonly SiteDoc[]): string {
     `</div>` +
     `<div class="idx-grid">${cards}</div>`
   );
+}
+
+// ─── Rich index (behind `--rich-index`) ──────────────────────────────────────
+
+/**
+ * Styles for the rich index only. Inlined into the index page's main column,
+ * never into `SITE_CSS` — pages built without the flag stay byte-identical.
+ */
+const RICH_INDEX_CSS = `
+.idx-tldr{display:grid;gap:5px;margin-top:16px;font-size:13px;line-height:1.55;}
+.idx-tldr a{color:var(--charcoal);text-decoration:none;}
+.idx-tldr a:hover{color:var(--navy);}
+.idx-tldr strong{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);}
+.idx-group{margin-bottom:40px;}
+.idx-group-head{display:flex;align-items:baseline;gap:10px;font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--navy);margin:0 0 16px;}
+.idx-group-count{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--gray);}
+.idx-graph{margin-top:8px;}
+.idx-graph-legend{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:6px;font-size:13px;}
+.idx-graph-legend a{color:var(--navy);text-decoration:none;font-weight:600;}
+.idx-graph-legend a:hover{text-decoration:underline;}
+.idx-graph-legend .idx-slug{font-family:var(--font-mono);font-size:11px;color:var(--gray);margin-left:8px;}
+`;
+
+/** One group of docs on the rich index (a tag, a folder, or the fallback). */
+interface IndexGroup {
+  /** Display label — a meta tag as written, a folder name, or `Documents`. */
+  readonly label: string;
+  /** Anchor id on the group's section (`group-…`). */
+  readonly anchor: string;
+  readonly docs: readonly SiteDoc[];
+}
+
+/** First token of a compound tag badge, the family name:
+ * `ADR · Accepted · 2026-06-13` → `ADR`. */
+function tagToken(tag: string): string {
+  return (tag.split('·')[0] ?? tag).trim();
+}
+
+/** Grouping key + label: the first `meta.tag` token (case-insensitive), else
+ * the doc's top folder under the docs root, else `Documents`. Keys are
+ * namespaced so a tag and a same-named folder stay separate groups. */
+function groupOf(d: SiteDoc): { key: string; label: string } {
+  const tag = d.doc.meta?.tag?.trim();
+  if (tag !== undefined && tag.length > 0) {
+    const token = tagToken(tag);
+    if (token.length > 0) return { key: `tag:${token.toLowerCase()}`, label: token };
+  }
+  const slash = d.slug.indexOf('/');
+  if (slash > 0) {
+    const folder = d.slug.slice(0, slash);
+    return { key: `dir:${folder.toLowerCase()}`, label: folder };
+  }
+  return { key: 'default', label: 'Documents' };
+}
+
+/** Groups docs for the rich index: largest group first, ties by label. */
+function groupDocs(docs: readonly SiteDoc[]): IndexGroup[] {
+  const byKey = new Map<string, { label: string; docs: SiteDoc[] }>();
+  for (const d of docs) {
+    const { key, label } = groupOf(d);
+    const g = byKey.get(key);
+    if (g !== undefined) g.docs.push(d);
+    else byKey.set(key, { label, docs: [d] });
+  }
+  const groups = [...byKey.values()].sort(
+    (a, b) => b.docs.length - a.docs.length || (a.label < b.label ? -1 : 1),
+  );
+  const seen = new Set<string>();
+  return groups.map((g) => {
+    const base = `group-${g.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'docs'}`;
+    let anchor = base;
+    for (let n = 2; seen.has(anchor); n += 1) anchor = `${base}-${n}`;
+    seen.add(anchor);
+    return { label: g.label, anchor, docs: g.docs };
+  });
+}
+
+/** TLDR digest: one line per group — its label and doc count. A group of one
+ * also carries that doc's subtitle as its one-liner; a larger group does not
+ * (one doc's subtitle does not describe the group). Meta fields and counts
+ * only. */
+function tldrDigest(groups: readonly IndexGroup[]): string {
+  const lines = groups
+    .map((g) => {
+      const sub = g.docs.length === 1 ? g.docs[0]?.doc.meta?.subtitle : undefined;
+      const tail = sub !== undefined ? ` — ${escapeHtml(sub)}` : '';
+      const count = `${g.docs.length} document${g.docs.length === 1 ? '' : 's'}`;
+      return `<a href="#${g.anchor}"><strong>${escapeHtml(g.label)}</strong> · ${count}${tail}</a>`;
+    })
+    .join('');
+  return `<nav class="idx-tldr">${lines}</nav>`;
+}
+
+/**
+ * Renders the doc-to-doc cross-reference graph as a real `graph` block via
+ * the `@avodado/render` registry — the renderer owns all layout (auto-grid,
+ * left-to-right). An edge A→B means a block in A references an id in B; the
+ * reference count becomes the edge `weight` when above 1. Node click-through
+ * is not in the graph schema, so a legend under the graph links each doc.
+ * Returns `''` when no doc references another — the section is omitted.
+ *
+ * Known render limitation: two edges from same-row sources into one target
+ * (B→A and C→A) share the final collinear segment, so their arrowheads stack.
+ * The fix — entry-port offsets per incoming edge — belongs in the shared
+ * `ortho` router in `@avodado/render`, whose route geometry is pinned by the
+ * render tests (`ortho-lanes` pins exact path strings; the alias-parity
+ * fixtures pin whole documents) and is shared by every block-diagram
+ * renderer, so it must ship as its own render+studio change, not here.
+ */
+function crossRefGraphSection(
+  docs: readonly SiteDoc[],
+  refEdges: ReadonlyArray<{ readonly from: string; readonly to: string }>,
+): string {
+  // Ref-graph endpoints are `doc#id` (or `doc@line` when the source block has
+  // no id); ids and slugs never contain `#` or `@`, so the doc is the head.
+  const counts = new Map<string, number>();
+  for (const e of refEdges) {
+    const from = e.from.split(/[#@]/, 1)[0] ?? '';
+    const to = e.to.split('#', 1)[0] ?? '';
+    if (from.length === 0 || to.length === 0 || from === to) continue;
+    const key = `${from}\u0000${to}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  if (counts.size === 0) return '';
+
+  const involved = new Set<string>();
+  for (const key of counts.keys()) {
+    const [from, to] = key.split('\u0000');
+    if (from !== undefined) involved.add(from);
+    if (to !== undefined) involved.add(to);
+  }
+  const graphDocs = docs.filter((d) => involved.has(d.slug));
+  const data: BlockDataMap['graph'] = {
+    title: 'Cross-references',
+    nodes: graphDocs.map((d) => ({ id: d.slug, label: d.doc.meta?.title ?? d.slug })),
+    edges: [...counts.entries()].map(([key, count]) => {
+      const sep = key.indexOf('\u0000');
+      return {
+        from: key.slice(0, sep),
+        to: key.slice(sep + 1),
+        ...(count > 1 ? { weight: count } : {}),
+      };
+    }),
+  };
+  const legend = graphDocs
+    .map(
+      (d) =>
+        `<li><a href="${escapeHtml(d.slug)}.html">${escapeHtml(d.doc.meta?.title ?? d.slug)}</a>` +
+        `<span class="idx-slug">${escapeHtml(d.slug)}</span></li>`,
+    )
+    .join('');
+  return (
+    `<section class="idx-graph">` +
+    htmlRenderers.graph(data) +
+    `<ul class="idx-graph-legend">${legend}</ul>` +
+    `</section>`
+  );
+}
+
+/** Renders one group's cards. Tags that differ only in case inside a group
+ * display with the first-seen casing (`Guide` + `GUIDE` → both `Guide`). */
+function groupCards(g: IndexGroup): string {
+  const firstSeen = new Map<string, string>();
+  return g.docs
+    .map((d) => {
+      const tag = d.doc.meta?.tag;
+      if (tag === undefined) return indexCard(d);
+      const key = tag.trim().toLowerCase();
+      const display = firstSeen.get(key) ?? tag;
+      if (!firstSeen.has(key)) firstSeen.set(key, tag);
+      return indexCard(d, display);
+    })
+    .join('');
+}
+
+/** Groups are informative only when docs actually share tags. Above this
+ * singleton share, the doc map degrades to a restatement of the card grid —
+ * so it (and the digest) is dropped for the plain flat grid. */
+const SINGLETON_LIMIT = 0.6;
+
+/**
+ * Renders the rich index: TLDR head, doc map grouped by tag/folder, and the
+ * cross-reference graph. Deterministic — built only from the parsed docs.
+ *
+ * Degeneracy fallback: when more than {@link SINGLETON_LIMIT} of the groups
+ * hold a single doc (every doc tagged uniquely), grouping adds nothing — the
+ * page keeps the flat card grid with no digest and no group headers, and the
+ * rich index contributes only the cross-reference graph section (if any).
+ */
+function richIndexMain(
+  docs: readonly SiteDoc[],
+  refEdges: ReadonlyArray<{ readonly from: string; readonly to: string }>,
+): string {
+  const groups = groupDocs(docs);
+  const singletons = groups.filter((g) => g.docs.length === 1).length;
+  const degenerate = groups.length > 0 && singletons / groups.length > SINGLETON_LIMIT;
+  const head =
+    `<div class="idx-head">` +
+    `<div class="idx-eyebrow">${docs.length} document${docs.length === 1 ? '' : 's'}</div>` +
+    `<h1 class="idx-title">Documentation</h1>` +
+    (groups.length > 0 && !degenerate ? tldrDigest(groups) : '') +
+    `</div>`;
+  const body = degenerate
+    ? `<div class="idx-grid">${docs.map((d) => indexCard(d)).join('')}</div>`
+    : groups
+        .map(
+          (g) =>
+            `<section class="idx-group" id="${g.anchor}">` +
+            `<h2 class="idx-group-head">${escapeHtml(g.label)}` +
+            `<span class="idx-group-count">${g.docs.length}</span></h2>` +
+            `<div class="idx-grid">${groupCards(g)}</div>` +
+            `</section>`,
+        )
+        .join('');
+  return `<style>${RICH_INDEX_CSS}</style>` + head + body + crossRefGraphSection(docs, refEdges);
 }
 
 /**
@@ -335,7 +558,10 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
       css,
       themeVars,
       nav: sidebar(navDocs, undefined, []),
-      main: indexCards(docs),
+      main:
+        opts.richIndex === true
+          ? richIndexMain(docs, resolved.graph.edges)
+          : indexCards(docs),
       liveReload,
     }),
   });

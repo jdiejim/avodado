@@ -26,10 +26,12 @@ const FILES = [
   'reference/blocks/design-system.md',
   'reference/blocks/algorithms.md',
   'reference/blocks/agentic.md',
+  'reference/recipes.md',
   'reference/system-design.md',
   'reference/decks.md',
   'reference/intake.md',
   'reference/organizing.md',
+  'reference/style-ste.md',
 ];
 const md = (
   FILES.map((f) => readFileSync(resolve(skillDir, f), 'utf8').trimEnd()).join('\n\n---\n\n') + '\n'
