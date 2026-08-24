@@ -9,7 +9,7 @@ tag: ROADMAP · v0.1
 Avodado treats the files on disk as the only source of truth. The CLI, the coding
 agent, and the preview UI are all just editors and consumers of those files — none
 of them owns state. Documentation is plain Markdown with typed YAML blocks, so it
-reads fine with no tooling, diffs cleanly, and an LLM can edit one block surgically
+reads fine with no tooling and diffs cleanly. An LLM can edit one block surgically
 instead of regenerating a whole page.
 
 This very document is written in that format and rendered by the `avo` renderer.
@@ -113,7 +113,7 @@ rows:
 
 ## North star
 
-The blocks carry ids and reference each other by `doc#id`, so the doc set stops being
+The blocks carry ids and reference each other by `doc#id`. The doc set stops being
 a pile of isolated diagrams and becomes a navigable, typed model of the system. An
 agent can traverse it — *payments moved namespaces, update everything that references
 it* — and CI can fail on a dangling reference. The beautiful document is a side effect

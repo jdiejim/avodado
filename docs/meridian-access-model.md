@@ -10,8 +10,8 @@ Meridian needs role-based access across the Meridian apps, with access requested
 IGA. Three requirements drive everything:
 
 - **Read access per site:** a user gets read-only access to an app, scoped to the sites they belong to — granted by a per-site group.
-- **Roles as groups, handled by IGA:** anything beyond read is a role, modeled as a group and requested, approved, and provisioned through IGA — never assigned by us.
-- **Permissions differ across apps:** the same role does different things in different apps, so the actual permissions are app-specific and owned by us, not the directory.
+- **Roles as groups, handled by IGA:** anything beyond read is a role, modeled as a group. IGA handles the request, approval, and provisioning — we never assign it.
+- **Permissions differ across apps:** the same role does different things in different apps. The actual permissions are app-specific and owned by us, not the directory.
 
 ```drivers
 title: Four drivers guided the Meridian RBAC architecture
@@ -22,14 +22,14 @@ items:
   - { title: "Same SSO, one login", body: "One IdP sign-in carries the user into every Meridian app — no per-app accounts.", tag: "HOW IN: IdP token", icon: lock, accent: purple }
 ```
 
-The one sentence any design must satisfy: *"Dana is a Cycle Manager at Plant 3 —
-approved by its manager — who can also read Plant 7, and what Cycle Manager means
+The test any design must satisfy: *"Dana is a Cycle Manager at Plant 3 —
+approved by its manager — and can also read Plant 7. What Cycle Manager means
 differs between SC and WP."*
 
 ```callout
 tone: note
 title: The one-line ask
-body: Give us the IGA roles and the IdP groups behind them; we turn that into
+body: Give us the IGA roles and the IdP groups behind them. We turn that into
   the right access in every app, with no custom admin tooling.
 ```
 
@@ -79,7 +79,7 @@ Meridian apps mount one shared middleware, and a single backbone owns *what*.
 
 ```block
 title: Meridian platform landscape
-description: IGA governs and IdP provisions; four Meridian apps consume the same token through one shared auth library; one backbone owns roles, permissions, and the group→site/role mapping.
+description: IGA governs and IdP provisions. All four Meridian apps consume the same token through one shared auth library. One backbone owns roles, permissions, and the group→site/role mapping — a new app adopts the model without new access machinery.
 systemLabel: MERIDIAN ACCESS PLATFORM
 layers:
   - { label: Governance & identity }
@@ -112,7 +112,7 @@ tone: note
 title: The math, with real numbers — 13 sites, 7 roles
 body: "Directory ceiling: 13 site groups + up to 91 role groups (~105 total), in
   practice fewer because groups are minted staffed-only. Per user: a single-site cycle
-  manager carries 1 group; a reader at three plants carries 3; the pathological
+  manager carries 1 group; a reader at three plants carries 3. The pathological
   all-roles-all-sites user carries 91 — still under the ~200-group token limit. A
   realistic multi-site user lands in the 5–15 range."
 ```
@@ -121,7 +121,7 @@ body: "Directory ceiling: 13 site groups + up to 91 role groups (~105 total), in
 tone: warn
 title: Trade-offs and risks
 body: "Group multiplication is real directory surface — names, owners, reviews. Adding
-  a new persona scales poorly: one new role means a group per plant plus IGA
+  a new persona scales poorly. One new role means a group per plant, plus IGA
   roles and reviewer alignment everywhere (in S+R that's one group). Held in check by
   discipline: script-only creation, staffed-only minting, and the onboarding script
   must cover add-persona as well as add-plant."
@@ -130,9 +130,9 @@ body: "Group multiplication is real directory surface — names, owners, reviews
 ```callout
 tone: tip
 title: The fallback remains open
-body: The resolver reads "role at site X = groups matching X, or global" — so if group
-  growth ever outweighs the security value, a persona can collapse back to one global
-  group (Option 3) with rare exceptions as DB overrides. A data change, not a rebuild.
+body: The resolver reads "role at site X = groups matching X, or global". If group
+  growth ever outweighs the security value, a persona collapses back to one global
+  group (Option 3). Rare exceptions become DB overrides. A data change, not a rebuild.
 ```
 
 ## The approach — three layers
@@ -162,7 +162,7 @@ gates:
 ```flow
 id: flow-three-gates
 title: The three gates
-description: Every request runs L1 → L2 → L3 in order. Each gate passes to the next or denies independently with its own status code.
+description: Every request runs L1 → L2 → L3 in order. Each gate passes to the next or denies independently with its own status code, so a 403 tells you which layer refused.
 nodes:
   - { id: req, col: 1, row: 1, kind: start, label: "Request + JWT" }
   - { id: l1, col: 2, row: 1, kind: decision, label: "L1 · valid + provisioned?" }
@@ -189,7 +189,7 @@ no special cases, nothing to subtract.
 ## The taxonomy
 
 Two group types carry everything. The group name has a fixed shape — `Site-Role` —
-that carries its meaning: the site scopes the grant, the role names the persona, and
+that carries its meaning. The site scopes the grant, the role names the persona, and
 `-Users` is the read-only base.
 
 ```table
@@ -224,7 +224,7 @@ parts:
 ```
 
 What each persona can do per app is one editable matrix in our database. A capability
-change is a reviewable seed-file diff, not a directory change — and the matrix is
+change is a reviewable seed-file diff, not a directory change. The matrix is
 defined once per persona, not per site: `SiteA-CycleManager` and `SiteB-CycleManager`
 resolve to the same row. The group decides *where*; the matrix decides *what*.
 
@@ -253,8 +253,8 @@ body: The badges are the altitude leadership signs off at; each expands into spe
 
 ## How the API works
 
-Everything arrives on the token: site and role groups ride the `groups` claim, so L1
-and L2 are token-only (~0 ms) and L3 is the only data lookup — cached, at most one DB
+Everything arrives on the token: site and role groups ride the `groups` claim. L1
+and L2 are token-only (~0 ms), and L3 is the only data lookup — cached, at most one DB
 read per minute per user. The app only ever reads; IGA and IdP remain the
 single source of truth.
 
@@ -264,7 +264,7 @@ function, the last one the only thing that touches data:
 ```felogic
 variant: be
 title: Backend — the Depends() chain
-description: A route handler stacks three dependencies; get_current_user runs L1, require_site_access runs L2, require_permission runs L3 against a cached single-table resolution.
+description: "A route handler stacks three dependencies: get_current_user runs L1, require_site_access runs L2, and require_permission runs L3 against a cached single-table resolution. Only L3 touches data, and that read is cached — the first two gates cost nothing but token parsing."
 groups:
   - { id: svc, label: "app/core/rbac — auth chain", col: 1, row: 1, cols: 3, rows: 3, color: "#0e54a1" }
   - { id: io, label: "Egress · data", col: 4, row: 1, cols: 1, rows: 3, color: "#6b7280" }
@@ -292,7 +292,7 @@ mirrors it, hiding controls the API would 403 anyway:
 
 ```felogic
 title: Frontend — gate every control from one context
-description: AuthGuard ensures sign-in, UserProvider loads /user/user-info once into context, usePermission reads it, and components show or hide; the API is still the wall.
+description: AuthGuard ensures sign-in, UserProvider loads /user/user-info once into context, usePermission reads it, and components show or hide. The frontend only mirrors permissions the API already enforces — hiding a control is a courtesy, the 403 is the wall.
 groups:
   - { id: app, label: "React app (browser)", col: 1, row: 1, cols: 3, rows: 2, color: "#0e54a1" }
   - { id: net, label: "Egress · network", col: 4, row: 1, cols: 1, rows: 1, color: "#6b7280" }
@@ -332,8 +332,8 @@ messages:
   - { from: app, to: dana, label: "cycle powers at Plant 3 only", kind: response }
 ```
 
-Removal is the same picture run backwards: expiry, certification, or the leaver
-process takes the group away, the next token drops it, and the same gates start
+Removal is the same picture run backwards. Expiry, certification, or the leaver
+process takes the group away; the next token drops it, and the same gates start
 denying. Immediate kill switch when needed: `users.status = "inactive"` plus cache
 revoke.
 
@@ -377,9 +377,10 @@ items:
 tone: tip
 title: Read this before the stories
 body: Once the pattern is in place, no feature is done until its access is defined.
-  Every story that adds a new action must add its permission string, place it in the
-  matrix via a seed migration, and gate both API and UI — in the same story, not a
-  follow-up. RBAC stops being a project and becomes part of the definition of done.
+  Every story that adds an action must add its permission string, put it in the
+  matrix via seed migration, and gate both API and UI. This happens in the same
+  story, not a follow-up. RBAC stops being a project and becomes part of the
+  definition of done.
 ```
 
 ```userstory

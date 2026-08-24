@@ -1,13 +1,14 @@
 ```meta
 title: Avodado — all blocks
-subtitle: A reference document showing every block type the renderer supports.
+subtitle: One rendered example of every block type the renderer supports.
 tag: DEMO · v1
 ```
 
 ## Welcome
 
-The blocks below are rendered from typed YAML fences. Edit the source `.md`
-file, rerun `avo render`, and the HTML updates accordingly.
+Each section renders one block type from a typed YAML fence in this file.
+Edit the file, rerun `avo render`, and the HTML updates. Copy a fence into
+your own doc as a starting point.
 
 ```callout
 tone: tip
@@ -18,7 +19,7 @@ body: Every diagram on this page comes from a YAML block. There is no
 
 ```prose
 title: Structured prose
-lede: When raw markdown isn't enough — for instance inside a deeply structured doc — use the prose block to express headings, paragraphs, lists, and quotes explicitly.
+lede: "Use the prose block when prose must travel inside a structured layout: headings, paragraphs, lists, and quotes become typed data."
 blocks:
   - { type: h, text: Why structured prose }
   - { type: p, text: It plays nicely with the section-head wrapper and keeps content uniform across docs. }
@@ -126,7 +127,7 @@ levels:
 
 ```flow
 title: Decision flow
-description: Whether to accept a payment, with the error path going to a rejection.
+description: The flow decides whether to accept a payment; the error path ends in a rejection. An invalid token never reaches the charge step.
 nodes:
   - { id: start, col: 1, row: 1, kind: start, label: Start }
   - { id: check, col: 2, row: 1, kind: decision, label: Token valid? }
@@ -211,7 +212,7 @@ edges:
 
 ```quadrant
 title: Effort vs impact
-description: Where each candidate initiative lands; quick wins go top-left, big bets top-right.
+description: The skill ships first — the most impact for the least effort. Quick wins sit top-left, big bets top-right.
 xAxis: { label: Effort, low: Low, high: High }
 yAxis: { label: Impact, low: Low, high: High }
 items:
@@ -264,7 +265,7 @@ edges:
 
 ```uml
 title: Domain classes
-description: The order domain — class boxes with attributes and methods, relationships marked with UML arrows.
+description: Order owns its items by composition — an OrderItem cannot outlive its Order.
 classes:
   - id: order
     col: 1
@@ -296,7 +297,7 @@ rels:
 
 ```mece
 title: Why are conversions down?
-description: An issue tree — MECE breakdown of plausible causes, leaves are testable.
+description: A MECE breakdown of plausible causes. Each leaf is a claim we can test before spending on a fix.
 nodes:
   - { id: root, label: Lower conversion this quarter }
   - { id: traffic, parent: root, label: Traffic quality }
@@ -313,7 +314,7 @@ nodes:
 
 ```frontend
 title: React component tree
-description: Top-down hierarchy of the orders app — providers in purple, hooks in violet, store in orange.
+description: "In the orders app, state lives in two places only: the cart store and the useOrders hook."
 nodes:
   - { id: app, kind: root, name: App }
   - { id: auth, parent: app, kind: provider, name: AuthProvider }
@@ -330,7 +331,7 @@ nodes:
 
 ```cluster
 title: Production cluster
-description: Two namespaces (api / data) with replicas, plus the cross-namespace edges from API services to their backing stores.
+description: Two namespaces (api and data) with replicas; cross-namespace edges run from the API services to their backing stores. Only the orders service touches all three stores — it is the blast radius to watch.
 clusters:
   - { id: api, label: api namespace, kind: namespace }
   - { id: data, label: data namespace, kind: namespace }
@@ -351,7 +352,7 @@ edges:
 
 ```block
 title: Layered architecture
-description: A tiered layout — clients call the gateway, which fans out to microservices, each backed by the data layer.
+description: "Clients call the gateway, which fans out to the microservices, each backed by the data layer. The gateway is the single entry point: cross-cutting concerns live there, not in each service."
 systemLabel: E-COMMERCE PLATFORM
 layers:
   - { label: Client layer }
@@ -382,7 +383,7 @@ edges:
 
 ```infra
 title: Cloud deployment
-description: Generic cloud topology — edge → gateway → containers, backed by a database, object storage, cache and a queue worker. Two nested dashed groups show the cloud account and the private network inside it.
+description: "Edge → gateway → containers, backed by a database, object storage, a cache, and a queue worker. Two nested groups mark the cloud account and the private network inside it. The queue decouples the API from the worker: a slow job never blocks a request."
 groups:
   - { id: cloud, label: Cloud account, col: 1, row: 1, cols: 4, rows: 2, color: "#374151" }
   - { id: net, label: Private network, col: 2, row: 1, cols: 3, rows: 2, color: "#0e54a1" }
@@ -407,7 +408,7 @@ edges:
 
 ```event
 title: Order events
-description: Producers publish to topics; consumers subscribe. Solid arrows are publishes, dashed are subscriptions.
+description: Producers publish to topics and consumers subscribe. Producers never know their consumers — Analytics subscribed without a change to the Orders API.
 nodes:
   - { id: api, col: 1, row: 1, kind: producer, name: Orders API, tech: publishes }
   - { id: pays, col: 1, row: 2, kind: producer, name: Payments, tech: publishes }
@@ -427,7 +428,7 @@ edges:
 
 ```ddd
 title: Context map
-description: Bounded contexts and how they relate. Solid arrows are upstream → downstream; dashed is a shared kernel.
+description: "Sales is upstream of Billing and Shipping: its model changes ripple downstream, never the reverse."
 nodes:
   - { id: sales, col: 1, row: 1, kind: context, name: Sales, tech: core }
   - { id: billing, col: 2, row: 1, kind: context, name: Billing, tech: supporting }
@@ -441,7 +442,7 @@ edges:
 
 ```network
 title: Network zones
-description: Trust boundaries from edge to data. The red "no direct" edge marks a forbidden connection between the load balancer and the database.
+description: Trust boundaries run from edge to data. The load balancer must never reach the database directly — the red "no direct" edge marks the forbidden connection and makes the rule reviewable.
 groups:
   - { id: z1, label: DMZ, col: 1, row: 1, cols: 1, rows: 2, color: "#f7952c" }
   - { id: z2, label: Private subnet, col: 2, row: 1, cols: 1, rows: 2, color: "#0e54a1" }
@@ -462,7 +463,7 @@ edges:
 
 ```felogic
 title: Frontend logic — strategy + engine
-description: The checkout UI drives a pricing engine that selects a DiscountStrategy implementation; the API client then egresses (HTTPS) to the backend.
+description: The checkout UI drives a pricing engine that selects a DiscountStrategy implementation; the API client egresses over HTTPS to the backend. Discount rules hide behind one interface — a new promotion is a new strategy class, not an engine change.
 groups:
   - { id: app, label: App (browser), col: 1, row: 1, cols: 3, rows: 3, color: "#0e54a1" }
   - { id: net, label: Egress · network, col: 4, row: 1, cols: 1, rows: 1, color: "#6b7280" }
@@ -489,7 +490,7 @@ edges:
 
 ```belogic
 title: Backend logic — gateway + repository
-description: A controller calls OrderService, which loads via an OrderRepository, charges through a PaymentGateway interface (Stripe/Adyen adapters), and egresses to Postgres, the event bus, and external gateways.
+description: The controller calls OrderService, which loads through OrderRepository and charges through the PaymentGateway interface (Stripe and Adyen adapters). Writes go to Postgres, the event bus, and the external gateways. One interface per provider, so a Stripe outage is a config change.
 groups:
   - { id: svc, label: Service boundary, col: 1, row: 1, cols: 3, rows: 3, color: "#0e54a1" }
   - { id: infra, label: Infrastructure · egress, col: 4, row: 1, cols: 1, rows: 3, color: "#6b7280" }
@@ -518,7 +519,7 @@ edges:
 
 ```dag
 title: Build pipeline
-description: "CI stages fan out and back in. The w: 2 spans make Checkout, Build, and Deploy cover two columns."
+description: "Lint and unit tests run in parallel; both gate the build. The w: 2 spans let Checkout, Build, and Deploy cover two columns."
 nodes:
   - { id: src, col: 1, row: 1, w: 2, kind: start, label: Checkout }
   - { id: lint, col: 1, row: 2, kind: process, label: Lint }

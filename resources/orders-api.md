@@ -1,6 +1,6 @@
 ```meta
 title: ShopCo — Order placement (POST /orders)
-subtitle: How a single request authorizes payment and persists an order atomically. One synchronous transaction, idempotent retries, observable outcomes.
+subtitle: A single request authorizes payment and persists the order atomically, in one synchronous transaction. Retries are idempotent; outcomes are observable.
 tag: API · v1
 ```
 
@@ -26,7 +26,7 @@ body: Clients must send an Idempotency-Key header. A replay with the same key
 ```sequence
 id: seq-place-order
 title: One transaction wraps authorize + persist.
-lede: Time runs downward. Solid arrows are synchronous requests; dashed are responses. The order row exists as PENDING only inside the transaction — it is CONFIRMED before commit, or rolled back to CANCELLED on decline.
+lede: "An order is never visible as PENDING outside the transaction: it commits as CONFIRMED or rolls back to CANCELLED on decline. Clients can treat every read as final."
 description: Happy path shown. A declined authorization (step 6) rolls the transaction back and returns 402; the idempotency key makes a client retry safe.
 endpoint:
   method: POST

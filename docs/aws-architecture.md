@@ -1,15 +1,14 @@
 ```meta
 title: Notifications — AWS reference architecture
-subtitle: A typical VPC layout — edge (Route 53 / CloudFront), public + private subnets, microservices, RDS, cache, and S3.
+subtitle: A conventional VPC layout for the notification system — edge (Route 53 / CloudFront), public + private subnets, microservices, RDS, cache, and S3 — drawn with nested groups.
 tag: Infra · AWS · us-east-1
 ```
 
 ## Overview
 
-A conventional AWS deployment for the notification system. Public traffic enters
-through Route 53 and CloudFront, hits the load balancer in the **public subnet**,
-and is routed to microservices in the **private subnets** — which alone can reach
-the database, cache, and S3. Nested `groups` draw the VPC and its subnets.
+A conventional AWS deployment for the notification system. Only services in the
+private subnets reach the database, cache, and S3. The public subnet holds
+nothing but the load balancer, so a compromised edge never touches data.
 
 ```block
 preset: infra
@@ -52,5 +51,5 @@ edges:
 ```callout
 tone: tip
 title: How the nesting works
-body: "Draw the VPC as one big group, then the subnets as smaller groups inside it — the renderer paints larger groups first, so smaller ones nest on top. Nodes sit in grid cells (col / row); the groups just frame them."
+body: "Draw the VPC as one big group, then the subnets as smaller groups inside it. The renderer paints larger groups first, so smaller ones nest on top. Nodes sit in grid cells (col / row); the groups just frame them."
 ```

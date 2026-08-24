@@ -15,5 +15,4 @@ messages:
   - Client -> Server: request
   - Server --> Client: response
 title: Demo
-description: Soe demo
 ```

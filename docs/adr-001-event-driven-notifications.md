@@ -1,6 +1,6 @@
 ```meta
 title: ADR-001 — Event-driven notifications
-subtitle: "A simple notification system — SPA front end, stateless API, a managed event bus, a worker, and a database, all in the cloud."
+subtitle: "A notification system in the cloud — SPA front end, stateless API, a managed event bus, a worker, and a database. Producers publish to the bus; the worker fans out per-user feeds and pushes live updates over SSE."
 tag: ADR · Accepted · 2026-06-13
 ```
 
@@ -19,7 +19,7 @@ producers shouldn't have to know about — or wait for — notification delivery
 ```callout
 tone: note
 title: Decision
-body: "Producers publish domain events to a managed pub/sub topic; a worker fans them out to per-user feed rows and pushes them to open browsers over SSE. Yes — we use a managed bus (with a DLQ), not direct service-to-service calls."
+body: "Producers publish domain events to a managed pub/sub topic. A worker fans them out to per-user feed rows and pushes them to open browsers over SSE. Yes — we use a managed bus (with a DLQ), not direct service-to-service calls."
 ```
 
 ## Cloud architecture
@@ -58,7 +58,7 @@ edges:
 ## How the back end uses the event engine
 
 The API is a **pure producer** — it publishes one event and returns. Everything
-after the publish is choreography: no service calls another directly, and new
+after the publish is choreography: no service calls another directly. New
 consumers (an email digest, say) attach to the same topic without touching
 producers.
 
@@ -192,7 +192,7 @@ relations:
 
 ```sequence
 id: seq-realtime
-lede: How a back-end event reaches the bell without the front end polling. Time runs downward; dashed arrows are responses.
+lede: A back-end event reaches the bell without the front end ever polling.
 actors:
   - { id: Svc, name: Domain svc, sub: producer }
   - { id: Bus, name: Event bus, sub: managed pub/sub }
@@ -215,7 +215,7 @@ foot:
 
 ## How the front end works — and refreshes
 
-One hook owns a single SSE connection and writes to one store; the bell and the
+One hook owns a single SSE connection and writes to one store. The bell and the
 feed both **read** from that store, so the unread badge and the list never drift.
 There's no polling: the live path is SSE, and REST is only used to backfill after
 a reconnect.
