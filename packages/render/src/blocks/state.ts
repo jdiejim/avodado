@@ -7,7 +7,7 @@
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
-import { edgeLanes, ortho } from '../svg/ortho.js';
+import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
 import { edgePill } from '../svg/edgePill.js';
 import { edgeStep } from '../svg/edgeSteps.js';
@@ -97,6 +97,10 @@ export function renderState(data: BlockDataMap['state']): string {
   // edge lines first; collect labels to draw last (on top of everything)
   const labels: string[] = [];
   const lanes = edgeLanes(trans);
+  const entries = entryPortOffsets(trans, (id) => {
+    const n = byId.get(id);
+    return n !== undefined ? rectFor(n, cellW, cellH, gapX, gapY, padX, padTop) : undefined;
+  });
   trans.forEach((t, ti) => {
     const A = byId.get(t.from);
     const B = byId.get(t.to);
@@ -113,6 +117,7 @@ export function renderState(data: BlockDataMap['state']): string {
       rectFor(A, cellW, cellH, gapX, gapY, padX, padTop),
       rectFor(B, cellW, cellH, gapX, gapY, padX, padTop),
       lanes[ti] ?? 0,
+      entries[ti] ?? 0,
     );
     s += `<path d="${p.d}" fill="none" stroke="var(--charcoal)" stroke-width="1.3" marker-end="url(#gArrow)"${bp(`transitions.${ti}`)}/>`;
     const mark = numbered ? edgeStep(p, ti + 1) : edgePill(p, label);

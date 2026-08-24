@@ -37,6 +37,34 @@ describe('data-path tagging (direct edit, narrative blocks)', () => {
     expect(html).toContain('<blockquote data-bp="blocks.3">');
   });
 
+  it('prose renders inline markdown in text fields, like callout/pullquote', () => {
+    const html = renderProseBlock({
+      blocks: [
+        { type: 'h', text: 'The `avo` CLI' },
+        { type: 'p', text: 'This is **bold** and `code`.' },
+        { type: 'ul', items: ['*emphasis* item', '[link](https://example.com)'] },
+        { type: 'quote', text: 'A **strong** quote' },
+      ],
+    });
+    expect(html).toContain('<p data-bp="blocks.1">This is <strong>bold</strong> and <code>code</code>.</p>');
+    expect(html).toContain('<h3 data-bp="blocks.0">The <code>avo</code> CLI</h3>');
+    expect(html).toContain('<li data-bp="blocks.2.items.0"><em>emphasis</em> item</li>');
+    expect(html).toContain('<a href="https://example.com">link</a>');
+    expect(html).toContain('<blockquote data-bp="blocks.3">A <strong>strong</strong> quote</blockquote>');
+  });
+
+  it('prose still escapes literal HTML in every position', () => {
+    const html = renderProseBlock({
+      blocks: [
+        { type: 'p', text: '<script>alert(1)</script>' },
+        { type: 'ul', items: ['<img src=x onerror=alert(1)>'] },
+      ],
+    });
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
   it('glossary tags rows, term/def, and the terms container', () => {
     const html = renderGlossary({
       terms: [

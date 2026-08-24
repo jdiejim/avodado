@@ -25,6 +25,12 @@ export type PdfFormat = 'A4' | 'Letter';
 export interface PdfOptions {
   /** Page format. Defaults to `A4`. */
   readonly format?: PdfFormat;
+  /**
+   * Custom page width in CSS pixels. When set, it wins over `format`: the page
+   * becomes `pageWidthPx` wide with portrait A-series proportions
+   * (height = width × √2). Used by the CLI `--size` presets.
+   */
+  readonly pageWidthPx?: number;
   /** Optional page margins (CSS length strings). */
   readonly margin?: {
     readonly top?: string;
@@ -121,7 +127,15 @@ export async function toPdf(input: Document | string, opts: PdfOptions = {}): Pr
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
     const buffer = await page.pdf({
-      format: opts.format ?? 'A4',
+      // A custom pixel width wins over the named format (Playwright ignores
+      // `format` when width/height are given): portrait A-series proportions
+      // keep the page shape familiar at every preset.
+      ...(opts.pageWidthPx !== undefined
+        ? {
+            width: `${String(opts.pageWidthPx)}px`,
+            height: `${String(Math.round(opts.pageWidthPx * Math.SQRT2))}px`,
+          }
+        : { format: opts.format ?? 'A4' }),
       printBackground: true,
       ...(opts.margin !== undefined ? { margin: opts.margin } : {}),
     });

@@ -187,6 +187,7 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
       ...(theme !== undefined ? { theme: theme as ThemeName } : {}),
       ...(themeVars !== undefined ? { themeVars } : {}),
       liveReload: true, // the script hits /__events — same origin here
+      richIndex: config.richIndex, // on by default; config `false` opts out
     });
     const next = new Map<string, SitePage>();
     for (const p of site.pages) next.set(p.path, p);

@@ -63,7 +63,7 @@ export interface SiteOptions {
   /** Inject the live-reload `EventSource` script (serve only, never build). */
   readonly liveReload?: boolean;
   /** Build the rich index page: project TLDR, doc map grouped by tag, and a
-   * cross-reference graph. Off by default — the plain card grid is emitted. */
+   * cross-reference graph. On by default — `false` emits the plain card grid. */
   readonly richIndex?: boolean;
 }
 
@@ -305,11 +305,12 @@ function indexCards(docs: readonly SiteDoc[]): string {
   );
 }
 
-// ─── Rich index (behind `--rich-index`) ──────────────────────────────────────
+// ─── Rich index (default; `--no-rich-index` opts out) ────────────────────────
 
 /**
  * Styles for the rich index only. Inlined into the index page's main column,
- * never into `SITE_CSS` — pages built without the flag stay byte-identical.
+ * never into `SITE_CSS` — pages built with `--no-rich-index` stay
+ * byte-identical to the pre-rich-index output.
  */
 const RICH_INDEX_CSS = `
 .idx-tldr{display:grid;gap:5px;margin-top:16px;font-size:13px;line-height:1.55;}
@@ -404,13 +405,7 @@ function tldrDigest(groups: readonly IndexGroup[]): string {
  * is not in the graph schema, so a legend under the graph links each doc.
  * Returns `''` when no doc references another — the section is omitted.
  *
- * Known render limitation: two edges from same-row sources into one target
- * (B→A and C→A) share the final collinear segment, so their arrowheads stack.
- * The fix — entry-port offsets per incoming edge — belongs in the shared
- * `ortho` router in `@avodado/render`, whose route geometry is pinned by the
- * render tests (`ortho-lanes` pins exact path strings; the alias-parity
- * fixtures pin whole documents) and is shared by every block-diagram
- * renderer, so it must ship as its own render+studio change, not here.
+ * Fan-in: the shared `ortho` router now offsets entry ports per incoming edge, so arrowheads land at distinct points.
  */
 function crossRefGraphSection(
   docs: readonly SiteDoc[],
@@ -559,7 +554,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
       themeVars,
       nav: sidebar(navDocs, undefined, []),
       main:
-        opts.richIndex === true
+        opts.richIndex !== false
           ? richIndexMain(docs, resolved.graph.edges)
           : indexCards(docs),
       liveReload,

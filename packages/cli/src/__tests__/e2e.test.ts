@@ -137,7 +137,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build --rich-index writes a grouped index with a TLDR and a cross-reference graph', async () => {
+  it('avo build (rich index by default) writes a grouped index with a TLDR and a cross-reference graph', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(
@@ -154,7 +154,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
         '  - { ref: "a#seq-a", label: Flow }\n```\n',
     );
     try {
-      const { code } = await runBin(['build', '--rich-index'], tmp);
+      const { code } = await runBin(['build'], tmp);
       expect(code).toBe(0);
       const index = readFileSync(join(tmp, 'dist', 'index.html'), 'utf8');
       // TLDR digest line: group label + count (no subtitle on multi-doc groups).
@@ -171,9 +171,51 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build without --rich-index keeps the plain index', async () => {
+  it('avo build on all-singleton tags falls back to the flat card grid by default', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
+    writeFileSync(join(tmp, 'docs', 'b.md'), '```meta\ntitle: Doc B\ntag: API\n```\n');
+    try {
+      const { code } = await runBin(['build'], tmp);
+      expect(code).toBe(0);
+      const index = readFileSync(join(tmp, 'dist', 'index.html'), 'utf8');
+      // Every group is a singleton — grouping would restate the grid, so the
+      // rich index degrades to the flat card grid: no digest, no group
+      // headers, and (with no cross-refs here) no graph section either.
+      expect(index).toContain('<div class="idx-grid">');
+      expect(index).toContain('class="idx-card" href="a.html"');
+      expect(index).not.toContain('class="idx-tldr"');
+      expect(index).not.toContain('class="idx-group"');
+      expect(index).not.toContain('class="idx-graph"');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo build --no-rich-index keeps the plain index (no rich styles at all)', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
+    try {
+      const { code } = await runBin(['build', '--no-rich-index'], tmp);
+      expect(code).toBe(0);
+      const index = readFileSync(join(tmp, 'dist', 'index.html'), 'utf8');
+      // Not even the rich stylesheet: the plain page stays byte-identical to
+      // the pre-rich-index output.
+      expect(index).not.toContain('idx-tldr');
+      expect(index).not.toContain('idx-group');
+      expect(index).not.toContain('idx-graph');
+      expect(index).toContain('class="idx-card" href="a.html"');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo build honors richIndex: false in avodado.config.json', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'avodado.config.json'), JSON.stringify({ richIndex: false }));
     writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
     try {
       const { code } = await runBin(['build'], tmp);

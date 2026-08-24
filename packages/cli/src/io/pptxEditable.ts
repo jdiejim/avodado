@@ -71,7 +71,7 @@ const DEFAULTS: Record<string, string> = {
   navy: '233a5e',
   charcoal: '211f1a',
   slate: '4a463d',
-  gray: '8a8475',
+  gray: '6f695b',
   'light-gray': 'f2efe6',
   rule: 'e4dccb',
   highlight: '9c4a2f',

@@ -7,7 +7,7 @@
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
-import { edgeLanes, ortho } from '../svg/ortho.js';
+import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { GROUP_PADS, gridGroupsSvg, groupExtent } from '../svg/gridGroups.js';
@@ -90,12 +90,16 @@ export function renderFlowSvg(data: BlockDataMap['flow']): string {
 
   const pending: EdgeLabelPoint[] = [];
   const lanes = edgeLanes(edges);
+  const entries = entryPortOffsets(edges, (id) => {
+    const n = byId.get(id);
+    return n !== undefined ? rectFor(n) : undefined;
+  });
   s += `<g${bl('edges')}>`;
   edges.forEach((e, ei) => {
     const A = byId.get(e.from);
     const B = byId.get(e.to);
     if (!A || !B) return;
-    const p = ortho(rectFor(A), rectFor(B), lanes[ei] ?? 0);
+    const p = ortho(rectFor(A), rectFor(B), lanes[ei] ?? 0, entries[ei] ?? 0);
     const isErr = e.kind === 'error' || ERR_LABEL_RE.test(e.label ?? '');
     const stroke = isErr ? '#991b1b' : 'var(--charcoal)';
     const marker = isErr ? 'gErr' : 'gArrow';

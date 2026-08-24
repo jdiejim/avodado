@@ -7,7 +7,7 @@
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
-import { edgeLanes, ortho } from '../svg/ortho.js';
+import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
@@ -104,12 +104,16 @@ export function renderSwimlane(data: BlockDataMap['swimlane']): string {
 
   const pending: EdgeLabelPoint[] = [];
   const linkLanes = edgeLanes(links);
+  const linkEntries = entryPortOffsets(links, (id) => {
+    const n = byId.get(id);
+    return n !== undefined ? rectFor(n) : undefined;
+  });
   s += `<g${bl('links')}>`;
   links.forEach((lk, li) => {
     const A = byId.get(lk.from);
     const B = byId.get(lk.to);
     if (!A || !B) return;
-    const p = ortho(rectFor(A), rectFor(B), linkLanes[li] ?? 0);
+    const p = ortho(rectFor(A), rectFor(B), linkLanes[li] ?? 0, linkEntries[li] ?? 0);
     s += `<path d="${p.d}" fill="none" stroke="var(--charcoal)" stroke-width="1.4" marker-end="url(#gArrow)"${bp(`links.${li}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(lk.label !== undefined ? { label: lk.label } : {}), path: `links.${li}` });
   });

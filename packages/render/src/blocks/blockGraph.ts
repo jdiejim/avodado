@@ -12,7 +12,7 @@
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
-import { edgeLanes, ortho } from '../svg/ortho.js';
+import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { blockStyle, nodeGlyph, GEDGE } from '../svg/blockStyle.js';
 import { gridGroupsSvg } from '../svg/gridGroups.js';
@@ -848,11 +848,15 @@ function renderGrid(data: Data): string {
   const pending: EdgeLabelPoint[] = [];
   s += `<g${bl('edges')}>`;
   const lanes = edgeLanes(edges);
+  const entries = entryPortOffsets(edges, (id) => {
+    const n = byId.get(id);
+    return n !== undefined ? edgeAnchorRect(n.kind, rectFor(n)) : undefined;
+  });
   edges.forEach((e, ei) => {
     const A = byId.get(e.from);
     const B = byId.get(e.to);
     if (!A || !B) return;
-    const p = ortho(edgeAnchorRect(A.kind, rectFor(A)), edgeAnchorRect(B.kind, rectFor(B)), lanes[ei] ?? 0);
+    const p = ortho(edgeAnchorRect(A.kind, rectFor(A)), edgeAnchorRect(B.kind, rectFor(B)), lanes[ei] ?? 0, entries[ei] ?? 0);
     const st = GEDGE[e.kind ?? 'solid'] ?? GEDGE['solid'] ?? FALLBACK_EDGE;
     s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), err: st.err, path: `edges.${ei}` });
@@ -950,11 +954,12 @@ function renderLayered(data: Data): string {
   const pending: EdgeLabelPoint[] = [];
   s += `<g${bl('edges')}>`;
   const lanes = edgeLanes(edges);
+  const entries = entryPortOffsets(edges, (id) => rects.get(id));
   edges.forEach((e, ei) => {
     const A = rects.get(e.from);
     const B = rects.get(e.to);
     if (!A || !B) return;
-    const p = ortho(A, B, lanes[ei] ?? 0);
+    const p = ortho(A, B, lanes[ei] ?? 0, entries[ei] ?? 0);
     const st = GEDGE[e.kind ?? 'solid'] ?? GEDGE['solid'] ?? FALLBACK_EDGE;
     s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), err: st.err, path: `edges.${ei}` });

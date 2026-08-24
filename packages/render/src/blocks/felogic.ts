@@ -11,7 +11,7 @@
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
-import { edgeLanes, ortho } from '../svg/ortho.js';
+import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { nodeGlyph } from '../svg/blockStyle.js';
 import { edgeAnchorRect, renderShapedNode } from './blockGraph.js';
@@ -265,11 +265,15 @@ function renderFelogicGraph(data: Data, frame: FrameOpts): string {
   const pending: EdgeLabelPoint[] = [];
   s += `<g${bl('edges')}>`;
   const lanes = edgeLanes(edges);
+  const entries = entryPortOffsets(edges, (id) => {
+    const n = byId.get(id);
+    return n !== undefined ? anchorOf(n) : undefined;
+  });
   edges.forEach((e, ei) => {
     const A = byId.get(e.from);
     const B = byId.get(e.to);
     if (!A || !B) return;
-    const p = ortho(anchorOf(A), anchorOf(B), lanes[ei] ?? 0);
+    const p = ortho(anchorOf(A), anchorOf(B), lanes[ei] ?? 0, entries[ei] ?? 0);
     const st = feEdge(e.kind);
     s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), path: `edges.${ei}` });

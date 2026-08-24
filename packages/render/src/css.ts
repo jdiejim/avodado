@@ -17,7 +17,7 @@ html{scroll-behavior:smooth;}
   /* Default = "textbook": warm cream paper, deep academic navy, terracotta accent,
      classic serif display + body. Bigger headings for a printed-page feel. */
   --navy:#233a5e; --navy-tint:#c4d0e2; --blue:#2f5c8f; --light-blue:#e8eef6;
-  --charcoal:#211f1a; --slate:#4a463d; --gray:#8a8475; --light-gray:#f2efe6;
+  --charcoal:#211f1a; --slate:#4a463d; --gray:#6f695b; --light-gray:#f2efe6;
   --rule:#e4dccb; --highlight:#9c4a2f; --highlight-soft:#f3e4dc;
   --positive:#3f7d4e; --positive-soft:#e3efe2; --negative:#a13b2e; --negative-soft:#f4e0db;
   --purple:#5b4a8a; --purple-soft:#ebe6f3; --teal:#2f6f6a; --teal-soft:#e0eeec; --white:#fcfbf7;
@@ -29,7 +29,7 @@ html{scroll-behavior:smooth;}
 body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);font-size:15px;line-height:1.6;}
 .docskin{
   background:var(--white); color:var(--charcoal); font-family:var(--font-body); font-size:15px; line-height:1.6;
-  max-width:1180px; margin:0 auto; padding:0 56px 128px;
+  max-width:var(--page-max,1180px); margin:0 auto; padding:0 56px 128px;
 }
 .docskin .cover-bar{height:8px;background:var(--navy);margin:0 -56px 36px;}
 .docskin .cover-pad{padding:0 0 40px;margin-bottom:56px;border-bottom:1px solid var(--rule);}

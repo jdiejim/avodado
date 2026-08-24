@@ -13,7 +13,7 @@ import { dirname } from 'node:path';
 import { findConfig, loadConfig } from './io/config.js';
 import { cliVersion } from './io/version.js';
 import { runCheck } from './commands/check.js';
-import { runSingle, type SingleFormat } from './commands/single.js';
+import { parseExportSize, runSingle, type ExportSize, type SingleFormat } from './commands/single.js';
 import { runDemo } from './commands/demo.js';
 import { runCompare } from './commands/compare.js';
 import {
@@ -387,7 +387,8 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('build')
     .description('Build a static HTML site from all docs — index, sidebar nav, cross-doc links')
     .option('--out <dir>', 'output directory (default: config outDir, "dist")')
-    .option('--rich-index', 'build the rich index page — project TLDR, doc map by tag, cross-reference graph')
+    .option('--rich-index', 'build the rich index page — project TLDR, doc map by tag, cross-reference graph (default)')
+    .option('--no-rich-index', 'build the plain card-grid index instead')
     .action(async (opts: { out?: string; richIndex?: boolean }) => {
       flourish('build');
       const result = await runBuild({
@@ -423,7 +424,8 @@ export async function main(argv: readonly string[]): Promise<number> {
     .description('Serve the docs site locally with live reload (compat — `avo studio` includes this as Site mode)')
     .option('--port <n>', 'port to listen on (0 = pick a free port)', '4173')
     .option('--no-open', "don't open the browser")
-    .option('--rich-index', 'serve the rich index page — project TLDR, doc map by tag, cross-reference graph')
+    .option('--rich-index', 'serve the rich index page — project TLDR, doc map by tag, cross-reference graph (default)')
+    .option('--no-rich-index', 'serve the plain card-grid index instead')
     .action(async (opts: { port: string; open: boolean; richIndex?: boolean }) => {
       flourish('serve');
       const parsed = Number.parseInt(opts.port, 10);
@@ -557,8 +559,26 @@ export async function main(argv: readonly string[]): Promise<number> {
         'native PowerPoint text/tables/charts (editable); diagrams stay images',
       );
     }
+    if (name === 'html' || name === 'pdf') {
+      cmd.option(
+        '--size <preset>',
+        'set the page width: sm (720 px) | md (960 px) | lg (1280 px) | xl (1600 px). Without this option, the page keeps the default width.',
+      );
+    }
     cmd.action(
-      async (input: string, opts: { output?: string; preview?: boolean; editable?: boolean }) => {
+      async (
+        input: string,
+        opts: { output?: string; preview?: boolean; editable?: boolean; size?: string },
+      ) => {
+        let size: ExportSize | undefined;
+        if (opts.size !== undefined) {
+          size = parseExportSize(opts.size);
+          if (size === undefined) {
+            console.error(pc.red(`Unknown size: ${opts.size}. Use one of: sm | md | lg | xl`));
+            exitCode = 2;
+            return;
+          }
+        }
         const word = opts.preview === true ? 'preview' : name;
         if (isInteractive) {
           console.log(actionBanner(word));
@@ -571,6 +591,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           ...(opts.output !== undefined ? { output: opts.output } : {}),
           ...(opts.preview === true ? { preview: true } : {}),
           ...(opts.editable === true ? { editable: true } : {}),
+          ...(size !== undefined ? { size } : {}),
         });
         const verb = result.opened ? 'Opened' : 'Wrote';
         console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);

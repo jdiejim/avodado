@@ -17,11 +17,12 @@ export interface AvodadoConfig {
   /** Where rendered output goes (relative to project root). Defaults to `dist`. */
   readonly outDir: string;
   /** Build the rich site index (TLDR, grouped doc map, cross-reference graph).
-   * Defaults to `false`; the `--rich-index` flag also turns it on. */
+   * Defaults to `true` (absent = on); set `false` — or pass `--no-rich-index` —
+   * to keep the plain card grid. */
   readonly richIndex: boolean;
 }
 
-const DEFAULTS: AvodadoConfig = { docsDir: 'docs', outDir: 'dist', richIndex: false };
+const DEFAULTS: AvodadoConfig = { docsDir: 'docs', outDir: 'dist', richIndex: true };
 
 const CONFIG_FILES = [
   'avodado.config.ts',

@@ -27,13 +27,13 @@ const R = 9;
  */
 function ball(rating: number): string {
   const v = Math.max(0, Math.min(STEPS, Math.round(rating)));
+  // The ball is the cell's only content — without an accessible name a screen
+  // reader hears nothing. role="img" + aria-label speaks the rating.
+  const open = `<svg width="${R * 2 + 2}" height="${R * 2 + 2}" viewBox="0 0 ${R * 2 + 2} ${R * 2 + 2}" role="img" aria-label="${v} of ${STEPS}">`;
   const ring = `<circle cx="${R + 1}" cy="${R + 1}" r="${R}" fill="var(--white)" stroke="var(--navy)" stroke-width="1.4"/>`;
-  if (v === 0) return `<svg width="${R * 2 + 2}" height="${R * 2 + 2}" viewBox="0 0 ${R * 2 + 2} ${R * 2 + 2}">${ring}</svg>`;
+  if (v === 0) return `${open}${ring}</svg>`;
   if (v === STEPS) {
-    return (
-      `<svg width="${R * 2 + 2}" height="${R * 2 + 2}" viewBox="0 0 ${R * 2 + 2} ${R * 2 + 2}">${ring}` +
-      `<circle cx="${R + 1}" cy="${R + 1}" r="${R}" fill="var(--navy)"/></svg>`
-    );
+    return `${open}${ring}<circle cx="${R + 1}" cy="${R + 1}" r="${R}" fill="var(--navy)"/></svg>`;
   }
   const sweep = (v / STEPS) * 360;
   const a = ((sweep - 90) * Math.PI) / 180;
@@ -41,7 +41,7 @@ function ball(rating: number): string {
   const y = R + 1 + R * Math.sin(a);
   const large = sweep > 180 ? 1 : 0;
   const wedge = `<path d="M ${R + 1} ${R + 1} L ${R + 1} 1 A ${R} ${R} 0 ${large} 1 ${round(x)} ${round(y)} Z" fill="var(--navy)"/>`;
-  return `<svg width="${R * 2 + 2}" height="${R * 2 + 2}" viewBox="0 0 ${R * 2 + 2} ${R * 2 + 2}">${ring}${wedge}</svg>`;
+  return `${open}${ring}${wedge}</svg>`;
 }
 
 function round(v: number): number {

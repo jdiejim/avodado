@@ -161,13 +161,30 @@ describe('buildSite', () => {
     expect(deck?.html).toContain('class="deck-doc-link" href="x.html"');
   });
 
-  it('keeps the plain index unchanged when richIndex is off', () => {
-    const { pages } = buildSite(load());
+  it('keeps the plain index unchanged when richIndex is false', () => {
+    const { pages } = buildSite(load(), { richIndex: false });
     const index = pages.find((p) => p.path === 'index.html');
     expect(index?.html).not.toContain('idx-tldr');
     expect(index?.html).not.toContain('idx-group');
     expect(index?.html).not.toContain('idx-graph');
     expect(index?.html).not.toContain('<svg');
+  });
+
+  it('defaults to the rich index — byte-identical to an explicit richIndex: true', () => {
+    const docs = load();
+    const byDefault = buildSite(docs);
+    const explicit = buildSite(docs, { richIndex: true });
+    for (const p of byDefault.pages) {
+      expect(explicit.pages.find((r) => r.path === p.path)?.html).toBe(p.html);
+    }
+    // These three docs tag uniquely (GUIDE, API, folder) — the degeneracy
+    // fallback keeps the flat card grid, no digest, no group headers; only
+    // the cross-reference graph section is added.
+    const index = byDefault.pages.find((p) => p.path === 'index.html');
+    expect(index?.html).toContain('<div class="idx-grid">');
+    expect(index?.html).not.toContain('class="idx-tldr"');
+    expect(index?.html).not.toContain('class="idx-group"');
+    expect(index?.html).toContain('class="idx-graph"');
   });
 
   it('injects the live-reload script only when liveReload is set', () => {
@@ -181,7 +198,7 @@ describe('buildSite', () => {
   });
 });
 
-// ─── Rich index (`--rich-index`) ─────────────────────────────────────────────
+// ─── Rich index (default; `--no-rich-index` opts out) ────────────────────────
 
 const RICH_R1 = `\`\`\`meta
 title: Parser guide
@@ -338,7 +355,7 @@ describe('buildSite rich index', () => {
 
   it('changes only the index page — doc pages and decks stay identical', () => {
     const docs = loadRich();
-    const plain = buildSite(docs);
+    const plain = buildSite(docs, { richIndex: false });
     const rich = buildSite(docs, { richIndex: true });
     for (const p of plain.pages) {
       if (p.path === 'index.html') continue;

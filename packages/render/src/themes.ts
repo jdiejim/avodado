@@ -40,7 +40,7 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
       '--light-blue': '#e5f0ff',
       '--charcoal': '#111111',
       '--slate': '#444444',
-      '--gray': '#888888',
+      '--gray': '#6e6e6e',
       '--light-gray': '#fafafa',
       '--rule': '#eaeaea',
       '--highlight': '#0070f3',
@@ -58,7 +58,8 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
     vars: {
       '--navy': '#0f766e',
       '--blue': '#0e7490',
-      '--highlight': '#f59e0b',
+      // Deep amber: the bright #f59e0b read at 2.07:1 as text on the cream page.
+      '--highlight': '#b45309',
     },
   },
   slate: {
@@ -66,7 +67,8 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
     vars: {
       '--navy': '#334155',
       '--blue': '#475569',
-      '--highlight': '#0d9488',
+      // Darker teal: #0d9488 read at 3.62:1 as text on the cream page.
+      '--highlight': '#0d6d66',
       '--font-display': '"Helvetica Neue", Arial, sans-serif',
     },
   },
@@ -108,10 +110,11 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
       '--blue': '#6366f1',
       '--charcoal': '#1f2433',
       '--slate': '#4b5366',
-      '--gray': '#8b93a7',
+      '--gray': '#646c7e',
       '--rule': '#e6e8ef',
       '--light-gray': '#f5f6fa',
-      '--highlight': '#f59e0b',
+      // Deep amber: the bright #f59e0b read at 2.07:1 as text on the page.
+      '--highlight': '#b45309',
       '--radius': '16px',
       '--font-display': '"Helvetica Neue", Arial, sans-serif',
     },
