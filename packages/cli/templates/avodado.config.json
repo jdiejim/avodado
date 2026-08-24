@@ -1,4 +1,5 @@
 {
+  "//": "docsDir holds all docs, one group level deep: docs/<area>/<doc>.md, kebab-case names. outDir holds generated output — do not commit it.",
   "docsDir": "docs",
   "outDir": "dist"
 }

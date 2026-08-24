@@ -1,19 +1,24 @@
 # Avodado blocks — AI & agents
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Structure & emphasis — four fixed frames for one LLM agent: the
+loop (`agentloop`), one real episode (`trace`), the contract (`prompt`), and
+the window budget (`context`).
+
+**Answers**: What does the loop do? What can it call? What is the model
+told? What fills the window? What did a real run look like?
+They compose — the AI / agent recipe in `reference/recipes.md` stacks all
+four.
+
+**Not this family**: the architecture around the agent (services, queues,
+vector stores) → `block` (architecture.md; `kind: llm` / `agent` gets the
+violet card); one turn's message timing between services → `sequence`
+(flows.md).
 
 ### AI & agents
-
-Purpose-built for documenting LLM agents and pipelines: the loop itself
-(`agentloop`), what one episode actually did (`trace`), what the model is
-told (`prompt`), and what fills the window (`context`). They compose — the
-*Agent system doc* playbook in `SKILL.md` stacks all four. For the surrounding
-architecture (services, queues, vector stores) stay with `block`
-(`kind: llm`/`agent` gets the violet card); for one turn's message timing
-use `sequence`.
 
 #### `agentloop` — the canonical agent-loop diagram
 ```agentloop
@@ -33,10 +38,10 @@ memory:
   - customer profile
 stop: reply sent or ticket escalated
 ```
-The environment (`env`, default "User") sits left, the agent card centre
-(`model` renders as a mono chip, `note` as small text), tools stack right
-(capped at 5 + "+N more"), and a memory cylinder hangs beneath **only when
-`memory:` is present**. The numbered arrows are fixed — ① prompt → ② tool
+The environment (`env`, default "User") sits left, and the agent card sits
+centre (`model` renders as a mono chip, `note` as small text). Tools stack
+right (capped at 5 + "+N more"), and a memory cylinder hangs beneath **only
+when `memory:` is present**. The numbered arrows are fixed — ① prompt → ② tool
 call → ③ result (dashed) → ④ response — so keep `tools` to what the agent
 can actually call. `stop` renders as a "stops when:" foot pill. Use
 `agentloop` for the loop itself; use `block` for the deployment
@@ -81,7 +86,8 @@ vars:
   - { name: question, desc: The inbound message }
 ```
 Stacked cards, one per segment, each with a coloured role kicker (SYSTEM
-gray · USER navy · ASSISTANT violet · TOOL teal) and the text in a mono face.
+gray · USER navy · ASSISTANT violet · TOOL teal). The text renders in a mono
+face.
 Any `{{variable}}` token highlights as an amber chip; list those variables in
 `vars` so the legend explains where each value comes from. **`text`
 containing `{{ }}` must be quoted** — bare braces are YAML flow syntax. Use
@@ -99,8 +105,8 @@ segments:
 ```
 One horizontal bar sized against `window`: segments left → right, leftover
 space as a dim "free (N)" segment, and a legend row per segment with `N
-tokens · NN%`. Zero-token segments are skipped; if the sum **exceeds** the
-window the overflow renders red past a dashed boundary with an "over budget"
-chip — deliberately alarming, use it to show the failure case. `unit`
+tokens · NN%`. Zero-token segments are skipped. If the sum **exceeds** the
+window, the overflow renders red past a dashed boundary with an "over budget"
+chip. It is deliberately alarming — use it to show the failure case. `unit`
 defaults to "tokens". Use `context` for window budgets; use a waterfall
 `chart` for latency/cost cascades and a funnel `chart` for conversion.

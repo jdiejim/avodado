@@ -1,18 +1,23 @@
 # Avodado blocks — Algorithms & data structures
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Structure & emphasis — one data structure frozen at one step
+(`array`, `linkedlist`, `bintree`, `hashmap`). One step per block; freeze a
+moment, don't animate.
+**Answers**: What does the structure hold at this step, and where do the
+pointers stand?
+**Not this family**: graph algorithms (BFS / DFS / Dijkstra) → `graph` with
+node `state` + edge `weight` (charts-overviews.md); a file hierarchy →
+`tree` (charts-overviews.md); control flow → `flow` (flows.md).
 
 ### Algorithms & data structures
 
-Purpose-built for algorithm walkthroughs and CS explainers — one **step per
-block** (freeze a moment, don't animate). All four share the same `tone` enum:
-`active` (navy — the element under examination) · `visited` (light blue —
-already processed) · `target` (green — the goal) · `muted` (gray — out of
-play). For graph algorithms (BFS / DFS / Dijkstra), use `graph` with node
-`state` + edge `weight` instead.
+All four blocks share the same `tone` enum: `active` (navy — the element
+under examination) · `visited` (light blue — already processed) · `target`
+(green — the goal) · `muted` (gray — out of play).
 
 #### `array` — array cells for algorithm walkthroughs
 ```array
@@ -28,8 +33,8 @@ items:
 window: { from: 2, to: 5, label: search space }
 ```
 A row of square cells. `value` is a **string — quote numbers** (`value: "19"`).
-Indices render above each cell (`showIndex`, default true); a pointer `label`
-("i", "lo", "mid") renders **below** its cell with a ▲ tick; `window` draws a
+Indices render above each cell (`showIndex`, default true). A pointer `label`
+("i", "lo", "mid") renders **below** its cell with a ▲ tick. `window` draws a
 navy-dashed outline around a 0-based **inclusive** index range (out-of-bounds
 values clamp). Use `array` for binary search, two pointers, and sliding
 windows; use `table` for genuinely tabular data.
@@ -60,7 +65,7 @@ nodes:
   - { id: rr, value: "40", parent: r, side: right }
 ```
 Nodes reference their `parent` by id and **must** set `side: left | right`
-when they do — a parent without a side is a schema error, and so is placing
+when they do. A parent without a side is a schema error, and so is placing
 two children on one side. Parentless nodes are roots; multiple roots lay out
 side by side (handy for showing rotations). A parent centres over its
 children and single-child nodes offset toward their side, so unbalanced
@@ -79,7 +84,7 @@ entries:
   - { key: grape, value: "1", bucket: 2 }
   - { key: fig, value: "7", bucket: 5, tone: muted }
 ```
-A vertical column of bucket slots (indices `0..buckets-1`); each bucket's
+A vertical column of bucket slots (indices `0..buckets-1`). Each bucket's
 entries chain rightward as rounded `key: value` pills joined by arrows —
 collision chains read left → right in entry order. Empty buckets show a dim
 "—". Entries whose `bucket` falls outside `0..buckets-1` are **skipped**, not

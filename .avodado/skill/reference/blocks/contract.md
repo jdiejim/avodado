@@ -1,7 +1,7 @@
 # Avodado blocks — the strict field contract
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up). The
-strict field contract for all 87 blocks. Schemas reject unknown fields — use
+strict field contract for all 90 blocks. Schemas reject unknown fields — use
 exactly these. Twelve old block names remain valid as permanent aliases — see
 the **Alias table** at the bottom.
 
@@ -9,7 +9,7 @@ the **Alias table** at the bottom.
 
 Every block also carries optional `title`, `description`, `lede` (editorial text
 rendered around the diagram) and an optional top-level `id:` — **none are ever
-required**, so they're left out of the table below, which shows only the
+required**. The table below leaves them out and shows only the
 *structural* payload. `*` marks a **required** field; everything else is optional.
 **Omit optional fields you have no value for** — don't pad them with empty strings.
 `(n)` marks a **number** (don't quote it); every other value is a string.
@@ -54,7 +54,7 @@ required**, so they're left out of the table below, which shows only the
 | `trace` | `turns*[]`: `role*` `text` `thinking` `tool` `args` `result` | role: user · assistant · tool · system — `thinking` renders before `text` (assistant); `tool`+`args`+`result` shape a tool turn; multi-line strings keep their line breaks |
 | `prompt` | `segments*[]`: `kind*` `label` `text*` · `vars[]`: `name*` `desc` | kind: system · user · assistant · tool — any `{{variable}}` in `text` renders as an amber chip. **Quote `text` containing `{{ }}`** — bare braces are YAML flow syntax |
 | `context` | `window*`(n) `unit` (default tokens) · `segments*[]`: `label*` `tokens*`(n) `accent` `desc` | accent as in `drivers` — zero-token segments are skipped; leftover space renders as a dim "free (N)" segment; a sum past `window` renders in red past a dashed boundary with an "over budget" chip |
-| `tree` | `variant` `unit` · `nodes[]`: `id*` `parent` `label*` `note` `value`(n) | variant: issue (MECE issue-tree presentation). Give the nodes `value` and the hierarchy reads as a DRIVER TREE — each node shows its value and its share of its parent (`unit` suffixes them) |
+| `tree` | `variant` `unit` · `nodes[]`: `id*` `parent` `label*` `note` `role` `value`(n) | variant: issue (MECE issue-tree presentation) · org (top-down org chart — parents centered over children, `role` muted under the label). Give the nodes `value` and the hierarchy reads as a DRIVER TREE — each node shows its value and its share of its parent (`unit` suffixes them) |
 | `pyramid` | `levels[]`: `label*` `desc` | — |
 | `quadrant` | `xAxis{label, low, high}` `yAxis{label, low, high}` · `items[]`: `x*`(n, 0..1) `y*`(n, 0..1) `label*` | — |
 | `wireframe` | `screens[]`: `device` `title` `url` `label` `elements[]`: `type` `label` `rows`(n) `align` `tone` | device: desktop · browser · phone — element type: header · subheader · text · button · input · search · image · avatar · card · list · nav · tabs · divider · badge · toggle · spacer — align: l · c · r — tone: accent · muted · danger |
@@ -73,13 +73,16 @@ required**, so they're left out of the table below, which shows only the
 | `pattern` | `name*` `category` `intent` `forces[]` `solution` `structure` `note` · `participants[]`: `name*` `role` · `consequences{pros[], cons[]}` | — |
 | `gallery` | `title` `description` `cols`(n) · `items[]`: `title` `code` `lang` `caption` `accent` | a card with `code` renders a highlighted snippet; without it, a title+caption note. Responsive grid (set `cols` to fix the column count). |
 | `benchmark` | `metricLabel` `note` · `subjects*[]`: `label*` `sub` `featured`(bool) `tone` · `rows*[]`: `label*` `sub` `variants[]` `better` `cells[]`: value \| `{value, best(bool), note}` \| array of those (one per variant) | subject tone: accent (default) · muted — better: high (default) · low · none. The best value per row is **derived** from the numbers (`$0.14`, `310 ms`, `43.3%` all compare) — `best: true` only forces a tie or a non-numeric winner. `variants[]` names the conditions measured; then that subject's cell is an array, one value per condition. Missing values render as `—` |
-| `chart` | `kind` `unit` `max`(n) `budget`(n) `labels[]` · `series[]`: `label*` `accent` `values*[]`(n) · `items[]` (donut / gauge / waterfall / funnel): `label*` `value*`(n) `accent` `desc` | kind: bar · stacked · line · area · scatter · donut · gauge · radar · waterfall · funnel (default bar) — accent as in `drivers`. `labels`+`series` drive bar/stacked/line/area/scatter/radar (stacked sums each column and scales the axis to the totals; scatter plots points without joining them); `items` drives donut/gauge/waterfall/funnel (`stages[]` is a legacy synonym for funnel items). `unit` suffixes values; `max` caps the y-axis (radar: the outer ring; gauge: the full sweep, default 100); radar needs 3+ labels as axes. waterfall: bars cascade left→right, a navy TOTAL bar closes the run, `budget` draws a dashed cap (segments past it tint red + over/under chip). funnel: bands proportional to value with `↓ NN%` conversion chips. gauge: one item draws a single dial with the value in the middle, several become concentric rings |
+| `chart` | `kind` `unit` `max`(n) `budget`(n) `xLabel` `yLabel` `labels[]` · `series[]`: `label*` `accent` `values*[]`(n) · `items[]` (donut / gauge / waterfall / funnel): `label*` `value*`(n) `accent` `desc` · `points[]` (numeric scatter): `x*`(n) `y*`(n) `size`(n) `label` `accent` · `guides`: `x`(n) `y`(n) `quadrants[]` (exactly 4, TL TR BL BR) | kind: bar · stacked · line · area · scatter · donut · gauge · radar · waterfall · funnel (default bar) — accent as in `drivers`. `labels`+`series` drive bar/stacked/line/area/scatter/radar (stacked sums each column and scales the axis to the totals; scatter plots points without joining them); `items` drives donut/gauge/waterfall/funnel (`stages[]` is a legacy synonym for funnel items). scatter with `points`: both axes numeric, `size` scales the bubble (sqrt), `label` sits beside it, `guides` draws dashed reference lines + quadrant corner labels, `xLabel`/`yLabel` title the axes. `unit` suffixes values; `max` caps the y-axis (radar: the outer ring; gauge: the full sweep, default 100); radar needs 3+ labels as axes. waterfall: bars cascade left→right, a navy TOTAL bar closes the run, `budget` draws a dashed cap (segments past it tint red + over/under chip). funnel: bands proportional to value with `↓ NN%` conversion chips. gauge: one item draws a single dial with the value in the middle, several become concentric rings |
 | `heatmap` | `xLabels*[]` `unit` `min`(n) `max`(n) · `rows[]`: `label*` `values*[]`(n, one per xLabel) | tiles tint low → high on a single-hue ramp between the data min/max (or the explicit `min`/`max` bounds); short rows pad missing cells as blank tiles |
 | `sankey` | `unit` · `nodes[]`: `id*` `label` `accent` `col`(n) · `links*[]`: `from*` `to*` `value*`(n) `label` | accent as in `drivers`. Nodes are INFERRED from the links — declare `nodes` only to relabel, colour, or pin a column. A node's column is the longest link chain reaching it; `col` (1-indexed) overrides. Node height and ribbon thickness are the same scale, so volumes are comparable across the whole diagram; `unit` suffixes every figure. Values must be positive; self-links are dropped |
 | `gitgraph` | `branches[]`: `name*` `accent` · `commits*[]`: `branch` `label` `tag` `merge` `from` `kind` | node kind: normal · release · hotfix · revert — accent as in `drivers`. Commits are a SEQUENCE, one step right of the last. The first commit on an unseen branch opens its lane, forking from `from` (else the lane above); `merge: <branch>` closes that branch back into this commit's branch. `tag` draws a release marker above the dot |
 | `treemap` | `unit` · `items*[]`: `label*` `value*`(n) `accent` `desc` | accent as in `drivers`. Tiles are laid out squarified (near-square, biggest first), so areas are comparable by eye; each shows its value and share of the total. Label, value and `desc` appear only where the tile is big enough to hold them — the tooltip always carries all three |
 | `packet` | `width`(n, default 32) · `fields*[]`: `label*` `bits*`(n) `accent` `value` | accent as in `drivers`. Cell width IS the bit count; a field that doesn't fit the rest of its row wraps and continues on the next one (marked `→` / `(cont.)`). The footer totals bits and bytes and flags a partial last row |
 | `venn` | `sets*[]` (2–3): `label*` `accent` `desc` · `shared[]`: `sets*[]` `label*` | accent as in `drivers`. Positions are fixed (two circles, or three on a triangle) — a Venn names regions rather than measuring them. `shared.sets` matches set LABELS (case-insensitive): two names land in that lens, all three in the middle |
+| `fishbone` | `effect*` · `causes*[]` (1–8): `label*` `items[]` (≤8) | `effect` is the head — the problem or outcome. Each cause is one bone; `items` are the specific causes along it. The renderer alternates bones above and below the spine and spaces them so labels never collide |
+| `storymap` | `backbone*[]` (1–10): `label*` `note` · `slices*[]` (1–6): `label*` `cells*[]` | Each slice's `cells` must have exactly one entry per backbone step, in backbone order — `[]` for an empty cell. A cell is a list of ≤6 cards; a card is a string or `{ title*, tag }` |
+| `slopegraph` | `left*` `right*` · `unit` · `items*[]` (2–20): `label*` `from*`(n) `to*`(n) `accent` | accent as in `drivers`. `left`/`right` are the column headers (quote years: `"2023"`). Position is the value on a shared linear scale; the renderer nudges colliding labels apart, so ties and clusters stay readable. Crossing lines are the story, not an error |
 | `wardley` | `components*[]`: `id` `label*` `x*`(n, 0–1) `y*`(n, 0–1) `kind` `movement`(n) · `links[]`: `from*` `to*` `label` | kind: user · component · commodity · build · buy. `x` is evolution (0 genesis → 1 commodity), `y` is visibility to the user (0 invisible → 1 visible); both clamp to 0–1. `movement` draws a dashed arrow that far along the evolution axis. `links` join components by `id` (else `label`) into the value chain |
 | `harvey` | `columns*[]` · `rows*[]`: `label*` `ratings*[]`(n, 0–4) `note` `weight`(n) · `recommend` `scale`[2] | Ratings are 0–4 (empty → full ball). A row shorter than `columns` reads as **not assessed** (`—`), not as a zero. `weight` multiplies a row in the WEIGHTED footer, which is computed — so the marked `recommend` column and the arithmetic can be seen to agree. `scale` labels the two ends in the legend. Use `benchmark` for measured numbers, `harvey` for judgements |
 | `scqa` | `situation` `complication` `question` `answer` · `because[]` | All fields optional, but the order is fixed — the block's job is to keep it. The first three render as a numbered ladder; `answer` is the recommendation and gets the filled card, with `because` as supporting points beneath it. Inline Markdown works in every field |
@@ -117,7 +120,7 @@ required**, so they're left out of the table below, which shows only the
   grammar can't say.
 - **Grid blocks** (`flow` · `state` · `dfd` · `c4` · `uml` · `graph` ·
   `felogic` · grid-mode `block`) place
-  nodes on a 1-indexed `col`/`row` grid — but coordinates are **optional**: omit
+  nodes on a 1-indexed `col`/`row` grid — but coordinates are **optional**. Omit
   them on every node and the engine auto-lays the graph out from the edges
   (*quick mode*). Place **all or none** — if any node is missing a coordinate the
   auto-layout replaces every placement. `groups` require placed nodes (zones are
@@ -125,14 +128,14 @@ required**, so they're left out of the table below, which shows only the
   `layers:` to `block` switches it to band
   layout, where nodes use `layer:` (an index) instead of `col`/`row`.
 - **Quick mode runs left-to-right.** Ranks become columns, so the diagram grows
-  sideways instead of down the page — a tall stack of ranks outgrows both the
+  sideways instead of down the page. A tall stack of ranks outgrows both the
   page column and the slide stage. Set `dir: TB` on `flow` · `state` · `dfd` ·
   `c4` · `felogic` · `block` for the top-to-bottom layout instead (`dir: LR` is
-  the default and never needs writing). `dir` only steers the auto-layout —
-  with coordinates on the nodes it does nothing, so **place a diagram
-  horizontally yourself**: put the progression on `col` and the branches on
-  `row`. `graph` has no `dir` (its edges already use that key) and `uml` always
-  ranks top-to-bottom.
+  the default and never needs writing).
+- **`dir` only steers the auto-layout** — with coordinates on the nodes it does
+  nothing. To **place a diagram horizontally yourself**, put the progression on
+  `col` and the branches on `row`. `graph` has no `dir` (its edges already use
+  that key) and `uml` always ranks top-to-bottom.
 - **Numbers stay unquoted:** coordinates (`col` `row` `lane` `w`), `points`,
   `replicas`, `group`, `start`/`span`, quadrant `x`/`y`, and `emotion[]`. Quote
   anything string-like that *looks* numeric (`version`, `delta: "0"`) — see *YAML pitfalls* in `SKILL.md`.
@@ -153,9 +156,9 @@ A few fields are easy to misuse. Lock these in.
 
 ## Alias table — old spellings that keep working
 
-These 12 former block types are **permanent aliases**: the old fence tag
+These 12 former block types are **permanent aliases**. The old fence tag
 parses to its canonical type with the patch below injected (only for keys the
-body doesn't set — the body always wins), and renders byte-identically to how
+body doesn't set — the body always wins). It renders byte-identically to how
 it always did. `avo check` surfaces the mapping as a `W_ALIAS_TYPE` warning —
 informational only; the old spelling keeps working. Use the canonical name +
 patch in new blocks.

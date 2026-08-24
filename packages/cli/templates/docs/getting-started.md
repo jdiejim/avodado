@@ -8,7 +8,7 @@ tag: GUIDE · START HERE
 
 Avodado is **documentation-as-code**: a doc is plain Markdown with typed, fenced
 YAML blocks, and the `.md` file on disk is the single source of truth. Prose stays
-prose; anything structured — a diagram, a table, a roadmap, a user story — goes in
+prose. Anything structured — a diagram, a table, a roadmap, a user story — goes in
 a block that renders to clean HTML, slides, or PDF.
 
 ```callout
@@ -49,7 +49,7 @@ That block renders as a real SVG sequence diagram — here it is live:
 ```sequence
 id: seq-gs-checkout
 title: Place an order
-lede: Time runs downward. Solid arrows are calls; dashed are responses.
+lede: The client gets 201 only after the order row is in Postgres.
 endpoint: { method: POST, path: /orders }
 actors:
   - { id: Client, name: Client, sub: web / mobile }

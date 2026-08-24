@@ -1,9 +1,15 @@
 # Avodado blocks — Data model
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Network — entities joined by cardinality edges, no nesting
+(`erd`).
+**Answers**: What shape is the data at rest, and how do the entities relate?
+**Not this family**: data in motion → `dfd` (flows.md) or `sankey`
+(charts-overviews.md); classes with behavior → `uml` (architecture.md);
+example rows the reader should scan → `table` (tables-data.md).
 
 ### Data model
 

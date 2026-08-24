@@ -1,9 +1,23 @@
 # Avodado blocks — Flows, sequences & state
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**:
+
+- Exchange — actors trading messages over time (`sequence`)
+- Flow — steps and branches through a graph (`flow`, `dfd`, `swimlane`,
+  `cycle`, `gitgraph`)
+- Modes — one object, discrete states (`state`)
+- plus one Structure block for linear procedures (`steps`)
+
+**Answers**: What calls what, in what order? What happens when this fails?
+What states can it be in? What are the exact steps?
+**Not this family**: topology at rest → `c4` / `block` (architecture.md) or
+`graph` (charts-overviews.md); how much moves, not whether it moves →
+`sankey` (charts-overviews.md); tasks with owner and status → `statustable`
+(planning.md).
 
 ### Sequence & state
 
@@ -99,9 +113,9 @@ the top-to-bottom layout instead (auto-layout only — with coordinates on the
 nodes, `dir` does nothing).
 
 Optional `groups` draw dashed zone wrappers around cell ranges — one shape on
-every grid diagram (`flow`, `dfd`, `state`, `c4`, `block`): `col`/`row` anchor
+every grid diagram (`flow`, `dfd`, `state`, `c4`, `block`). `col`/`row` anchor
 the top-left cell, `cols`/`rows` span (default 1), `label` sits in the corner,
-optional `color` tints the outline:
+and optional `color` tints the outline:
 ```flow
 title: Admission control
 groups:
@@ -160,9 +174,9 @@ commits:
   - { branch: release, label: rc fixes }
   - { merge: release, label: ship, tag: v1.2.0, kind: release }
 ```
-The first commit on a branch nobody has seen yet OPENS its lane, forking from
-`from` (or from the lane above it); `merge: <branch>` closes that branch back
-into the branch the commit is on. `tag` draws a release marker above the dot,
+The first commit on a new branch OPENS its lane, forking from `from` (or from
+the lane above it). `merge: <branch>` closes that branch back into the branch
+the commit is on. `tag` draws a release marker above the dot,
 and `kind` is `normal | release | hotfix | revert` (a hotfix dot is ringed, a
 revert dot hollow). Declare `branches` to fix the lane order and colours.
 
@@ -200,7 +214,7 @@ items:
     code: git tag v1.4.1 && git push --tags
     lang: bash
 ```
-A vertical stepper — numbered circles joined by a rule; each step has a bold
+A vertical stepper — numbered circles joined by a rule. Each step has a bold
 `title`, an optional `body`, an optional `code` command (rendered on the dark
 code surface, with `lang` as its header), and an italic `note`. Use `steps` for
 *linear* procedures a human executes in order; use `flow`/`swimlane` when the

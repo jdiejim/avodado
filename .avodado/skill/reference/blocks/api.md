@@ -1,9 +1,16 @@
 # Avodado blocks — API reference
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Structure & emphasis — one contract card per operation
+(`endpoint`) — plus Exchange at the byte level (`packet`).
+**Answers**: What can I call, with what, and what comes back? What does the
+wire carry, bit by bit?
+**Not this family**: how calls compose over time → `sequence` (flows.md);
+an error-code listing → `table` (tables-data.md); the API already has an
+OpenAPI spec → generate the cards with `avo sync openapi`.
 
 ### API reference
 

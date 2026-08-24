@@ -1,13 +1,13 @@
 ```meta
 title: Avodado — all blocks
-subtitle: A reference document showing every block type the renderer supports.
+subtitle: One rendered example of every block type the renderer supports.
 tag: DEMO · v1
 ```
 
 ## Welcome
 
-The blocks below are rendered from typed YAML fences. Edit the source `.md`
-file, rerun `avo html`, and the HTML updates accordingly.
+Each section renders one block type from a typed YAML fence in this file.
+Copy a fence into your own doc as a starting point.
 
 ```callout
 tone: tip
@@ -18,7 +18,7 @@ body: Every diagram on this page comes from a YAML block. There is no
 
 ```prose
 title: Structured prose
-lede: When raw markdown isn't enough — for instance inside a deeply structured doc — use the prose block to express headings, paragraphs, lists, and quotes explicitly.
+lede: "Use the prose block when prose must travel inside a structured layout: headings, paragraphs, lists, and quotes become typed data."
 blocks:
   - { type: h, text: Why structured prose }
   - { type: p, text: It plays nicely with the section-head wrapper and keeps content uniform across docs. }
@@ -30,7 +30,7 @@ blocks:
 title: A few terms
 terms:
   - { term: Idempotent, def: A call that produces the same outcome on a replay. }
-  - { term: SLO, def: A service-level objective the team commits to. }
+  - { term: SLO, def: A service-level objective the team commits to., avoid: [uptime target, service promise] }
   - { term: Saga, def: A long-running transaction split across services. }
 ```
 
@@ -126,7 +126,7 @@ levels:
 
 ```flow
 title: Decision flow
-description: Whether to accept a payment, with the error path going to a rejection.
+description: The flow decides whether to accept a payment; the error path ends in a rejection. An invalid token never reaches the charge step.
 nodes:
   - { id: start, col: 1, row: 1, kind: start, label: Start }
   - { id: check, col: 2, row: 1, kind: decision, label: Token valid? }
@@ -211,7 +211,7 @@ edges:
 
 ```quadrant
 title: Effort vs impact
-description: Where each candidate initiative lands; quick wins go top-left, big bets top-right.
+description: The skill ships first — the most impact for the least effort. Quick wins sit top-left, big bets top-right.
 xAxis: { label: Effort, low: Low, high: High }
 yAxis: { label: Impact, low: Low, high: High }
 items:
@@ -246,7 +246,7 @@ links:
 
 ```gitgraph
 title: Release model
-description: "Commits are a sequence; the first commit on a new branch opens its lane, and merge closes it back."
+description: "Release branches are short-lived: cut, ship, merge back."
 branches:
   - { name: main, accent: navy }
   - { name: release, accent: teal }
@@ -278,7 +278,7 @@ edges:
 
 ```uml
 title: Domain classes
-description: The order domain — class boxes with attributes and methods, relationships marked with UML arrows.
+description: Order owns its items by composition — an OrderItem cannot outlive its Order.
 classes:
   - id: order
     col: 1
@@ -311,7 +311,7 @@ rels:
 ```tree
 variant: issue
 title: Why are conversions down?
-description: An issue tree — MECE breakdown of plausible causes, leaves are testable.
+description: A MECE breakdown of plausible causes. Each leaf is a claim we can test before spending on a fix.
 nodes:
   - { id: root, label: Lower conversion this quarter }
   - { id: traffic, parent: root, label: Traffic quality }
@@ -326,9 +326,22 @@ nodes:
   - { id: p2, parent: pricing, label: Shipping fee surprise }
 ```
 
+```tree
+variant: org
+title: Platform group
+description: "The same tree block as an org chart: parents center over their children, role under the name."
+nodes:
+  - { id: dana, label: Dana Reyes, role: VP Engineering }
+  - { id: sam, parent: dana, label: Sam Ortiz, role: "Manager, Core" }
+  - { id: kim, parent: dana, label: Kim Lau, role: "Manager, Infra" }
+  - { id: ada, parent: sam, label: Ada Boone, role: Frontend lead }
+  - { id: raj, parent: sam, label: Raj Patel, role: Backend lead }
+  - { id: mei, parent: kim, label: Mei Tanaka, role: SRE lead }
+```
+
 ```frontend
 title: React component tree
-description: Top-down hierarchy of the orders app — providers in purple, hooks in violet, store in orange.
+description: "In the orders app, state lives in two places only: the cart store and the useOrders hook."
 nodes:
   - { id: app, kind: root, name: App }
   - { id: auth, parent: app, kind: provider, name: AuthProvider }
@@ -345,7 +358,7 @@ nodes:
 
 ```cluster
 title: Production cluster
-description: Two namespaces (api / data) with replicas, plus the cross-namespace edges from API services to their backing stores.
+description: Two namespaces (api and data) with replicas; cross-namespace edges run from the API services to their backing stores. Only the orders service touches all three stores — it is the blast radius to watch.
 clusters:
   - { id: api, label: api namespace, kind: namespace }
   - { id: data, label: data namespace, kind: namespace }
@@ -366,7 +379,7 @@ edges:
 
 ```block
 title: Layered architecture
-description: A tiered layout — clients call the gateway, which fans out to microservices, each backed by the data layer.
+description: "Clients call the gateway, which fans out to the microservices, each backed by the data layer. The gateway is the single entry point: cross-cutting concerns live there, not in each service."
 systemLabel: E-COMMERCE PLATFORM
 layers:
   - { label: Client layer }
@@ -398,7 +411,7 @@ edges:
 ```block
 preset: infra
 title: Cloud deployment
-description: Generic cloud topology — edge → gateway → containers, backed by a database, object storage, cache and a queue worker. Two nested dashed groups show the cloud account and the private network inside it.
+description: "Edge → gateway → containers, backed by a database, object storage, a cache, and a queue worker. Two nested groups mark the cloud account and the private network inside it. The queue decouples the API from the worker: a slow job never blocks a request."
 groups:
   - { id: cloud, label: Cloud account, col: 1, row: 1, cols: 4, rows: 2, color: "#374151" }
   - { id: net, label: Private network, col: 2, row: 1, cols: 3, rows: 2, color: "#0e54a1" }
@@ -424,7 +437,7 @@ edges:
 ```block
 preset: event
 title: Order events
-description: Producers publish to topics; consumers subscribe. Solid arrows are publishes, dashed are subscriptions.
+description: Producers publish to topics and consumers subscribe. Producers never know their consumers — Analytics subscribed without a change to the Orders API.
 nodes:
   - { id: api, col: 1, row: 1, kind: producer, name: Orders API, tech: publishes }
   - { id: pays, col: 1, row: 2, kind: producer, name: Payments, tech: publishes }
@@ -445,7 +458,7 @@ edges:
 ```block
 preset: ddd
 title: Context map
-description: Bounded contexts and how they relate. Solid arrows are upstream → downstream; dashed is a shared kernel.
+description: "Sales is upstream of Billing and Shipping: its model changes ripple downstream, never the reverse."
 nodes:
   - { id: sales, col: 1, row: 1, kind: context, name: Sales, tech: core }
   - { id: billing, col: 2, row: 1, kind: context, name: Billing, tech: supporting }
@@ -460,7 +473,7 @@ edges:
 ```block
 preset: network
 title: Network zones
-description: Trust boundaries from edge to data. The red "no direct" edge marks a forbidden connection between the load balancer and the database.
+description: Trust boundaries run from edge to data. The load balancer must never reach the database directly — the red "no direct" edge marks the forbidden connection and makes the rule reviewable.
 groups:
   - { id: z1, label: DMZ, col: 1, row: 1, cols: 1, rows: 2, color: "#f7952c" }
   - { id: z2, label: Private subnet, col: 2, row: 1, cols: 1, rows: 2, color: "#0e54a1" }
@@ -481,7 +494,7 @@ edges:
 
 ```felogic
 title: Frontend logic — strategy + engine
-description: The checkout UI drives a pricing engine that selects a DiscountStrategy implementation; the API client then egresses (HTTPS) to the backend.
+description: The checkout UI drives a pricing engine that selects a DiscountStrategy implementation; the API client egresses over HTTPS to the backend. Discount rules hide behind one interface — a new promotion is a new strategy class, not an engine change.
 groups:
   - { id: app, label: App (browser), col: 1, row: 1, cols: 3, rows: 3, color: "#0e54a1" }
   - { id: net, label: Egress · network, col: 4, row: 1, cols: 1, rows: 1, color: "#6b7280" }
@@ -509,7 +522,7 @@ edges:
 ```felogic
 variant: be
 title: Backend logic — gateway + repository
-description: A controller calls OrderService, which loads via an OrderRepository, charges through a PaymentGateway interface (Stripe/Adyen adapters), and egresses to Postgres, the event bus, and external gateways.
+description: The controller calls OrderService, which loads through OrderRepository and charges through the PaymentGateway interface (Stripe and Adyen adapters). Writes go to Postgres, the event bus, and the external gateways. One interface per provider, so a Stripe outage is a config change.
 groups:
   - { id: svc, label: Service boundary, col: 1, row: 1, cols: 3, rows: 3, color: "#0e54a1" }
   - { id: infra, label: Infrastructure · egress, col: 4, row: 1, cols: 1, rows: 3, color: "#6b7280" }
@@ -539,7 +552,7 @@ edges:
 ```flow
 variant: dag
 title: Build pipeline
-description: "CI stages fan out and back in, left to right. The w: 2 span makes Deploy cover two columns."
+description: "Lint and unit tests run in parallel; both gate the build. The w: 2 span lets Deploy cover two columns."
 nodes:
   - { id: src, col: 1, row: 1, kind: start, label: Checkout }
   - { id: lint, col: 2, row: 1, kind: process, label: Lint }
@@ -558,7 +571,7 @@ edges:
 
 ```archmap
 title: Retail platform — target architecture
-description: "The capability landscape by domain: white tiles are current, dashed blue are to be built, green are new, dashed red are gaps, gray are retiring."
+description: The legacy ESB retires once the event bus carries its traffic.
 cols: 3
 areas:
   - label: Customer channels
@@ -705,6 +718,31 @@ columns:
   - { label: To do, cards: [ { title: Auth, tag: backend }, { title: Login UI } ] }
   - { label: Doing, cards: [ { title: Checkout, tag: api } ] }
   - { label: Done, cards: [ { title: DB schema } ] }
+```
+
+## Story map
+
+```storymap
+title: Checkout story map
+description: "The backbone of activities across the top; each release slice holds the cards that ship under each step."
+backbone:
+  - { label: Browse, note: Find the product }
+  - { label: Decide, note: Trust the price }
+  - { label: Pay }
+  - { label: Confirm }
+slices:
+  - label: MVP
+    cells:
+      - [Search box]
+      - ["Product page", "Price incl. tax"]
+      - [{ title: Card payment, tag: risky }]
+      - [Order email]
+  - label: Later
+    cells:
+      - ["Filters", "Saved carts"]
+      - [Reviews]
+      - [{ title: Wallet pay, tag: spike }]
+      - []
 ```
 
 ## Task tracker
@@ -884,7 +922,7 @@ items:
 
 ```scorecard
 title: Queue technology choice
-description: "Weighted 0-5 scoring across the four criteria that mattered."
+description: "Weighted 0-5 scoring across the four criteria that mattered. Throughput and operational cost carry double weight; SQS wins on the weighted total."
 criteria:
   - { label: Throughput, weight: 2 }
   - { label: Operational cost, weight: 2 }
@@ -1075,6 +1113,17 @@ shared:
   - { sets: [Platform, Product], label: Release process }
 ```
 
+```fishbone
+title: Why checkout latency rose
+description: "One effect at the head, cause categories as bones, specific causes along each bone."
+effect: p95 checkout over 2s
+causes:
+  - { label: Code, items: [Sync capture call, N+1 cart query] }
+  - { label: Infrastructure, items: [Undersized DB pool, No read replica] }
+  - { label: Traffic, items: [Flash-sale spikes] }
+  - { label: Process, items: [No load test before release] }
+```
+
 ```chart
 title: Queue vendors at a glance
 kind: radar
@@ -1082,6 +1131,37 @@ labels: [Throughput, Latency, Cost, Ops burden, Ecosystem]
 series:
   - { label: Kafka, accent: navy, values: [5, 4, 2, 2, 5] }
   - { label: SQS, accent: amber, values: [3, 3, 5, 5, 3] }
+```
+
+```chart
+title: Fix candidates by effort and impact
+description: "Bubble area is the affected traffic share; the dashed guides cut the plot into four quadrants."
+kind: scatter
+xLabel: Effort (weeks)
+yLabel: Impact
+points:
+  - { x: 1, y: 8, size: 30, label: Cache headers }
+  - { x: 3, y: 9, size: 80, label: Read replica }
+  - { x: 2.5, y: 4, size: 15, label: Retry budget }
+  - { x: 6, y: 3, size: 20, label: Full rewrite }
+  - { x: 2, y: 2, label: New font }
+guides:
+  x: 4
+  y: 5
+  quadrants: [Do first, Plan well, Fill in, Avoid]
+```
+
+```slopegraph
+title: Support volume by channel
+description: "Each line is one channel between two years; the slope is the message, and the accented line carries the story."
+left: "2023"
+right: "2025"
+unit: "%"
+items:
+  - { label: Email, from: 48, to: 22 }
+  - { label: Chat, from: 20, to: 45, accent: teal }
+  - { label: Phone, from: 32, to: 33 }
+  - { label: Self-serve, from: 0, to: 12 }
 ```
 
 ## Latency budget
@@ -1117,7 +1197,7 @@ rows:
 ```figure
 src: https://avodado.dev/logo.png
 alt: The Avodado logo
-caption: "A figure block: an image in a bordered card, with an optional caption and width cap."
+caption: "The Avodado logo, capped at 420 px."
 width: 420
 ```
 
@@ -1248,7 +1328,7 @@ because:
 
 ```scenarios
 title: Three ways next year goes
-description: "Cases in columns; read across a driver row to see how much of the outcome hangs on it."
+description: The three cases span $13M of FY27 revenue.
 drivers: [Capture moved async, Conversion recovery, Volume growth]
 outcomeLabel: FY27 revenue
 cases:
@@ -1272,7 +1352,7 @@ recommend: SQS
 
 ```wardley
 title: Where to build, where to buy
-description: "Visibility to the user up, evolution right — the map makes both judgements explicit."
+description: "Build the scoring model, buy the warehouse — only the model is still evolving."
 components:
   - { id: analyst, label: Analyst, x: 0.72, y: 0.96, kind: user }
   - { id: reports, label: Reporting UI, x: 0.42, y: 0.74 }
@@ -1490,7 +1570,7 @@ entries:
 
 ```agentloop
 title: Support triage agent
-description: One loop turn — the agent reads the ticket, calls tools, and replies or escalates.
+description: "One loop turn — the agent reads the ticket, calls tools, and replies or escalates. The loop ends only two ways: a reply is sent or a human gets the ticket."
 agent:
   name: Triage agent
   model: claude-sonnet-4-6
@@ -1510,7 +1590,7 @@ stop: reply sent or ticket escalated
 
 ```trace
 title: Password reset — one episode
-description: What the triage agent actually did, turn by turn.
+description: "One real episode: the agent checked delivery logs before blaming spam."
 turns:
   - role: user
     text: I never get the reset email.
@@ -1591,10 +1671,10 @@ items:
 
 ## Older spellings still work
 
-Twelve former block types merged into canonical blocks, but the old fence tags
-remain permanent aliases — they parse, validate, and render exactly as before
-(`avo check` just notes the mapping as a `W_ALIAS_TYPE` warning). The four
-fences below use the old spellings on purpose:
+Twelve old block types merged into canonical blocks; their fence tags remain
+permanent aliases. They parse, validate, and render as before — `avo check`
+notes the mapping with a `W_ALIAS_TYPE` warning. The four fences below use the
+old spellings on purpose:
 
 ```waterfall
 title: "The old waterfall tag — now chart (kind: waterfall)"

@@ -1,9 +1,19 @@
 # Avodado blocks — Business, decisions & access
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Grid — compare, score, locate (`matrix`, `scorecard`, `harvey`,
+`swot`, `scenarios`); Structure & emphasis — decision and strategy cards
+(`options`, `spec`, `envelope`, `drivers`, `anatomy`, `composition`, `scqa`,
+`okr`, `persona`, `team`, `wardley`).
+**Answers**: How do the options compare, and which won? Who may do what?
+What forces shaped this design? Do the numbers pencil out?
+**Not this family**: the cells are measured numbers → `benchmark`
+(tables-data.md); one option's tradeoffs alone → `proscons` (planning.md);
+the decision itself in one line → `callout` (narrative.md); day-to-day task
+state → `statustable` (planning.md).
 
 ### Access control / RBAC
 
@@ -61,7 +71,7 @@ items:
 ```
 A grid of "the N drivers/requirements behind this." `icon` is one of a fixed set
 (location · shield · grid · lock · key · user · clock · check · database · bolt ·
-flag · doc · link · eye · server · layers); `accent` colours the top edge + icon.
+flag · doc · link · eye · server · layers). `accent` colours the top edge + icon.
 
 #### `team` — people cards (who owns what)
 ```team
@@ -102,7 +112,7 @@ options:
   - { label: RabbitMQ, scores: [3, 3, 4, 4] }
 ```
 Criteria are rows (an `×N` chip marks weights other than 1), options are
-columns, and the footer TOTAL row carries the weighted sum per option — the
+columns, and the footer TOTAL row carries the weighted sum per option. The
 winner's header and total are highlighted with a WINNER chip (ties highlight
 all). Scores are plain numbers, 0-5 by convention. Use `scorecard` when the
 decision was *scored*; use `options` for qualitative pros / cons / verdict
@@ -179,7 +189,7 @@ items:
       - { kr: Ship SSO + audit log, progress: 1, status: done }
       - { kr: SOC 2 Type II report issued, progress: 0.2, status: off-track }
 ```
-One card per objective; each key result renders a progress bar (`progress` is a
+One card per objective. Each key result renders a progress bar (`progress` is a
 plain number 0..1) coloured by `status` — done / on-track green, at-risk amber,
 off-track red, no status navy. Use `okr` for goal tracking; use `slo` for
 reliability targets and `statustable` for task-level work.
@@ -203,17 +213,17 @@ personas:
     tools: [Linear, Notion]
     accent: teal
 ```
-A 2-column grid of cards — initials avatar (from `name`), role, an italic
-`quote` with an accent bar, then GOALS / FRUSTRATIONS lists and TOOLS chips
+A 2-column grid of cards: initials avatar (from `name`), role, then an italic
+`quote` with an accent bar. GOALS / FRUSTRATIONS lists and TOOLS chips follow
 (sections with no data are omitted). Use `persona` for user archetypes; use
 `team` for real people and ownership.
 
 #### `wardley` — value chain against evolution
 
 Strategy on two axes: how visible a component is to the user (up) and how
-evolved it is (right — genesis, custom-built, product, commodity). The value of
-the map is that it forces both judgements to be stated as numbers, so "we
-should stop building this" becomes a position rather than an opinion.
+evolved it is (right — genesis, custom-built, product, commodity). The map
+forces both judgements to be stated as numbers. "We should stop building
+this" then becomes a position rather than an opinion.
 ```wardley
 title: Where to build, where to buy
 components:
@@ -248,8 +258,8 @@ recommend: SQS
 Ratings run 0–4, empty ball to full. A row shorter than `columns` reads as
 **not assessed** (`—`) rather than a zero — those are different claims.
 `weight` multiplies a row into the WEIGHTED footer, which is computed from the
-balls, so the column you mark with `recommend` and the arithmetic can be seen
-to agree. Use `benchmark` when the cells are measured numbers.
+balls. The column you mark with `recommend` and the arithmetic then visibly
+agree. Use `benchmark` when the cells are measured numbers.
 
 #### `scqa` — the executive summary, in Minto order
 

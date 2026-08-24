@@ -1,9 +1,16 @@
 # Avodado blocks — Design system & UI mockups
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Structure & emphasis — token specimens, usage rules, and low-fi
+screens (`palette`, `typescale`, `dodont`, `inventory`, `wireframe`).
+**Answers**: What does the UI look like before it exists? What tokens and
+styles exist, and what does correct use look like?
+**Not this family**: a real screenshot → `figure` (narrative.md); the
+component tree → `frontend` (architecture.md); component code → `code`
+(tables-data.md); shipped history → `changelog` (planning.md).
 
 ### Design system
 
@@ -18,10 +25,10 @@ colors:
   - { name: Surface, value: "#F6F8FB", usage: Card and panel backgrounds }
   - { name: Positive, value: "#1F9747", usage: Success states }
 ```
-A responsive card grid (`cols` 2-6, default 4): each card is a swatch filled
-with `value`, the hex shown in mono inside it (auto-contrast — dark text on
-light swatches, white on dark; `on` overrides), then the token name and
-`usage`. **Always quote hex values** (`"#0E54A1"`) — an unquoted `#` starts a
+A responsive card grid (`cols` 2-6, default 4). Each card is a swatch filled
+with `value`, with the hex shown in mono inside it, then the token name and
+`usage`. Auto-contrast picks dark text on light swatches and white on dark;
+`on` overrides. **Always quote hex values** (`"#0E54A1"`) — an unquoted `#` starts a
 YAML comment. Invalid colors fall back to a neutral gray swatch. Use `palette`
 for color tokens; use `stats` for KPI numbers.
 

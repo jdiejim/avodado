@@ -83,9 +83,9 @@ edges:
 
 ## The build pipeline
 
-`block` draws boxes and arrows; a `preset:` (`infra` / `event` / `ddd` /
-`network`) picks the domain framing. Adding `layers:` switches to clean
-horizontal bands.
+Use `block` for topology — boxes and arrows. A `preset:` (`infra` / `event` /
+`ddd` / `network`) picks the domain framing; `layers:` switches to horizontal
+bands.
 
 ```block
 preset: infra
@@ -128,7 +128,7 @@ messages:
 ```
 
 The terse arrow form is the default — `->` a call, `-->` a response,
-`-x->` an error; switch to the object form when a message needs `kind: async`,
+`-x->` an error. Switch to the object form when a message needs `kind: async`,
 a `summary`, or a `code` snippet.
 
 ## Decisions and branches
@@ -153,7 +153,8 @@ edges:
 
 ## A state machine
 
-`state` draws lifecycles — states plus the events that move between them.
+Use `state` when one object has a lifecycle — the reader asks which states
+exist and what forces each transition.
 
 ```state
 title: Document lifecycle
@@ -195,9 +196,8 @@ Relations use crow's-foot sugar — `||--||` 1:1, `||--o{` 1:N, `}o--||` N:1,
 
 ## Backend internals
 
-`felogic` draws module graphs with a UML-stereotype feel — as-is for the
-frontend, with `variant: be` for the backend controller → service →
-repository chain.
+Use `felogic` for module internals — the frontend by default, `variant: be`
+for the backend controller → service → repository chain.
 
 ```felogic
 variant: be
@@ -215,7 +215,8 @@ edges:
 
 ## The component tree
 
-`frontend` is a top-down component hierarchy — root, layouts, pages, hooks, stores.
+Use `frontend` when the reader asks how the UI is composed — root, layouts,
+pages, hooks, stores.
 
 ```frontend
 title: A docs viewer
@@ -229,8 +230,8 @@ nodes:
 
 ## Access = intersected gates
 
-For RBAC, `composition` shows access as the AND of independent checks — not a
-sequence of steps.
+For RBAC, use `composition` when access is the AND of independent checks — not
+a sequence of steps.
 
 ```composition
 title: How edit access is decided
@@ -243,7 +244,8 @@ gates:
 
 ## Anatomy of an identifier
 
-`anatomy` labels the parts of one delimited string — a permission, a URN, a path.
+Use `anatomy` when one delimited string carries the meaning — a permission, a
+URN, a path.
 
 ```anatomy
 title: Anatomy of a permission
@@ -256,7 +258,8 @@ parts:
 
 ## Role × capability
 
-`matrix` is the capability grid — roles down, resources across, a level per cell.
+Use `matrix` when the reader asks who can do what — roles down, resources
+across, a level per cell.
 
 ```matrix
 title: Who can do what
@@ -270,7 +273,8 @@ rows:
 
 ## Weighing approaches
 
-`options` lays out the approaches you considered; the chosen one is highlighted.
+Use `options` to record the approaches you weighed — the rejected ones explain
+the chosen one.
 
 ```options
 title: How should themes work?
@@ -281,7 +285,8 @@ items:
 
 ## A one-thing fact sheet
 
-`spec` is a compact label → value sheet; a `steps:` row renders as a pill flow.
+`spec` is a compact label → value sheet for one thing; a `steps:` row holds a
+short procedure.
 
 ```spec
 title: The textbook theme
@@ -294,7 +299,8 @@ rows:
 
 ## Numbers that matter
 
-`stats` is a strip of KPI cards with deltas and trends.
+Use `stats` when a handful of numbers tells the story — each carries a delta
+and a trend.
 
 ```stats
 stats:
@@ -305,7 +311,7 @@ stats:
 
 ## Plan in phases
 
-`timeline` shows ordered phases with status dots.
+Use `timeline` when the reader asks what happens in what order.
 
 Items take a terse one-liner — `[status] date · label · description`:
 
@@ -330,7 +336,7 @@ tasks:
 
 ## Now / Next / Later
 
-`kanban` is flexible named columns of cards.
+Use `kanban` for work in flight — any named columns of cards.
 
 ```kanban
 columns:
@@ -348,8 +354,8 @@ columns:
 
 ## Track the work
 
-`statustable` is a task table — free columns plus a colored status pill per
-row, using your own status vocabulary or the built-in defaults.
+`statustable` tracks work in a table — free columns plus one status per row,
+in your own status vocabulary or the defaults.
 
 ```statustable
 columns: [Task, Update]
@@ -361,7 +367,7 @@ rows:
 
 ## Tell it as a pyramid
 
-`pyramid` ranks tiers, widening top to bottom — strategy, hierarchy, the test pyramid.
+Use `pyramid` when tiers have rank — vision over strategy, the test pyramid.
 
 ```pyramid
 levels:
@@ -386,7 +392,8 @@ items:
 
 ## Map the journey
 
-`journey` walks stages with an optional emotion curve.
+Use `journey` when the reader asks what an experience feels like across
+stages.
 
 ```journey
 stages: [{ label: Discover }, { label: Author }, { label: Validate }, { label: Ship }]
@@ -398,7 +405,7 @@ emotion: [0.6, 0.7, 0.4, 0.9]
 
 ## Explain in layers
 
-`layers` is N numbered tiers, each answering one question — great for an L1/L2/L3 model.
+Use `layers` when each tier answers one question — an L1/L2/L3 model.
 
 ```layers
 title: A doc in three layers
@@ -453,7 +460,8 @@ responses:
 
 ## What the user sees
 
-`wireframe` sketches low-fi screens inside device frames.
+Use `wireframe` when the reader asks what the user sees — low-fi screens, no
+design tool.
 
 ```wireframe
 title: The rendered page

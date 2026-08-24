@@ -4,6 +4,21 @@ Part of the **avodado-docs** skill (the hub is `SKILL.md`, one folder up). One
 doc is a story; a docs folder is a *library*. Use this when a project outgrows
 a single file — or when you're deciding whether it has.
 
+## Where files live
+
+| Path | What it holds |
+| --- | --- |
+| `docs/` (or the configured `docsDir`) | All docs. One group level: `docs/<area>/<doc>.md`. Deeper nesting is drift. |
+| `dist/` (the build default) | Generated output. Never commit it. |
+| `.avodado/` | Tooling state — `skill/` is the authoring skill. |
+| `avodado.config.json`, `*.theme.json` | Project config and themes, at the root. |
+| `resources/` (or any folder outside `docsDir`) | Demo and fixture docs. Not part of the built site. |
+
+Doc filenames are kebab-case slugs: lowercase a-z, 0-9, hyphens, `.md`. The
+path is the reference prefix (`doc#id`), so slugs are load-bearing. Put a new
+doc at `docs/<area>/<doc>.md` — `avo check` warns (`W_DOC_CONVENTION`) when a
+name is not kebab-case or a doc sits deeper than one group level.
+
 ## When to split into multiple docs
 
 One document = **one system (or one job) for one audience**. Split when any of
@@ -36,10 +51,10 @@ A doc's **slug** is its path under the docs root without `.md`:
 ## The index / overview doc
 
 Give a multi-doc set a landing page — `docs/overview.md` (or
-`docs/<domain>/overview.md` per domain): a `meta` block, 2-4 sentences of
-prose on what the set covers, one big-picture block (`c4` context or
-`archmap`), and — when the set is large — a `table` or `list` of the other
-docs and the job each does. It's the doc a new reader opens first and the
+`docs/<domain>/overview.md` per domain). It holds a `meta` block, 2-4
+sentences of prose on what the set covers, and one big-picture block (`c4`
+context or `archmap`). When the set is large, add a `table` or `list` of the
+other docs and the job each does. It's the doc a new reader opens first and the
 natural home for ids that many docs reference.
 
 ## Cross-doc references
@@ -60,9 +75,9 @@ natural home for ids that many docs reference.
 
 The layout above is exactly what the site generator reads:
 
-- **`avo build`** renders every doc under the docs root into a static site:
+- **`avo build`** renders every doc under the docs root into a static site.
   `index.html` is a card grid built from each doc's `meta` (title · subtitle ·
-  tag — another reason `meta` is never optional), each doc becomes
+  tag — another reason `meta` is never optional). Each doc becomes
   `<slug>.html` (folders keep their nesting), and a sidebar lists every doc
   with the current doc's sections expanded.
 - **Refs become links.** A `userstory`/`stories` link chip navigates to its
@@ -70,7 +85,7 @@ The layout above is exactly what the site generator reads:
   degrades to a plain chip (and `avo check` will name it).
 - **`avo studio` Site mode** is the authoring loop: the studio mounts the
   same site from memory under `/site/…` and rebuilds + reloads it on every
-  save — switch the top bar to Site to browse it while you edit.
+  save. Switch the top bar to Site to browse it while you edit.
 
 So the organizing rules pay rent twice: a tidy tree reads well in the repo
 *and* ships as a navigable site with no extra configuration.
@@ -78,9 +93,9 @@ So the organizing rules pay rent twice: a tidy tree reads well in the repo
 ## Importing instead of transcribing
 
 When a doc's data-table already exists elsewhere, import it rather than
-retype it: `avo sync csv <file>` turns a CSV export into a ready-made
+retype it. `avo sync csv <file>` turns a CSV export into a ready-made
 `table` / `statustable` / `chart` block (`--out docs/<slug>.md` wraps it in a
-new doc), and `avo sync openapi <spec> -o docs/api.md` generates a whole API
+new doc). `avo sync openapi <spec> -o docs/api.md` generates a whole API
 doc — with `--check` keeping it drift-free in CI. The studio accepts the same
 files by drag-drop. The imported result is a normal doc on disk: edit it,
 ref it, `avo check` it like anything hand-written.

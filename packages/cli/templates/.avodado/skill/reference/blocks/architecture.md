@@ -1,9 +1,21 @@
 # Avodado blocks — Architecture
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Containment — boundaries and what lives inside them (`c4`,
+`block` + presets, `cluster`, `archmap`) — and Network for module and class
+graphs with no strict nesting (`felogic`, `frontend`, `uml`).
+**Answers**: What lives inside which boundary? What depends on what, at
+rest?
+**Not this family**:
+
+- the order of calls → `sequence` (flows.md)
+- branching behavior or a lifecycle → `flow` / `state` (flows.md)
+- data shape → `erd` (data-model.md)
+- conceptual tiers with no arrows → `layers` (narrative.md)
+- area proportional to a number → `treemap` (charts-overviews.md)
 
 ### Architecture diagrams
 
@@ -30,7 +42,7 @@ edges:
 controller | repo | external`. Edge `kind` is `solid | dashed | forbidden |
 error`; edge `tech` renders as `label [tech]` (the C4 protocol convention).
 `col`/`row` are optional — omit them everywhere for auto-layout (*quick mode*),
-which ranks the graph left-to-right so it stays wider than it is tall; `dir: TB`
+which ranks the graph left-to-right so it stays wider than it is tall. `dir: TB`
 switches that auto-layout to top-to-bottom.
 Optional `boundary` draws one dashed box auto-fitted around the internal nodes;
 `boundaries[]` draws several named boxes, each around an explicit id list:
@@ -40,8 +52,8 @@ boundaries:
   - { label: Partner estate, nodes: [cdn], color: "#991b1b" }
 ```
 `kind: store` draws as a true database cylinder; `kind: external` draws with a
-dashed border (outside your control); the frame tag shows the level
-(`C4 · CONTAINER`); the legend derives from the kinds you actually used.
+dashed border (outside your control). The frame tag shows the level
+(`C4 · CONTAINER`), and the legend derives from the kinds you actually used.
 Optional `groups` draw dashed zone wrappers around cell ranges (same shape as
 on `flow`/`block`); prefer `boundary`/`boundaries[]` for system boundaries —
 groups are for free-form zones anchored to the grid.
@@ -128,9 +140,9 @@ registry · config · external · producer · topic · consumer · context` — 
 vendor aliases (`postgres`/`mysql`/`mongo` → db, `s3` → bucket,
 `sqs`/`rabbitmq` → queue, `kafka`/`kinesis` → stream, `redis`/`memcached` →
 cache, `elasticsearch` → search). Known kinds get coloured + glyphed
-automatically and pick the canonical **shape** — db kinds draw as cylinders,
-queue/stream kinds as horizontal-cylinder pipes, cdn/external as clouds,
-gateway/lb/proxy as hexagons, cache/redis as an instance stack. Unknown kinds
+automatically and pick the canonical **shape**. The db kinds draw as
+cylinders, queue/stream kinds as horizontal-cylinder pipes, cdn/external as
+clouds, gateway/lb/proxy as hexagons, cache/redis as an instance stack. Unknown kinds
 render as a neutral box.
 
 **Quick mode.** Omit `col`/`row` on every node and the layout is computed from
@@ -149,7 +161,7 @@ edges:
 ```
 Use coordinates when you want a deliberate shape — and always with `groups`.
 
-**Nested zones (AWS-style VPC / subnets).** `groups` can overlap to nest: draw
+**Nested zones (AWS-style VPC / subnets).** `groups` can overlap to nest. Draw
 the outer zone (e.g. a VPC) as one big group, then inner zones (public / private
 subnets) as smaller groups inside its cell range. The renderer paints larger
 groups first, so smaller ones layer on top. Nodes still sit in grid `col`/`row`
@@ -190,11 +202,15 @@ nodes:
 
 **Presets.** `preset: infra | event | ddd | network` keeps the exact same YAML
 and only changes the domain framing — the colored frame tag and the section
-eyebrow. Pick the preset that signals intent to a reader: `infra` for cloud
-topology (CDN / gateway / compute / DB, as above), `event` for pub/sub
-choreography, `ddd` for a bounded-context map, `network` for security zones
-(the `firewall` glyph, a red zone tag, and `kind: forbidden` red edges). The
-old block types `infra` / `event` / `ddd` / `network` live on as permanent
+eyebrow. Pick the preset that signals intent to a reader:
+
+- `infra` — cloud topology (CDN / gateway / compute / DB, as above)
+- `event` — pub/sub choreography
+- `ddd` — a bounded-context map
+- `network` — security zones (the `firewall` glyph, a red zone tag, and
+  `kind: forbidden` red edges)
+
+The old block types `infra` / `event` / `ddd` / `network` live on as permanent
 aliases that parse to `block` with the matching preset.
 ```block
 preset: event

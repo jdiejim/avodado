@@ -1,9 +1,18 @@
 # Avodado blocks — Narrative & prose
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Structure & emphasis — text that must stand out from the page
+(`callout`, `pullquote`, `bignumber`, `takeaways`), plus the document frame
+(`meta`, `divider`, `prose`, `figure`) and one Containment block (`layers`)
+for ordered conceptual tiers.
+**Answers**: What must the reader notice or remember? What does this term
+mean (`glossary`, `faq`)?
+**Not this family**: a row of KPIs → `stats` (tables-data.md); a procedure →
+`steps` (flows.md); weighing a choice → `options` (business.md) or
+`proscons` (planning.md); an ordinary bullet list → `list` (planning.md).
 
 ### Document & meta
 
@@ -52,6 +61,16 @@ terms:
   - Idempotent — a replay produces the same outcome.
   - SLO — the service-level objective the team commits to.
 ```
+A term can also carry `avoid` — the words the doc must not use in its place
+(object form; renders as a muted "not: …" suffix):
+```glossary
+terms:
+  - term: SLO
+    def: The service-level objective the team commits to.
+    avoid: [uptime target, service promise]
+```
+`avoid` makes the glossary the doc's approved-term list: the terminology-drift
+check (`W_PROSE_TERM_DRIFT`) flags an avoided word anywhere in the doc's prose.
 
 #### `figure` — an image with a caption
 ```figure

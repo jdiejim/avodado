@@ -1,9 +1,21 @@
 # Avodado blocks — Tables, metrics & code
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Grid — two axes of exact values (`table`, `benchmark`) — plus
+Structure & emphasis for headline numbers, targets, and code as evidence
+(`stats`, `slo`, `code`).
+**Answers**: What are the exact values? How big, fast, or reliable is it,
+as measured?
+**Not this family**:
+
+- cells are permission levels → `matrix` (business.md)
+- a value grid read by intensity → `heatmap` (charts-overviews.md)
+- the numbers move over time → `chart` (charts-overviews.md)
+- scores you invented rather than measured → `scorecard` or `harvey`
+  (business.md)
 
 ### Tables & metrics
 
@@ -36,8 +48,8 @@ items:
   - { name: Freshness, sli: Events indexed within 60 s, target: 99.5%, current: 98.1%, window: 7d, budget: 1.0 }
 ```
 One row-card per objective. `budget` is the fraction of the error budget
-**consumed** (a plain number): the burn bar is green below 0.5, amber 0.5–0.8,
-red above 0.8; at or above 1 it reads "exhausted" and `current` tints red. Omit
+**consumed** (a plain number). The burn bar is green below 0.5, amber 0.5–0.8,
+red above 0.8. At or above 1 it reads "exhausted" and `current` tints red. Omit
 `budget` to skip the bar. Use `slo` for reliability targets; use `stats` for
 plain KPIs with trends.
 
@@ -120,7 +132,7 @@ blocks:
       SELECT id, total FROM orders WHERE total > 100;
 ```
 Renders on a dark editor surface with syntax highlighting (kw, str, num, fn, ty,
-com tokens) and a title bar — the same code styling applies in `gallery` cells and
+com tokens) and a title bar. The same code styling applies in `gallery` cells and
 `sequence` step snippets.
 
 **`kind: terminal`** — a shell session (commands + output) via the top-level
@@ -137,7 +149,7 @@ session: |
 Same dark surface, parsed per line: `$ ` starts a **command** (green prompt,
 bold text), `# ` a dim italic **comment**, and everything else is program
 **output**. `title` labels the window bar (defaults to `terminal`). Use it for
-an interactive session — what was typed *and* what came back; use plain `code`
+an interactive session — what was typed *and* what came back. Use plain `code`
 with `lang: bash` for a script to copy, and `steps` for a runbook with prose
 between commands.
 

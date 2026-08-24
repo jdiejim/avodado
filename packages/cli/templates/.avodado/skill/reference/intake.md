@@ -14,8 +14,8 @@ this in move 1 (*Understand the ask — and ask back*) of every new document.
    batched message of 2-6 pointed questions — never drip one question per turn.
    Fold in a nice-to-have only when its answer would change the outline.
 4. **If the user is unavailable** (or the gaps are minor), proceed with explicit
-   assumptions: a `callout` (`tone: note`, title *Assumptions*) near the top of
-   the doc, listing each guess so every one is visible and correctable.
+   assumptions. Add a `callout` (`tone: note`, title *Assumptions*) near the top
+   of the doc, listing each guess so every one is visible and correctable.
 
 Each checklist marks items **CRITICAL** (the document is wrong without them)
 vs *nice-to-have* (improves it, but safely assumable).
@@ -134,7 +134,7 @@ report findings per item — worst first. Fix only what you were asked to fix.
 6. **Title/heading agreement.** Each block's `title` and its `##` heading
    sound like one author; the `meta` cover matches the doc's actual content.
 7. **Stale facts.** Counts, versions, dates, and status fields
-   (`timeline`/`statustable`/`inventory`) that reality has moved past — flag
+   (`timeline`/`statustable`/`inventory`) that no longer match reality — flag
    them even when you can't verify the correction.
 8. **Close with `avo check`.** A review isn't done until the doc validates
    clean — report any diagnostic verbatim.

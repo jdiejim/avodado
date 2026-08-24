@@ -1,9 +1,19 @@
 # Avodado blocks — Planning, lists & backlogs
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
-Field contracts and examples for this family's blocks. The at-a-glance contract
-table for all 87 blocks is `contract.md` beside this file; the block → family
-map is `INDEX.md`. Schemas reject unknown fields — use exactly these.
+Exact fields for every block: `contract.md` beside this file; block → family
+map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
+
+**Shape**: Time — what happened or is planned (`timeline`, `changelog`);
+Grid — one option weighed (`proscons`); Structure & emphasis — work items
+and reference cards (`userstory`, `stories`, `kanban`, `storymap`,
+`statustable`, `risk`, `list`, `cvt`, `agenda`, `pattern`, `gallery`).
+**Answers**: What work exists, in what state, owned by whom? What shipped
+when? What does done mean for this story?
+**Not this family**: bars against dates → `gantt` (charts-overviews.md);
+several candidates with verdicts → `options` (business.md); reliability
+targets → `slo` (tables-data.md); component maturity → `inventory`
+(design-system.md).
 
 ### Planning & meta
 
@@ -72,6 +82,39 @@ columns:
       - { title: Hot reload }
 ```
 
+#### `storymap` — user story mapping (backbone + release slices)
+
+The scope-planning shape for "what do we build, in what order?". The
+`backbone` is the journey's ordered activities across the top; each slice is
+one horizontal release band, with the cards that ship in it stacked under the
+backbone step they belong to. A `kanban` tracks work in flight and a
+`journey` tracks experience — a storymap shows scope per activity, sliced by
+release.
+```storymap
+title: Checkout story map
+backbone:
+  - { label: Browse, note: Find the product }
+  - { label: Decide, note: Trust the price }
+  - { label: Pay }
+slices:
+  - label: MVP
+    cells:
+      - [Search box]
+      - ["Product page", "Price incl. tax"]
+      - [{ title: Card payment, tag: risky }]
+  - label: Later
+    cells:
+      - ["Filters", "Saved carts"]
+      - [Reviews]
+      - []
+```
+`backbone` (1–10 steps) and `slices` (1–6) are required. Each slice's
+`cells` must carry **exactly one entry per backbone step, in backbone
+order** — write `[]` for a step with nothing in that slice. A cell holds up
+to 6 cards; a card is a plain string or `{ title, tag }` (the tag renders as
+a small pill). Columns have a fixed width and the map scrolls horizontally
+past ~5 steps, so keep step labels short.
+
 #### `statustable` — task table with an update column + colored status pills
 ```statustable
 title: Workstream status
@@ -94,12 +137,14 @@ final **Status** column renders each row's `status` as a colored pill.
 `statuses` is *your* label → color vocabulary. `color` is an accent name
 (`navy | blue | teal | green | amber | purple | red | gray`) **or a semantic
 alias** — `success` → green · `error` → red · `warn` → amber · `neutral` →
-gray · `info` → blue. Rows may also use
+gray · `info` → blue.
+
+Rows may also use
 the built-in defaults — `in progress` (amber) · `blocked` (red) · `completed`
-(green) · `todo` (gray) · `done` (green) — matched case-insensitively; any
+(green) · `todo` (gray) · `done` (green) — matched case-insensitively. Any
 other status (row or subtask) fails `avo check`, which lists the available
 labels. A row may nest **one level** of `subtasks` (same `cells` + `status`
-shape) — they render indented under their parent with their own pills, and the
+shape). They render indented under their parent with their own pills, and the
 parent's status stays whatever you set (no roll-up). Short `cells` pad with
 empty cells. Use `statustable` whenever tasks carry a status — define your own
 vocabulary (e.g. "waiting on vendor"), or lean on the built-in defaults.
@@ -180,8 +225,8 @@ items:
   - { id: US-1, title: One-step checkout, role: shopper, want: pay in one step, soThat: I finish faster, priority: High, points: 5, tags: [checkout], open: true, criteria: [{ given: items in cart, when: I pay, then: an order is created }], links: [{ ref: orders-api#seq-place-order, label: Request flow }] }
   - { id: US-2, title: Save card, role: returning shopper, want: store a card, soThat: I skip re-entry, priority: Med, points: 3 }
 ```
-Renders every story as a `<details>` accordion (no JavaScript) in **one** section —
-the summary shows the id, title, points, and priority; expanding reveals the
+Renders every story as a `<details>` accordion (no JavaScript) in **one** section.
+The summary shows the id, title, points, and priority; expanding reveals the
 narrative, acceptance `criteria`, and `links`. `open: true` starts a story
 expanded. Use `stories` for a backlog of many; use a single `userstory` block when
 one story deserves its own full section. `links[].ref` is a real `doc#id`
@@ -244,13 +289,13 @@ items:
 
 > **Don't hand-write a pattern from memory — grab a vetted template.** Avodado
 > ships a library of 106 common patterns (system-design building blocks, AI /
-> agent patterns, and the GoF code patterns): `avo design` lists the slugs,
+> agent patterns, and the GoF code patterns). `avo design` lists the slugs;
 > `avo design <slug>` prints a ready `pattern` card **plus a structure diagram**
 > to adapt. The full slug list lives in `system-design.md` beside this file.
 
 > **Comparing patterns → use a `gallery`.** When the user says "compare X vs Y"
 > (e.g. "adapter vs command", "monolith vs microservices", "REST vs gRPC"), don't
-> write prose or a table — put each side in a `gallery` cell as a nested block so
+> write prose or a table. Put each side in a `gallery` cell as a nested block so
 > they sit **side by side**. Grab each via `avo design <slug>` and nest its
 > `pattern` card (or its diagram). Use `cols: 2` for two, `cols: 3` for three.
 

@@ -1,4 +1,4 @@
-# The 87 block types — by family
+# The 90 block types — by family
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 The map from block type → the family file beside this one that holds its full
@@ -96,14 +96,17 @@ permanent aliases — see the alias table at the bottom.
 | `bignumber` | `narrative.md` | One hero metric at presentation scale — a display-size value with an optional delta + neutral trend arrow, a one-line claim, and a context line. |
 | `takeaways` | `narrative.md` | The 2-6 things to remember — numbered rows at presentation scale, each a bold one-liner with an optional detail; a deck's closing slide. |
 | `statustable` | `planning.md` | A task table — free columns (task / update) plus a colored status pill per row, from a user-defined label → color vocabulary; rows can nest one level of subtasks. |
+| `fishbone` | `charts-overviews.md` | Cause & effect (Ishikawa) — one effect at the head, cause categories as bones off the spine, specific causes along each bone. |
+| `storymap` | `planning.md` | User story map — the ordered backbone of activities across the top, release slices as rows of cards under each step. |
+| `slopegraph` | `charts-overviews.md` | Ranked before / after — one line per item between two labeled columns; the slopes show what rose, fell, or held. |
 
 ## Old names → canonical — the permanent aliases
 
 These 12 former block types merged into a canonical block. **The old spelling
-keeps working forever** — an alias fence parses to the canonical type with the
-listed fields injected (only for keys the body doesn't set), renders exactly
-as it always did, and `avo check` notes the mapping as a `W_ALIAS_TYPE`
-warning (warnings never fail a check). Write the canonical spelling in new
+keeps working forever.** An alias fence parses to the canonical type with the
+listed fields injected (only for keys the body doesn't set). It renders
+exactly as it always did, and `avo check` notes the mapping as a
+`W_ALIAS_TYPE` warning (warnings never fail a check). Write the canonical spelling in new
 blocks; don't rewrite existing fences just to silence the warning.
 
 | Alias | Canonical | Injected fields |

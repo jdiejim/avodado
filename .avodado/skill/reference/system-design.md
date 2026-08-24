@@ -6,7 +6,7 @@ this for any architecture or design ask.
 ## Designing a system — reason it, don't template it
 
 "Design an X" asks (a notification system, a rate limiter, "how would you build Y
-at scale") are where templating shows worst, because every real system's document
+at scale") are where templating shows worst. Every real system's document
 is shaped by *its* bottleneck. Do the design reasoning; each step emits the block
 that carries it:
 
@@ -25,12 +25,13 @@ that carries it:
    `cluster`. One overview diagram of the whole system, using the real names
    from step 3.
 5. **Deep-dive the bottleneck — this is where documents differ.** Work out what
-   actually breaks at the stated scale, and design *that* section: hot reads →
-   caching + invalidation (a `sequence` of the miss path); write spikes → queue +
-   backpressure (a `flow` with the shed path); fan-out → push vs pull (`options`,
-   then the chosen `sequence`); cross-service consistency → outbox/saga (a
-   `state` of the saga); geo-latency → replication + CDN (a `preset: infra`
-   `block` per region).
+   actually breaks at the stated scale, and design *that* section:
+   - hot reads → caching + invalidation (a `sequence` of the miss path)
+   - write spikes → queue + backpressure (a `flow` with the shed path)
+   - fan-out → push vs pull (`options`, then the chosen `sequence`)
+   - cross-service consistency → outbox/saga (a `state` of the saga)
+   - geo-latency → replication + CDN (a `preset: infra` `block` per region)
+
    One or two deep dives, chosen by the numbers from step 2 — never a fixed list.
 6. **Trade-offs on the record.** The genuine alternatives as `options` (with
    `tone: chosen` on the winner), or `proscons` when only one option's tension
@@ -43,15 +44,15 @@ that carries it:
 
 **Patterns are ingredients, not the meal.** When a named pattern is load-bearing
 (pub-sub, saga, circuit breaker, CQRS, …), pull its vetted card + structure
-diagram with `avo design <slug>` instead of improvising — then **rename every
+diagram with `avo design <slug>` instead of improvising. Then **rename every
 node into the user's domain**: a `pattern` card whose participants are still
 "ServiceA" was pasted, not designed. Comparing patterns side by side → a
 `gallery` with a nested `pattern`/diagram per cell. `avo design` (or `--system` /
 `--ai` / `--code`) lists all 106 slugs.
 
-The outline that falls out of steps 1-8 differs per system: a rate limiter's doc
-is mostly steps 4-6 with algorithmic depth (`state`, `code`); a social feed's is
-dominated by step 5 fan-out math; a payments integration by step 7 failure
+The outline that falls out of steps 1-8 differs per system. A rate limiter's doc
+is mostly steps 4-6 with algorithmic depth (`state`, `code`). A social feed's is
+dominated by step 5 fan-out math, a payments integration by step 7 failure
 semantics. **If two of your design docs share the same section list, you skipped
 step 5.**
 
@@ -77,23 +78,24 @@ step 5.**
 > / `network` still work as permanent aliases.)
 
 **Quick mode — no coordinates.** Every architecture diagram can be written as
-just nodes + edges: omit `col`/`row` on **all** nodes and the renderer computes a
+just nodes + edges. Omit `col`/`row` on **all** nodes and the renderer computes a
 clean left-to-right layered layout from the edges. This is the default way to
-sketch a system fast. Add explicit coordinates only when you want a deliberate
-shape — and always when you use `groups` (zones are anchored to grid cells, so
-they need placed nodes). If *any* node has coordinates but others don't, the
+sketch a system fast.
+
+Add explicit coordinates only when you want a deliberate
+shape — and always when you use `groups`. Zones are anchored to grid cells, so
+they need placed nodes. If *any* node has coordinates but others don't, the
 auto-layout replaces all of them — place all or none.
 
 **Edge labels — dense diagrams renumber themselves.** On every edge-bearing
 diagram (`block` — any preset, `flow`, `dfd`, `graph`,
 `swimlane`, `uml`, `cluster`, `felogic`), up to three labelled edges
-render as text pills riding the arrows; at **four or more labelled edges** the
-renderer automatically switches to small circled step numerals on the arrows
-with the label text moved to a numbered legend under the diagram (`state` is the
-one exception — its numerals point at the transition table's rows instead of a
-second legend). You don't opt in or lay anything out — just keep edge labels
-short (a verb phrase, a couple of words) so they read well as a pill or a
-legend entry.
+render as text pills riding the arrows. At **four or more labelled edges** the
+renderer switches to circled step numerals and moves the label
+text to a numbered legend under the diagram. (`state` is the one exception —
+its numerals point at the transition table's rows instead of a second legend.)
+You don't opt in or lay anything out. Just keep edge labels short (a verb
+phrase, a couple of words) so they read well as a pill or a legend entry.
 
 **Node kinds** (block family; free strings — known ones get a colour + glyph):
 `client` · `service`/`microservice`/`compute`/`container` · `worker`/`etl` ·
@@ -141,7 +143,7 @@ the right one automatically by choosing the right kind):
 
 The same silhouettes apply inside `felogic` (db/store → cylinder,
 queue/bus/broker → pipe, cache → stack, external/backend/api → cloud), in `c4`
-(`kind: store` → cylinder), and in `cluster` (db services → cylinder) — a
+(`kind: store` → cylinder), and in `cluster` (db services → cylinder). A
 database looks like a database in every diagram.
 
 **C4 extras.** Edges take `tech:` — rendered as `label [tech]`, the C4
@@ -152,9 +154,9 @@ auto-fit `boundary:` still works for one system.
 
 **Mixing architecture views — one overview + one zoom.** Show the whole system
 once (`c4` context, or a `block` landscape), then zoom into the one or
-two places the doc is actually about: `felogic` (or its `variant: be`) for a
-module's internals, a `preset: infra` `block` or `cluster` for deployment, a
-`sequence` for the runtime of one path. Never redraw the same boxes in a
+two places the doc is actually about. Zoom with `felogic` (or its `variant:
+be`) for a module's internals, a `preset: infra` `block` or `cluster` for
+deployment, and a `sequence` for the runtime of one path. Never redraw the same boxes in a
 second engine — pick one block per level of zoom and stitch them with prose
 ("inside the `api` container: …").
 
@@ -162,11 +164,13 @@ second engine — pick one block per level of zoom and stitch them with prose
 
 > **Don't hand-write a pattern from memory — grab a vetted template.** Avodado
 > ships a library of common patterns (system-design building blocks *and* the GoF
-> code patterns). Run `avo design` to list them, then `avo design <slug>` to get a
-> ready template — a `pattern` card **plus a structure diagram** (a backend
+> code patterns). Run `avo design` to list them, then `avo design <slug>` to get
+> a ready template (or `avo design <slug> -o docs/x.md`).
+
+> The template is a `pattern` card **plus a structure diagram** — a backend
 > `felogic` with interface/impl stereotypes for code, `block` with glyphs for
-> system) — to adapt
-> (or `avo design <slug> -o docs/x.md`).
+> system — to adapt.
+
 > Slugs include: **system design** — `caching` `load-balancing` `cdn` `sharding`
 > `replication` `rate-limiting` `message-queue` `pub-sub` `cqrs` `event-sourcing`
 > `api-gateway` `circuit-breaker` `consistent-hashing` `idempotency` `saga`
