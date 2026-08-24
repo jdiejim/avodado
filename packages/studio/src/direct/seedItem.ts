@@ -103,6 +103,14 @@ export function fixupNewItem(
     return { ...rec, scores: Array.from({ length: width }, () => 0) };
   }
 
+  if (kind === 'storymap' && listPath === 'slices') {
+    // A new slice must carry one cell per backbone step (the schema checks
+    // the alignment) — seed the row with empty cells.
+    const rec = asRecord(item) ?? {};
+    const width = arrayAt(data, 'backbone').length;
+    return { ...rec, cells: Array.from({ length: width }, () => []) };
+  }
+
   if (kind === 'prose' && listPath === 'blocks') {
     return { type: 'p', text: 'New paragraph' };
   }

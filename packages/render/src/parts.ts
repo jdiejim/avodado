@@ -407,6 +407,9 @@ type SizedData = {
   links?: unknown[];
   pros?: unknown[];
   cons?: unknown[];
+  causes?: unknown[];
+  backbone?: unknown[];
+  slices?: ReadonlyArray<{ cells?: ReadonlyArray<unknown[]> }>;
   current?: { items?: unknown[] };
   target?: { items?: unknown[] };
 };
@@ -418,7 +421,7 @@ function maxArr(d: SizedData): number {
   const fields = [
     d.items, d.rows, d.stats, d.blocks, d.levels, d.terms, d.parts, d.gates, d.nodes,
     d.screens, d.classes, d.states, d.entities, d.tasks, d.columns, d.lanes, d.steps, d.clusters,
-    d.personas, d.areas, d.series,
+    d.personas, d.areas, d.series, d.causes,
   ];
   let m = 0;
   for (const f of fields) m = Math.max(m, arrLen(f));
@@ -475,6 +478,8 @@ const ITEM_WEIGHT: Partial<Record<BlockType, number>> = {
   felogic: 1.2,
   archmap: 1.2,
   cycle: 1.2,
+  fishbone: 1.4, // each bone carries a label plus its item ticks
+  slopegraph: 0.9, // each item is one thin line plus two short labels
 };
 
 /**
@@ -518,6 +523,13 @@ export function blockWeight(seg: TypedSegment): number {
     let cards = 0;
     for (const c of d.columns ?? []) cards += arrLen(c.cards);
     return 2 + arrLen(d.columns) + cards * 0.7;
+  }
+  // Height comes from the backbone header row plus the tallest stack a slice
+  // adds; total card count is the honest proxy for how tall the bands get.
+  if (seg.kind === 'storymap') {
+    let cards = 0;
+    for (const s of d.slices ?? []) for (const cell of s.cells ?? []) cards += arrLen(cell);
+    return 2 + arrLen(d.backbone) * 0.4 + arrLen(d.slices) + cards * 0.5;
   }
   if (seg.kind === 'userstory') return 2 + arrLen(d.criteria) * 1.5 + arrLen(d.links) * 0.4;
   // Every line is a table row — parents and their nested subtasks alike.

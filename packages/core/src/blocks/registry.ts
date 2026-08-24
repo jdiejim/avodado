@@ -140,4 +140,7 @@ export const blockRegistry: BlockRegistry = {
   harvey: { type: 'harvey', schema: blockSchemas.harvey },
   scqa: { type: 'scqa', schema: blockSchemas.scqa },
   scenarios: { type: 'scenarios', schema: blockSchemas.scenarios },
+  fishbone: { type: 'fishbone', schema: blockSchemas.fishbone },
+  storymap: { type: 'storymap', schema: blockSchemas.storymap },
+  slopegraph: { type: 'slopegraph', schema: blockSchemas.slopegraph },
 };

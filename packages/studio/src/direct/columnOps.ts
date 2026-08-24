@@ -114,6 +114,20 @@ const SPECS: Readonly<Record<string, ColumnSpec>> = {
     minCols: 1, // schema: xLabels.min(1)
     cellArrays: (data) => rowCellArrays(data, 'values', 0),
   },
+  storymap: {
+    colsPath: 'backbone',
+    newHeader: () => ({ label: 'New step' }),
+    minCols: 1, // schema: backbone.min(1)
+    // Every slice's `cells` must stay one-per-backbone-step (the schema
+    // validates the alignment) — a new step pads each slice with an empty cell.
+    cellArrays: (data) =>
+      arrayAt(data, 'slices').flatMap((slice, si) => {
+        const rec = asRecord(slice);
+        return rec !== null && Array.isArray(rec['cells'])
+          ? [{ path: ['slices', si, 'cells'] as PathSeg[], cells: rec['cells'] as unknown[], pad: [] as unknown }]
+          : [];
+      }),
+  },
 };
 
 /** The column spec for a block kind, or null when it has no aligned columns. */

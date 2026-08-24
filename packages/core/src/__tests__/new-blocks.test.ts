@@ -379,3 +379,140 @@ describe('Phase 21 blocks — validation', () => {
     expect(normalizeStatusColor('gray')).toBe('gray');
   });
 });
+
+describe('Phase 28 — fishbone validation', () => {
+  it('accepts an effect with bones and items', () => {
+    expect(
+      diagsFor(
+        '```fishbone\ntitle: Why checkout latency rose\neffect: p95 checkout over 2s\ncauses:\n  - { label: Code, items: [Sync capture call, N+1 cart query] }\n  - { label: Traffic }\n```',
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects an unknown field (schemas are strict)', () => {
+    const d = diagsFor(
+      '```fishbone\neffect: Slow builds\ncauses:\n  - { label: CI }\nspine: long\n```',
+    );
+    expect(d).toHaveLength(1);
+    expect(d[0]?.code).toBe('E_SCHEMA');
+  });
+
+  it('rejects an empty causes list and a missing effect', () => {
+    const empty = diagsFor('```fishbone\neffect: Slow builds\ncauses: []\n```');
+    expect(empty[0]?.code).toBe('E_SCHEMA');
+    const headless = diagsFor('```fishbone\ncauses:\n  - { label: CI }\n```');
+    expect(headless[0]?.code).toBe('E_SCHEMA');
+  });
+});
+
+describe('Phase 29 — storymap validation', () => {
+  it('accepts a backbone with slices, string cards, and object cards', () => {
+    expect(
+      diagsFor(
+        '```storymap\ntitle: Checkout story map\nbackbone:\n  - { label: Browse, note: Find the product }\n  - { label: Pay }\nslices:\n  - { label: MVP, cells: [[Search box], [{ title: Card payment, tag: risky }]] }\n  - { label: Later, cells: [["Filters", "Saved carts"], []] }\n```',
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects an unknown field (schemas are strict)', () => {
+    const d = diagsFor(
+      '```storymap\nbackbone:\n  - { label: Browse }\nslices:\n  - { label: MVP, cells: [[A]] }\nreleases: 3\n```',
+    );
+    expect(d).toHaveLength(1);
+    expect(d[0]?.code).toBe('E_SCHEMA');
+  });
+
+  it('rejects a slice whose cells do not match the backbone length', () => {
+    const d = diagsFor(
+      '```storymap\nbackbone:\n  - { label: Browse }\n  - { label: Pay }\nslices:\n  - { label: MVP, cells: [[A]] }\n```',
+    );
+    expect(d).toHaveLength(1);
+    expect(d[0]?.code).toBe('E_SCHEMA');
+    expect(d[0]?.message).toContain('1 cells but the backbone has 2 steps');
+  });
+
+  it('rejects an empty backbone and empty slices', () => {
+    const spine = diagsFor('```storymap\nbackbone: []\nslices:\n  - { label: MVP, cells: [] }\n```');
+    expect(spine[0]?.code).toBe('E_SCHEMA');
+    const rows = diagsFor('```storymap\nbackbone:\n  - { label: Browse }\nslices: []\n```');
+    expect(rows[0]?.code).toBe('E_SCHEMA');
+  });
+});
+
+describe('Phase 29 — slopegraph validation', () => {
+  it('accepts two headers, a unit, and items with accents and negatives', () => {
+    expect(
+      diagsFor(
+        '```slopegraph\ntitle: Support volume by channel\nleft: "2023"\nright: "2025"\nunit: "%"\nitems:\n  - { label: Email, from: 48, to: 22 }\n  - { label: Chat, from: -5, to: 45, accent: teal }\n  - { label: Phone, from: 33, to: 33 }\n```',
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects an unknown field (schemas are strict)', () => {
+    const d = diagsFor(
+      '```slopegraph\nleft: "A"\nright: "B"\nitems:\n  - { label: X, from: 1, to: 2, delta: 1 }\n  - { label: Y, from: 1, to: 2 }\n```',
+    );
+    expect(d).toHaveLength(1);
+    expect(d[0]?.code).toBe('E_SCHEMA');
+  });
+
+  it('rejects fewer than two items and a non-numeric value', () => {
+    const single = diagsFor(
+      '```slopegraph\nleft: "A"\nright: "B"\nitems:\n  - { label: X, from: 1, to: 2 }\n```',
+    );
+    expect(single[0]?.code).toBe('E_SCHEMA');
+    const text = diagsFor(
+      '```slopegraph\nleft: "A"\nright: "B"\nitems:\n  - { label: X, from: high, to: 2 }\n  - { label: Y, from: 1, to: 2 }\n```',
+    );
+    expect(text[0]?.code).toBe('E_SCHEMA');
+  });
+});
+
+describe('chart scatter points + guides — validation', () => {
+  it('accepts numeric points with size, label, and accent', () => {
+    expect(
+      diagsFor(
+        '```chart\nkind: scatter\nxLabel: Effort\nyLabel: Impact\npoints:\n  - { x: 2, y: 8, size: 12, label: Quick win, accent: teal }\n  - { x: -1.5, y: 3 }\nguides: { x: 5, y: 5, quadrants: [Fill-ins, Do first, Avoid, Plan] }\n```',
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects an unknown point field (schemas are strict)', () => {
+    const d = diagsFor('```chart\nkind: scatter\npoints:\n  - { x: 1, y: 2, radius: 4 }\n```');
+    expect(d).toHaveLength(1);
+    expect(d[0]?.code).toBe('E_SCHEMA');
+  });
+
+  it('rejects a non-numeric coordinate and an unknown guides field', () => {
+    const bad = diagsFor('```chart\nkind: scatter\npoints:\n  - { x: wide, y: 2 }\n```');
+    expect(bad[0]?.code).toBe('E_SCHEMA');
+    const guide = diagsFor('```chart\nkind: scatter\npoints:\n  - { x: 1, y: 2 }\nguides: { z: 3 }\n```');
+    expect(guide[0]?.code).toBe('E_SCHEMA');
+  });
+
+  it('rejects quadrants that are not exactly four labels', () => {
+    const d = diagsFor(
+      '```chart\nkind: scatter\npoints:\n  - { x: 1, y: 2 }\nguides: { quadrants: [A, B, C] }\n```',
+    );
+    expect(d[0]?.code).toBe('E_SCHEMA');
+  });
+});
+
+describe('tree variant: org — validation', () => {
+  it('accepts variant org with node roles', () => {
+    expect(
+      diagsFor(
+        '```tree\nvariant: org\nnodes:\n  - { id: ceo, label: Dana Reyes, role: CEO }\n  - { id: eng, parent: ceo, label: Sam Ortiz, role: VP Engineering }\n```',
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects an unknown variant and an unknown node field', () => {
+    const variant = diagsFor('```tree\nvariant: pyramid\nnodes:\n  - { id: a, label: A }\n```');
+    expect(variant[0]?.code).toBe('E_SCHEMA');
+    const field = diagsFor(
+      '```tree\nvariant: org\nnodes:\n  - { id: a, label: A, title: CEO }\n```',
+    );
+    expect(field[0]?.code).toBe('E_SCHEMA');
+  });
+});

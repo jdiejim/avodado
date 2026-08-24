@@ -64,6 +64,16 @@ export {
 export { resolveRefs, type RefGraph, type InputDocument } from './resolve.js';
 
 export {
+  lintProse,
+  PROSE_CHECK_CODES,
+  type ProseCheckCode,
+  type ProseLintOptions,
+} from './prose/lint.js';
+export { type ProseContext, type ProseUnit, collectProseUnits } from './prose/surfaces.js';
+
+export { lintDensity, DENSITY_BUDGETS, type DensityBudget } from './density.js';
+
+export {
   blockSchemas,
   type BlockDataMap,
   metaSchema,

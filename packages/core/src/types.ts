@@ -131,6 +131,12 @@ export const BLOCK_TYPES = [
   'scqa',
   // Phase 27 — how a plan is defended: the same drivers, moved three ways.
   'scenarios',
+  // Phase 28 — cause & effect: an Ishikawa fishbone behind one outcome.
+  'fishbone',
+  // Phase 29 — two planning/overview shapes prose kept faking: a user-story
+  // map (backbone + release slices) and a ranked before/after slopegraph.
+  'storymap',
+  'slopegraph',
 ] as const;
 
 /** A block type literal. Adding a new type here is a one-place change. */

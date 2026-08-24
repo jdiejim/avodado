@@ -163,6 +163,9 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   harvey: 'Comparison',
   scqa: 'Summary',
   scenarios: 'Scenarios',
+  fishbone: 'Cause & effect',
+  storymap: 'Story map',
+  slopegraph: 'Before / after',
 };
 
 /**

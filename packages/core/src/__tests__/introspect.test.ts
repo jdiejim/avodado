@@ -183,7 +183,7 @@ describe('describeBlockSchema', () => {
     expect(field(describeBlockSchema('tree'), 'variant')).toEqual({
       kind: 'enum',
       optional: true,
-      options: ['issue'],
+      options: ['issue', 'org'],
     });
     // statustable: variant + the legacy tracker items[] beside rows.
     const st = describeBlockSchema('statustable');

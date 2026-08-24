@@ -8,6 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { renderChart } from '../blocks/chart.js';
+import { renderFishbone } from '../blocks/fishbone.js';
 import { renderGantt } from '../blocks/gantt.js';
 import { renderGraph } from '../blocks/graph.js';
 import { renderHeatmap } from '../blocks/heatmap.js';
@@ -239,5 +240,23 @@ describe('data-path tagging (charts & overviews)', () => {
     expect(html).toContain('<g data-bl="tasks">');
     expect(html).toContain('<g data-bp="tasks.1">');
     expect(html).toContain('data-bp="tasks.0.label"');
+  });
+
+  it('fishbone tags the effect, the causes container, bones, labels, and items', () => {
+    const html = renderFishbone({
+      effect: 'p95 checkout over 2s',
+      causes: [
+        { label: 'Code', items: ['Sync capture call', 'N+1 cart query'] },
+        { label: 'Infrastructure', items: ['Undersized DB pool'] },
+        { label: 'Traffic' },
+      ],
+    });
+    expect(html).toContain('data-bp="effect"');
+    expect(html).toContain('<g data-bl="causes">');
+    expect(html).toContain('<g data-bp="causes.0">');
+    expect(html).toContain('<g data-bp="causes.2">');
+    expect(html).toContain('<g data-bp="causes.1.label">');
+    expect(html).toContain('<g data-bl="causes.0.items">');
+    expect(html).toContain('<g data-bp="causes.0.items.1">');
   });
 });

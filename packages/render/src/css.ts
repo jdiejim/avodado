@@ -213,6 +213,7 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .glossary .row{display:grid;grid-template-columns:170px 1fr;gap:14px;padding:9px 0;border-bottom:1px solid var(--rule);}
 .docskin .glossary dt{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--navy);}
 .docskin .glossary dd{margin:0;font-size:14px;color:var(--slate);}
+.docskin .glossary .avoid{font-size:12px;color:var(--gray);}
 /* pros / cons */
 .docskin .pc{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0;}
 .docskin .pc-col{border:1px solid var(--rule);padding:14px 16px;}
@@ -553,6 +554,7 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .gl-red{border-top:3px solid var(--negative);} .docskin .gl-gray{border-top:3px solid var(--gray);}
 /* chart (bar / line / area / donut) */
 .docskin .chart-axis{stroke:var(--rule);stroke-width:1;}
+.docskin .chart-leader{stroke:var(--gray);stroke-width:1;opacity:.45;}
 .docskin .chart-label{font-family:var(--font-mono);font-size:9.5px;fill:var(--gray);text-anchor:middle;}
 .docskin .chart-tick{font-family:var(--font-mono);font-size:9px;fill:var(--gray);text-anchor:end;}
 .docskin .chart-val{font-family:var(--font-mono);font-size:8.5px;fill:var(--gray);text-anchor:middle;}
@@ -1121,6 +1123,32 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 /* tree values — the driver-tree treatment: the number, then its share of the parent */
 .docskin .tvalue{margin-left:10px;font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--navy);}
 .docskin .tshare{margin-left:6px;font-family:var(--font-mono);font-size:10.5px;color:var(--gray);}
+/* fishbone — cause & effect bones off a spine into the effect head */
+.docskin .fb-effect{font-family:var(--font-display);font-size:12.5px;font-weight:700;text-anchor:middle;fill:#fff;}
+.docskin .fb-cause{font-family:var(--font-display);font-size:12.5px;font-weight:700;text-anchor:middle;fill:var(--navy);}
+.docskin .fb-item{font-family:var(--font-body);font-size:12px;text-anchor:end;fill:var(--slate);}
+/* storymap — backbone step cards across the top, release slices as bands */
+.docskin .sm-scroll{overflow-x:auto;}
+.docskin .sm-row{display:flex;align-items:stretch;}
+.docskin .sm-head{background:var(--white);}
+.docskin .sm-gutter{flex:0 0 128px;padding:8px 10px 8px 0;font-family:var(--font-body);font-size:11px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--gray);position:sticky;left:0;z-index:2;background:var(--white);}
+.docskin .sm-colcell{flex:0 0 170px;padding:4px 5px;min-width:0;}
+.docskin .sm-step{background:var(--navy);border-radius:8px;padding:8px 11px;height:100%;box-sizing:border-box;}
+.docskin .sm-step-label{font-family:var(--font-display);font-size:13px;font-weight:700;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.docskin .sm-step-note{font-size:11px;color:rgba(255,255,255,.72);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.docskin .sm-band{border-top:1px solid var(--rule);}
+.docskin .sm-band .sm-gutter{padding-top:12px;}
+.docskin .sm-cell{padding:8px 5px;}
+.docskin .sm-card{background:var(--white);border:1px solid var(--rule);border-left:3px solid var(--highlight);padding:7px 10px;border-radius:0 var(--radius) var(--radius) 0;}
+.docskin .sm-card + .sm-card{margin-top:6px;}
+.docskin .sm-card-title{font-size:12.5px;font-weight:600;color:var(--charcoal);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.docskin .sm-card-tag{display:inline-block;font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);background:var(--light-blue);border-radius:8px;padding:1px 7px;margin-top:5px;}
+/* slopegraph — before/after lines between two labeled baselines */
+.docskin .sg-col{font-family:var(--font-body);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;fill:var(--gray);text-anchor:middle;}
+.docskin .sg-item{font-family:var(--font-body);font-size:12.5px;fill:var(--charcoal);}
+.docskin .sg-left{text-anchor:end;}
+.docskin .sg-right{text-anchor:start;}
+.docskin .sg-leader{stroke:var(--gray);stroke-width:1;opacity:.45;}
 /* scenarios — assumptions in columns, the outcome on its own row */
 .docskin .scenarios{margin:26px 0 34px;}
 .docskin .sn-head{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--charcoal);margin-bottom:2px;}

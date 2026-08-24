@@ -253,7 +253,12 @@ export const proseSchema = z
   .strict();
 
 // ─── glossary ───────────────────────────────────────────────────────────────
-const glossaryTermSchema = z.object({ term: z.string(), def: z.string() }).strict();
+// `avoid` lists the words the doc must NOT use for this term — the glossary
+// is the approved-term list, and the prose linter's terminology-drift check
+// (W_PROSE_TERM_DRIFT) flags any avoided word found in the doc's prose.
+const glossaryTermSchema = z
+  .object({ term: z.string(), def: z.string(), avoid: z.array(z.string()).optional() })
+  .strict();
 export const glossarySchema = z
   .object({
     title: z.string().optional(),
@@ -359,15 +364,19 @@ export const agendaSchema = z
   })
   .strict();
 
-// ─── tree (indented hierarchy / issue tree) ─────────────────────────────────
+// ─── tree (indented hierarchy / issue tree / org chart) ─────────────────────
 // `variant: issue` renders the MECE issue-tree presentation (one problem split
 // into exclusive branches); the former `mece` type is a permanent alias for it.
+// `variant: org` renders a top-down org chart (tidy layout, node `role` under
+// the label).
 const treeNodeSchema = z
   .object({
     id: z.string(),
     parent: z.string().optional(),
     label: z.string(),
     note: z.string().optional(),
+    /** The node's role or title — rendered muted under the label (`variant: org`). */
+    role: z.string().optional(),
     /**
      * The node's measured value. Give the nodes values and the hierarchy
      * becomes a DRIVER TREE — p95 = queue + compute + network, revenue =
@@ -383,7 +392,7 @@ export const treeSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
-    variant: z.enum(['issue']).optional(),
+    variant: z.enum(['issue', 'org']).optional(),
     nodes: z.array(treeNodeSchema).optional(),
   })
   .strict();
@@ -1267,6 +1276,27 @@ const chartItemSchema = z
     desc: z.string().optional(),
   })
   .strict();
+// A scatter point that owns its own x/y (numeric axes). `size` scales the
+// bubble area; `label` is drawn beside the bubble.
+const chartPointSchema = z
+  .object({
+    x: z.number(),
+    y: z.number(),
+    size: z.number().optional(),
+    label: z.string().optional(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+// Reference lines for `kind: scatter` with `points`. `x` / `y` draw dashed
+// guides at those values; `quadrants` labels the four corners the guides cut
+// the plot into, in TL, TR, BL, BR order.
+const chartGuidesSchema = z
+  .object({
+    x: z.number().optional(),
+    y: z.number().optional(),
+    quadrants: z.array(z.string()).length(4).optional(),
+  })
+  .strict();
 export const chartSchema = z
   .object({
     title: z.string().optional(),
@@ -1280,6 +1310,14 @@ export const chartSchema = z
     items: z.array(chartItemSchema).optional(),
     // Legacy synonym for `items`, kept for funnel-era bodies.
     stages: z.array(chartItemSchema).optional(),
+    // Numeric-axis scatter: used only by `kind: scatter`. When present, both
+    // axes become numeric with computed domains (the `labels`+`series` scatter
+    // path stays as the ordinal fallback).
+    points: z.array(chartPointSchema).optional(),
+    guides: chartGuidesSchema.optional(),
+    /** Axis titles (numeric scatter). */
+    xLabel: z.string().optional(),
+    yLabel: z.string().optional(),
     unit: z.string().optional(),
     budget: z.number().optional(),
     max: z.number().optional(),
@@ -2422,6 +2460,120 @@ export const scenariosSchema = z
   })
   .strict();
 
+// ─── fishbone (cause & effect — Ishikawa) ────────────────────────────────────
+// The analysis shape for "what causes this?": one effect at the head, the
+// candidate cause categories as bones off the spine, and the specific causes
+// as items along each bone. A `flow` shows a path; a `tree` shows containment;
+// a fishbone groups suspected causes behind one outcome.
+const fishboneCauseSchema = z
+  .object({
+    label: z.string(),
+    /** Specific causes along this bone. */
+    items: z.array(z.string()).max(8).optional(),
+  })
+  .strict();
+export const fishboneSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** The head — the problem or outcome the causes feed. */
+    effect: z.string(),
+    /** The main bones. Past 8 the diagram stops being an analysis. */
+    causes: z.array(fishboneCauseSchema).min(1).max(8),
+  })
+  .strict();
+
+// ─── storymap (user story mapping — backbone + slices) ──────────────────────
+// The story-mapping shape: the ordered activities of the journey across the
+// top (the backbone), and horizontal release slices under it, each holding
+// the cards that ship in that slice. A `journey` tracks experience over
+// stages and a `kanban` tracks work in flight — a storymap shows what gets
+// built under each activity, slice by slice.
+const storymapCardSchema = z.union([
+  z.string(),
+  z
+    .object({
+      title: z.string(),
+      tag: z.string().optional(),
+    })
+    .strict(),
+]);
+const storymapStepSchema = z
+  .object({
+    label: z.string(),
+    /** A muted one-liner under the step label. */
+    note: z.string().optional(),
+  })
+  .strict();
+const storymapSliceSchema = z
+  .object({
+    label: z.string(),
+    /**
+     * One cell per backbone step, in backbone order. A cell is the list of
+     * cards under that step in this slice — `[]` for none.
+     */
+    cells: z.array(z.array(storymapCardSchema).max(6)),
+  })
+  .strict();
+export const storymapSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** The ordered activities across the top. Past 10 the map stops reading. */
+    backbone: z.array(storymapStepSchema).min(1).max(10),
+    /** The horizontal release slices, top (first) to bottom. */
+    slices: z.array(storymapSliceSchema).min(1).max(6),
+  })
+  .strict()
+  // Each slice must give one cell per backbone step, so a card can never sit
+  // under the wrong activity silently.
+  .superRefine((val, ctx) => {
+    val.slices.forEach((slice, i) => {
+      if (slice.cells.length !== val.backbone.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['slices', i, 'cells'],
+          message: `slice "${slice.label}" has ${slice.cells.length} cells but the backbone has ${val.backbone.length} steps — give one cell per step (use [] for an empty cell)`,
+        });
+      }
+    });
+  });
+
+// ─── slopegraph (ranked before / after comparison) ──────────────────────────
+// Two labeled columns (usually years), one line per item between them. The
+// slope of each line is the message: what rose, what fell, what held. A
+// `chart` plots series against an axis; a slopegraph names every item at
+// both ends and lets the lines cross.
+const slopegraphItemSchema = z
+  .object({
+    label: z.string(),
+    /** Value in the left column. */
+    from: z.number(),
+    /** Value in the right column. */
+    to: z.number(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+export const slopegraphSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** Left column header (e.g. "2023"). */
+    left: z.string(),
+    /** Right column header (e.g. "2025"). */
+    right: z.string(),
+    /** Unit appended to every value (e.g. "%", "ms"). */
+    unit: z.string().optional(),
+    items: z.array(slopegraphItemSchema).min(2).max(20),
+  })
+  .strict();
+
 // ─── registry source-of-truth ───────────────────────────────────────────────
 /**
  * The schema map. `as const satisfies Record<BlockType, ...>` enforces that
@@ -2515,6 +2667,9 @@ export const blockSchemas = {
   harvey: harveySchema,
   scqa: scqaSchema,
   scenarios: scenariosSchema,
+  fishbone: fishboneSchema,
+  storymap: storymapSchema,
+  slopegraph: slopegraphSchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

@@ -48,6 +48,24 @@ describe('data-path tagging (direct edit, narrative blocks)', () => {
     expect(html).toContain('<div class="row" data-bp="terms.0">');
     expect(html).toContain('<dt data-bp="terms.1.term">');
     expect(html).toContain('<dd data-bp="terms.0.def">');
+    // No avoid list → no "not:" suffix at all.
+    expect(html).not.toContain('class="avoid"');
+  });
+
+  it('glossary renders avoided terms as a muted "not:" suffix, tagged per word', () => {
+    const html = renderGlossary({
+      terms: [
+        { term: 'SLO', def: 'The objective.', avoid: ['uptime target', 'service promise'] },
+        { term: 'Saga', def: 'A split transaction.' },
+      ],
+    });
+    expect(html).toContain('<span class="avoid" data-bl="terms.0.avoid">not: ');
+    expect(html).toContain('<span data-bp="terms.0.avoid.0">uptime target</span>');
+    expect(html).toContain('<span data-bp="terms.0.avoid.1">service promise</span>');
+    // The suffix joins with a comma and stays inside the definition cell.
+    expect(html).toContain('uptime target</span>, <span data-bp="terms.0.avoid.1">');
+    // The avoid-free term renders exactly as before.
+    expect(html).toContain('<dd data-bp="terms.1.def">A split transaction.</dd>');
   });
 
   it('faq tags items, q/a, and the items container', () => {

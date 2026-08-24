@@ -96,6 +96,9 @@ import { renderWardley } from './blocks/wardley.js';
 import { renderHarvey } from './blocks/harvey.js';
 import { renderScqa } from './blocks/scqa.js';
 import { renderScenarios } from './blocks/scenarios.js';
+import { renderFishbone } from './blocks/fishbone.js';
+import { renderStorymap } from './blocks/storymap.js';
+import { renderSlopegraph } from './blocks/slopegraph.js';
 
 /** Per-block HTML renderer signature. */
 export type HtmlRenderer<K extends BlockType> = (data: BlockDataMap[K]) => string;
@@ -192,4 +195,7 @@ export const htmlRenderers: HtmlRendererRegistry = {
   harvey: renderHarvey,
   scqa: renderScqa,
   scenarios: renderScenarios,
+  fishbone: renderFishbone,
+  storymap: renderStorymap,
+  slopegraph: renderSlopegraph,
 };

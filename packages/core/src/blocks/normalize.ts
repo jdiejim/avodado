@@ -203,7 +203,7 @@ function textPairGrammar(
   return { expand, signature: (key) => !knownKeys.includes(key) };
 }
 
-const glossaryGrammar = textPairGrammar('term', 'def', true, ['term', 'def', 'id'], true);
+const glossaryGrammar = textPairGrammar('term', 'def', true, ['term', 'def', 'avoid', 'id'], true);
 const faqGrammar = textPairGrammar('q', 'a', true, ['q', 'a', 'open', 'id']);
 const takeawaysGrammar = textPairGrammar('text', 'detail', false, ['text', 'detail', 'id']);
 const listGrammar = textPairGrammar('lead', 'text', false, [

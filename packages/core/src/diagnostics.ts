@@ -19,7 +19,22 @@ export type DiagnosticCode =
   | 'E_UNKNOWN_BLOCK'
   | 'W_EMPTY_BLOCK'
   | 'W_SUSPECT_BLOCK'
-  | 'W_ALIAS_TYPE';
+  | 'W_ALIAS_TYPE'
+  // Density budget (see `density.ts`). Always a warning — a design nudge
+  // ("split this diagram"), never blocking, never escalated by the CLI.
+  | 'W_DENSE_BLOCK'
+  // On-disk convention (checked by the CLI — it is path-based, not
+  // content-based): kebab-case filenames, at most `docs/<area>/<doc>.md`
+  // under the docs root. Always a warning; no flag escalates it.
+  | 'W_DOC_CONVENTION'
+  // Prose-lint codes (see `prose/lint.ts`). Warnings by default; the CLI can
+  // escalate them under a strict flag.
+  | 'W_PROSE_LONG_SENTENCE'
+  | 'W_PROSE_LONG_PARAGRAPH'
+  | 'W_PROSE_PASSIVE_STEP'
+  | 'W_PROSE_TENSE'
+  | 'W_PROSE_FILLER_OPENER'
+  | 'W_PROSE_TERM_DRIFT';
 
 /**
  * Uniform diagnostic shape.

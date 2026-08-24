@@ -181,6 +181,12 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```scqa\nsituation: We process 12k orders a day across three regions.\ncomplication: p95 checkout crossed 2s in March and conversion fell 3.1pp.\nquestion: Where does the next quarter of platform work go?\nanswer: Move payment capture off the request path — it returns 1.8s of the 2.4s.\nbecause:\n  - Capture is 74% of p95 and is fully async-able\n  - No schema change, so it ships in one quarter\n```\n',
   scenarios:
     '```scenarios\ntitle: Three ways next year goes\ndrivers: [Volume growth, Price, Churn]\ncases:\n  - { label: Downside, values: ["-5%", flat, "12%"], outcome: "$18M", tone: neg }\n  - { label: Base, values: ["8%", "+2%", "9%"], outcome: "$24M", tone: base }\n  - { label: Upside, values: ["15%", "+4%", "7%"], outcome: "$31M", tone: pos }\n```\n',
+  fishbone:
+    '```fishbone\ntitle: Why checkout latency rose\neffect: p95 checkout over 2s\ncauses:\n  - { label: Code, items: [Sync capture call, N+1 cart query] }\n  - { label: Infrastructure, items: [Undersized DB pool] }\n  - { label: Traffic, items: [Flash-sale spikes] }\n```\n',
+  storymap:
+    '```storymap\ntitle: Checkout story map\nbackbone:\n  - { label: Browse, note: Find the product }\n  - { label: Pay }\nslices:\n  - { label: MVP, cells: [[Search box], ["Card payment"]] }\n  - { label: Later, cells: [["Filters", "Saved carts"], []] }\n```\n',
+  slopegraph:
+    '```slopegraph\ntitle: Support volume by channel\nleft: "2023"\nright: "2025"\nunit: "%"\nitems:\n  - { label: Email, from: 48, to: 22 }\n  - { label: Chat, from: 20, to: 45, accent: teal }\n  - { label: Phone, from: 32, to: 33 }\n```\n',
 };
 
 /**
@@ -331,6 +337,9 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   divider: 'narrative',
   bignumber: 'narrative',
   takeaways: 'narrative',
+  fishbone: 'charts',
+  storymap: 'planning',
+  slopegraph: 'charts',
 };
 
 /** The block types of one family, in {@link BLOCK_TYPES} (registry) order. */
@@ -431,6 +440,9 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   harvey: 'Rated comparison',
   scqa: 'Executive summary',
   scenarios: 'Scenario table',
+  fishbone: 'Fishbone diagram',
+  storymap: 'Story map',
+  slopegraph: 'Slopegraph',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -549,4 +561,10 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'An executive summary in Minto order — situation, complication, question, and the answer the deck exists to deliver.',
   scenarios:
     'Base, upside and downside against the same drivers — assumptions in columns, with the outcome each set produces on its own row.',
+  fishbone:
+    'Cause & effect (Ishikawa) — one effect at the head, cause categories as bones off the spine, specific causes as items along each bone.',
+  storymap:
+    'User story map — the ordered backbone of activities across the top, release slices as rows of cards under each step.',
+  slopegraph:
+    'Ranked before / after — one line per item between two labeled columns; the slopes show what rose, fell, or held.',
 };

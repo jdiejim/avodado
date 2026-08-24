@@ -312,6 +312,261 @@ function renderScatter(
   return svgOpen(f) + axes(f, labels, data.unit, tagLabels) + s + `</svg>`;
 }
 
+// ─── kind: scatter with `points` (numeric axes) ──────────────────────────────
+// Each point owns its own x/y, so both axes are numeric: domains come from the
+// data (extended to include any guides), padded, and snapped to nice tick
+// steps. `size` drives the bubble radius on a sqrt scale (area reads as the
+// value); `label` sits beside its bubble, nudged vertically when two labels
+// would overlap. `guides` draws dashed reference lines and optional muted
+// quadrant labels in the plot corners (TL, TR, BL, BR order).
+
+type ScatterPoint = NonNullable<ChartData['points']>[number];
+
+/** A nice tick step (1/2/5 × 10^k) for roughly `count` ticks over `range`. */
+function niceStep(range: number, count: number): number {
+  const raw = range / Math.max(count, 1);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const scaled = raw / mag;
+  const nice = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+  return nice * mag;
+}
+
+interface NumScale {
+  readonly min: number;
+  readonly max: number;
+  readonly ticks: readonly number[];
+}
+
+/** Pads a data extent, snaps it to nice tick multiples, and lists the ticks. */
+function numScale(values: readonly number[], count: number): NumScale {
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
+  if (lo === hi) {
+    // A flat extent can't scale — open a symmetric window around the value.
+    const pad = lo === 0 ? 1 : Math.abs(lo) * 0.2;
+    lo -= pad;
+    hi += pad;
+  } else {
+    const pad = (hi - lo) * 0.06;
+    lo -= pad;
+    hi += pad;
+  }
+  const step = niceStep(hi - lo, count);
+  const min = Math.floor(lo / step) * step;
+  const max = Math.ceil(hi / step) * step;
+  const ticks: number[] = [];
+  // Guard float drift so the last tick always lands on `max`.
+  for (let t = min; t <= max + step / 2; t += step) ticks.push(Math.round(t * 1e6) / 1e6);
+  return { min, max, ticks };
+}
+
+/** Truncation cap for point labels — the full text still ships in <title>. */
+const SC_LABEL_CHARS = 40;
+
+function scLabel(label: string): string {
+  return label.length > SC_LABEL_CHARS ? `${label.slice(0, SC_LABEL_CHARS - 1)}…` : label;
+}
+
+/** Bubble radius: sqrt scale over `size`, r 4–18; 5 when `size` is absent. */
+function scRadius(size: number | undefined, minS: number, maxS: number): number {
+  if (size === undefined) return 5;
+  const s = Math.max(size, 0);
+  if (maxS <= minS) return 8;
+  const t = (Math.sqrt(s) - Math.sqrt(minS)) / (Math.sqrt(maxS) - Math.sqrt(minS));
+  return Math.round((4 + t * 14) * 10) / 10;
+}
+
+interface LabelBox {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+
+const boxesOverlap = (a: LabelBox, b: LabelBox): boolean =>
+  a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+
+interface Dot {
+  readonly px: number;
+  readonly py: number;
+  readonly r: number;
+}
+
+/** True when a bubble's disc overlaps a label box (closest-point test). */
+function circleHitsBox(c: Dot, b: LabelBox): boolean {
+  const nx = Math.max(b.x0, Math.min(c.px, b.x1));
+  const ny = Math.max(b.y0, Math.min(c.py, b.y1));
+  const dx = c.px - nx;
+  const dy = c.py - ny;
+  return dx * dx + dy * dy < c.r * c.r;
+}
+
+function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): string {
+  const guides = data.guides;
+  const width = 560;
+  const height = 320;
+  const x0 = data.yLabel !== undefined ? 70 : 56;
+  const x1 = width - 20;
+  const y0 = 18;
+  const y1 = height - (data.xLabel !== undefined ? 48 : 34);
+
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  // Guides join the extent so an off-data guide extends the domain instead of
+  // drawing outside the plot.
+  if (guides?.x !== undefined) xs.push(guides.x);
+  if (guides?.y !== undefined) ys.push(guides.y);
+  const sx = numScale(xs, 5);
+  const sy = numScale(ys, 5);
+  const X = (v: number): number =>
+    Math.round((x0 + ((x1 - x0) * (v - sx.min)) / (sx.max - sx.min)) * 10) / 10;
+  const Y = (v: number): number =>
+    Math.round((y1 - ((y1 - y0) * (v - sy.min)) / (sy.max - sy.min)) * 10) / 10;
+
+  const sizes = points.filter((p) => p.size !== undefined).map((p) => Math.max(p.size ?? 0, 0));
+  const minS = sizes.length > 0 ? Math.min(...sizes) : 0;
+  const maxS = sizes.length > 0 ? Math.max(...sizes) : 0;
+
+  let s = svgOpenSize(width, height);
+
+  // Gridlines + tick labels on both axes.
+  for (const t of sy.ticks) {
+    const y = Y(t);
+    s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" class="chart-axis"${t === sy.min ? '' : ' opacity="0.6"'}/>`;
+    s += `<text x="${x0 - 8}" y="${y + 3}" class="chart-tick">${escapeHtml(fmt(t, data.unit))}</text>`;
+  }
+  for (const t of sx.ticks) {
+    const x = X(t);
+    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" class="chart-axis" opacity="${t === sx.min ? 1 : 0.35}"/>`;
+    s += `<text x="${x}" y="${y1 + 16}" class="chart-label">${escapeHtml(fmt(t, undefined))}</text>`;
+  }
+
+  // Axis titles.
+  if (data.xLabel !== undefined) {
+    s += `<text x="${Math.round((x0 + x1) / 2)}" y="${height - 8}" class="chart-label"${bp('xLabel')}>${escapeHtml(data.xLabel)}</text>`;
+  }
+  if (data.yLabel !== undefined) {
+    const cy = Math.round((y0 + y1) / 2);
+    s += `<text x="14" y="${cy}" class="chart-label" transform="rotate(-90 14 ${cy})"${bp('yLabel')}>${escapeHtml(data.yLabel)}</text>`;
+  }
+
+  // Dashed reference guides + muted quadrant corner labels (TL, TR, BL, BR).
+  if (guides !== undefined) {
+    if (guides.x !== undefined) {
+      const gx = X(guides.x);
+      s += `<line x1="${gx}" y1="${y0}" x2="${gx}" y2="${y1}" stroke="var(--gray)" stroke-width="1" stroke-dasharray="5 4" opacity="0.65"${bp('guides.x')}/>`;
+    }
+    if (guides.y !== undefined) {
+      const gy = Y(guides.y);
+      s += `<line x1="${x0}" y1="${gy}" x2="${x1}" y2="${gy}" stroke="var(--gray)" stroke-width="1" stroke-dasharray="5 4" opacity="0.65"${bp('guides.y')}/>`;
+    }
+    if (guides.quadrants !== undefined && guides.quadrants.length === 4) {
+      const [tl, tr, bl_, br] = guides.quadrants;
+      const corner = (
+        text: string | undefined,
+        x: number,
+        y: number,
+        anchor: 'start' | 'end',
+        i: number,
+      ): string =>
+        text === undefined || text === ''
+          ? ''
+          : `<text x="${x}" y="${y}" class="chart-label" style="text-anchor:${anchor};opacity:.55"${bp(`guides.quadrants.${i}`)}>${escapeHtml(text)}</text>`;
+      s += corner(tl, x0 + 8, y0 + 12, 'start', 0);
+      s += corner(tr, x1 - 8, y0 + 12, 'end', 1);
+      s += corner(bl_, x0 + 8, y1 - 8, 'start', 2);
+      s += corner(br, x1 - 8, y1 - 8, 'end', 3);
+    }
+  }
+
+  // Bubble geometry first — a label must dodge EVERY bubble, so all discs are
+  // known before any label is placed. Dots always sit at their true
+  // coordinates, even when coincident; only labels move.
+  const dots: Dot[] = points.map((p) => ({
+    px: X(p.x),
+    py: Y(p.y),
+    r: scRadius(p.size, minS, maxS),
+  }));
+
+  let dotSvg = `<g${bl('points')}>`;
+  points.forEach((p, i) => {
+    const d = dots[i];
+    if (d === undefined) return;
+    const color = colorAt(p.accent, 0);
+    const tip = `${p.label !== undefined ? `${p.label} — ` : ''}${fmt(p.x, undefined)}, ${fmt(p.y, data.unit)}${p.size !== undefined ? ` (${fmt(p.size, undefined)})` : ''}`;
+    dotSvg += `<circle cx="${d.px}" cy="${d.py}" r="${d.r}" fill="${color}" fill-opacity="0.55" stroke="${color}" stroke-width="1.5"${bp(`points.${i}`)}><title>${escapeHtml(tip)}</title></circle>`;
+  });
+  dotSvg += `</g>`;
+
+  // Label placement, in point-index order (deterministic). Candidates per
+  // label: right of the bubble, left (end-anchor flip), above, below. A
+  // candidate is rejected when its box leaves the SVG, crosses ANY bubble, or
+  // crosses an already-placed label. No candidate fits → the label is
+  // SUPPRESSED (the bubble's <title> still carries it). A label that lands
+  // >14px from its default anchor gets a thin leader line back to its bubble.
+  const placed: LabelBox[] = [];
+  let leaders = '';
+  let labels = '';
+  points.forEach((p, i) => {
+    const d = dots[i];
+    if (d === undefined || p.label === undefined || p.label === '') return;
+    const text = scLabel(p.label);
+    const w = text.length * 5.6;
+    const { px, py, r } = d;
+    // Clearance radius: a coincident or covering bubble (think identical
+    // coordinates with different sizes) is what the label really has to
+    // clear, not just this point's own disc.
+    let rc = r;
+    for (const c of dots) {
+      const dist = Math.sqrt((c.px - px) * (c.px - px) + (c.py - py) * (c.py - py));
+      if (dist < c.r && c.r + dist > rc) rc = c.r + dist;
+    }
+    const candidates: ReadonlyArray<{ anchor: 'start' | 'end' | 'middle'; lx: number; ly: number }> = [
+      { anchor: 'start', lx: px + rc + 5, ly: py + 3 },
+      { anchor: 'end', lx: px - rc - 5, ly: py + 3 },
+      { anchor: 'middle', lx: px, ly: py - rc - 7 },
+      { anchor: 'middle', lx: px, ly: py + rc + 12 },
+    ];
+    const boxFor = (c: (typeof candidates)[number]): LabelBox => ({
+      x0: c.anchor === 'start' ? c.lx : c.anchor === 'end' ? c.lx - w : c.lx - w / 2,
+      x1: c.anchor === 'start' ? c.lx + w : c.anchor === 'end' ? c.lx : c.lx + w / 2,
+      y0: c.ly - 9,
+      y1: c.ly + 2,
+    });
+    const fits = (b: LabelBox): boolean =>
+      b.x0 >= 2 &&
+      b.x1 <= width - 2 &&
+      b.y0 >= 2 &&
+      b.y1 <= height - 2 &&
+      !dots.some((c) => circleHitsBox(c, b)) &&
+      !placed.some((pb) => boxesOverlap(pb, b));
+    const pick = candidates.find((c) => fits(boxFor(c)));
+    if (pick === undefined) return; // suppressed — <title> keeps the data
+    const box = boxFor(pick);
+    placed.push(box);
+    // Leader when the label sits away from its default (right-of-bubble) spot.
+    const dx = pick.lx - (px + r + 5);
+    const dy = pick.ly - (py + 3);
+    if (Math.sqrt(dx * dx + dy * dy) > 14) {
+      // From the box edge nearest the bubble to just outside the bubble rim.
+      const sx = Math.max(box.x0, Math.min(px, box.x1));
+      const sy = Math.max(box.y0, Math.min(py, box.y1));
+      const len = Math.sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy));
+      if (len > r + 2) {
+        const ex = px - ((px - sx) / len) * (r + 1.5);
+        const ey = py - ((py - sy) / len) * (r + 1.5);
+        leaders += `<line x1="${Math.round(sx * 10) / 10}" y1="${Math.round(sy * 10) / 10}" x2="${Math.round(ex * 10) / 10}" y2="${Math.round(ey * 10) / 10}" class="chart-leader"/>`;
+      }
+    }
+    const full = p.label.length > SC_LABEL_CHARS ? `<title>${escapeHtml(p.label)}</title>` : '';
+    labels += `<text x="${Math.round(pick.lx * 10) / 10}" y="${Math.round(pick.ly * 10) / 10}" class="chart-label" style="text-anchor:${pick.anchor}"${bp(`points.${i}.label`)}>${escapeHtml(text)}${full}</text>`;
+  });
+
+  // Leaders under the bubbles, labels on top.
+  s += leaders + dotSvg + labels + `</svg>`;
+  return s;
+}
+
 function renderGauge(data: ChartData, items: readonly DonutItem[]): string {
   const width = 420;
   const solo = items.length <= 1;
@@ -695,6 +950,10 @@ export function renderChart(data: ChartData): string {
     inner = renderDonut(data, data.items ?? []);
   } else if (kind === 'gauge') {
     inner = renderGauge(data, data.items ?? []);
+  } else if (kind === 'scatter' && data.points !== undefined && data.points.length > 0) {
+    // Numeric-axis scatter: each point owns its x/y. The `labels`+`series`
+    // scatter below stays as the ordinal fallback for existing docs.
+    inner = renderScatterPoints(data, data.points);
   } else if (kind === 'radar') {
     // Radar uses `labels` as the axes (3+ required to draw a web).
     const body = renderRadar(data, labels, series);
