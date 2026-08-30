@@ -1,5 +1,80 @@
 # @avodado/studio
 
+## 0.13.0
+
+### Minor Changes
+
+- 2a7e00d: feat(studio): shell rebuild — rail navigation, one top bar, unified insert picker, surfaced validation, one theme panel, narrow layout
+  - **Rail navigation**: a persistent left rail replaces the doc switcher and the
+    Home "mode" — brand, doc search (⌘K), New doc, an "All documents" root view,
+    docs grouped by folder with per-doc error dots, and a footer with Site ↗ and
+    Settings (autosave lives there now). Narrow windows collapse it to a 52px
+    icon strip; search opens the full rail as a drawer.
+  - **Doc table**: "All documents" is a table (name · folder · edited · check
+    status), most recently edited first, with a template-picker empty state.
+  - **One top bar**: crumb · check chip · Library · Share ▾ (link, exports,
+    site) · Theme · Present · one Save button with a plain status text.
+  - **One insert picker**: the `/` command, the gap `+`, and the Library button
+    open the same component (compact ↔ browse faces, one search, one footer).
+  - **Docked block inspector**: the Edit Sheet presents as a right-docked panel
+    at wide widths — the canvas stays visible and scrolls beside it, the
+    selected card keeps its ring, and the in-panel preview is a toggle (the
+    live document is the preview; the block updates on Done). All sheet
+    semantics (draft, tabs, Cancel/Done, ⌘⏎, Esc) are unchanged.
+  - **Validation surfaced**: per-block error badges + red rings on the canvas,
+    the check chip opens a results popover whose rows deep-link to the block and
+    field ("checked live" — diagnostics re-run on every edit), the review dialog
+    shows an error-count line, the doc list / rail show per-doc status from the
+    server's `errorCount`, and the All-documents view gets an aggregate chip
+    whose popover lists the failing docs.
+  - **One theme panel**: the Theme button opens a right-docked panel — theme
+    cards (apply instantly) plus the customize form (the old generator), ending
+    in one "Save theme" write.
+  - **Narrow layout (≤820px)**: icon-strip rail with a drawer, a ⋯ overflow
+    menu folding Library / Share / Theme / Present (check chip and Save stay on
+    the bar), and the Edit Sheet presented as a bottom sheet (full width,
+    rounded top, drag-handle affordance — same component and behavior).
+  - **Kill list applied**: DocSwitcher, HomeView-as-mode, Site mode chrome, the
+    HintBar and the one-time direct-edit hint (the contextual keybar + `?`
+    overlay are THE hint surface, one dismissal key, legacy keys migrated), the
+    gap-drop "new block" DnD branch, and stale `?`-overlay content (Site-mode
+    claims removed; the `n` annotate chord and the current shell documented).
+
+  `avodado` (the studio server) is patched for the shell: `/api/docs` now
+  carries a per-doc `errorCount` (mtime-cached), which the doc table and rail
+  status read.
+
+### Patch Changes
+
+- e1f3a0e: feat(core,cli): per-type density budgets — `avo check` now warns when a diagram should be split
+  - New core lint `lintDensity(doc, file)` and exported `DENSITY_BUDGETS` map: conservative per-type complexity caps (sequence >8 actors or >24 messages; flow/dfd >24 nodes; state >16 states; c4/block/felogic/frontend >20 nodes; erd >12 entities; tree >40 nodes; graph >30 nodes; cluster >16 services; archmap >8 areas; kanban >8 columns; timeline >20 items; journey >10 stages). Pure counts, no heuristics; a block at exactly the cap passes.
+  - New diagnostic code `W_DENSE_BLOCK`, wired into `avo check` beside the prose lint. Always a warning with a per-type split suggestion — it never affects the exit code, and `--strict-prose` does not escalate it.
+
+- e1f3a0e: `avo check` now enforces the on-disk convention with `W_DOC_CONVENTION` warnings: doc filenames under the docs root must be kebab-case slugs, and docs may sit at most one group level deep (`docs/<area>/<doc>.md`). Files outside the docs root are not checked. The warnings never gate the exit code and no flag escalates them. `avo init` documents the layout in its config template, its summary line, and the skill's `reference/organizing.md` ("Where files live"). `@avodado/core` adds the `W_DOC_CONVENTION` code to the diagnostic union.
+- 65ec84b: Export size presets and accessibility fixes.
+
+  `avo html` and `avo pdf` accept `--size sm|md|lg|xl` (720 / 960 / 1280 / 1600 px page width). Without the option, output keeps the default width (1180 px content column; A4 PDF page). For PDF, the preset sets the page width with portrait A-series proportions.
+
+  Accessibility: harvey rating balls now carry `role="img"` and an `aria-label` ("N of 4"). Theme tokens that failed WCAG AA text contrast were darkened: the muted-text gray in the base palette (`#8a8475` → `#6f695b`), `minimal` (`#888888` → `#6e6e6e`), and `soft` (`#8b93a7` → `#646c7e`); the accent in `teal`/`soft` (`#f59e0b` → `#b45309`) and `slate` (`#0d9488` → `#0d6d66`).
+
+- e1f3a0e: feat: new `fishbone` block type (88 total) — cause & effect (Ishikawa) analysis. One `effect` at the head of a horizontal spine, 1–8 `causes` as bones alternating above and below, up to 8 `items` (specific causes) ticked along each bone. The renderer spaces bones by label width, so long labels grow the diagram instead of overlapping; text stays horizontal and wraps with an ellipsis past four lines. Studio and MCP pick up the new type via the bundled core/render and the regenerated embedded skill.
+- 65ec84b: Fan-in entry ports in the shared `ortho` edge router: when two or more edges terminate on the same side of the same node, each gets its own entry port along that side (centered spread, 8px apart, capped to the side's length, ordered by source node id), so their final segments and arrowheads no longer stack. A side with a single incoming edge keeps the previous geometry byte-for-byte. Applies to every block-diagram renderer that routes with `ortho` (block, flow, graph, dfd, state, c4, cluster, swimlane, felogic and their aliases). Studio and MCP are patched because they bundle the renderer.
+- 65ec84b: fix(render): the typed `prose` block now renders inline Markdown (bold, `code`, links) in headings, paragraphs, list items, and quotes through the same hardened pipeline as `callout` and `pullquote`. Literal HTML stays escaped; block structure is unchanged.
+- e1f3a0e: feat(core,cli): STE-informed prose linter — `lintProse` in core, wired into `avo check` with `--strict-prose`
+  - `@avodado/core` exports `lintProse(doc, file, opts?)` and `PROSE_CHECK_CODES`. Six checks, all level `warn`: `W_PROSE_LONG_SENTENCE`, `W_PROSE_LONG_PARAGRAPH`, `W_PROSE_PASSIVE_STEP`, `W_PROSE_TENSE`, `W_PROSE_FILLER_OPENER`, `W_PROSE_TERM_DRIFT`. Glossary terms gain an optional `avoid` list; a listed word in the doc's prose reports term drift.
+  - `avo check` runs the prose lint on every doc, next to schema validation and reference resolution. Findings surface as ordinary diagnostics (table, `--json`, code frames) and stay warnings — exit 0. The new `--strict-prose` flag escalates `W_PROSE_*` to errors and exit 1. `avo build` is unchanged: prose warnings never fail a build.
+  - `@avodado/render` renders the glossary `avoid` field as "not:" chips; `@avodado/studio` bundles core/render and is patched to pick both up. `@avodado/mcp` embeds the updated skill reference.
+  - Block text fields (`description`, `lede`, `body`, `note`, `subtitle`, `summary`) are exempt from `W_PROSE_LONG_PARAGRAPH` — fields carry complete information, and a sentence-count cap pressures fact deletion; markdown paragraphs, `prose` texts, and `steps` item text keep the cap, and fields keep every form check.
+
+- e1f3a0e: chart `kind: scatter` gains numeric-axis `points` (x/y, `size` bubbles, per-point labels with collision nudging) plus `guides` (dashed x/y reference lines and TL/TR/BL/BR quadrant labels) and `xLabel`/`yLabel` axis titles; `tree` gains `variant: org` (top-down tidy org chart, node `role` under the label). Both additive — existing `labels`+`series` scatter and default/issue trees render byte-identically.
+- e1f3a0e: docs(skill): rewrite authoring skill as toolkit (question→primitive table, selection procedure, recipes, STE style guide); rewrite demo/template prose
+  - The skill gains two reference files: `reference/recipes.md` (composition recipes) and `reference/style-ste.md` (STE-informed writing rules). Both join `SKILL_REFERENCE_FILES`, the `avo skill` stitch, and the MCP embedded skill.
+  - SKILL.md is rewritten around a question→primitive table and a 7-step selection procedure; the trigger-word playbooks and the flat glossary table are gone.
+  - Demo, template, and prefilled doc-template prose (`@avodado/core` docTemplates) follow the new prose rules: no restating the block, short factual sentences.
+  - `@avodado/studio` bundles core/render, so it is patched to pick up the rewritten doc templates.
+
+- e1f3a0e: feat: two new block types (90 total) — `storymap` and `slopegraph`. `storymap` (planning) is a user story map: a `backbone` of 1–10 ordered activities across the top, 1–6 release `slices` as horizontal bands whose cards stack under the step they belong to; each slice must give exactly one cell per backbone step (validated), cards are strings or `{ title, tag }`. `slopegraph` (charts & overviews) is a ranked before/after comparison: `left`/`right` column headers, 2–20 items each drawn as one straight line between the two baselines, positioned by value on a shared linear scale; colliding labels are nudged apart deterministically and an `accent` highlights the lines that carry the story. Both types ship density budgets (backbone > 10 steps, items > 20 warn `W_DENSE_BLOCK`). Studio and MCP pick up the new types via the bundled core/render and the regenerated embedded skill.
+
 ## 0.12.1
 
 ### Patch Changes
