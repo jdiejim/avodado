@@ -128,8 +128,36 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
         slug: 'getting-started',
         file: join('docs', 'getting-started.md'),
         title: 'Getting started',
+        errorCount: 0,
       });
       expect(docs[0]?.mtimeMs).toBeGreaterThan(0);
+    } finally {
+      await s.stop();
+    }
+  }, 20_000);
+
+  it('GET /api/docs carries a per-doc check errorCount (mtime-cached)', async () => {
+    const s = await startStudio({
+      before: (tmp) => {
+        // Invalid enum value → one E_SCHEMA error from validateDocument.
+        writeFileSync(
+          join(tmp, 'docs', 'broken.md'),
+          '```meta\ntitle: Broken\n```\n\n```callout\ntone: nope\nbody: hi\n```\n',
+        );
+      },
+    });
+    try {
+      const list = async (): Promise<Array<{ slug: string; errorCount: number }>> => {
+        const res = await fetch(api(s.port, '/api/docs'));
+        expect(res.status).toBe(200);
+        return (await res.json()) as Array<{ slug: string; errorCount: number }>;
+      };
+      const docs = await list();
+      const bySlug = new Map(docs.map((d) => [d.slug, d]));
+      expect(bySlug.get('getting-started')?.errorCount).toBe(0);
+      expect(bySlug.get('broken')?.errorCount ?? 0).toBeGreaterThan(0);
+      // Second list hits the mtime cache — same payload.
+      expect(await list()).toEqual(docs);
     } finally {
       await s.stop();
     }

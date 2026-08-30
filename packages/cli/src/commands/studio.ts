@@ -36,7 +36,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 import open from 'open';
-import { parseDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from '@avodado/core';
 import type { ThemeName } from '@avodado/render';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
@@ -292,20 +292,49 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
     });
   };
 
+  /**
+   * Doc-list metadata cache, keyed by file mtime: a list request re-reads and
+   * re-stats every doc (that already happened for titles) but parses and
+   * validates only the docs whose mtime changed since the last list. So the
+   * per-doc `errorCount` costs one parse+validate per CHANGED doc, not per
+   * request.
+   */
+  const docListCache = new Map<string, { mtimeMs: number; title: string; errorCount: number }>();
+
   const handleDocs = async (res: ServerResponse): Promise<void> => {
     const files = await loadDocs([`${config.docsDir}/**/*.md`], opts.cwd, config.docsDir);
+    const seen = new Set<string>();
     const docs = await Promise.all(
       files.map(async (f) => {
         const st = await stat(f.absolute);
-        let title = f.slug;
-        try {
-          title = parseDocument(f.source, f.slug).meta?.title ?? f.slug;
-        } catch {
-          /* an unparseable doc still lists — the slug stands in for the title */
+        seen.add(f.slug);
+        let entry = docListCache.get(f.slug);
+        if (entry === undefined || entry.mtimeMs !== st.mtimeMs) {
+          let title = f.slug;
+          let errorCount = 0;
+          try {
+            const doc = parseDocument(f.source, f.slug);
+            title = doc.meta?.title ?? f.slug;
+            errorCount = validateDocument(doc, f.file).filter((d) => d.level === 'error').length;
+          } catch {
+            /* an unparseable doc still lists (slug as title) — and IS broken */
+            errorCount = 1;
+          }
+          entry = { mtimeMs: st.mtimeMs, title, errorCount };
+          docListCache.set(f.slug, entry);
         }
-        return { slug: f.slug, file: f.file, title, mtimeMs: st.mtimeMs };
+        return {
+          slug: f.slug,
+          file: f.file,
+          title: entry.title,
+          mtimeMs: st.mtimeMs,
+          errorCount: entry.errorCount,
+        };
       }),
     );
+    for (const slug of [...docListCache.keys()]) {
+      if (!seen.has(slug)) docListCache.delete(slug); // deleted docs drop out
+    }
     sendJson(res, 200, docs);
   };
 

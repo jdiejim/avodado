@@ -188,16 +188,25 @@ const SHORTCUTS: Readonly<Record<ShortcutContext, readonly ShortcutHint[]>> = {
 /**
  * The 4-6 hints the footer shows for a context. With a block selected whose
  * diagram has draggable parts, a "drag → move parts" hint slots in after Edit.
- * With a diagram NODE selected on a connectable kind (flow/dfd/state/c4/block),
- * a "drag a dot → connect" hint slots in after Move.
+ * With a block whose render carries tagged parts at all, a "click a part →
+ * select" hint slots in after Edit (the retired one-time canvas note, folded
+ * into the keybar). With a diagram NODE selected on a connectable kind
+ * (flow/dfd/state/c4/block), a "drag a dot → connect" hint slots in after Move.
  */
 export function shortcutsFor(
   ctx: ShortcutContext,
-  opts?: { readonly dragParts?: boolean; readonly connectDots?: boolean },
+  opts?: {
+    readonly dragParts?: boolean;
+    readonly connectDots?: boolean;
+    readonly parts?: boolean;
+  },
 ): readonly ShortcutHint[] {
   const base = SHORTCUTS[ctx];
-  if (ctx === 'canvas-selected' && opts?.dragParts === true) {
-    return [base[0] as ShortcutHint, { keys: 'drag', label: 'move parts' }, ...base.slice(1)];
+  if (ctx === 'canvas-selected' && (opts?.dragParts === true || opts?.parts === true)) {
+    const slotted: ShortcutHint[] = [];
+    if (opts.dragParts === true) slotted.push({ keys: 'drag', label: 'move parts' });
+    else if (opts.parts === true) slotted.push({ keys: 'click a part', label: 'select it' });
+    return [base[0] as ShortcutHint, ...slotted, ...base.slice(1)];
   }
   if (ctx === 'part' && opts?.connectDots === true) {
     return [

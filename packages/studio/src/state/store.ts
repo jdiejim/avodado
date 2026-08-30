@@ -17,7 +17,6 @@ import {
   moveSegment,
   parseDocument,
   replaceBlockBody,
-  type BlockType,
   type Document,
 } from '@avodado/core';
 import { DEFAULT_THEME, type ThemeName } from '@avodado/render';
@@ -52,6 +51,16 @@ const AUTOSAVE_MS = 800;
 
 /** The studio's three surfaces: editing canvas, built-site preview, deck. */
 export type StudioMode = 'home' | 'edit' | 'present';
+
+/** The insert picker while open: which face, where it inserts, where it sits. */
+export interface PickerOpenState {
+  /** Compact popover (gap '+' / slash) or the expanded browse gallery. */
+  readonly view: 'compact' | 'browse';
+  /** Gap index the insert lands at; `null` = after selection, else doc end. */
+  readonly index: number | null;
+  /** Viewport point the compact popover anchors to; `null` = centered. */
+  readonly anchor: { readonly x: number; readonly y: number } | null;
+}
 
 /** Starter source for a brand-new doc. */
 export function newDocTemplate(slug: string): string {
@@ -137,16 +146,22 @@ export interface StudioState {
   sheetDirty: boolean;
   /** True while the sheet edits a JUST-INSERTED block (keyboard-first mode). */
   sheetFresh: boolean;
+  /**
+   * Top-level YAML field the sheet should reveal (expand/scroll/flash/focus)
+   * when it opens — set by the check popover's "Open field →", consumed (and
+   * cleared) by the sheet on mount.
+   */
+  sheetReveal: string | null;
   /** Segment index for the "press / for the next block" affordance, or null. */
   slashHintAt: number | null;
   /**
-   * True while the Block Library overlay is open. It is an OVERLAY, not a
-   * mode — it can open over Edit/Site/Present alike; only inserting from it
-   * requires (and switches back to) Edit.
+   * The unified insert picker's open state, or `null` while closed. Browse
+   * view is an OVERLAY, not a mode — it can open over Edit/Present alike;
+   * only inserting from it requires (and switches back to) Edit.
    */
-  library: boolean;
+  picker: PickerOpenState | null;
   /** Live drag payload (HTML5 dataTransfer is unreadable during dragover). */
-  dragging: { kind: 'new'; type: BlockType } | { kind: 'move'; from: number } | null;
+  dragging: { kind: 'move'; from: number } | null;
   loaded: boolean;
   /** The studio server version this tab was loaded against. */
   initialVersion: string | null;
@@ -219,19 +234,33 @@ export interface StudioState {
   /** After a theme file is written on disk, refetch meta and activate it. */
   applySavedTheme: (slug: string) => Promise<void>;
   setAutosave: (on: boolean) => void;
-  /** Opens the sheet; `fresh` marks a just-inserted block (arrays pre-open). */
-  openSheet: (index: number, fresh?: boolean) => void;
+  /**
+   * Opens the sheet; `fresh` marks a just-inserted block (arrays pre-open);
+   * `revealField` asks the sheet to reveal that top-level YAML field.
+   */
+  openSheet: (index: number, fresh?: boolean, revealField?: string) => void;
   /** Closes without committing; `showSlashHint` keeps the "/ next" affordance. */
   closeSheet: (showSlashHint?: boolean) => void;
   setSheetDirty: (dirty: boolean) => void;
   dismissSlashHint: () => void;
   /**
-   * Opens the Block Library overlay. Transient edit chrome closes through
-   * its cancel paths first (sheet draft discarded, review/delete/import
-   * dismissed) — the library never stacks over another dialog.
+   * Opens the insert picker. Transient edit chrome closes through its cancel
+   * paths first (sheet draft discarded, review/delete/import dismissed) —
+   * the picker never stacks over another dialog. `index` pins the gap the
+   * insert lands at (a gap '+' passes its index); `null` means "after the
+   * selection, else at the doc end", resolved at pick time. `anchor` places
+   * the compact popover at a viewport point; `null` centers it.
    */
+  openPicker: (opts?: {
+    readonly view?: 'compact' | 'browse';
+    readonly index?: number | null;
+    readonly anchor?: { readonly x: number; readonly y: number } | null;
+  }) => void;
+  closePicker: () => void;
+  /** Compact → browse in place ("Browse all blocks"); keeps the pinned index. */
+  expandPicker: () => void;
+  /** The top bar's Library entry: the picker, straight into browse view. */
   openLibrary: () => void;
-  closeLibrary: () => void;
   /**
    * Commits an Edit-Sheet draft: ONE applyOp (one undo step, one autosave)
    * replacing the sheet block's YAML body, then closes the sheet.
@@ -324,8 +353,9 @@ export const useStudio = create<StudioState>()((set, get) => {
     sheet: null,
     sheetDirty: false,
     sheetFresh: false,
+    sheetReveal: null,
     slashHintAt: null,
-    library: false,
+    picker: null,
     dragging: null,
     loaded: false,
     initialVersion: null,
@@ -649,24 +679,37 @@ export const useStudio = create<StudioState>()((set, get) => {
     },
     setDragging: (d) => set({ dragging: d }),
 
-    openSheet: (index, fresh = false) =>
-      set({ sheet: index, sheetDirty: false, sheetFresh: fresh, selection: index, partSel: null, slashHintAt: null }),
+    openSheet: (index, fresh = false, revealField) =>
+      set({
+        sheet: index,
+        sheetDirty: false,
+        sheetFresh: fresh,
+        sheetReveal: revealField ?? null,
+        selection: index,
+        partSel: null,
+        slashHintAt: null,
+      }),
     closeSheet: (showSlashHint = false) => {
       const index = get().sheet;
       set({
         sheet: null,
         sheetDirty: false,
         sheetFresh: false,
+        sheetReveal: null,
         slashHintAt: showSlashHint && index !== null ? index : null,
       });
     },
     setSheetDirty: (dirty) => set({ sheetDirty: dirty }),
     dismissSlashHint: () => set({ slashHintAt: null }),
 
-    openLibrary: () => {
+    openPicker: (opts = {}) => {
       const s = get();
       set({
-        library: true,
+        picker: {
+          view: opts.view ?? 'compact',
+          index: opts.index ?? null,
+          anchor: opts.anchor ?? null,
+        },
         // Same cancel semantics as setMode: the sheet draft is discarded, the
         // review stays-dirty-nothing-written, delete/import just dismiss.
         ...(s.sheet !== null ? { sheet: null, sheetDirty: false, sheetFresh: false } : {}),
@@ -675,7 +718,12 @@ export const useStudio = create<StudioState>()((set, get) => {
         ...(s.pendingImport !== null ? { pendingImport: null } : {}),
       });
     },
-    closeLibrary: () => set({ library: false }),
+    closePicker: () => set({ picker: null }),
+    expandPicker: () => {
+      const p = get().picker;
+      if (p !== null && p.view === 'compact') set({ picker: { ...p, view: 'browse', anchor: null } });
+    },
+    openLibrary: () => get().openPicker({ view: 'browse' }),
 
     commitSheet: (raw) => {
       const s = get();

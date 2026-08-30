@@ -1,8 +1,17 @@
 /**
- * The Edit Sheet: a modal over the dimmed canvas that edits ONE block. The
- * left pane is the schema-driven form (or the raw YAML tab); the right pane
- * is a live preview of just this block, re-rendered through the real pipeline
- * on every field commit (debounced on keystrokes).
+ * The Edit Sheet — ONE component, presented per width (CSS + container):
+ *
+ * - Wide (>820px): a right-DOCKED inspector panel below the top bar, full
+ *   height, beside the still-visible canvas (the live document IS the
+ *   preview — the selected card updates on Done and keeps its ring). The
+ *   block preview pane is collapsed by default; the header's Preview button
+ *   toggles it open inside the panel.
+ * - Narrow (≤820px): the bottom-sheet presentation over a scrim, form
+ *   stacked above the always-visible preview.
+ *
+ * The form pane is schema-driven (or the raw YAML tab); the preview
+ * re-renders through the real pipeline on every field commit (debounced on
+ * keystrokes).
  *
  * Draft semantics: the sheet edits a copy of the block's YAML body. The
  * document is untouched until Done — ONE applyOp, one undo step, one
@@ -44,7 +53,11 @@ function DiagStrip({ diags }: { diags: readonly Diagnostic[] }): JSX.Element | n
   );
 }
 
-function SheetInner({ seg }: { seg: TypedSegment }): JSX.Element {
+function SheetInner({ seg, revealField }: {
+  seg: TypedSegment;
+  /** Top-level YAML field to reveal on mount (from the check popover). */
+  revealField: string | null;
+}): JSX.Element {
   const theme = useStudio((s) => s.theme);
   const themeVars = useStudio((s) => s.themeVars);
   const closeSheet = useStudio((s) => s.closeSheet);
@@ -105,6 +118,12 @@ function SheetInner({ seg }: { seg: TypedSegment }): JSX.Element {
 
   const parseError = parsed.seg?.parseError;
   const [tab, setTab] = useState<'form' | 'yaml'>(parseError !== undefined ? 'yaml' : 'form');
+  /**
+   * Wide/docked only: whether the in-panel preview pane is open (the canvas
+   * beside the panel is the primary preview). CSS ignores this at ≤820px —
+   * the bottom sheet always shows the pane.
+   */
+  const [previewOpen, setPreviewOpen] = useState(false);
   useEffect(() => {
     if (parseError !== undefined) setTab('yaml');
   }, [parseError]);
@@ -175,8 +194,15 @@ function SheetInner({ seg }: { seg: TypedSegment }): JSX.Element {
   /** Path of the form field under the pointer → highlighted in the preview. */
   const [linkPath, setLinkPath] = useState<string | null>(null);
   /** Preview click → reveal (expand/scroll/flash/focus) the matching form field. */
-  const [reveal, setReveal] = useState<RevealRequest | null>(null);
-  const revealSeq = useRef(0);
+  const [reveal, setReveal] = useState<RevealRequest | null>(
+    revealField !== null ? { path: revealField, n: 1 } : null,
+  );
+  const revealSeq = useRef(revealField !== null ? 1 : 0);
+  // The store's reveal request is one-shot: consume it so commits (which
+  // remount this component — seg.raw is in the key) don't replay the flash.
+  useEffect(() => {
+    if (useStudio.getState().sheetReveal !== null) useStudio.setState({ sheetReveal: null });
+  }, []);
 
   const previewHost = useMemo<DirectHost>(
     () => ({
@@ -284,6 +310,15 @@ function SheetInner({ seg }: { seg: TypedSegment }): JSX.Element {
             </button>
           </div>
           <div className="stu-sheet-actions">
+            <button
+              type="button"
+              className="stu-btn stu-sheet-prevbtn"
+              aria-pressed={previewOpen}
+              title={previewOpen ? 'Hide the in-panel preview' : 'Show a preview of this block in the panel'}
+              onClick={() => setPreviewOpen(!previewOpen)}
+            >
+              Preview
+            </button>
             <button type="button" className="stu-btn" onClick={cancel}>
               Cancel
             </button>
@@ -336,7 +371,7 @@ function SheetInner({ seg }: { seg: TypedSegment }): JSX.Element {
               </div>
             )}
           </div>
-          <div className="stu-sheet-preview">
+          <div className={`stu-sheet-preview ${previewOpen ? 'stu-sheet-preview-open' : ''}`}>
             <span className="stu-sheet-preview-label">Preview</span>
             <div className="stu-sheet-preview-scroll">
               {preview.html !== '' ? (
@@ -369,10 +404,11 @@ function SheetInner({ seg }: { seg: TypedSegment }): JSX.Element {
 /** Mounts the sheet whenever the store points it at a typed segment. */
 export function EditSheet(): JSX.Element | null {
   const index = useStudio((s) => s.sheet);
+  const revealField = useStudio((s) => s.sheetReveal);
   const { doc } = useDerived();
   const seg = index !== null ? doc.segments[index] : undefined;
   if (index === null || seg === undefined || seg.kind === 'markdown') return null;
   // raw participates in the key so an external silent refetch (only possible
   // while the draft is pristine) remounts the sheet with fresh content.
-  return <SheetInner key={`${index}:${seg.kind}:${seg.raw}`} seg={seg} />;
+  return <SheetInner key={`${index}:${seg.kind}:${seg.raw}`} seg={seg} revealField={revealField} />;
 }

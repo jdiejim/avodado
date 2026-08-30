@@ -44,6 +44,17 @@ export function IconGrip({ size = 14 }: IconProps): JSX.Element {
   );
 }
 
+export function IconGrid({ size = 14 }: IconProps): JSX.Element {
+  return (
+    <svg {...svgProps(size)}>
+      <rect x="2" y="2" width="5" height="5" rx="1" />
+      <rect x="9" y="2" width="5" height="5" rx="1" />
+      <rect x="2" y="9" width="5" height="5" rx="1" />
+      <rect x="9" y="9" width="5" height="5" rx="1" />
+    </svg>
+  );
+}
+
 export function IconEdit({ size = 14 }: IconProps): JSX.Element {
   return (
     <svg {...svgProps(size)}>
@@ -124,14 +135,6 @@ export function IconChevronDown({ size = 14 }: IconProps): JSX.Element {
   );
 }
 
-export function IconChevronRight({ size = 14 }: IconProps): JSX.Element {
-  return (
-    <svg {...svgProps(size)}>
-      <path d="m6.2 4 4 4-4 4" />
-    </svg>
-  );
-}
-
 export function IconCheck({ size = 14 }: IconProps): JSX.Element {
   return (
     <svg {...svgProps(size)}>
@@ -146,32 +149,6 @@ export function IconDoc({ size = 14 }: IconProps): JSX.Element {
       <path d="M4 1.8h5.2L12 4.6V14.2H4Z" />
       <path d="M9 1.8v3h3" />
       <path d="M6 8h4M6 10.5h4" />
-    </svg>
-  );
-}
-
-export function IconUndo({ size = 15 }: IconProps): JSX.Element {
-  return (
-    <svg {...svgProps(size)}>
-      <path d="M6.5 3 3 6.5 6.5 10" />
-      <path d="M3 6.5h6a4 4 0 0 1 0 8H7" />
-    </svg>
-  );
-}
-
-export function IconRedo({ size = 15 }: IconProps): JSX.Element {
-  return (
-    <svg {...svgProps(size)}>
-      <path d="M9.5 3 13 6.5 9.5 10" />
-      <path d="M13 6.5H7a4 4 0 0 0 0 8h2" />
-    </svg>
-  );
-}
-
-export function IconSlash({ size = 14 }: IconProps): JSX.Element {
-  return (
-    <svg {...svgProps(size)}>
-      <path d="M10.2 2.5 5.8 13.5" />
     </svg>
   );
 }
@@ -204,16 +181,6 @@ export function IconPalette({ size = 14 }: IconProps): JSX.Element {
       <circle cx="5.3" cy="7" r="0.9" fill="currentColor" stroke="none" />
       <circle cx="8" cy="5.2" r="0.9" fill="currentColor" stroke="none" />
       <circle cx="10.7" cy="7" r="0.9" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-export function IconExport({ size = 14 }: IconProps): JSX.Element {
-  return (
-    <svg {...svgProps(size)}>
-      <path d="M8 9.7v-7" />
-      <path d="M5.2 5.3 8 2.5l2.8 2.8" />
-      <path d="M2.8 10.5v1.8a1.2 1.2 0 0 0 1.2 1.2h8a1.2 1.2 0 0 0 1.2-1.2v-1.8" />
     </svg>
   );
 }

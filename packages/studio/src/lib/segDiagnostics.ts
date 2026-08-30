@@ -45,3 +45,14 @@ export function countLevels(diags: readonly Diagnostic[]): {
   }
   return { errors, warnings };
 }
+
+/** Error/warning tallies per segment index — the canvas card badges' input. */
+export function levelsBySegment(
+  diagnostics: readonly Diagnostic[],
+  source: string,
+  doc: Document,
+): ReadonlyArray<{ errors: number; warnings: number }> {
+  return doc.segments.map((_, i) =>
+    countLevels(diagnosticsForSegment(diagnostics, source, doc, i)),
+  );
+}

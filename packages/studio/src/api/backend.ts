@@ -56,6 +56,12 @@ export interface DocListItem {
   readonly file: string;
   readonly title: string;
   readonly mtimeMs: number;
+  /**
+   * `avo check` error count of the doc as stored (warnings excluded) — the
+   * rail dots and the All-documents Status column. Absent on older servers;
+   * consumers show nothing rather than a fake "pass".
+   */
+  readonly errorCount?: number;
 }
 
 /** One document's LF-normalised source and its content hash. */

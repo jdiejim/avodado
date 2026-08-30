@@ -172,8 +172,8 @@ kbd {
 .stu-topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 52px;
+  gap: 8px;
+  height: 48px;
   padding: 0 16px;
   background: var(--stu-panel);
   border-bottom: 1px solid var(--stu-rule);
@@ -181,111 +181,25 @@ kbd {
   z-index: 20;
 }
 
-.stu-wordmark {
+/* Wide-only controls (Library / Share / Theme / Present) participate in the
+   bar's own flex flow; ≤820px they hide and the ⋯ overflow menu appears
+   (see the narrow media block). Check chip + Save never fold. */
+.stu-topbar-wide {
+  display: contents;
+}
+
+.stu-topbar-more {
+  display: none;
+}
+
+.stu-morebtn {
+  padding: 0 9px;
   font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--stu-navy);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.stu-wordmark em {
-  font-style: normal;
-  font-weight: 500;
-  color: var(--stu-teal);
-}
-
-/* The official avodado mark (src/assets/mark.png). */
-.stu-wordmark-dot {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  flex: none;
+  line-height: 1;
 }
 
 .stu-spacer {
   flex: 1;
-}
-
-.stu-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 3px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.stu-chip-saved {
-  color: var(--stu-green);
-  background: var(--stu-green-soft);
-}
-
-.stu-chip-editing {
-  color: var(--stu-amber);
-  background: var(--stu-amber-soft);
-}
-
-.stu-chip-conflict {
-  color: var(--stu-red);
-  background: var(--stu-red-soft);
-}
-
-.stu-chip-muted {
-  color: var(--stu-gray);
-  background: var(--stu-rule-soft);
-}
-
-.stu-iconbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 8px;
-  background: var(--stu-panel);
-  color: var(--stu-slate);
-  cursor: pointer;
-  transition: background 0.13s ease-out, color 0.13s ease-out;
-}
-
-.stu-iconbtn:hover:not(:disabled) {
-  background: var(--stu-navy-soft);
-  color: var(--stu-navy);
-}
-
-.stu-iconbtn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.stu-btngroup {
-  display: flex;
-  gap: 6px;
-}
-
-.stu-select {
-  height: 30px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 8px;
-  background: var(--stu-panel);
-  color: var(--stu-ink);
-  font-size: 12.5px;
-  padding: 0 8px;
-  cursor: pointer;
-}
-
-.stu-select:focus-visible {
-  outline: none;
-  border-color: var(--stu-navy);
-  box-shadow: var(--stu-ring);
 }
 
 .stu-autosave {
@@ -340,296 +254,9 @@ kbd {
   left: 15px;
 }
 
-/* ---------- doc switcher ---------- */
+/* ---------- Present surface ---------- */
 
-.stu-switcher {
-  position: relative;
-  min-width: 0;
-}
-
-.stu-switcher-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  max-width: 420px;
-  height: 32px;
-  padding: 0 10px 0 12px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: none;
-  color: var(--stu-ink);
-  cursor: pointer;
-  transition: background 0.13s ease-out, border-color 0.13s ease-out;
-}
-
-.stu-switcher-btn:hover {
-  background: var(--stu-rule-soft);
-}
-
-.stu-switcher-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--stu-slate);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stu-switcher-caret {
-  display: inline-flex;
-  color: var(--stu-faint);
-  transition: transform 0.13s ease-out;
-}
-
-.stu-switcher-caret-open {
-  transform: rotate(180deg);
-}
-
-.stu-switcher-pop {
-  position: absolute;
-  top: 38px;
-  left: 0;
-  width: 340px;
-  background: var(--stu-panel);
-  border: 1px solid var(--stu-rule);
-  border-radius: 12px;
-  box-shadow: var(--stu-shadow-lift);
-  z-index: 40;
-  overflow: hidden;
-  animation: stu-pop-in 0.14s ease-out;
-}
-
-.stu-switcher-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--stu-rule);
-  color: var(--stu-faint);
-}
-
-.stu-switcher-search input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--stu-ink);
-  background: none;
-}
-
-.stu-switcher-list {
-  list-style: none;
-  margin: 0;
-  padding: 6px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.stu-switcher-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  border: none;
-  background: none;
-  padding: 7px 9px;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.stu-switcher-item:hover {
-  background: var(--stu-rule-soft);
-}
-
-.stu-switcher-item-active,
-.stu-switcher-item-active:hover {
-  background: var(--stu-navy-soft);
-}
-
-.stu-switcher-item-icon {
-  display: inline-flex;
-  color: var(--stu-faint);
-  flex: none;
-}
-
-.stu-switcher-item-active .stu-switcher-item-icon {
-  color: var(--stu-navy);
-}
-
-.stu-switcher-item-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  flex: 1;
-}
-
-.stu-switcher-item-title {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--stu-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stu-switcher-item-active .stu-switcher-item-title {
-  color: var(--stu-navy);
-}
-
-.stu-switcher-item-slug {
-  font-size: 10.5px;
-  color: var(--stu-faint);
-  font-family: var(--stu-mono);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stu-switcher-item-check {
-  display: inline-flex;
-  color: var(--stu-navy);
-  flex: none;
-}
-
-.stu-switcher-none {
-  padding: 14px 12px;
-  font-size: 12.5px;
-  color: var(--stu-faint);
-  text-align: center;
-}
-
-.stu-switcher-foot {
-  border-top: 1px solid var(--stu-rule);
-  padding: 6px;
-}
-
-.stu-switcher-add {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  border: none;
-  background: none;
-  padding: 8px 9px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--stu-navy);
-  cursor: pointer;
-}
-
-.stu-switcher-add:hover {
-  background: var(--stu-navy-soft);
-}
-
-.stu-switcher-new {
-  display: flex;
-  gap: 6px;
-  padding: 4px;
-}
-
-.stu-switcher-new input {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid var(--stu-rule);
-  border-radius: 8px;
-  padding: 6px 9px;
-  font-family: var(--stu-mono);
-  font-size: 12px;
-  outline: none;
-}
-
-.stu-switcher-new input:focus {
-  border-color: var(--stu-navy);
-  box-shadow: var(--stu-ring);
-}
-
-/* ---------- hint bar ---------- */
-
-.stu-hintbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 6px 16px;
-  background: var(--stu-navy-soft);
-  border-bottom: 1px solid var(--stu-rule);
-  font-size: 12px;
-  color: var(--stu-slate);
-  flex: none;
-  animation: stu-fade-in 0.16s ease-out;
-}
-
-.stu-hintbar kbd {
-  background: var(--stu-panel);
-}
-
-.stu-hintbar button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  color: var(--stu-gray);
-  cursor: pointer;
-}
-
-.stu-hintbar button:hover {
-  background: color-mix(in srgb, var(--stu-navy) 10%, transparent);
-  color: var(--stu-navy);
-}
-
-/* ---------- mode switch + Site / Present surfaces ---------- */
-
-.stu-modeswitch {
-  display: inline-flex;
-  align-items: center;
-  height: 30px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 8px;
-  background: var(--stu-well);
-  padding: 2px;
-  gap: 2px;
-  flex: none;
-}
-
-.stu-modeswitch-btn {
-  height: 24px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  color: var(--stu-gray);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition: background 0.13s ease-out, color 0.13s ease-out;
-}
-
-.stu-modeswitch-btn:hover {
-  color: var(--stu-navy);
-}
-
-.stu-modeswitch-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--stu-ring);
-}
-
-.stu-modeswitch-active,
-.stu-modeswitch-btn.stu-modeswitch-active:hover {
-  background: var(--stu-panel);
-  color: var(--stu-navy);
-  box-shadow: 0 1px 2px rgba(35, 58, 94, 0.08);
-}
-
-/* Full-height area under the top bar that Site / Present fill. */
+/* Full-height area under the top bar that Present fills. */
 .stu-modearea {
   position: relative;
   display: flex;
@@ -644,26 +271,6 @@ kbd {
   width: 100%;
   min-height: 0;
   border: 0;
-  background: var(--stu-panel);
-}
-
-/* Slim dirty-doc notice above the Site iframe. */
-.stu-modenotice {
-  flex: none;
-  padding: 6px 16px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--stu-amber);
-  background: var(--stu-amber-soft);
-  border-bottom: 1px solid var(--stu-rule);
-}
-
-.stu-modenotice kbd {
-  font-family: var(--stu-mono);
-  font-size: 11px;
-  padding: 1px 5px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 4px;
   background: var(--stu-panel);
 }
 
@@ -1052,64 +659,7 @@ kbd {
   color: var(--stu-teal);
 }
 
-/* ---------- insert menu ('+' popover) ---------- */
-
-.stu-insert {
-  position: fixed;
-  width: 620px;
-  max-width: calc(100vw - 24px);
-  background: var(--stu-panel);
-  border: 1px solid var(--stu-rule);
-  border-radius: 12px;
-  box-shadow: var(--stu-shadow-lift);
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  animation: stu-pop-in 0.15s ease-out;
-  overflow: hidden;
-}
-
-.stu-insert-search {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--stu-rule);
-  color: var(--stu-faint);
-  flex: none;
-}
-
-.stu-insert-search input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  font-size: 13.5px;
-  color: var(--stu-ink);
-  background: none;
-}
-
-.stu-insert-body {
-  overflow-y: auto;
-  max-height: 404px;
-  padding: 12px 14px 16px;
-}
-
-.stu-insert-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--stu-gray);
-  margin: 2px 2px 8px;
-}
-
-.stu-insert-none {
-  padding: 28px 0;
-  text-align: center;
-  font-size: 13px;
-  color: var(--stu-faint);
-}
+/* ---------- insert picker: block cards + thumbnails ---------- */
 
 .stu-cardgrid {
   display: grid;
@@ -1211,61 +761,10 @@ kbd {
   -webkit-box-orient: vertical;
 }
 
-.stu-insert-fam {
-  margin-top: 10px;
-}
+/* ---------- insert picker: compact popover ---------- */
 
-.stu-insert-famhead {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  border: none;
-  background: none;
-  padding: 7px 4px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--stu-slate);
-  cursor: pointer;
-  border-radius: 8px;
-  text-align: left;
-}
-
-.stu-insert-famhead:hover {
-  background: var(--stu-rule-soft);
-}
-
-.stu-insert-caret {
-  display: inline-flex;
-  color: var(--stu-faint);
-  transition: transform 0.13s ease-out;
-}
-
-.stu-insert-caret-open {
-  transform: rotate(90deg);
-}
-
-.stu-insert-count {
-  margin-left: auto;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--stu-faint);
-  background: var(--stu-rule-soft);
-  border-radius: 999px;
-  padding: 1px 7px;
-}
-
-.stu-insert-fam .stu-cardgrid {
-  padding: 4px 0 6px;
-}
-
-/* ---------- slash menu ---------- */
-
-.stu-slash {
+.stu-picker-compact {
   position: fixed;
-  top: 16vh;
-  left: 50%;
-  transform: translateX(-50%);
   width: 420px;
   max-width: calc(100vw - 24px);
   background: var(--stu-panel);
@@ -1273,31 +772,29 @@ kbd {
   border-radius: 12px;
   box-shadow: var(--stu-shadow-lift);
   z-index: 50;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   animation: stu-pop-in 0.14s ease-out;
 }
 
-.stu-slash-input {
+.stu-picker-compact-centered {
+  top: 16vh;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.stu-picker-search {
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 11px 13px;
   border-bottom: 1px solid var(--stu-rule);
-}
-
-.stu-slash-glyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  background: var(--stu-navy-soft);
-  color: var(--stu-navy);
+  color: var(--stu-faint);
   flex: none;
 }
 
-.stu-slash-input input {
+.stu-picker-search input {
   flex: 1;
   border: none;
   outline: none;
@@ -1307,7 +804,17 @@ kbd {
   background: none;
 }
 
-.stu-slash-list {
+.stu-picker-search kbd {
+  font-family: var(--stu-font);
+  font-size: 10px;
+  color: var(--stu-faint);
+  border: 1px solid var(--stu-rule);
+  border-radius: 4px;
+  padding: 0 4px;
+  background: var(--stu-well);
+}
+
+.stu-picker-list {
   list-style: none;
   margin: 0;
   padding: 6px;
@@ -1315,7 +822,7 @@ kbd {
   overflow-y: auto;
 }
 
-.stu-slash-item {
+.stu-picker-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1328,44 +835,33 @@ kbd {
   text-align: left;
 }
 
-.stu-slash-item-active {
+.stu-picker-item-active {
   background: var(--stu-navy-soft);
 }
 
-.stu-slash-name {
+.stu-picker-item-name {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--stu-ink);
   flex: none;
 }
 
-.stu-slash-item-active .stu-slash-name {
+.stu-picker-item-active .stu-picker-item-name {
   color: var(--stu-navy);
 }
 
-.stu-slash-type {
-  font-family: var(--stu-mono);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--stu-navy);
-  background: var(--stu-navy-soft);
-  padding: 1px 6px;
-  border-radius: 999px;
-  flex: none;
-}
-
-.stu-slash-item-active .stu-slash-type {
+.stu-picker-item-active .stu-card-type {
   background: color-mix(in srgb, var(--stu-navy) 16%, transparent);
 }
 
-.stu-slash-fam {
+.stu-picker-item-fam {
   margin-left: auto;
   font-size: 10.5px;
   color: var(--stu-faint);
   white-space: nowrap;
 }
 
-.stu-slash-none {
+.stu-picker-none {
   padding: 18px;
   text-align: center;
   font-size: 12.5px;
@@ -1374,35 +870,62 @@ kbd {
 
 /* ---------- edit sheet ---------- */
 
+/* ONE component, two presentations. WIDE (the default below): a right-DOCKED
+   inspector panel under the top bar, full height, beside the still-visible
+   canvas — no scrim, borders instead; the canvas gets a matching right
+   margin so the document scrolls BESIDE the panel (and the selected card
+   keeps its ring). NARROW (≤820px media block): the bottom sheet over a
+   scrim. All sheet behavior is identical — this is CSS + container only. */
+
+.stu-app {
+  /* The docked inspector's width — shared by the panel and the canvas inset. */
+  --stu-sheetw: min(430px, 46vw);
+}
+
 .stu-sheet-backdrop {
   position: fixed;
-  inset: 0;
-  background: var(--stu-scrim);
+  top: 48px; /* below the top bar */
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: var(--stu-sheetw);
   z-index: 45;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: stu-fade-in 0.14s ease-out;
+}
+
+/* The canvas scrolls beside the docked panel instead of underneath it. */
+.stu-app:has(.stu-sheet-backdrop) .stu-canvas {
+  margin-right: var(--stu-sheetw);
 }
 
 .stu-sheet {
-  width: 92vw;
-  max-width: 1240px;
-  height: 85vh;
+  width: 100%;
+  height: 100%;
   background: var(--stu-panel);
-  border-radius: 14px;
-  box-shadow: var(--stu-shadow-lift);
+  border-left: 1px solid var(--stu-rule);
+  box-shadow: -18px 0 32px -28px rgba(16, 24, 40, 0.35);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: stu-sheet-in 0.16s ease-out;
+  animation: stu-sheet-dock 0.16s ease-out;
+}
+
+@keyframes stu-sheet-dock {
+  from {
+    opacity: 0.5;
+    transform: translateX(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .stu-sheet-head {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 18px;
+  flex-wrap: wrap; /* docked width: title row, then tabs + actions */
+  gap: 8px 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--stu-rule);
   flex: none;
 }
@@ -1412,7 +935,7 @@ kbd {
   align-items: center;
   gap: 10px;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 100%;
 }
 
 .stu-sheet-title h2 {
@@ -1487,20 +1010,30 @@ kbd {
   display: flex;
   gap: 8px;
   flex: none;
+  margin-left: auto;
+}
+
+/* Docked: the in-panel preview toggle. Pressed = pane open. */
+.stu-sheet-prevbtn[aria-pressed='true'] {
+  background: var(--stu-navy-soft);
+  color: var(--stu-navy);
+  border-color: var(--stu-navy);
 }
 
 .stu-sheet-body {
   display: flex;
+  flex-direction: column; /* docked: form above the (toggleable) preview */
   flex: 1;
   min-height: 0;
 }
 
 .stu-sheet-form {
-  width: 44%;
-  min-width: 360px;
-  border-right: 1px solid var(--stu-rule);
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 18px 18px 40px;
+  padding: 16px 16px 40px;
 }
 
 .stu-sheet-yaml {
@@ -1522,13 +1055,22 @@ kbd {
   margin-top: 14px;
 }
 
+/* Docked: collapsed by default — the live canvas beside the panel is the
+   preview. The header's Preview button opens this in-panel pane; the narrow
+   bottom sheet (media block) always shows it. */
 .stu-sheet-preview {
-  flex: 1;
+  display: none;
   min-width: 0;
   position: relative;
   background: var(--stu-bg);
-  display: flex;
   flex-direction: column;
+}
+
+.stu-sheet-preview.stu-sheet-preview-open {
+  display: flex;
+  flex: 0 0 44%;
+  min-height: 0;
+  border-top: 1px solid var(--stu-rule);
 }
 
 .stu-sheet-preview-label {
@@ -2512,45 +2054,6 @@ kbd {
   animation: stu-fade-in 0.1s ease-out;
 }
 
-/* One-time discoverability hint on a selected, taggable block. Sits at the
-   top-LEFT edge — the block toolbar owns the top-right corner. STRADDLES the
-   block's top edge (half in, half out) so it never fully covers the text in
-   the gap above. */
-.stu-dx-hint {
-  position: absolute;
-  top: -13px;
-  left: 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--stu-tip-bg);
-  color: var(--stu-tip-fg);
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 999px;
-  padding: 3px 6px 3px 11px;
-  pointer-events: auto;
-  box-shadow: var(--stu-shadow-lift);
-  animation: stu-pop-in 0.15s ease-out;
-  z-index: 5;
-  white-space: nowrap;
-}
-
-.stu-dx-hint button {
-  border: none;
-  background: none;
-  color: inherit;
-  opacity: 0.7;
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-  padding: 1px 4px;
-}
-
-.stu-dx-hint button:hover {
-  opacity: 1;
-}
-
 /* Preview wrapper (Edit Sheet) — the anchor for its DirectLayer. */
 .stu-sheet-preview-wrap {
   position: relative;
@@ -2648,30 +2151,6 @@ kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px;
   letter-spacing: 0.02em;
-}
-
-/* Options dropdown custom-text escape. */
-.stu-customrow {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.stu-custom-back {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 7px;
-  background: var(--stu-panel);
-  color: var(--stu-faint);
-  font-size: 10px;
-  cursor: pointer;
-}
-
-.stu-custom-back:hover {
-  color: var(--stu-navy);
-  border-color: var(--stu-navy);
 }
 
 /* ─── v4: collapsed field sections (More fields / Advanced) ───────────────── */
@@ -3297,18 +2776,6 @@ kbd {
   border-top: 1px solid var(--stu-rule);
 }
 
-/* The save chip doubles as a button in manual-save mode. */
-.stu-chip-action {
-  border: none;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.stu-chip-action:hover {
-  filter: brightness(0.96);
-}
-
 /* ---------- delete-confirm popover ---------- */
 
 .stu-delpop {
@@ -3917,31 +3384,7 @@ kbd {
   color: var(--stu-gray);
 }
 
-/* ─── tour entry points ────────────────────────────────────────────────────── */
-
-.stu-hintbar button.stu-hintbar-tour {
-  width: auto;
-  height: auto;
-  border: none;
-  background: var(--stu-navy);
-  color: var(--stu-on-navy);
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 4px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s;
-}
-
-.stu-hintbar button.stu-hintbar-tour:hover {
-  background: var(--stu-navy-strong);
-  color: var(--stu-on-navy);
-}
-
-.stu-savewrap {
-  display: inline-flex;
-}
+/* ─── tour entry point (the `?` overlay footer) ────────────────────────────── */
 
 .stu-keys-tour {
   border: none;
@@ -4107,13 +3550,14 @@ kbd {
   color: var(--stu-faint);
 }
 
-.stu-insert-foot {
+/* The ONE picker footer — Import from file… (+ Browse all in compact). */
+.stu-picker-foot {
   border-top: 1px solid var(--stu-rule-soft);
-  padding: 6px;
+  padding: 4px;
+  flex: none;
 }
 
-.stu-insert-import,
-.stu-slash-import {
+.stu-picker-import {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -4129,27 +3573,25 @@ kbd {
   text-align: left;
 }
 
-.stu-insert-import:hover,
-.stu-slash-import:hover {
+.stu-picker-import:hover {
   background: var(--stu-navy-soft);
 }
 
-.stu-insert-import-hint,
-.stu-slash-import-hint {
+.stu-picker-import:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.stu-picker-import-hint {
   margin-left: auto;
   font-size: 11px;
   font-weight: 400;
   color: var(--stu-faint);
 }
 
-.stu-slash-foot {
-  border-top: 1px solid var(--stu-rule-soft);
-  padding: 4px;
-}
+/* ---------- insert picker: top-bar entry ---------- */
 
-/* ---------- block library (gallery overlay) ---------- */
-
-/* Top-bar entry point — sits between the doc switcher and the mode switch. */
+/* Top-bar entry point — opens the picker straight into browse view. */
 .stu-libbtn {
   display: inline-flex;
   align-items: center;
@@ -4241,114 +3683,6 @@ kbd {
   color: #fff;
 }
 
-/* ── Doc layout: site-style sidebar + canvas ──────────────────────────────── */
-.stu-docwrap {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-}
-
-.stu-sidenav {
-  flex: 0 0 232px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 10px 18px;
-  border-right: 1px solid var(--stu-rule);
-  background: var(--stu-panel);
-  overflow-y: auto;
-}
-
-@media (max-width: 980px) {
-  .stu-sidenav {
-    display: none; /* the top-bar doc switcher covers narrow windows */
-  }
-}
-
-.stu-sidenav-home {
-  align-self: flex-start;
-  border: none;
-  background: none;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--stu-navy);
-  cursor: pointer;
-}
-
-.stu-sidenav-home:hover {
-  background: var(--stu-navy-soft);
-}
-
-.stu-sidenav-label {
-  margin: 12px 10px 6px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--stu-faint);
-}
-
-.stu-sidenav-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  flex: 1;
-}
-
-.stu-sidenav-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  border: none;
-  background: none;
-  padding: 7px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  color: var(--stu-slate);
-  text-align: left;
-  cursor: pointer;
-}
-
-.stu-sidenav-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stu-sidenav-item:hover {
-  background: var(--stu-rule-soft);
-}
-
-.stu-sidenav-active,
-.stu-sidenav-active:hover {
-  background: var(--stu-navy-soft);
-  color: var(--stu-navy);
-  font-weight: 600;
-}
-
-.stu-sidenav-new {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px dashed var(--stu-rule);
-  background: none;
-  margin-top: 10px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--stu-faint);
-  cursor: pointer;
-}
-
-.stu-sidenav-new:hover {
-  color: var(--stu-navy);
-  border-color: var(--stu-navy);
-}
-
 /* ── Cover as its own edit surface ────────────────────────────────────────── */
 .stu-cover {
   position: relative;
@@ -4383,191 +3717,6 @@ kbd {
   opacity: 1;
 }
 
-/* ── Home (the project front page) ────────────────────────────────────────── */
-.stu-home {
-  flex: 1;
-  overflow-y: auto;
-  padding: 36px clamp(20px, 6vw, 72px) 64px;
-}
-
-.stu-home-hd {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  max-width: 1080px;
-  margin: 0 auto 26px;
-}
-
-.stu-home-title {
-  margin: 0 0 6px;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--stu-ink);
-}
-
-.stu-home-sub {
-  margin: 0;
-  font-size: 13px;
-  color: var(--stu-faint);
-}
-
-.stu-home-sub code {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
-  color: var(--stu-slate);
-}
-
-.stu-home-tools {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.stu-home-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 9px;
-  background: var(--stu-panel);
-  color: var(--stu-faint);
-}
-
-.stu-home-search input {
-  border: none;
-  outline: none;
-  background: none;
-  font: inherit;
-  font-size: 13px;
-  color: var(--stu-ink);
-  width: 180px;
-}
-
-.stu-home-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-  max-width: 1080px;
-  margin: 0 auto;
-}
-
-.stu-home-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 18px 18px 14px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 12px;
-  background: var(--stu-panel);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.14s ease-out, box-shadow 0.14s ease-out, transform 0.14s ease-out;
-}
-
-.stu-home-card:hover,
-.stu-home-card:focus-visible {
-  border-color: var(--stu-navy);
-  box-shadow: var(--stu-shadow-lift);
-  transform: translateY(-1px);
-}
-
-.stu-home-card-icon {
-  color: var(--stu-faint);
-  margin-bottom: 4px;
-}
-
-.stu-home-card-title {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--stu-ink);
-  line-height: 1.3;
-}
-
-.stu-home-card-slug {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  color: var(--stu-faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
-
-.stu-home-card-meta {
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--stu-faint);
-}
-
-.stu-home-card-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  opacity: 0;
-  transition: opacity 0.13s ease-out;
-}
-
-.stu-home-card:hover .stu-home-card-actions,
-.stu-home-card:focus-within .stu-home-card-actions {
-  opacity: 1;
-}
-
-.stu-home-card-act {
-  border: 1px solid var(--stu-rule);
-  border-radius: 7px;
-  background: var(--stu-panel);
-  padding: 4px 9px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--stu-slate);
-  cursor: pointer;
-}
-
-.stu-home-card-act:hover {
-  background: var(--stu-navy-soft);
-  color: var(--stu-navy);
-}
-
-.stu-home-new {
-  border-style: dashed;
-  background: transparent;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 6px;
-  min-height: 118px;
-}
-
-.stu-home-new .stu-home-card-slug {
-  white-space: normal;
-}
-
-.stu-home-new-icon {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--stu-navy-soft);
-  color: var(--stu-navy);
-}
-
-.stu-home-none {
-  grid-column: 1 / -1;
-  padding: 28px 0;
-  text-align: center;
-  color: var(--stu-faint);
-  font-size: 13px;
-}
-
 a.stu-libbtn,
 a.stu-btn {
   text-decoration: none;
@@ -4587,22 +3736,18 @@ a.stu-btn {
   color: #fff;
 }
 
-/* The wordmark is now a Home button — keep it looking like the wordmark. */
-button.stu-wordmark {
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  font: inherit;
+/* ── Theme panel (right-docked, below the top bar) ────────────────────────── */
+.stu-themebtn-on {
+  border-color: var(--stu-navy);
+  color: var(--stu-navy);
 }
 
-/* ── Theme generator (right-docked panel) ─────────────────────────────────── */
-.stu-themegen {
+.stu-themepanel {
   position: fixed;
-  top: 0;
+  top: 48px;
   right: 0;
   bottom: 0;
-  width: 360px;
+  width: 320px;
   max-width: 92vw;
   z-index: 60;
   display: flex;
@@ -4610,28 +3755,28 @@ button.stu-wordmark {
   background: var(--stu-panel);
   border-left: 1px solid var(--stu-rule);
   box-shadow: var(--stu-shadow-lift);
-  animation: stu-themegen-in 0.16s ease-out;
+  animation: stu-themepanel-in 0.16s ease-out;
 }
 
-@keyframes stu-themegen-in {
+@keyframes stu-themepanel-in {
   from {
     transform: translateX(16px);
     opacity: 0;
   }
 }
 
-.stu-themegen-hd {
+.stu-themepanel-hd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--stu-rule);
-  font-size: 13.5px;
-  font-weight: 700;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--stu-rule-soft);
+  font-size: 13px;
+  font-weight: 600;
   color: var(--stu-ink);
 }
 
-.stu-themegen-x {
+.stu-themepanel-x {
   display: inline-flex;
   border: none;
   background: none;
@@ -4641,33 +3786,105 @@ button.stu-wordmark {
   border-radius: 6px;
 }
 
-.stu-themegen-x:hover {
+.stu-themepanel-x:hover {
   background: var(--stu-rule-soft);
   color: var(--stu-ink);
 }
 
-.stu-themegen-body {
+.stu-themepanel-body {
   flex: 1;
   overflow-y: auto;
-  padding: 14px 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.stu-themegen-field {
+.stu-themepanel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stu-themecard {
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  padding: 8px;
+  background: var(--stu-panel);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.stu-themecard:hover {
+  background: var(--stu-well);
+}
+
+.stu-themecard-on,
+.stu-themecard-on:hover {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+  background: var(--stu-panel);
+}
+
+.stu-themecard-strips {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.stu-themecard-strips span {
+  height: 28px;
+  border-radius: 5px;
+}
+
+.stu-themecard-strips span:nth-child(1) {
+  flex: 2;
+  border: 1px solid var(--stu-rule-soft);
+}
+
+.stu-themecard-strips span:nth-child(2) {
+  flex: 1;
+}
+
+.stu-themecard-strips span:nth-child(3) {
+  width: 14px;
+  flex: none;
+}
+
+.stu-themecard-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stu-ink);
+}
+
+.stu-themepanel-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--stu-faint);
+}
+
+.stu-themepanel-custom {
+  border-top: 1px solid var(--stu-rule-soft);
+  padding-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 12px;
+}
+
+.stu-themepanel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--stu-slate);
 }
 
-.stu-themegen-field input,
-.stu-themegen-field select {
+.stu-themepanel-field input,
+.stu-themepanel-field select {
   height: 32px;
-  padding: 0 9px;
+  padding: 0 8px;
   border: 1px solid var(--stu-rule);
   border-radius: 8px;
   background: var(--stu-panel);
@@ -4677,24 +3894,23 @@ button.stu-wordmark {
   font-size: 12.5px;
 }
 
-.stu-themegen-section {
-  margin-top: 6px;
-  font-size: 10.5px;
-  font-weight: 700;
+.stu-themepanel-section {
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--stu-faint);
 }
 
-.stu-themegen-color {
+.stu-themepanel-color {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.stu-themegen-color input[type='color'] {
-  width: 30px;
-  height: 30px;
+.stu-themepanel-color input[type='color'] {
+  width: 28px;
+  height: 28px;
   flex: none;
   padding: 0;
   border: 1px solid var(--stu-rule);
@@ -4703,20 +3919,20 @@ button.stu-wordmark {
   cursor: pointer;
 }
 
-.stu-themegen-color-meta {
+.stu-themepanel-color-meta {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
 }
 
-.stu-themegen-color-label {
+.stu-themepanel-color-label {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--stu-ink);
 }
 
-.stu-themegen-color-hint {
+.stu-themepanel-color-hint {
   font-size: 10.5px;
   color: var(--stu-faint);
   overflow: hidden;
@@ -4724,28 +3940,20 @@ button.stu-wordmark {
   white-space: nowrap;
 }
 
-.stu-themegen-hex {
+.stu-themepanel-hex {
   width: 78px;
   flex: none;
   height: 28px;
-  padding: 0 7px;
+  padding: 0 8px;
   border: 1px solid var(--stu-rule);
   border-radius: 7px;
   background: var(--stu-panel);
   color: var(--stu-ink);
-  font-family: var(--font-mono, ui-monospace, monospace);
+  font-family: var(--stu-mono);
   font-size: 11px;
 }
 
-.stu-themegen-ft {
-  border-top: 1px solid var(--stu-rule);
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-}
-
-.stu-themegen-scope {
+.stu-themepanel-scope {
   display: flex;
   gap: 16px;
   font-size: 12px;
@@ -4753,20 +3961,27 @@ button.stu-wordmark {
   color: var(--stu-slate);
 }
 
-.stu-themegen-scope label {
+.stu-themepanel-scope label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
 }
 
-.stu-themegen-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+.stu-themepanel-save {
+  width: 100%;
 }
 
-.stu-lib-backdrop {
+.stu-themepanel-ft {
+  border-top: 1px solid var(--stu-rule-soft);
+  padding: 8px 16px;
+  font-size: 11px;
+  color: var(--stu-faint);
+}
+
+/* ---------- insert picker: browse overlay (the gallery) ---------- */
+
+.stu-picker-backdrop {
   position: fixed;
   inset: 0;
   background: var(--stu-scrim);
@@ -4777,7 +3992,7 @@ button.stu-wordmark {
   animation: stu-fade-in 0.14s ease-out;
 }
 
-.stu-lib {
+.stu-picker-browse {
   position: relative;
   width: min(1180px, calc(100vw - 40px));
   height: calc(100vh - 56px);
@@ -4792,7 +4007,7 @@ button.stu-wordmark {
 }
 
 /* sticky header: title row, search, family pills — raised paper */
-.stu-lib-head {
+.stu-picker-head {
   flex: none;
   display: flex;
   flex-direction: column;
@@ -4802,18 +4017,18 @@ button.stu-wordmark {
   border-bottom: 1px solid var(--stu-rule);
 }
 
-.stu-lib-title {
+.stu-picker-title {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
-.stu-lib-title-icon {
+.stu-picker-title-icon {
   display: inline-flex;
   color: var(--stu-navy);
 }
 
-.stu-lib-title h2 {
+.stu-picker-title h2 {
   margin: 0;
   font-size: 19px;
   font-weight: 750;
@@ -4821,13 +4036,13 @@ button.stu-wordmark {
   color: var(--stu-display);
 }
 
-.stu-lib-title-count {
+.stu-picker-title-count {
   font-size: 13px;
   color: var(--stu-gray);
   font-variant-numeric: tabular-nums;
 }
 
-.stu-lib-x {
+.stu-picker-x {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4841,12 +4056,12 @@ button.stu-wordmark {
   cursor: pointer;
 }
 
-.stu-lib-x:hover {
+.stu-picker-x:hover {
   background: var(--stu-rule-soft);
   color: var(--stu-ink);
 }
 
-.stu-lib-search {
+.stu-picker-browse-search {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -4857,12 +4072,12 @@ button.stu-wordmark {
   color: var(--stu-faint);
 }
 
-.stu-lib-search:focus-within {
+.stu-picker-browse-search:focus-within {
   border-color: var(--stu-navy);
   box-shadow: var(--stu-ring);
 }
 
-.stu-lib-search input {
+.stu-picker-browse-search input {
   flex: 1;
   min-width: 0;
   border: none;
@@ -4873,7 +4088,7 @@ button.stu-wordmark {
   color: var(--stu-ink);
 }
 
-.stu-lib-showing {
+.stu-picker-showing {
   flex: none;
   font-size: 11.5px;
   color: var(--stu-gray);
@@ -4881,13 +4096,13 @@ button.stu-wordmark {
   white-space: nowrap;
 }
 
-.stu-lib-pills {
+.stu-picker-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.stu-lib-pill {
+.stu-picker-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -4902,23 +4117,23 @@ button.stu-wordmark {
   transition: border-color 0.13s ease-out, color 0.13s ease-out, background 0.13s ease-out;
 }
 
-.stu-lib-pill:hover {
+.stu-picker-pill:hover {
   border-color: var(--stu-navy);
   color: var(--stu-navy);
 }
 
-.stu-lib-pill-active,
-.stu-lib-pill-active:hover {
+.stu-picker-pill-active,
+.stu-picker-pill-active:hover {
   background: var(--stu-navy);
   border-color: var(--stu-navy);
   color: var(--stu-on-navy);
 }
 
-.stu-lib-pill-empty:not(.stu-lib-pill-active) {
+.stu-picker-pill-empty:not(.stu-picker-pill-active) {
   opacity: 0.45;
 }
 
-.stu-lib-pill-count {
+.stu-picker-pill-count {
   font-size: 10px;
   padding: 0 6px;
   border-radius: 999px;
@@ -4927,29 +4142,29 @@ button.stu-wordmark {
   font-variant-numeric: tabular-nums;
 }
 
-.stu-lib-pill-active .stu-lib-pill-count {
+.stu-picker-pill-active .stu-picker-pill-count {
   background: color-mix(in srgb, var(--stu-on-navy) 20%, transparent);
   color: var(--stu-on-navy);
 }
 
 /* body: family sections of cards */
-.stu-lib-body {
+.stu-picker-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 18px 22px 28px;
 }
 
-.stu-lib-fam {
+.stu-picker-fam {
   content-visibility: auto;
   contain-intrinsic-size: auto 300px;
 }
 
-.stu-lib-fam + .stu-lib-fam {
+.stu-picker-fam + .stu-picker-fam {
   margin-top: 24px;
 }
 
-.stu-lib-famhead {
+.stu-picker-famhead {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -4961,7 +4176,7 @@ button.stu-wordmark {
   color: var(--stu-gray);
 }
 
-.stu-lib-famhead::after {
+.stu-picker-famhead::after {
   content: '';
   flex: 1;
   height: 1px;
@@ -4969,17 +4184,26 @@ button.stu-wordmark {
   margin-left: 6px;
 }
 
-.stu-lib-grid {
+.stu-picker-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--stu-faint);
+  background: var(--stu-rule-soft);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.stu-picker-grid {
   grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
 }
 
-.stu-lib-card {
+.stu-picker-card {
   position: relative;
   background: var(--stu-panel);
 }
 
 /* "also: waterfall" — the alias spelling this search hit matched through */
-.stu-lib-also {
+.stu-picker-also {
   align-self: flex-start;
   margin: 2px 2px 0;
   padding: 1px 7px;
@@ -4991,7 +4215,7 @@ button.stu-wordmark {
   background: var(--stu-amber-soft);
 }
 
-.stu-lib-none {
+.stu-picker-empty {
   padding: 64px 24px;
   text-align: center;
   font-size: 13.5px;
@@ -5000,7 +4224,7 @@ button.stu-wordmark {
 
 /* ---------- block library: detail dialog (second layer) ---------- */
 
-.stu-lib-detail-backdrop {
+.stu-picker-detail-backdrop {
   position: absolute;
   inset: 0;
   z-index: 5;
@@ -5011,7 +4235,7 @@ button.stu-wordmark {
   animation: stu-fade-in 0.12s ease-out;
 }
 
-.stu-lib-detail {
+.stu-picker-detail {
   width: min(980px, calc(100% - 48px));
   height: min(620px, calc(100% - 48px));
   background: var(--stu-panel);
@@ -5024,21 +4248,21 @@ button.stu-wordmark {
   animation: stu-pop-in 0.14s ease-out;
 }
 
-.stu-lib-detail-head {
+.stu-picker-detail-head {
   display: flex;
   align-items: center;
   padding: 14px 18px 0;
   flex: none;
 }
 
-.stu-lib-detail-title {
+.stu-picker-detail-title {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
-.stu-lib-detail-title h3 {
+.stu-picker-detail-title h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 750;
@@ -5047,7 +4271,7 @@ button.stu-wordmark {
   white-space: nowrap;
 }
 
-.stu-lib-detail-fam {
+.stu-picker-detail-fam {
   font-size: 11px;
   color: var(--stu-gray);
   border-left: 1px solid var(--stu-rule);
@@ -5055,7 +4279,7 @@ button.stu-wordmark {
   white-space: nowrap;
 }
 
-.stu-lib-detail-desc {
+.stu-picker-detail-desc {
   margin: 6px 18px 0;
   font-size: 12.5px;
   line-height: 1.5;
@@ -5063,7 +4287,7 @@ button.stu-wordmark {
   flex: none;
 }
 
-.stu-lib-detail-alias {
+.stu-picker-detail-alias {
   align-self: flex-start;
   margin: 8px 18px 0;
   padding: 4px 10px;
@@ -5074,13 +4298,13 @@ button.stu-wordmark {
   flex: none;
 }
 
-.stu-lib-detail-alias code {
+.stu-picker-detail-alias code {
   font-family: var(--stu-mono);
   font-size: 11px;
   font-weight: 600;
 }
 
-.stu-lib-detail-body {
+.stu-picker-detail-body {
   flex: 1;
   min-height: 240px;
   display: grid;
@@ -5090,20 +4314,20 @@ button.stu-wordmark {
 }
 
 @media (max-width: 860px) {
-  .stu-lib-detail-body {
+  .stu-picker-detail-body {
     grid-template-columns: minmax(0, 1fr);
     overflow-y: auto;
   }
 }
 
-.stu-lib-pane {
+.stu-picker-pane {
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
 }
 
-.stu-lib-pane-label {
+.stu-picker-pane-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5117,7 +4341,7 @@ button.stu-wordmark {
 }
 
 /* full-size preview: same pipeline as the thumbnails, unscaled, own scroll */
-.stu-lib-preview {
+.stu-picker-preview {
   flex: 1;
   min-height: 200px;
   overflow: auto;
@@ -5126,12 +4350,12 @@ button.stu-wordmark {
   background: var(--stu-well);
 }
 
-.stu-lib-preview-doc {
+.stu-picker-preview-doc {
   padding: 18px 22px;
   min-width: 440px;
 }
 
-.stu-lib-preview-blank {
+.stu-picker-preview-blank {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5141,7 +4365,7 @@ button.stu-wordmark {
   color: var(--stu-faint);
 }
 
-.stu-lib-yaml {
+.stu-picker-yaml {
   flex: 1;
   min-height: 200px;
   margin: 0;
@@ -5157,7 +4381,7 @@ button.stu-wordmark {
   white-space: pre;
 }
 
-.stu-lib-copy {
+.stu-picker-copy {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -5173,12 +4397,12 @@ button.stu-wordmark {
   cursor: pointer;
 }
 
-.stu-lib-copy:hover {
+.stu-picker-copy:hover {
   border-color: var(--stu-navy);
   color: var(--stu-navy);
 }
 
-.stu-lib-detail-foot {
+.stu-picker-detail-foot {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -5186,8 +4410,1046 @@ button.stu-wordmark {
   flex: none;
 }
 
-.stu-lib-detail-hint {
+.stu-picker-detail-hint {
   flex: 1;
   font-size: 11px;
   color: var(--stu-faint);
+}
+
+/* ── Shell: persistent rail + main column ─────────────────────────────────── */
+
+.stu-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.stu-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stu-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Left rail ────────────────────────────────────────────────────────────── */
+
+.stu-rail {
+  position: relative;
+  flex: 0 0 232px;
+  display: flex;
+  background: var(--stu-panel);
+  border-right: 1px solid var(--stu-rule);
+}
+
+.stu-rail-full {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stu-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.stu-rail-mark {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: none;
+}
+
+.stu-rail-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--stu-navy);
+  white-space: nowrap;
+}
+
+.stu-rail-name em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--stu-teal);
+}
+
+.stu-rail-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 12px 8px;
+  padding: 0 12px;
+  height: 32px;
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  background: var(--stu-well);
+  color: var(--stu-faint);
+  cursor: text;
+}
+
+.stu-rail-search-off {
+  opacity: 0.45;
+}
+
+.stu-rail-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--stu-ink);
+}
+
+.stu-rail-search input:focus {
+  outline: none;
+}
+
+.stu-rail-search input::placeholder {
+  color: var(--stu-faint);
+}
+
+.stu-rail-search kbd {
+  font-family: var(--stu-font);
+  font-size: 10px;
+  color: var(--stu-faint);
+  border: 1px solid var(--stu-rule);
+  border-radius: 4px;
+  padding: 0 4px;
+  background: var(--stu-panel);
+}
+
+.stu-rail-search:focus-within {
+  border-color: var(--stu-navy);
+  box-shadow: var(--stu-ring);
+}
+
+.stu-rail-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 12px 12px;
+  height: 32px;
+  border: 1px solid var(--stu-navy);
+  border-radius: 8px;
+  background: var(--stu-panel);
+  color: var(--stu-navy);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.13s ease-out;
+}
+
+.stu-rail-new:hover {
+  background: var(--stu-navy-soft);
+}
+
+.stu-rail-group {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 16px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stu-faint);
+}
+
+.stu-rail-doc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 16px;
+  border: none;
+  border-left: 2px solid transparent;
+  background: none;
+  font-size: 12px;
+  color: var(--stu-slate);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stu-rail-doc:hover {
+  background: var(--stu-well);
+}
+
+.stu-rail-doc-on,
+.stu-rail-doc-on:hover {
+  background: var(--stu-well);
+  border-left-color: var(--stu-navy);
+  color: var(--stu-ink);
+  font-weight: 600;
+}
+
+.stu-rail-root {
+  margin-top: 4px;
+  flex: none;
+}
+
+.stu-rail-doc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-rail-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--stu-red);
+  margin-left: auto;
+  flex: none;
+}
+
+.stu-rail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.stu-rail-none {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--stu-faint);
+}
+
+.stu-rail-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid var(--stu-rule-soft);
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--stu-gray);
+}
+
+.stu-rail-foot a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.stu-rail-foot a:hover,
+.stu-rail-foot button:hover {
+  color: var(--stu-navy);
+}
+
+.stu-rail-foot-settings {
+  position: relative;
+}
+
+.stu-rail-foot button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.stu-rail-settings {
+  position: absolute;
+  left: 0;
+  bottom: 28px;
+  width: 208px;
+  padding: 12px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 12px;
+  box-shadow: var(--stu-shadow-lift);
+  z-index: 60;
+  animation: stu-pop-in 0.14s ease-out;
+}
+
+.stu-rail-settings-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stu-faint);
+  margin-bottom: 8px;
+}
+
+.stu-rail-settings-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--stu-faint);
+}
+
+/* Narrow icon strip — hidden until the 820px collapse. */
+.stu-rail-mini {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  width: 52px;
+  flex: none;
+}
+
+.stu-rail-mini-mark {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.stu-rail-mini-mark img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+}
+
+.stu-rail-mini-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--stu-gray);
+  cursor: pointer;
+}
+
+.stu-rail-mini-btn:hover {
+  background: var(--stu-well);
+  color: var(--stu-navy);
+}
+
+.stu-rail-mini-on {
+  color: var(--stu-navy);
+  background: var(--stu-navy-soft);
+}
+
+/* ── Top bar additions ────────────────────────────────────────────────────── */
+
+.stu-crumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--stu-gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stu-crumb b {
+  color: var(--stu-ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stu-checkchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+.stu-checkchip-ok {
+  color: var(--stu-green);
+  padding-left: 0;
+}
+
+.stu-checkchip-err {
+  color: var(--stu-red);
+  background: var(--stu-red-soft);
+  border: 1px solid color-mix(in srgb, var(--stu-red) 22%, var(--stu-panel));
+}
+
+.stu-savebtn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.stu-savewrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stu-savemeta {
+  font-size: 11px;
+  color: var(--stu-faint);
+  white-space: nowrap;
+}
+
+.stu-export-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--stu-rule-soft);
+}
+
+a.stu-export-item {
+  text-decoration: none;
+}
+
+/* ── All documents (doc list table) ───────────────────────────────────────── */
+
+.stu-doclist {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.stu-doclist-inner {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.stu-doclist-table {
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.stu-doclist-head,
+.stu-doclist-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 1fr 96px 96px 24px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 16px;
+}
+
+.stu-doclist-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stu-faint);
+}
+
+.stu-doclist-row {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--stu-rule-soft);
+  background: none;
+  font-size: 12px;
+  color: var(--stu-slate);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stu-doclist-row:hover {
+  background: var(--stu-well);
+}
+
+.stu-doclist-name {
+  font-weight: 600;
+  color: var(--stu-navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-doclist-folder,
+.stu-doclist-edited {
+  color: var(--stu-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-doclist-chev {
+  color: var(--stu-faint);
+  justify-self: end;
+}
+
+/* Empty state (no docs at all) — hero + template quick-starts. */
+.stu-doclist-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.stu-doclist-empty-inner {
+  text-align: center;
+  max-width: 440px;
+}
+
+.stu-doclist-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--stu-navy);
+}
+
+.stu-doclist-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--stu-display);
+  margin-bottom: 8px;
+}
+
+.stu-doclist-empty-sub {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--stu-slate);
+}
+
+.stu-doclist-empty-sub code {
+  font-family: var(--stu-mono);
+  font-size: 12px;
+}
+
+.stu-doclist-empty-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.stu-doclist-empty-chip {
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  background: var(--stu-panel);
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--stu-slate);
+  cursor: pointer;
+}
+
+.stu-doclist-empty-chip:hover {
+  border-color: var(--stu-navy);
+  color: var(--stu-navy);
+}
+
+/* The fixed keybar (Shortcuts) must not cover the rail footer: while the
+   rail is on screen, the strip spans only the main column. Present mode has
+   no rail, so the keybar keeps the full width there. */
+.stu-app:has(.stu-rail) .stu-keybar {
+  left: 232px;
+}
+
+/* ── Narrow: the rail collapses to its icon strip ─────────────────────────── */
+
+@media (max-width: 820px) {
+  .stu-rail {
+    flex: 0 0 52px;
+  }
+
+  .stu-rail-mini {
+    display: flex;
+  }
+
+  .stu-rail-full {
+    display: none;
+  }
+
+  /* The search icon (or ⌘K) opens the full rail as a temporary drawer. */
+  .stu-rail-drawer .stu-rail-full {
+    display: flex;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 232px;
+    background: var(--stu-panel);
+    border-right: 1px solid var(--stu-rule);
+    box-shadow: var(--stu-shadow-lift);
+    z-index: 60;
+  }
+
+  .stu-savemeta {
+    display: none;
+  }
+
+  /* Keybar clears the icon strip (see the wide-rail rule below). */
+  .stu-app:has(.stu-rail) .stu-keybar {
+    left: 52px;
+  }
+
+  .stu-doclist {
+    padding: 16px;
+  }
+
+  /* Top bar: Library / Share / Theme / Present fold behind ⋯; the check
+     chip and Save stay on the bar. */
+  .stu-topbar-wide {
+    display: none;
+  }
+
+  .stu-topbar-more {
+    display: block;
+  }
+
+  /* The Edit Sheet presents as a BOTTOM SHEET (instead of the wide widths'
+     docked inspector): full width over a scrim, rounded top, drag-handle
+     affordance, form stacked above the ALWAYS-visible preview. Same
+     component, same behavior — a CSS-level restyle only. */
+  .stu-sheet-backdrop {
+    top: 0;
+    left: 0;
+    width: auto;
+    background: var(--stu-scrim);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: stu-fade-in 0.14s ease-out;
+  }
+
+  /* The bottom sheet covers the canvas — no docked inset. */
+  .stu-app:has(.stu-sheet-backdrop) .stu-canvas {
+    margin-right: 0;
+  }
+
+  .stu-sheet {
+    width: 100vw;
+    max-width: none;
+    height: 88vh;
+    border-left: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: var(--stu-shadow-lift);
+    animation: stu-sheet-up 0.18s ease-out;
+  }
+
+  .stu-sheet::before {
+    content: '';
+    display: block;
+    flex: none;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--stu-rule);
+    margin: 8px auto 0;
+  }
+
+  .stu-sheet-head {
+    flex-wrap: nowrap;
+    padding: 8px 14px 10px;
+    gap: 10px;
+  }
+
+  .stu-sheet-title {
+    flex: 1 1 auto;
+  }
+
+  /* The preview is always on at narrow — no toggle. */
+  .stu-sheet-prevbtn {
+    display: none;
+  }
+
+  .stu-sheet-form {
+    border-bottom: 1px solid var(--stu-rule);
+    padding-bottom: 18px;
+  }
+
+  .stu-sheet-preview,
+  .stu-sheet-preview.stu-sheet-preview-open {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    border-top: none;
+  }
+}
+
+@keyframes stu-sheet-up {
+  from {
+    opacity: 0.5;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Check surfaces (unit S3): card badges · chip popover · status chips ──── */
+
+/* Badge headroom: a card carrying the error badge clears space above itself
+   so the pill never sits on the previous card or this card's first line. */
+.stu-seg:has(> .stu-seg-diag) {
+  margin-top: 28px;
+}
+
+/* Squeeze band (821-1150px): with the inspector docked, the full rail and a
+   46vw panel would leave the canvas a sliver. Collapse the rail to the strip
+   and cap the panel, exactly as the narrow layout already does. */
+@media (min-width: 821px) and (max-width: 1150px) {
+  .stu-app:has(.stu-sheet-backdrop) {
+    --stu-sheetw: 400px;
+  }
+
+  .stu-app:has(.stu-sheet-backdrop) .stu-rail {
+    flex: 0 0 52px;
+  }
+
+  .stu-app:has(.stu-sheet-backdrop) .stu-rail-mini {
+    display: flex;
+  }
+
+  .stu-app:has(.stu-sheet-backdrop) .stu-rail-full {
+    display: none;
+  }
+}
+
+
+/* Canvas card: red-tinted ring for a block whose segment carries errors. */
+.stu-seg-err,
+.stu-seg-err:hover {
+  box-shadow:
+    0 0 0 1px var(--stu-red),
+    0 0 0 4px color-mix(in srgb, var(--stu-red) 14%, transparent);
+}
+
+.stu-seg-err.stu-seg-selected,
+.stu-seg-err.stu-seg-selected:hover {
+  box-shadow:
+    0 0 0 2px var(--stu-red),
+    0 0 0 5px color-mix(in srgb, var(--stu-red) 14%, transparent);
+}
+
+/* Card badge: "state · 1 error" pinned over the top-left edge. A pill in the
+   floating-toolbar language — the block sits on the rendered doc paper, so
+   the badge brings its own chrome surface instead of masking a line. */
+.stu-seg-diag {
+  position: absolute;
+  top: -24px;
+  left: 8px;
+  z-index: 2;
+  padding: 1px 8px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 999px;
+  box-shadow: var(--stu-shadow);
+  font-family: var(--stu-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.stu-seg-diag-err {
+  color: var(--stu-red);
+}
+
+.stu-seg-diag-warn {
+  color: var(--stu-amber);
+}
+
+/* Check chip → anchored results popover. */
+.stu-checkwrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.stu-checkchip {
+  border: 1px solid transparent;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stu-checkchip-caret {
+  opacity: 0.7;
+  font-size: 10px;
+}
+
+.stu-checkpop {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  box-shadow: var(--stu-shadow-lift);
+  z-index: 60;
+  animation: stu-pop-in 0.14s ease-out;
+}
+
+.stu-checkpop-caret {
+  position: absolute;
+  top: -6px;
+  right: 24px;
+  width: 10px;
+  height: 10px;
+  background: var(--stu-panel);
+  border-left: 1px solid var(--stu-rule);
+  border-top: 1px solid var(--stu-rule);
+  transform: rotate(45deg);
+}
+
+.stu-checkpop-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--stu-rule-soft);
+  font-size: 12px;
+}
+
+.stu-checkpop-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 10px;
+  border: 1px solid transparent;
+}
+
+.stu-checkpop-chip-err {
+  color: var(--stu-red);
+  background: var(--stu-red-soft);
+  border-color: color-mix(in srgb, var(--stu-red) 22%, var(--stu-panel));
+}
+
+.stu-checkpop-chip-warn {
+  color: var(--stu-amber);
+  background: var(--stu-amber-soft);
+  border-color: color-mix(in srgb, var(--stu-amber) 26%, var(--stu-panel));
+}
+
+.stu-checkpop-chip-ok {
+  color: var(--stu-green);
+}
+
+.stu-checkpop-ran {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--stu-faint);
+}
+
+.stu-checkpop-rows {
+  padding: 8px 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.stu-checkpop-empty {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--stu-gray);
+}
+
+.stu-checkrow {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  border-left: 2px solid transparent;
+}
+
+.stu-checkrow-error {
+  border-left-color: var(--stu-red);
+  background: var(--stu-well);
+}
+
+.stu-checkrow-error .stu-checkrow-code {
+  color: var(--stu-red);
+}
+
+.stu-checkrow-warn {
+  border-left-color: var(--stu-amber);
+}
+
+.stu-checkrow-warn .stu-checkrow-code {
+  color: var(--stu-amber);
+}
+
+.stu-checkrow-code {
+  flex: none;
+  font-family: var(--stu-mono);
+  font-size: 11px;
+}
+
+.stu-checkrow-msg {
+  flex: 1;
+  color: var(--stu-slate);
+  line-height: 1.45;
+}
+
+.stu-checkrow-line {
+  color: var(--stu-gray);
+}
+
+.stu-checkrow-hint {
+  display: block;
+  color: var(--stu-faint);
+}
+
+.stu-checkrow-open {
+  flex: none;
+  align-self: center;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stu-checkrow-open:hover {
+  color: var(--stu-navy-strong);
+}
+
+.stu-checkpop-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--stu-rule-soft);
+  font-size: 11px;
+  color: var(--stu-faint);
+}
+
+/* Aggregate popover (All documents): one row per FAILING doc. */
+.stu-checkpop-docrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 7px 16px;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stu-checkpop-docrow:hover {
+  background: var(--stu-navy-soft);
+}
+
+.stu-checkpop-docname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--stu-ink);
+}
+
+.stu-checkpop-doccount {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--stu-red);
+}
+
+/* All-documents Status column: quiet pass · filled error chip. */
+.stu-doclist-status {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.stu-doclist-status-ok {
+  color: var(--stu-green);
+}
+
+.stu-doclist-status-err {
+  color: var(--stu-red);
+  background: var(--stu-red-soft);
+  border: 1px solid color-mix(in srgb, var(--stu-red) 22%, var(--stu-panel));
+  padding: 2px 10px;
+}
+
+/* Review dialog: the one-line error warning above Apply. */
+.stu-review-errline {
+  margin: 0;
+  padding: 8px 20px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stu-red);
+}
+
+/* ─── S5: focus contract ──────────────────────────────────────────────────── */
+/* Every interactive element of the rebuilt shell (rail, top bar, check chip,
+   theme panel, insert picker, doc list, keybar/overlay) shows the shared
+   focus ring under keyboard focus. Buttons on .stu-btn / .stu-card and the
+   search wrappers (:focus-within ring) already carry their own. */
+
+.stu-libbtn:focus-visible,
+.stu-export-item:focus-visible,
+.stu-checkchip:focus-visible,
+.stu-checkrow-open:focus-visible,
+.stu-checkpop-docrow:focus-visible,
+.stu-sheet-prevbtn:focus-visible,
+.stu-rail-brand:focus-visible,
+.stu-rail-mini-mark:focus-visible,
+.stu-rail-mini-btn:focus-visible,
+.stu-rail-new:focus-visible,
+.stu-rail-doc:focus-visible,
+.stu-rail-foot a:focus-visible,
+.stu-rail-foot button:focus-visible,
+.stu-themecard:focus-visible,
+.stu-themepanel-x:focus-visible,
+.stu-themepanel-field input:focus-visible,
+.stu-themepanel-field select:focus-visible,
+.stu-themepanel-color input:focus-visible,
+.stu-themepanel-hex:focus-visible,
+.stu-themepanel-scope input:focus-visible,
+.stu-picker-item:focus-visible,
+.stu-picker-import:focus-visible,
+.stu-picker-pill:focus-visible,
+.stu-picker-x:focus-visible,
+.stu-picker-copy:focus-visible,
+.stu-picker-yaml:focus-visible,
+.stu-doclist-row:focus-visible,
+.stu-doclist-empty-chip:focus-visible,
+.stu-keybar-x:focus-visible,
+.stu-keys-card header button:focus-visible,
+.stu-keys-tour:focus-visible,
+.stu-autosave input:focus-visible + .stu-switch {
+  outline: none;
+  box-shadow: var(--stu-ring);
+}
+
+/* The compact picker's search line marks focus on its underline. */
+.stu-picker-search:focus-within {
+  border-bottom-color: var(--stu-navy);
 }

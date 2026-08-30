@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { BLOCK_LABELS } from '@avodado/core';
 import { changesSummary, type ChangeItem } from '../state/changes.js';
 import { docSurface } from '../state/derive.js';
-import { useStudio } from '../state/store.js';
+import { useDerived, useStudio } from '../state/store.js';
 import { IconEdit, IconPlus, IconTrash } from './Icons.js';
 
 function Glyph({ change }: { change: ChangeItem['change'] }): JSX.Element {
@@ -35,7 +35,10 @@ export function ReviewDialog(): JSX.Element | null {
   const applyReview = useStudio((s) => s.applyReview);
   const cancelReview = useStudio((s) => s.cancelReview);
   const applyRef = useRef<HTMLButtonElement>(null);
+  const { diagnostics } = useDerived();
   const open = review !== null && slug !== null;
+  /** Check errors in what's about to be written — the popover has the detail. */
+  const errorCount = diagnostics.filter((d) => d.level === 'error').length;
 
   const items = useMemo(
     () => (open ? changesSummary(savedSource, source, slug) : []),
@@ -110,6 +113,11 @@ export function ReviewDialog(): JSX.Element | null {
             </ul>
           )}
         </div>
+        {errorCount > 0 && (
+          <p className="stu-review-errline" role="alert">
+            {errorCount} error{errorCount === 1 ? '' : 's'} — Apply anyway?
+          </p>
+        )}
         <footer className="stu-review-foot">
           <button type="button" className="stu-btn" onClick={cancelReview}>
             Cancel

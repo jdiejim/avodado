@@ -127,9 +127,10 @@ export const TOUR_STEPS: readonly TourStep[] = [
     target: '[data-tour="save"]',
     title: 'Saving is automatic',
     body:
-      'The chip up here tracks the file: Editing… while you type, Saved when the write lands ' +
-      '(about a second later). Prefer to review first? Flip Autosave off and ⌘S opens a ' +
-      'review of every change before anything touches the disk.',
+      'The status text by the Save button tracks the file: "unsaved changes" while you type, ' +
+      '"saved" when the write lands (about a second later). Prefer to review first? Flip ' +
+      "Autosave off in the rail's Settings and ⌘S opens a review of every change before " +
+      'anything touches the disk.',
     keys: ['⌘S'],
     advance: null,
   },
@@ -138,8 +139,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
     target: '[data-tour="theme"]',
     title: 'Make it yours',
     body:
-      'The theme picker restyles the whole document live. Press ? anytime for every keyboard ' +
-      'shortcut, and the README covers the full block catalog. That\'s the tour!',
+      'The Theme button opens the theme panel — click any theme card to restyle the whole ' +
+      'document live. Press ? anytime for every keyboard shortcut, and the README covers the ' +
+      "full block catalog. That's the tour!",
     keys: ['?'],
     advance: null,
   },

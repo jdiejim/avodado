@@ -78,8 +78,6 @@ interface AddChip {
   readonly at?: { left: number; top: number };
 }
 
-const HINT_KEY = 'avodado-studio-direct-hint-dismissed';
-
 /** The four connector-dot anchors (N/E/S/W midpoints) of a node's rect. */
 function connectorDots(r: Rect): ReadonlyArray<{ side: string; x: number; y: number }> {
   return [
@@ -143,7 +141,7 @@ function uniquePartPaths(wrap: HTMLElement): string[] {
   return out;
 }
 
-export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, onElementClick, showHint }: {
+export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, onElementClick }: {
   host: DirectHost;
   /** The block's parsed data (paths are read against it). */
   data: unknown;
@@ -161,8 +159,6 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
   linkPath?: string | null | undefined;
   /** Sheet only: a click on a tagged element goes here first; `true` = handled. */
   onElementClick?: ((path: string) => boolean) | undefined;
-  /** Canvas only: one-time discoverability hint. */
-  showHint?: boolean | undefined;
 }): JSX.Element {
   const root = useMemo(() => describeBlockSchema(host.kind), [host.kind]);
   const [hover, setHover] = useState<Hover | null>(null);
@@ -176,7 +172,6 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
   const [editRects, setEditRects] = useState<readonly Rect[]>([]);
   /** One-shot flash rects (click on one representation flashes the others). */
   const [flashRects, setFlashRects] = useState<readonly Rect[]>([]);
-  const [hintOpen, setHintOpen] = useState(false);
   const pendingOpen = useRef<{ path: string; focusField?: string } | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorOpenRef = useRef(false);
@@ -756,28 +751,6 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
     setLinkRects(hits.map((el) => relRect(el, wrap)));
   }, [linkPath, html, wrapperRef]);
 
-  /* ---- discoverability hint ---- */
-  useEffect(() => {
-    if (showHint !== true) return;
-    const wrap = wrapperRef.current;
-    if (wrap === null) return;
-    try {
-      if (window.localStorage.getItem(HINT_KEY) === '1') return;
-    } catch {
-      return;
-    }
-    if (wrap.querySelector('[data-bp]') !== null) setHintOpen(true);
-  }, [showHint, html, wrapperRef]);
-
-  const dismissHint = (): void => {
-    setHintOpen(false);
-    try {
-      window.localStorage.setItem(HINT_KEY, '1');
-    } catch {
-      /* private mode */
-    }
-  };
-
   const addItem = (listPath: string): void => {
     // Column-family kinds: adding a column appends the header AND one cell
     // to every aligned row — one compound commit, one undo step. The editor
@@ -788,7 +761,6 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
       if (r === null) return;
       host.commitPaths(r.sets);
       pendingOpen.current = { path: r.headerPath };
-      dismissHintIfOpen();
       return;
     }
     const segs = parseBlockPath(listPath);
@@ -807,11 +779,6 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
       ),
     );
     pendingOpen.current = { path: joinBlockPath([...segs, siblings.length]) };
-    dismissHintIfOpen();
-  };
-
-  const dismissHintIfOpen = (): void => {
-    if (hintOpen) dismissHint();
   };
 
   /**
@@ -863,14 +830,8 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
     const el = wrap.querySelector('[data-bp="messages.0"]');
     if (el !== null) openEditorAt('messages.0', el, wrap, 'summary');
     else host.openFull();
-    dismissHintIfOpen();
   };
   const stepPrompt = needsStepPrompt(host.kind, data);
-
-  // Selecting a part IS the lesson — retire the one-time hint.
-  useEffect(() => {
-    if (partPath !== null && hintOpen) dismissHint();
-  }, [partPath, hintOpen]);
 
   const hoverIsItem = hover !== null && isItemPath(parseBlockPath(hover.path));
   // Chips STRADDLE the selection ring's edge (half on, half off) instead of
@@ -1226,14 +1187,6 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
             {c.label}
           </button>
         ))}
-        {hintOpen && editor === null && (
-          <div className="stu-dx-hint" role="note">
-            <span>Click a part to select it — ⏎ edits · arrows move</span>
-            <button type="button" aria-label="Dismiss" onClick={dismissHint}>
-              ×
-            </button>
-          </div>
-        )}
         {editor !== null && (
           <MicroEditor
             host={host}

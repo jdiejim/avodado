@@ -652,12 +652,12 @@ describe('newDoc', () => {
   });
 });
 
-describe('block library overlay', () => {
-  it('openLibrary raises the flag and closes transient chrome via cancel paths', () => {
+describe('insert picker', () => {
+  it('openPicker closes transient chrome via cancel paths', () => {
     useStudio.setState({ sheet: 2, sheetDirty: true, sheetFresh: true, review: 'save' });
-    useStudio.getState().openLibrary();
+    useStudio.getState().openPicker({ view: 'compact', index: 3, anchor: { x: 10, y: 20 } });
     const s = useStudio.getState();
-    expect(s.library).toBe(true);
+    expect(s.picker).toEqual({ view: 'compact', index: 3, anchor: { x: 10, y: 20 } });
     expect(s.sheet).toBeNull();
     expect(s.sheetDirty).toBe(false);
     expect(s.sheetFresh).toBe(false);
@@ -665,11 +665,37 @@ describe('block library overlay', () => {
     expect(s.source).toBe(DOC); // the discarded draft never touched the doc
   });
 
-  it('closeLibrary drops the flag and nothing else', () => {
-    useStudio.setState({ library: true, selection: 1, mode: 'present' });
-    useStudio.getState().closeLibrary();
+  it('openPicker defaults: centered compact with a derived insert index', () => {
+    useStudio.getState().openPicker();
+    expect(useStudio.getState().picker).toEqual({ view: 'compact', index: null, anchor: null });
+  });
+
+  it('openLibrary is the picker straight into browse view', () => {
+    useStudio.getState().openLibrary();
+    expect(useStudio.getState().picker).toEqual({ view: 'browse', index: null, anchor: null });
+  });
+
+  it('expandPicker goes compact → browse in place, keeping the pinned index', () => {
+    useStudio.setState({ picker: { view: 'compact', index: 3, anchor: { x: 10, y: 20 } } });
+    useStudio.getState().expandPicker();
+    expect(useStudio.getState().picker).toEqual({ view: 'browse', index: 3, anchor: null });
+    // Already browse (or closed): a no-op.
+    useStudio.getState().expandPicker();
+    expect(useStudio.getState().picker).toEqual({ view: 'browse', index: 3, anchor: null });
+    useStudio.setState({ picker: null });
+    useStudio.getState().expandPicker();
+    expect(useStudio.getState().picker).toBeNull();
+  });
+
+  it('closePicker drops the state and nothing else', () => {
+    useStudio.setState({
+      picker: { view: 'browse', index: null, anchor: null },
+      selection: 1,
+      mode: 'present',
+    });
+    useStudio.getState().closePicker();
     const s = useStudio.getState();
-    expect(s.library).toBe(false);
+    expect(s.picker).toBeNull();
     expect(s.selection).toBe(1);
     expect(s.mode).toBe('present');
   });

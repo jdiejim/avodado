@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseDocument, validateDocument } from '@avodado/core';
-import { countLevels, diagnosticsForSegment } from './segDiagnostics.js';
+import { countLevels, diagnosticsForSegment, levelsBySegment } from './segDiagnostics.js';
 
 const SOURCE = [
   '```meta',
@@ -46,5 +46,14 @@ describe('diagnosticsForSegment', () => {
     const { errors, warnings } = countLevels(callout);
     expect(errors).toBeGreaterThan(0);
     expect(errors + warnings).toBe(callout.length);
+  });
+
+  it('tallies per segment for the canvas badges', () => {
+    const levels = levelsBySegment(diags, SOURCE, doc);
+    expect(levels).toHaveLength(doc.segments.length);
+    expect(levels[2]?.errors).toBeGreaterThan(0);
+    expect(levels[0]).toEqual({ errors: 0, warnings: 0 });
+    expect(levels[1]).toEqual({ errors: 0, warnings: 0 });
+    expect(levels[3]).toEqual({ errors: 0, warnings: 0 });
   });
 });

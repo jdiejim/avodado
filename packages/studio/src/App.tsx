@@ -1,118 +1,41 @@
 /**
  * Studio shell, v2 (Notion-style focus editing): a single top bar over a
  * full-width canvas. Editing happens in place (prose) or in the modal Edit
- * Sheet (typed blocks); inserting happens via the '+' gaps or the slash
- * command. Global keyboard shortcuts, SSE wiring, toasts, conflict banner.
+ * Sheet (typed blocks); inserting happens via the ONE insert picker — the
+ * '+' gaps and the slash command open its compact face, the Library button
+ * its browse face. Global keyboard shortcuts, SSE wiring, toasts, conflict
+ * banner.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { removeSegment } from '@avodado/core';
 import { hasServer } from './api/client.js';
 import { useServerEvents } from './api/events.js';
 import { keySurface } from './direct/partSelect.js';
-import { duplicateSegment, insertBlockAt, moveSegmentDown, moveSegmentUp } from './lib/actions.js';
-import { openImportFilePicker } from './lib/importActions.js';
-import { insertBodyFor } from './lib/insertEngine.js';
+import { duplicateSegment, moveSegmentDown, moveSegmentUp } from './lib/actions.js';
 import { needsBlockDeleteConfirm } from './lib/confirmDelete.js';
 import { isEditableTarget, shouldOpenSlash } from './lib/dom.js';
 import { markSlashUsed } from './lib/prefs.js';
 import { segmentLabel } from './state/changes.js';
 import { derive } from './state/derive.js';
-import { useDerived, useStudio } from './state/store.js';
-import { BlockLibrary } from './components/BlockLibrary.js';
+import { useStudio } from './state/store.js';
 import { Canvas } from './components/Canvas.js';
-import { HomeView } from './components/HomeView.js';
-import { SideNav } from './components/SideNav.js';
+import { DocList } from './components/DocList.js';
+import { Rail } from './components/Rail.js';
 import { PresentView } from './components/PresentView.js';
 import { DeleteConfirm } from './components/DeleteConfirm.js';
 import { EditSheet } from './components/EditSheet.js';
 import { ImportConfirm } from './components/ImportConfirm.js';
 import { ReviewDialog } from './components/ReviewDialog.js';
-import { IconClose } from './components/Icons.js';
+import { InsertPicker } from './components/InsertPicker.js';
 import { Shortcuts } from './components/Shortcuts.js';
-import { SlashMenu } from './components/SlashMenu.js';
 import { ConflictBanner, Toasts, UpdateToast } from './components/Toasts.js';
 import { TopBar } from './components/TopBar.js';
 import { TourOverlay } from './tour/TourOverlay.js';
-import { useTour } from './tour/state.js';
-
-const HINT_KEY = 'avodado-studio-hint-dismissed';
-
-function HintBar(): JSX.Element | null {
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return window.localStorage.getItem(HINT_KEY) === '1';
-    } catch {
-      return true;
-    }
-  });
-  const loaded = useStudio((s) => s.loaded);
-  const currentSlug = useStudio((s) => s.currentSlug);
-  if (dismissed || !loaded || currentSlug === null) return null;
-
-  const dismiss = (): void => {
-    setDismissed(true);
-    try {
-      window.localStorage.setItem(HINT_KEY, '1');
-    } catch {
-      /* private mode — the bar simply returns next session */
-    }
-  };
-
-  return (
-    <div className="stu-hintbar" role="note">
-      <span>
-        Press <kbd>/</kbd> to insert a block · <kbd>↑↓</kbd> + <kbd>⏎</kbd> to edit without the
-        mouse · click a diagram part to select it (<kbd>⏎</kbd> edits · arrows move) ·{' '}
-        <kbd>?</kbd> shows every shortcut
-      </span>
-      <button
-        type="button"
-        className="stu-hintbar-tour"
-        onClick={() => void useTour.getState().start()}
-      >
-        Take the 2-minute tour
-      </button>
-      <button type="button" aria-label="Dismiss" onClick={dismiss}>
-        <IconClose size={12} />
-      </button>
-    </div>
-  );
-}
-
-function SlashLayer({ open, setOpen }: {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-}): JSX.Element | null {
-  const { doc } = useDerived();
-  if (!open) return null;
-  const insertIndex = (): number => {
-    const sel = useStudio.getState().selection;
-    return sel !== null ? sel + 1 : doc.segments.length;
-  };
-  return (
-    <SlashMenu
-      onClose={() => setOpen(false)}
-      onPick={(item) => {
-        setOpen(false);
-        insertBlockAt(insertIndex(), item.type, insertBodyFor(item));
-      }}
-      onImport={() => {
-        setOpen(false);
-        openImportFilePicker(insertIndex());
-      }}
-      onLibrary={() => {
-        setOpen(false);
-        useStudio.getState().openLibrary();
-      }}
-    />
-  );
-}
 
 export function App(): JSX.Element {
   const init = useStudio((s) => s.init);
   const handleServerEvent = useStudio((s) => s.handleServerEvent);
-  const [slashOpen, setSlashOpen] = useState(false);
 
   useEffect(() => {
     void init();
@@ -134,8 +57,8 @@ export function App(): JSX.Element {
       const s = useStudio.getState();
       // The review dialog / delete popover own the keyboard while open.
       if (s.review !== null || s.pendingDelete !== null) return;
-      // So does the Block Library overlay (its own Esc / arrows / focus trap).
-      if (s.library) return;
+      // So does the insert picker (its own Esc / arrows / focus handling).
+      if (s.picker !== null) return;
       const mod = e.metaKey || e.ctrlKey;
       // ⇧⌘P toggles Present from anywhere (it's a chord — never plain typing).
       if (mod && e.shiftKey && e.key.toLowerCase() === 'p') {
@@ -182,7 +105,9 @@ export function App(): JSX.Element {
         e.preventDefault();
         markSlashUsed();
         s.dismissSlashHint();
-        setSlashOpen(true);
+        // '/' has no gap context: centered compact picker, insert lands
+        // after the selection (else at the doc end), resolved at pick time.
+        s.openPicker({ view: 'compact' });
         return;
       }
       const sel = s.selection;
@@ -256,21 +181,17 @@ export function App(): JSX.Element {
   const mode = useStudio((s) => s.mode);
   return (
     <div className="stu-app">
-      <TopBar />
-      {mode === 'edit' && <HintBar />}
-      {mode === 'home' ? (
-        <HomeView />
-      ) : mode === 'edit' ? (
-        <div className="stu-docwrap">
-          <SideNav />
-          <Canvas />
+      <div className="stu-shell">
+        {/* The rail persists across the list and edit views; Present owns
+            the full width (unchanged). */}
+        {mode !== 'present' && <Rail />}
+        <div className="stu-main">
+          <TopBar />
+          {mode === 'home' ? <DocList /> : mode === 'edit' ? <Canvas /> : <PresentView />}
         </div>
-      ) : (
-        <PresentView />
-      )}
+      </div>
       <EditSheet />
-      {mode === 'edit' && <SlashLayer open={slashOpen} setOpen={setSlashOpen} />}
-      <BlockLibrary />
+      <InsertPicker />
       <ReviewDialog />
       <DeleteConfirm />
       <ImportConfirm />

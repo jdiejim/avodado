@@ -18,10 +18,14 @@ import { IconDoc } from './Icons.js';
 /** How many block-type chips a card shows before collapsing to "+n". */
 const MAX_CHIPS = 4;
 
-export function TemplatePicker({ onClose }: { onClose: () => void }): JSX.Element {
+export function TemplatePicker({ onClose, initial }: {
+  onClose: () => void;
+  /** Pre-selected template id (`'blank'` or a DOC_TEMPLATES key). */
+  initial?: string;
+}): JSX.Element {
   const newDoc = useStudio((s) => s.newDoc);
-  const [selected, setSelected] = useState<string>('blank');
-  const [slug, setSlug] = useState('');
+  const [selected, setSelected] = useState<string>(initial ?? 'blank');
+  const [slug, setSlug] = useState(initial !== undefined && initial !== 'blank' ? initial : '');
   const [query, setQuery] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const slugRef = useRef<HTMLInputElement>(null);

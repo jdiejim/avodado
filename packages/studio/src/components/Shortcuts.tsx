@@ -1,8 +1,9 @@
 /**
- * Keyboard discoverability: a slim contextual footer bar whose 4-5 hints
- * follow the current surface (canvas / selected block / edit sheet), and the
- * `?` overlay card with the full grouped shortcut list. The bar is
- * dismissible (×) and comes back whenever `?` is pressed.
+ * THE hint surface — the studio's one discoverability system: a slim
+ * contextual footer bar whose 4-6 hints follow the current surface (canvas /
+ * selected block / diagram part / edit sheet), and the `?` overlay card with
+ * the full grouped shortcut list plus the tour entry. The bar is dismissible
+ * (×, ONE localStorage key) and comes back whenever `?` is pressed.
  */
 
 import { useEffect, useState } from 'react';
@@ -15,6 +16,32 @@ import { useTour } from '../tour/state.js';
 import { IconClose } from './Icons.js';
 
 const BAR_KEY = 'avodado-studio-shortcutbar-dismissed';
+/** Dismissal keys of the RETIRED hint surfaces (HintBar, DirectLayer note). */
+const LEGACY_KEYS = [
+  'avodado-studio-hint-dismissed',
+  'avodado-studio-direct-hint-dismissed',
+] as const;
+
+/**
+ * The one dismissal read, with migration: a user who dismissed ANY of the old
+ * hint surfaces has seen the hints — treat the keybar as dismissed too, fold
+ * that into {@link BAR_KEY}, and drop the legacy keys.
+ */
+function readDismissed(): boolean {
+  try {
+    let dismissed = window.localStorage.getItem(BAR_KEY) === '1';
+    for (const key of LEGACY_KEYS) {
+      if (window.localStorage.getItem(key) !== null) {
+        dismissed = true;
+        window.localStorage.removeItem(key);
+      }
+    }
+    if (dismissed) window.localStorage.setItem(BAR_KEY, '1');
+    return dismissed;
+  } catch {
+    return true;
+  }
+}
 
 interface OverlayRow {
   readonly keys: string;
@@ -44,6 +71,7 @@ const OVERLAY_GROUPS: ReadonlyArray<{ title: string; rows: readonly OverlayRow[]
       { keys: 'esc', label: 'back to the block' },
       { keys: 'drag', label: 'move with the pointer' },
       { keys: 'drag a dot', label: 'connect nodes — drop on empty space to add one' },
+      { keys: 'n', label: 'sequence message: add / edit its numbered step note' },
       { keys: '⌥←↑↓→', label: 'nudge the hovered part' },
     ],
   },
@@ -64,17 +92,20 @@ const OVERLAY_GROUPS: ReadonlyArray<{ title: string; rows: readonly OverlayRow[]
       { keys: '/', label: 'insert after selection' },
       { keys: 'type', label: 'filter block types' },
       { keys: '⏎', label: 'insert and start typing' },
-      { keys: 'Library', label: 'browse every block — top bar, or the menu footers' },
-      { keys: '⌘S', label: 'save now' },
+      { keys: '+', label: 'hover a gap between blocks — same picker, pinned there' },
+      { keys: 'Library', label: 'browse every block — the picker footer, or the top bar' },
     ],
   },
   {
-    title: 'Modes',
+    title: 'Studio',
     rows: [
-      { keys: 'Edit · Site · Present', label: 'switch in the top bar' },
-      { keys: '⇧⌘P', label: 'toggle Present — the current doc as slides' },
-      { keys: 'esc', label: 'back to Edit from Site / Present' },
-      { keys: '⌘S', label: 'in Site mode: update the preview' },
+      { keys: 'rail', label: 'docs by folder · New doc · All documents · Settings (autosave)' },
+      { keys: '⌘K', label: 'search docs — opens the rail drawer on narrow windows' },
+      { keys: 'check chip', label: 'validation results — rows jump to the block & field' },
+      { keys: 'Theme', label: 'theme panel — pick a card, or customize & save' },
+      { keys: '⌘S', label: 'save now — with autosave off, review first' },
+      { keys: '⇧⌘P', label: 'Present — the current doc as slides · esc returns' },
+      { keys: 'Share ▾', label: 'copy link · export HTML / slides / PDF · open the site' },
     ],
   },
 ];
@@ -83,14 +114,8 @@ export function Shortcuts(): JSX.Element {
   const sheetOpen = useStudio((s) => s.sheet !== null);
   const hasSelection = useStudio((s) => s.selection !== null);
   const selection = useStudio((s) => s.selection);
-  const { doc } = useDerived();
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return window.localStorage.getItem(BAR_KEY) === '1';
-    } catch {
-      return true;
-    }
-  });
+  const { doc, rendered } = useDerived();
+  const [dismissed, setDismissed] = useState(readDismissed);
   const [overlay, setOverlay] = useState(false);
 
   useEffect(() => {
@@ -136,6 +161,11 @@ export function Shortcuts(): JSX.Element {
     seg.kind !== 'markdown' &&
     seg.kind !== 'meta' &&
     blockSupportsDrag(seg.kind, seg.data);
+  // Selected block renders tagged parts → "click a part → select it" hint
+  // (the one-time canvas note this keybar replaced).
+  const parts =
+    selection !== null &&
+    (rendered?.segments[selection]?.html.includes('data-bp') ?? false);
   // Selected part is a NODE of a connectable diagram → "drag a dot" hint.
   const partSeg = partSel !== null ? doc.segments[partSel.seg] : undefined;
   const connectSpec =
@@ -156,7 +186,7 @@ export function Shortcuts(): JSX.Element {
     <>
       {!dismissed && (
         <div className="stu-keybar" role="note" data-ctx={ctx} data-tour="keybar">
-          {shortcutsFor(ctx, { dragParts, connectDots }).map((h) => (
+          {shortcutsFor(ctx, { dragParts, connectDots, parts }).map((h) => (
             <span key={h.keys} className="stu-keybar-hint">
               <kbd>{h.keys}</kbd> {h.label}
             </span>

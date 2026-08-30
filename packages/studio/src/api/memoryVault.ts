@@ -18,7 +18,7 @@
  * and a networked backend inherits a client that already handles it.
  */
 
-import { parseDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from '@avodado/core';
 import {
   hashSource,
   type DocListItem,
@@ -29,25 +29,30 @@ import {
   type ThemeInput,
 } from './backend.js';
 
-/** A stored document. `title` is derived on write so listing stays cheap. */
+/** A stored document. `title`/`errorCount` derive on write so listing stays cheap. */
 interface VaultDoc {
   readonly slug: string;
   readonly source: string;
   readonly hash: string;
   readonly mtimeMs: number;
   readonly title: string;
+  readonly errorCount: number;
 }
 
 const docs = new Map<string, VaultDoc>();
 const prefs = new Map<string, unknown>();
 
-/** The document's own title, falling back to the slug — as the server does. */
-function titleOf(source: string, slug: string): string {
+/** Title + check error count, falling back safely — as the server does. */
+function checkOf(source: string, slug: string): { title: string; errorCount: number } {
   try {
-    return parseDocument(source, slug).meta?.title ?? slug;
+    const doc = parseDocument(source, slug);
+    return {
+      title: doc.meta?.title ?? slug,
+      errorCount: validateDocument(doc, `${slug}.md`).filter((d) => d.level === 'error').length,
+    };
   } catch {
-    /* an unparseable doc still lists — the slug stands in for the title */
-    return slug;
+    /* an unparseable doc still lists — the slug stands in, and it IS broken */
+    return { title: slug, errorCount: 1 };
   }
 }
 
@@ -107,7 +112,7 @@ async function writeDoc(slug: string, source: string): Promise<VaultDoc> {
     source: normalised,
     hash: await hashSource(normalised),
     mtimeMs: Date.now(),
-    title: titleOf(normalised, slug),
+    ...checkOf(normalised, slug),
   };
   docs.set(slug, doc);
   return doc;
@@ -134,7 +139,13 @@ async function fetchMeta(): Promise<StudioMeta> {
 async function fetchDocs(): Promise<DocListItem[]> {
   await seedIfEmpty();
   return [...docs.values()]
-    .map((d) => ({ slug: d.slug, file: `${d.slug}.md`, title: d.title, mtimeMs: d.mtimeMs }))
+    .map((d) => ({
+      slug: d.slug,
+      file: `${d.slug}.md`,
+      title: d.title,
+      mtimeMs: d.mtimeMs,
+      errorCount: d.errorCount,
+    }))
     .sort((a, b) => b.mtimeMs - a.mtimeMs);
 }
 

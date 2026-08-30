@@ -1,22 +1,15 @@
 /**
  * The canvas: a full-width surface with the rendered document centered on it.
  * Blocks reveal a floating mini-toolbar on hover; the gaps between blocks
- * reveal a hairline with a '+' that opens the Insert Menu; prose edits
- * in place; typed blocks open the Edit Sheet.
+ * reveal a hairline with a '+' that opens the insert picker anchored to the
+ * gap; prose edits in place; typed blocks open the Edit Sheet.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  replaceProse,
-  BLOCK_LABELS,
-  BLOCK_TYPE_SET,
-  type BlockType,
-  type Segment,
-} from '@avodado/core';
+import { replaceProse, BLOCK_LABELS, type Segment } from '@avodado/core';
 import {
   deleteSegment,
   duplicateSegment,
-  insertBlockAt,
   moveSegmentDown,
   moveSegmentUp,
 } from '../lib/actions.js';
@@ -26,6 +19,7 @@ import { DirectLayer } from '../direct/DirectLayer.js';
 import { canvasHost } from '../direct/host.js';
 import { needsBlockDeleteConfirm } from '../lib/confirmDelete.js';
 import { isEditableTarget } from '../lib/dom.js';
+import { levelsBySegment } from '../lib/segDiagnostics.js';
 import { slashUsed } from '../lib/prefs.js';
 import { segmentLabel } from '../state/changes.js';
 import { docSurface } from '../state/derive.js';
@@ -39,16 +33,29 @@ import {
   IconPlus,
   IconTrash,
 } from './Icons.js';
-import { InsertMenu, type InsertAnchor } from './InsertMenu.js';
 
-type DragPayload = { kind: 'new'; type: BlockType } | { kind: 'move'; from: number };
+/** Where a gap '+' was clicked: gap index + viewport point for the popover. */
+interface InsertAnchor {
+  readonly index: number;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Opens the unified insert picker compact + anchored, pinned to the gap. */
+function openInsertAt(anchor: InsertAnchor): void {
+  useStudio.getState().openPicker({
+    view: 'compact',
+    index: anchor.index,
+    anchor: { x: anchor.x, y: anchor.y },
+  });
+}
+
+/** Block DnD payload — only block MOVES ride the canvas drag (grip handle). */
+type DragPayload = { kind: 'move'; from: number };
 
 function parseDragPayload(text: string): DragPayload | null {
   try {
-    const raw = JSON.parse(text) as { kind?: unknown; type?: unknown; from?: unknown };
-    if (raw.kind === 'new' && typeof raw.type === 'string' && BLOCK_TYPE_SET.has(raw.type)) {
-      return { kind: 'new', type: raw.type as BlockType };
-    }
+    const raw = JSON.parse(text) as { kind?: unknown; from?: unknown };
     if (raw.kind === 'move' && typeof raw.from === 'number') {
       return { kind: 'move', from: raw.from };
     }
@@ -155,13 +162,9 @@ function Gap({ index, locked, onPlus }: {
     const payload = parseDragPayload(e.dataTransfer.getData('text/plain')) ?? s.dragging;
     s.setDragging(null);
     if (payload === null) return;
-    if (payload.kind === 'new') {
-      insertBlockAt(index, payload.type);
-    } else {
-      const from = payload.from;
-      if (index === from || index === from + 1) return;
-      s.moveBlock(from, index);
-    }
+    const from = payload.from;
+    if (index === from || index === from + 1) return;
+    s.moveBlock(from, index);
   };
 
   return (
@@ -328,12 +331,21 @@ function BlockToolbar({ index, count, isMeta, metaFirst, onEdit, onDelete }: {
   );
 }
 
-function SegmentShell({ index, count, seg, html, metaFirst }: {
+/** A segment's diagnostic tallies, for the card badge + error ring. */
+export interface SegLevels {
+  readonly errors: number;
+  readonly warnings: number;
+}
+
+const NO_LEVELS: SegLevels = { errors: 0, warnings: 0 };
+
+function SegmentShell({ index, count, seg, html, metaFirst, levels }: {
   index: number;
   count: number;
   seg: Segment;
   html: string;
   metaFirst: boolean;
+  levels: SegLevels;
 }): JSX.Element {
   const selected = useStudio((s) => s.selection === index);
   const select = useStudio((s) => s.select);
@@ -427,7 +439,7 @@ function SegmentShell({ index, count, seg, html, metaFirst }: {
   return (
     <div
       ref={shellRef}
-      className={`stu-seg ${selected ? 'stu-seg-selected' : ''} ${editing ? 'stu-seg-editing' : ''}`}
+      className={`stu-seg ${selected ? 'stu-seg-selected' : ''} ${editing ? 'stu-seg-editing' : ''} ${!editing && levels.errors > 0 ? 'stu-seg-err' : ''}`}
       data-seg={index}
       onClickCapture={onClickCapture}
       onDoubleClick={onDoubleClick}
@@ -442,16 +454,19 @@ function SegmentShell({ index, count, seg, html, metaFirst }: {
           onDelete={onDelete}
         />
       )}
+      {!editing && (levels.errors > 0 || levels.warnings > 0) && (
+        <span
+          className={`stu-seg-diag ${levels.errors > 0 ? 'stu-seg-diag-err' : 'stu-seg-diag-warn'}`}
+        >
+          {seg.kind === 'markdown' ? 'text' : seg.kind} ·{' '}
+          {levels.errors > 0
+            ? `${levels.errors} error${levels.errors === 1 ? '' : 's'}`
+            : `${levels.warnings} warning${levels.warnings === 1 ? '' : 's'}`}
+        </span>
+      )}
       {body}
       {direct && host !== null && (
-        <DirectLayer
-          host={host}
-          data={seg.data}
-          html={html}
-          wrapperRef={shellRef}
-          segIndex={index}
-          showHint
-        />
+        <DirectLayer host={host} data={seg.data} html={html} wrapperRef={shellRef} segIndex={index} />
       )}
     </div>
   );
@@ -473,7 +488,8 @@ function EmptyDocs(): JSX.Element {
 }
 
 export function Canvas(): JSX.Element {
-  const { doc, rendered, renderError } = useDerived();
+  const { doc, rendered, renderError, diagnostics } = useDerived();
+  const source = useStudio((s) => s.source);
   const docs = useStudio((s) => s.docs);
   const loaded = useStudio((s) => s.loaded);
   const currentSlug = useStudio((s) => s.currentSlug);
@@ -481,8 +497,14 @@ export function Canvas(): JSX.Element {
   const slashHintAt = useStudio((s) => s.slashHintAt);
   const theme = useStudio((s) => s.theme);
   const themeVars = useStudio((s) => s.themeVars);
-  const [insertAt, setInsertAt] = useState<InsertAnchor | null>(null);
   const showSlashHint = slashHintAt !== null && !slashUsed();
+
+  // Per-segment error/warning tallies for the card badges — derived from the
+  // SAME whole-doc diagnostics the check chip shows, attributed by line span.
+  const segLevels = useMemo(
+    () => levelsBySegment(diagnostics, source, doc),
+    [diagnostics, source, doc],
+  );
 
   if (loaded && docs.length === 0) {
     return (
@@ -540,7 +562,7 @@ export function Canvas(): JSX.Element {
           ) : (
             <div dangerouslySetInnerHTML={{ __html: rendered.cover }} />
           )}
-          <Gap index={0} locked={metaFirst} onPlus={setInsertAt} />
+          <Gap index={0} locked={metaFirst} onPlus={openInsertAt} />
           {doc.segments.map((seg, i) => (
             <div key={i}>
               {/* The meta cover edits through the rendered cover above — no
@@ -552,6 +574,7 @@ export function Canvas(): JSX.Element {
                   seg={seg}
                   html={rendered.segments[i]?.html ?? ''}
                   metaFirst={metaFirst}
+                  levels={segLevels[i] ?? NO_LEVELS}
                 />
               )}
               {showSlashHint && slashHintAt === i && (
@@ -559,7 +582,7 @@ export function Canvas(): JSX.Element {
                   press <kbd>/</kbd> for the next block
                 </div>
               )}
-              <Gap index={i + 1} onPlus={setInsertAt} />
+              <Gap index={i + 1} onPlus={openInsertAt} />
             </div>
           ))}
           {count === 0 && (
@@ -571,7 +594,7 @@ export function Canvas(): JSX.Element {
                 onClick={(e) => {
                   e.stopPropagation();
                   const r = e.currentTarget.getBoundingClientRect();
-                  setInsertAt({ index: 0, x: r.left + r.width / 2, y: r.bottom });
+                  openInsertAt({ index: 0, x: r.left + r.width / 2, y: r.bottom });
                 }}
               >
                 <IconPlus size={16} />
@@ -583,7 +606,6 @@ export function Canvas(): JSX.Element {
           )}
         </div>
       </div>
-      {insertAt !== null && <InsertMenu anchor={insertAt} onClose={() => setInsertAt(null)} />}
       <FileDropZone minIndex={metaFirst ? 1 : 0} />
     </main>
   );
