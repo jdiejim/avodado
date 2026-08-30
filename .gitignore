@@ -26,3 +26,8 @@ graphify-out/
 
 # VS Code extension build artifact
 *.vsix
+
+# generated exports never live in docs/
+docs/**/*.html
+docs/**/*.pptx
+docs/**/*.pdf
