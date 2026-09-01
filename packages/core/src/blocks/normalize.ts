@@ -423,7 +423,16 @@ function mapArrayField(
       const entries = Object.entries(item);
       if (entries.length !== 1) return item;
       const [k, v] = entries[0] as [string, unknown];
-      const label = typeof v === 'string' ? v : v === null ? '' : undefined;
+      // `A -> B: 200` — YAML types a bare numeric/boolean label; it is still
+      // the label. Only nested structures mean "this is a real object form".
+      const label =
+        typeof v === 'string'
+          ? v
+          : v === null
+            ? ''
+            : typeof v === 'number' || typeof v === 'boolean'
+              ? String(v)
+              : undefined;
       if (label === undefined || !grammar.signature(k)) return item;
       const out = grammar.expand(label.length > 0 ? `${k}: ${label}` : k);
       if (typeof out === 'string') return item; // no match — keep the original

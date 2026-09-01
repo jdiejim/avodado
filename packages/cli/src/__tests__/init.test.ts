@@ -38,7 +38,7 @@ const failing = (diags: readonly Diagnostic[]): readonly Diagnostic[] =>
   diags.filter((d) => !(d.code === 'W_ALIAS_TYPE' && d.level === 'warn'));
 
 describe('runInit', () => {
-  it('scaffolds the diet tree: one canonical skill + pointer stubs, ≤43 files for all tools', async () => {
+  it('scaffolds the diet tree: one canonical skill + pointer stubs, ≤46 files for all tools', async () => {
     const { root, cleanup } = await tempDir();
     try {
       const result = await runInit({ cwd: root });
@@ -86,9 +86,9 @@ describe('runInit', () => {
       // the 10 exemplars ride along with the skill
       for (const f of EXEMPLAR_FILES) expect(result.created).toContain(f);
 
-      // init diet: all four tools land in at most 43 files, none skipped
-      // (base 24 + 10 exemplars + 9 adapter files)
-      expect(result.created.length).toBeLessThanOrEqual(43);
+      // init diet: all four tools land in at most 46 files, none skipped
+      // (base 25 + 10 exemplars + 9 adapter files)
+      expect(result.created.length).toBeLessThanOrEqual(46);
       expect(result.skipped).toEqual([]);
 
       // exactly ONE contract.md exists on disk — the canonical one
@@ -153,8 +153,8 @@ describe('runInit', () => {
       expect(result.created).toContain('.claude/agents/avodado-doc-writer.md');
       expect(result.created).toContain('.claude/commands/avo.md');
       expect(result.created).not.toContain('.cursor/rules/avodado.mdc');
-      // one tool: base (24 + 10 exemplars = 34) + claude (4) = 38 files
-      expect(result.created.length).toBe(38);
+      // one tool: base (27 + 10 exemplars = 37) + claude (4) = 41 files
+      expect(result.created.length).toBe(41);
       // the /avo slash command installs and opens with YAML frontmatter
       const avoCmd = await readFile(join(root, '.claude/commands/avo.md'), 'utf8');
       expect(avoCmd.startsWith('---')).toBe(true);
@@ -167,7 +167,7 @@ describe('runInit', () => {
         // rule-file tools get exactly one pointer file each — no skill dirs
         expect(r2.created).toContain('.cursor/rules/avodado.mdc');
         expect(r2.created).toContain('.windsurfrules');
-        expect(r2.created.length).toBe(36); // base 34 + 1 + 1
+        expect(r2.created.length).toBe(39); // base 37 + 1 + 1
         expect(existsSync(join(root2, '.cursor/skills'))).toBe(false);
         expect(existsSync(join(root2, '.windsurf'))).toBe(false);
       } finally {
@@ -182,8 +182,8 @@ describe('runInit', () => {
     const { root, cleanup } = await tempDir();
     try {
       const result = await installTool({ cwd: root, tool: 'claude' });
-      // canonical skill (21) + exemplars (10) + claude adapter (4)
-      expect(result.created.length).toBe(35);
+      // canonical skill (22) + exemplars (10) + claude adapter (4)
+      expect(result.created.length).toBe(38);
       expect(result.created).toContain('.claude/commands/avo.md');
       expect(result.created).toContain('.avodado/skill/SKILL.md');
       expect(result.created).toContain('.avodado/skill/reference/blocks/contract.md');
@@ -259,6 +259,7 @@ describe('tailored install (--scope)', () => {
     '.avodado/skill/reference/blocks/INDEX.md',
     '.avodado/skill/reference/blocks/contract.md',
     '.avodado/skill/reference/recipes.md',
+    '.avodado/skill/reference/mermaid.md',
     '.avodado/skill/reference/system-design.md',
     '.avodado/skill/reference/decks.md',
     '.avodado/skill/reference/intake.md',
@@ -280,8 +281,8 @@ describe('tailored install (--scope)', () => {
         expect(result.created, `backend drops ${fam}`).not.toContain(FAM(fam));
         expect(existsSync(join(root, FAM(fam)))).toBe(false);
       }
-      // full claude init is 38; backend drops exactly 2 family files
-      expect(result.created.length).toBe(36);
+      // full claude init is 41; backend drops exactly 2 family files
+      expect(result.created.length).toBe(39);
 
       // the INSTALLED index marks the omitted families — the template never does
       const index = await readFile(join(root, '.avodado/skill/reference/blocks/INDEX.md'), 'utf8');

@@ -8,6 +8,7 @@ export default tseslint.config(
       '**/coverage/**',
       '**/node_modules/**',
       '.scratch/**',
+      'evals/**',
       'resources/**',
       '**/scripts/**',
       '**/*.generated.ts',

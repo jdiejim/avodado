@@ -73,6 +73,28 @@ describe('string-item sugar', () => {
   });
 });
 
+describe('arrow sugar — numeric labels', () => {
+  it('sequence: an unquoted numeric label (`B --> Stripe: 200`) is still the label', () => {
+    const { data, diags } = block('sequence', 'messages:\n  - A -> B: 200\n  - B --> A: true');
+    expect(diags).toHaveLength(0);
+    expect(data['messages']).toEqual([
+      { from: 'A', to: 'B', label: '200' },
+      { from: 'B', to: 'A', label: 'true', kind: 'response' },
+    ]);
+  });
+});
+
+describe('arrow sugar — flow edge kinds', () => {
+  it('flow: `-->` is a dashed edge and `-x->` an error edge; both validate', () => {
+    const { data, diags } = block('flow', 'nodes:\n  - a: A\n  - b: B\nedges:\n  - a --> b: fallback\n  - a -x-> b: fail');
+    expect(diags).toHaveLength(0);
+    expect(data['edges']).toEqual([
+      { from: 'a', to: 'b', label: 'fallback', kind: 'dashed' },
+      { from: 'a', to: 'b', label: 'fail', kind: 'error' },
+    ]);
+  });
+});
+
 describe('diagram sugar — nodes, transitions, links, columns', () => {
   it('flow: bare node strings become id+label; a full sketch is names + arrows', () => {
     const { data, diags } = block('flow', 'nodes: [Receive, Check]\nedges:\n  - Receive -> Check: lookup');

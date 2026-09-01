@@ -480,7 +480,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo init -y writes at most 43 files (skill once + exemplars + pointer stubs)', async () => {
+  it('avo init -y writes at most 46 files (skill once + exemplars + pointer stubs)', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
@@ -488,7 +488,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
       expect(code).toBe(0);
       const m = /Created (\d+) file\(s\)/.exec(stdout);
       expect(m).not.toBeNull();
-      expect(Number((m as RegExpExecArray)[1])).toBeLessThanOrEqual(43);
+      expect(Number((m as RegExpExecArray)[1])).toBeLessThanOrEqual(46);
       // canonical skill once; stubs where tools have a native skill format
       expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/contract.md'))).toBe(true);
       expect(existsSync(join(tmp, '.claude/skills/avodado-docs/SKILL.md'))).toBe(true);

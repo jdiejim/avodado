@@ -67,7 +67,7 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .activation{fill:var(--light-blue);stroke:var(--navy);stroke-width:1;} .docskin .activation.pg{fill:var(--positive-soft);stroke:var(--positive);}
 .docskin .msg-line{stroke:var(--charcoal);stroke-width:1.2;fill:none;}
 .docskin .msg-line.dashed{stroke-dasharray:5 3;} .docskin .msg-line.err{stroke:var(--negative);stroke-width:1.4;}
-.docskin .msg-text{fill:var(--charcoal);font-family:var(--font-mono);font-size:10.5px;}
+.docskin .msg-text{fill:var(--charcoal);font-family:var(--font-mono);font-size:10.5px;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round;}
 .docskin .msg-text.em{fill:var(--navy);font-weight:700;} .docskin .msg-text.err{fill:var(--negative);font-weight:700;} .docskin .msg-text.note{fill:var(--gray);font-style:italic;}
 .docskin .step-badge{fill:var(--navy);} .docskin .step-badge.err{fill:var(--negative);}
 .docskin .step-badge-text{fill:var(--white);font-family:var(--font-mono);font-size:10px;font-weight:700;text-anchor:middle;}
@@ -80,6 +80,10 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
    annotation on step 4 reads ④ here even when steps 1-3 have no note). */
 .docskin .seq-steps .step-n{position:absolute;left:0;top:7px;width:26px;height:20px;background:var(--navy);color:var(--white);font-family:var(--font-mono);font-size:11px;font-weight:700;text-align:center;line-height:20px;border-radius:2px;}
 .docskin .seq-steps li.err::before{background:var(--negative);}
+.docskin .seq-steps li.err{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;border-bottom:1px solid var(--rule);padding:7px 0 8px 40px;margin:0;white-space:normal;}
+.docskin .seq-steps li.err:last-child{border-bottom:none;}
+.docskin .diagram-foot{display:flex;flex-wrap:wrap;gap:6px 24px;margin-top:14px;font-size:12.5px;color:var(--charcoal);}
+.docskin .diagram-foot strong{color:var(--navy);}
 .docskin .step-actor{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--navy);margin-right:8px;text-transform:uppercase;letter-spacing:.06em;}
 .docskin .step-actor.err{color:var(--negative);}
 .docskin .step-summary{font-size:13px;color:var(--charcoal);}

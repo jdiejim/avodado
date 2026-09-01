@@ -1,0 +1,194 @@
+# Block-selection eval — 30 realistic doc requests that name NO block type.
+#
+# Each request scores the PRIMARY block an agent picks (the block that carries
+# the main answer):
+#   expected   → 1.0   the shapes that answer the reader's question
+#   acceptable → 0.5   defensible, but a weaker lens
+#   wrong      → 0.0 and counted as a "tempting wrong" hit — the keyword-match
+#                trap the request is designed to spring
+#   anything else → 0.0
+#
+# Requests deliberately use words that echo the WRONG block ("timeline" of an
+# outage that wants a fishbone, "steps" that want a state machine) so the eval
+# separates reasoning from keyword matching. Keep the set stable: a changed
+# request invalidates every run before it. Add new ones at the end.
+
+- id: webhook-twice
+  request: Document what happens when a Stripe payment webhook arrives twice for the same order.
+  expected: [flow, sequence]
+  acceptable: [state]
+  wrong: [table, steps, timeline]
+
+- id: admin-visibility
+  request: Explain who can see what in the admin app — the roles against the screens.
+  expected: [matrix]
+  acceptable: [table]
+  wrong: [tree, flow, c4]
+
+- id: cron-to-queue
+  request: Write up why we moved from cron jobs to a queue.
+  expected: [options, proscons, scqa]
+  acceptable: [callout, takeaways]
+  wrong: [flow, sequence, timeline]
+
+- id: release-process
+  request: Document the release process for new engineers.
+  expected: [steps, flow]
+  acceptable: [swimlane]
+  wrong: [timeline, gantt, sequence]
+
+- id: cache-compare
+  request: "Compare the three caching options we discussed: Redis, Memcached, and an in-process LRU."
+  expected: [options]
+  acceptable: [proscons, benchmark, table, harvey]
+  wrong: [chart, list]
+
+- id: order-lifecycle
+  request: Show how an order moves from cart to delivered and what can go wrong at each stage.
+  expected: [state]
+  acceptable: [flow]
+  wrong: [timeline, steps, journey]
+
+- id: oncall-queue-alarm
+  request: On-call needs a page for the 3am "queue depth" alarm — what to check, in what order.
+  expected: [steps, flow]
+  acceptable: [checklist]
+  wrong: [sequence, table, timeline]
+
+- id: billing-model
+  request: Explain the data model behind subscriptions, plans, invoices, and payments.
+  expected: [erd]
+  acceptable: [uml]
+  wrong: [table, tree, flow]
+
+- id: platform-shape
+  request: "Explain the shape of the platform to a new backend engineer: services, databases, third parties."
+  expected: [c4, block]
+  acceptable: [cluster, archmap]
+  wrong: [flow, sequence, tree]
+
+- id: q3-plan
+  request: Show the Q3 delivery plan for the mobile app with dates and dependencies.
+  expected: [gantt]
+  acceptable: [timeline]
+  wrong: [table, kanban, steps]
+
+- id: login-flow
+  request: How the login flow works across the SPA, the auth service, and Google.
+  expected: [sequence]
+  acceptable: [swimlane]
+  wrong: [flow, steps, c4]
+
+- id: infra-bill
+  request: The monthly infra bill grew 40% — break down where the money goes.
+  expected: [chart, treemap]
+  acceptable: [table, stats]
+  wrong: [timeline, bignumber]
+
+- id: outage-postmortem
+  request: "Postmortem for the outage on 14 Aug: what happened, in what order, and why."
+  expected: [timeline]
+  acceptable: [sequence, fishbone]
+  wrong: [gantt, steps, table]
+
+- id: friday-deploys
+  request: Why do deploys keep failing on Fridays? Lay out the possible causes.
+  expected: [fishbone]
+  acceptable: [tree]
+  wrong: [flow, table, timeline]
+
+- id: orders-rest-api
+  request: Document the public REST API for the orders service.
+  expected: [endpoint]
+  acceptable: [table]
+  wrong: [sequence, code, flow]
+
+- id: support-agent
+  request: Describe how our support agent uses tools to answer a ticket.
+  expected: [agentloop]
+  acceptable: [sequence, flow]
+  wrong: [steps, table]
+
+- id: agent-run
+  request: Show a real run of the agent handling "refund my order", turn by turn.
+  expected: [trace]
+  acceptable: [sequence]
+  wrong: [code, steps, table]
+
+- id: mvp-scope
+  request: Which features go in the MVP and which come later, organized by what the user does.
+  expected: [storymap]
+  acceptable: [kanban, table]
+  wrong: [timeline, gantt, tree]
+
+- id: frontend-structure
+  request: Show how the frontend is structured — pages, components, hooks, store.
+  expected: [frontend]
+  acceptable: [felogic, tree]
+  wrong: [c4, block, table]
+
+- id: log-storage
+  request: Estimate how much storage we need for five years of event logs.
+  expected: [envelope]
+  acceptable: [stats, table]
+  wrong: [chart, bignumber]
+
+- id: pii-flow
+  request: Where do PII fields flow through the system, from ingestion to the warehouse?
+  expected: [dfd]
+  acceptable: [flow, sankey]
+  wrong: [erd, sequence, table]
+
+- id: latency-quarters
+  request: Compare how p95 latency changed between last quarter and this quarter, per endpoint.
+  expected: [slopegraph]
+  acceptable: [chart, benchmark, table]
+  wrong: [timeline, stats]
+
+- id: term-confusion
+  request: "Define the terms the team keeps mixing up: tenant, org, workspace, account."
+  expected: [glossary]
+  acceptable: [table]
+  wrong: [tree, erd, list]
+
+- id: sla-promises
+  request: "Our SLAs: what we promise for uptime, latency, and support response."
+  expected: [slo]
+  acceptable: [table, spec]
+  wrong: [stats, chart]
+
+- id: retry-policy
+  request: Explain the retry and backoff policy with the exact rules.
+  expected: [spec, flow]
+  acceptable: [steps, table]
+  wrong: [sequence, timeline]
+
+- id: size-limit-note
+  request: Add a note to the API doc that requests over 10 MB are now rejected with 413.
+  expected: [callout]
+  acceptable: [prose]
+  wrong: [table, spec, endpoint]
+
+- id: prod-request-path
+  request: Show how user requests move through the CDN, load balancer, app tier, and database in production.
+  expected: [block]
+  acceptable: [c4, cluster]
+  wrong: [sequence, flow, steps]
+
+- id: service-risk-plot
+  request: Plot our 12 microservices by how often they change against how risky a change is.
+  expected: [quadrant]
+  acceptable: [chart]
+  wrong: [table, matrix, heatmap]
+
+- id: two-pointer
+  request: Explain the two-pointer approach for the "container with most water" problem.
+  expected: [array]
+  acceptable: [steps, code]
+  wrong: [flow, table, linkedlist]
+
+- id: exec-case
+  request: Give the exec a one-page case for funding the search rewrite.
+  expected: [scqa]
+  acceptable: [stats, bignumber, takeaways]
+  wrong: [sequence, c4, timeline]
