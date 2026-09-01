@@ -12,6 +12,9 @@ export type DiagnosticLevel = 'error' | 'warn';
 /** Stable diagnostic code — useful for CI filters and machine consumers. */
 export type DiagnosticCode =
   | 'E_PARSE_YAML'
+  // A ```mermaid body holds a line the Mermaid dialect subset cannot read
+  // (see `mermaid/`). Same severity and shape as E_PARSE_YAML.
+  | 'E_PARSE_MERMAID'
   | 'E_SCHEMA'
   | 'E_DUP_ID'
   | 'E_DANGLING_REF'

@@ -14,6 +14,7 @@ import type { Diagnostic } from './diagnostics.js';
 import type { Document } from './types.js';
 import { blockRegistry } from './blocks/registry.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
+import { MERMAID_SOURCE } from './mermaid/index.js';
 import { fieldNamesAt } from './blocks/schema-walk.js';
 import { locateYamlPath } from './yaml.js';
 import { closest } from './suggest.js';
@@ -183,8 +184,11 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
     if (seg.kind === 'markdown') continue;
 
     // Alias fences: informational nudge toward the canonical spelling.
-    // A warning only — warnings never fail `avo check`.
-    if (seg.sourceType !== undefined) {
+    // A warning only — warnings never fail `avo check`. A Mermaid fence is a
+    // dialect, not an alias (`BLOCK_ALIASES['mermaid']` is undefined by
+    // design) — it never warns.
+    const isMermaid = seg.sourceType === MERMAID_SOURCE;
+    if (seg.sourceType !== undefined && !isMermaid) {
       const alias = BLOCK_ALIASES[seg.sourceType];
       if (alias !== undefined) {
         const patch = Object.entries(alias.patch ?? {})
@@ -213,9 +217,11 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
         line,
         ...(seg.parseErrorColumn !== undefined ? { column: seg.parseErrorColumn } : {}),
         level: 'error',
-        code: 'E_PARSE_YAML',
+        code: isMermaid ? 'E_PARSE_MERMAID' : 'E_PARSE_YAML',
         message: `${seg.kind}: ${seg.parseError}`,
-        hint: 'Often an unquoted special character (, : # | & *). Wrap the value in quotes.',
+        hint: isMermaid
+          ? 'The Mermaid subset is in reference/mermaid.md. Fix the line, or write the block as YAML.'
+          : 'Often an unquoted special character (, : # | & *). Wrap the value in quotes.',
       });
       continue;
     }
@@ -246,12 +252,14 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
       for (const issue of result.error.issues) {
         const rendered = renderIssue(seg.kind, issue);
         // Point at the offending token. For a missing required field the exact
-        // path won't resolve, so fall back to the containing object/array.
-        const loc =
-          locateYamlPath(seg.raw, issue.path) ??
-          (issue.path.length > 0
-            ? locateYamlPath(seg.raw, issue.path.slice(0, -1))
-            : undefined);
+        // path won't resolve, so fall back to the containing object/array. A
+        // Mermaid body has no YAML positions — its diagnostics sit on the fence.
+        const loc = isMermaid
+          ? undefined
+          : (locateYamlPath(seg.raw, issue.path) ??
+            (issue.path.length > 0
+              ? locateYamlPath(seg.raw, issue.path.slice(0, -1))
+              : undefined));
         const position =
           loc !== undefined
             ? {

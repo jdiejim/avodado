@@ -29,6 +29,16 @@ export {
 export { normalizeBlockData, textBodyData, textBodyYaml } from './blocks/normalize.js';
 
 export {
+  MERMAID_SOURCE,
+  MERMAID_KEYWORDS,
+  detectMermaidKind,
+  convertMermaid,
+  mermaidBodyYaml,
+  type MermaidKind,
+  type MermaidResult,
+} from './mermaid/index.js';
+
+export {
   type Diagnostic,
   type DiagnosticCode,
   type DiagnosticLevel,
@@ -57,6 +67,7 @@ export {
   removeSegment,
   moveSegment,
   serializeBlockData,
+  editableBodyYaml,
   setYamlPath,
   deleteYamlPath,
   type SegmentSpan,

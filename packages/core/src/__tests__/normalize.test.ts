@@ -87,11 +87,11 @@ describe('edge sugar (flow / graph / block — covers dag and the block presets)
     expect(diagsFor(md)).toEqual([]);
   });
 
-  it('flow: `-->` maps to dashed, which flow edges do not support — schema error teaches it', () => {
+  it('flow: `-->` expands to a valid dashed edge (the terse grammar and the schema agree)', () => {
     const md =
-      '```flow\nnodes:\n  - { id: a, col: 1, row: 1, label: A }\nedges:\n  - "a --> b"\n```\n';
-    const diags = diagsFor(md);
-    expect(diags.some((d) => d.code === 'E_SCHEMA' && d.message.includes('dashed'))).toBe(true);
+      '```flow\nnodes:\n  - { id: a, col: 1, row: 1, label: A }\n  - { id: b, col: 2, row: 1, label: B }\nedges:\n  - "a --> b"\n```\n';
+    expect(dataOf(md).edges).toEqual([{ from: 'a', to: 'b', kind: 'dashed' }]);
+    expect(diagsFor(md)).toEqual([]);
   });
 
   it('block: `-->` expands to a valid dashed edge', () => {

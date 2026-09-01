@@ -7,10 +7,11 @@
  */
 
 import { splitMarkdown, detectSuspectFences } from './splitter.js';
-import { parseBlockBody } from './yaml.js';
+import { parseBlockBody, type YamlParseResult } from './yaml.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
 import { normalizeBlockData, textBodyData } from './blocks/normalize.js';
-import type { Document, MetaData, Segment, TypedSegment } from './types.js';
+import { MERMAID_SOURCE, convertMermaid } from './mermaid/index.js';
+import type { BlockType, Document, MetaData, Segment, TypedSegment } from './types.js';
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -25,6 +26,18 @@ function applyAliasPatch(data: unknown, patch: Readonly<Record<string, unknown>>
   if (!isPlainObject(data)) return data;
   const missing = Object.entries(patch).filter(([k]) => !(k in data));
   return missing.length > 0 ? { ...Object.fromEntries(missing), ...data } : data;
+}
+
+/**
+ * Parses a block body into data. Three body dialects share one result shape:
+ * a Mermaid body (`sourceType: 'mermaid'`) converts through `convertMermaid`;
+ * a text-first block (callout, pullquote) takes its bare text; everything
+ * else parses as YAML.
+ */
+function parseBody(kind: BlockType, sourceType: string | undefined, raw: string): YamlParseResult {
+  if (sourceType === MERMAID_SOURCE) return convertMermaid(kind, raw);
+  const textData = textBodyData(kind, raw);
+  return textData !== undefined ? { ok: true, data: textData } : parseBlockBody(raw);
 }
 
 function extractId(data: unknown): string | undefined {
@@ -75,9 +88,9 @@ export function parseDocument(markdown: string, slug: string): Document {
     // Text-first blocks (callout, pullquote) take a bare-text body: the whole
     // body becomes the block's text field, skipping YAML entirely — colons and
     // quotes in prose never need escaping. A field-led body parses as YAML.
-    const textData = textBodyData(r.kind, r.raw);
-    const parsed =
-      textData !== undefined ? ({ ok: true, data: textData } as const) : parseBlockBody(r.raw);
+    // A Mermaid body converts to block data first; a line the dialect cannot
+    // read is a parse error exactly like malformed YAML.
+    const parsed = parseBody(r.kind, r.sourceType, r.raw);
     const id = parsed.ok ? extractId(parsed.data) : undefined;
 
     // Alias fences: inject the alias patch for keys the body doesn't set

@@ -36,7 +36,7 @@ function flowStyle(kind: Kind | undefined): Style {
   }
 }
 
-const ERR_LABEL_RE = /^(no|fail|error|reject)/i;
+const ERR_LABEL_RE = /^(no|fail|failed|error|reject|rejected)\b/i;
 
 interface FlowFrameOpts {
   readonly tag: string;
@@ -101,10 +101,12 @@ export function renderFlowSvg(data: BlockDataMap['flow']): string {
     if (!A || !B) return;
     const p = ortho(rectFor(A), rectFor(B), lanes[ei] ?? 0, entries[ei] ?? 0);
     const isErr = e.kind === 'error' || ERR_LABEL_RE.test(e.label ?? '');
-    const stroke = isErr ? '#991b1b' : 'var(--charcoal)';
+    const isDashed = !isErr && e.kind === 'dashed';
+    const stroke = isErr ? '#991b1b' : isDashed ? 'var(--gray)' : 'var(--charcoal)';
     const marker = isErr ? 'gErr' : 'gArrow';
     const sw = isErr ? 1.6 : 1.4;
-    s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${bp(`edges.${ei}`)}/>`;
+    const dash = isDashed ? ' stroke-dasharray="5 4"' : '';
+    s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}"${dash} marker-end="url(#${marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), err: isErr, path: `edges.${ei}` });
   });
   s += `</g>`; // close the edges list container (editors add via its chip)

@@ -16,7 +16,7 @@ import {
   parseBlockBody,
   replaceBlockBody,
   setYamlPath,
-  textBodyYaml,
+  editableBodyYaml,
   type BlockType,
   type Document,
 } from '@avodado/core';
@@ -84,10 +84,12 @@ export function setPathInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  // Bare-text bodies (callout/pullquote text sugar) canonicalize to explicit
-  // YAML first, so structured path edits apply instead of throwing; terse
-  // sugar items along the path materialize the same way.
-  const raw0 = materializeTerse(textBodyYaml(seg.kind, seg.raw) ?? seg.raw, seg.data, path);
+  // Bare-text bodies (callout/pullquote text sugar) and Mermaid bodies
+  // canonicalize to explicit YAML first, so structured path edits apply
+  // instead of throwing (a Mermaid fence is then rewritten to its canonical
+  // tag by replaceBlockBody); terse sugar items along the path materialize
+  // the same way.
+  const raw0 = materializeTerse(editableBodyYaml(seg), seg.data, path);
   return replaceBlockBody(source, doc, index, setYamlPath(raw0, path, value));
 }
 
@@ -106,7 +108,7 @@ export function setPathsInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  let raw = textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  let raw = editableBodyYaml(seg);
   // Materialize BEFORE any write: materializeTerse compares against the
   // segment's parsed data, so running it mid-batch would see earlier writes
   // as "terse drift" and clobber them back to the pre-edit values.
@@ -126,7 +128,7 @@ export function deletePathInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  const raw0 = materializeTerse(textBodyYaml(seg.kind, seg.raw) ?? seg.raw, seg.data, path);
+  const raw0 = materializeTerse(editableBodyYaml(seg), seg.data, path);
   return replaceBlockBody(source, doc, index, deleteYamlPath(raw0, path));
 }
 

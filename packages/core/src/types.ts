@@ -171,7 +171,8 @@ export type TypedSegment = {
     readonly kind: K;
     /**
      * The fence tag as written, when it was an alias (e.g. `waterfall` for a
-     * `chart` block). Unset for canonical fences — `kind` is always canonical.
+     * `chart` block) or the `mermaid` dialect (the body is Mermaid text, not
+     * YAML). Unset for canonical fences — `kind` is always canonical.
      */
     readonly sourceType?: string;
     /** Raw block body text (between the fences, no trailing newline). */

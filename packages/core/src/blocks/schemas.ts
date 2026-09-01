@@ -452,7 +452,8 @@ const flowEdgeSchema = z
     from: z.string(),
     to: z.string(),
     label: z.string().optional(),
-    kind: z.enum(['error']).optional(),
+    // `dashed` is the terse `-->` form (an optional / fallback path); `error` is `-x->`.
+    kind: z.enum(['error', 'dashed']).optional(),
   })
   .strict();
 export const flowSchema = z

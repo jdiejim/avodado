@@ -21,8 +21,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   deleteYamlPath,
+  editableBodyYaml,
   setYamlPath,
   BLOCK_FAMILIES,
+  MERMAID_SOURCE,
   BLOCK_FAMILY,
   BLOCK_LABELS,
   type Diagnostic,
@@ -65,14 +67,18 @@ function SheetInner({ seg, revealField }: {
   const setSheetDirty = useStudio((s) => s.setSheetDirty);
   const fresh = useStudio((s) => s.sheetFresh);
 
-  const [draft, setDraft] = useState(seg.raw);
+  // A Mermaid body edits as its canonical YAML: the form and the path ops
+  // need YAML, and Done writes it under the canonical fence tag. Any other
+  // body (YAML, or callout/pullquote bare text) edits as written.
+  const initial = seg.sourceType === MERMAID_SOURCE ? editableBodyYaml(seg) : seg.raw;
+  const [draft, setDraft] = useState(initial);
   /** What the preview renders — trails `draft` by a debounce on keystrokes. */
-  const [previewRaw, setPreviewRaw] = useState(seg.raw);
+  const [previewRaw, setPreviewRaw] = useState(initial);
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const dirty = draft !== seg.raw;
+  const dirty = draft !== initial;
   useEffect(() => {
     setSheetDirty(dirty);
   }, [dirty, setSheetDirty]);
@@ -142,7 +148,7 @@ function SheetInner({ seg, revealField }: {
     const active = document.activeElement;
     if (active instanceof HTMLElement) active.blur();
     const cur = draftRef.current;
-    if (cur === seg.raw) closeSheet(true);
+    if (cur === initial) closeSheet(true);
     else commitSheet(cur);
   };
   const cancel = (): void => closeSheet();

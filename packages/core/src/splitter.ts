@@ -4,12 +4,16 @@
  * The splitter recognises fences whose info-string is a known
  * {@link BlockType} or a permanent alias of one (`BLOCK_ALIASES`). Alias
  * fences yield their CANONICAL kind, with `sourceType` recording the tag as
- * written. Other fenced code blocks (e.g. ```` ```ts ````) fall through to
- * prose and are rendered by the Markdown pipeline.
+ * written. A ```` ```mermaid ```` fence whose first line is a supported
+ * diagram keyword yields the matching kind with `sourceType: 'mermaid'` (see
+ * `mermaid/`). Other fenced code blocks (e.g. ```` ```ts ````, or a Mermaid
+ * grammar the dialect does not cover) fall through to prose and are rendered
+ * by the Markdown pipeline.
  */
 
 import { BLOCK_TYPES, BLOCK_TYPE_SET, type BlockType, type SuspectFence } from './types.js';
 import { BLOCK_ALIASES, ALIAS_TYPE_SET } from './blocks/aliases.js';
+import { MERMAID_SOURCE, detectMermaidKind } from './mermaid/index.js';
 import { closest } from './suggest.js';
 
 const OPEN_FENCE_RE = /^```([A-Za-z][\w-]*)\s*$/;
@@ -25,7 +29,10 @@ export type RawSegment =
   | { readonly kind: 'markdown'; readonly text: string; readonly line: number }
   | {
       readonly kind: BlockType;
-      /** The fence tag as written when it was an alias; unset for canonical fences. */
+      /**
+       * The fence tag as written when it was an alias, or `mermaid` for a
+       * Mermaid-dialect body; unset for canonical fences.
+       */
       readonly sourceType?: string;
       readonly raw: string;
       readonly line: number;
@@ -81,20 +88,31 @@ export function splitMarkdown(md: string): RawSegment[] {
     const openMatch = OPEN_FENCE_RE.exec(line);
     const tag = openMatch?.[1];
 
-    if (tag !== undefined && isBlockTag(tag)) {
-      flushProse();
+    if (tag !== undefined && (isBlockTag(tag) || tag === MERMAID_SOURCE)) {
       const blockStart = i + 1;
       const bodyLines: string[] = [];
-      i++;
-      while (i < lines.length && !CLOSE_FENCE_RE.test(lines[i] ?? '')) {
-        bodyLines.push(lines[i] ?? '');
-        i++;
+      let j = i + 1;
+      while (j < lines.length && !CLOSE_FENCE_RE.test(lines[j] ?? '')) {
+        bodyLines.push(lines[j] ?? '');
+        j++;
       }
+      const raw = bodyLines.join('\n');
+      // A Mermaid fence is typed only when its grammar is one we convert;
+      // any other Mermaid diagram stays prose exactly like a ```ts fence.
+      const mermaidKind = tag === MERMAID_SOURCE ? detectMermaidKind(raw) : undefined;
+      if (tag === MERMAID_SOURCE && mermaidKind === undefined) {
+        if (proseBuf.length === 0) proseStart = i + 1;
+        proseBuf.push(line);
+        i++;
+        continue;
+      }
+      flushProse();
+      i = j;
       const alias = BLOCK_ALIASES[tag];
       segments.push({
-        kind: alias !== undefined ? alias.type : (tag as BlockType),
-        ...(alias !== undefined ? { sourceType: tag } : {}),
-        raw: bodyLines.join('\n'),
+        kind: mermaidKind ?? (alias !== undefined ? alias.type : (tag as BlockType)),
+        ...(alias !== undefined || mermaidKind !== undefined ? { sourceType: tag } : {}),
+        raw,
         line: blockStart,
       });
       if (i < lines.length) i++;
@@ -135,7 +153,8 @@ export function detectSuspectFences(md: string): SuspectFence[] {
       if (i < lines.length) i++;
       continue;
     }
-    if (tag !== undefined) {
+    // A Mermaid fence is a dialect, never a typo — whichever grammar it holds.
+    if (tag !== undefined && tag !== MERMAID_SOURCE) {
       // Suggestions come from every valid fence tag — canonical or alias.
       const [suggestion] = closest(tag, FENCE_TAGS, 2);
       if (suggestion !== undefined) {

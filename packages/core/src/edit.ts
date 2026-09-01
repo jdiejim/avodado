@@ -16,8 +16,10 @@
  */
 
 import { parseDocument as yamlParseDocument, stringify as yamlStringify } from 'yaml';
-import type { BlockType, Document, Segment } from './types.js';
+import type { BlockType, Document, Segment, TypedSegment } from './types.js';
 import { parseDocument } from './parser.js';
+import { textBodyYaml } from './blocks/normalize.js';
+import { MERMAID_SOURCE, mermaidBodyYaml } from './mermaid/index.js';
 
 /** Matches a closing fence line — kept in sync with `splitter.ts`. */
 const CLOSE_FENCE_RE = /^```\s*$/;
@@ -99,6 +101,11 @@ function trimLeadingBlank(lines: readonly string[]): string[] {
  * `replaceBlockBody(src, doc, i, seg.raw) === normalize(src)` holds for every
  * block, including the ambiguous empty/one-blank-line case.
  *
+ * One exception to "fences untouched": a ```` ```mermaid ```` segment. Its
+ * body is Mermaid text, so a new body (YAML from an editor) cannot sit under
+ * the `mermaid` tag — the opening fence is rewritten to the canonical block
+ * type (` ```sequence `, …). YAML is the canonical form on disk.
+ *
  * @param source - The Markdown source.
  * @param doc - `parseDocument(source, …)` — must match `source`.
  * @param segIndex - Index into `doc.segments`; must be a typed block.
@@ -125,8 +132,23 @@ export function replaceBlockBody(
   // Body sits strictly between the fences (or runs to EOF when unclosed).
   const bodyEnd = closed ? lastIdx : lastIdx + 1;
   const bodyLines = newRaw === '' ? [] : newRaw.split('\n');
-  const out = [...lines.slice(0, openIdx + 1), ...bodyLines, ...lines.slice(bodyEnd)];
+  const openFence = seg.sourceType === MERMAID_SOURCE ? '```' + seg.kind : (lines[openIdx] ?? '');
+  const out = [...lines.slice(0, openIdx), openFence, ...bodyLines, ...lines.slice(bodyEnd)];
   return out.join('\n');
+}
+
+/**
+ * The YAML body an editor should start a structured edit from: a bare-text
+ * body (callout / pullquote) or a Mermaid body canonicalizes to explicit
+ * YAML; any other body is returned as written. Path ops (`setYamlPath`, …)
+ * need YAML, and a `replaceBlockBody` with the result rewrites a Mermaid
+ * fence to its canonical tag.
+ *
+ * @param seg - A typed segment of `parseDocument(source, …)`.
+ */
+export function editableBodyYaml(seg: Pick<TypedSegment, 'kind' | 'sourceType' | 'raw'>): string {
+  if (seg.sourceType === MERMAID_SOURCE) return mermaidBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  return textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
 }
 
 /**

@@ -32,7 +32,11 @@ const { graph, diagnostics } = resolveRefs([{ doc, file: 'docs/orders.md' }]);
 
 ## Diagnostic codes
 
-`E_PARSE_YAML`, `E_SCHEMA`, `E_DUP_ID`, `E_DANGLING_REF`, `E_BAD_REF_FORMAT`, `E_UNKNOWN_BLOCK`, `W_EMPTY_BLOCK`. Uniform shape: `{ file, line?, level, code, message, value? }`.
+`E_PARSE_YAML`, `E_PARSE_MERMAID`, `E_SCHEMA`, `E_DUP_ID`, `E_DANGLING_REF`, `E_BAD_REF_FORMAT`, `E_UNKNOWN_BLOCK`, `W_EMPTY_BLOCK`. Uniform shape: `{ file, line?, level, code, message, value? }`.
+
+## Mermaid input dialect
+
+A ```` ```mermaid ```` fence whose first line is `sequenceDiagram`, `flowchart` / `graph`, `erDiagram`, `stateDiagram` / `stateDiagram-v2`, or `pie` parses into the matching typed block (`sequence`, `flow`, `erd`, `state`, `chart`) with `sourceType: 'mermaid'`; validation and rendering are identical to a YAML block. Any other Mermaid grammar stays prose. `convertMermaid(kind, text)` is the pure converter; `editableBodyYaml(seg)` gives the canonical YAML an editor writes back (`replaceBlockBody` then rewrites the fence to the canonical tag).
 
 ## Block types
 

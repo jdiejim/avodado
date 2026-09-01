@@ -61,6 +61,10 @@ Twelve former block types merged into canonical ones (`infra`/`event`/`ddd`/`net
 - **Validation** surfaces the mapping as a `W_ALIAS_TYPE` warning — informational; warnings never fail `avo check`.
 - **Editing stays faithful**: edit ops never rewrite fence lines, so aliased fences survive studio editing byte-for-byte; new insertions always write canonical names.
 
+## Mermaid input dialect
+
+A ```` ```mermaid ```` fence is a second input syntax for five block types, not a block type of its own. The splitter reads the body's first meaningful line: `sequenceDiagram` → `sequence`, `flowchart` / `graph` → `flow`, `erDiagram` → `erd`, `stateDiagram` / `stateDiagram-v2` → `state`, `pie` → `chart`; the segment carries `sourceType: 'mermaid'`. Any other Mermaid grammar stays prose (rendered as a plain code block). The parser converts the body through `core/src/mermaid/` (one file per grammar, `convertMermaid` as the entry) into exactly the data the block schema accepts, then normalizes it like a YAML body — validation and rendering never see the dialect. A line outside the subset is `E_PARSE_MERMAID`, positioned like `E_PARSE_YAML`. The one exception to "edit ops never rewrite fences": `replaceBlockBody` on a Mermaid segment writes the canonical tag, because YAML is the canonical form on disk and the new body is YAML (`editableBodyYaml(seg)` gives an editor the YAML to start from). The supported subset is documented for authors in the skill's `reference/mermaid.md`.
+
 ## Block families
 
 Block types are grouped into 12 families (`BLOCK_FAMILIES` / `BLOCK_FAMILY` in the core catalog), but the runtime treats them all uniformly through the registry:
@@ -120,6 +124,7 @@ Stable codes that the CLI can sort, filter, and format:
 | Code | Level | When |
 | --- | --- | --- |
 | `E_PARSE_YAML` | error | YAML body failed to parse |
+| `E_PARSE_MERMAID` | error | A ```` ```mermaid ```` body has a line outside the dialect subset (`core/src/mermaid/`) |
 | `E_SCHEMA` | error | Zod validation issue |
 | `E_DUP_ID` | error | Same id used twice |
 | `E_DANGLING_REF` | error | Ref target not found |
