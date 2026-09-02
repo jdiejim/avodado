@@ -35,9 +35,31 @@ export function schemaAt(
   kind: BlockType,
   path: ReadonlyArray<string | number>,
 ): z.ZodTypeAny | undefined {
-  let cur: z.ZodTypeAny = blockSchemas[kind];
-  for (const seg of path) {
+  return walk(blockSchemas[kind], path);
+}
+
+/**
+ * Walks `path` from `schema`. A union of objects (a sequence `messages` item:
+ * message | frame open | else | end) is walked through EVERY arm that owns
+ * the key: the result is the one arm's node when a single arm resolves, the
+ * first node when all resolving arms agree on a plain string (so `label`
+ * — a string in both the message and the frame arm — still coerces), and
+ * `undefined` when the arms disagree.
+ */
+function walk(schema: z.ZodTypeAny, path: ReadonlyArray<string | number>): z.ZodTypeAny | undefined {
+  let cur: z.ZodTypeAny = schema;
+  for (let i = 0; i < path.length; i++) {
+    const seg = path[i] as string | number;
     cur = unwrap(cur);
+    if (cur instanceof z.ZodUnion) {
+      const rest = path.slice(i);
+      const hits = (cur.options as z.ZodTypeAny[])
+        .map((arm) => walk(arm, rest))
+        .filter((n): n is z.ZodTypeAny => n !== undefined);
+      if (hits.length === 0) return undefined;
+      if (hits.length === 1 || hits.every((n) => n instanceof z.ZodString)) return hits[0];
+      return undefined;
+    }
     if (typeof seg === 'number') {
       if (!(cur instanceof z.ZodArray)) return undefined;
       cur = cur.element as z.ZodTypeAny;
@@ -73,7 +95,18 @@ export function stringOnlyAt(kind: BlockType, path: ReadonlyArray<string | numbe
  */
 export function fieldNamesAt(kind: BlockType, path: ReadonlyArray<string | number>): string[] {
   const schema = schemaAt(kind, path) ?? blockSchemas[kind];
-  return schema instanceof z.ZodObject
-    ? Object.keys(schema.shape as Record<string, unknown>)
-    : [];
+  return objectKeys(schema);
+}
+
+/** The keys of an object schema; for a union of objects, every arm's keys (deduplicated, in arm order). */
+function objectKeys(schema: z.ZodTypeAny): string[] {
+  if (schema instanceof z.ZodObject) return Object.keys(schema.shape as Record<string, unknown>);
+  if (schema instanceof z.ZodUnion) {
+    const out: string[] = [];
+    for (const arm of schema.options as z.ZodTypeAny[]) {
+      for (const k of objectKeys(unwrap(arm))) if (!out.includes(k)) out.push(k);
+    }
+    return out;
+  }
+  return [];
 }

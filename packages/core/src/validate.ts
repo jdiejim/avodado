@@ -76,6 +76,109 @@ function renderIssue(kind: BlockType, issue: z.ZodIssue): IssueRender {
 }
 
 /**
+ * Flattens `invalid_union` issues into the issues of the arm that fits best
+ * (the arm with the FEWEST issues — a message with a typo'd field is "a
+ * message with one unknown key", not "not a frame"). Every other issue passes
+ * through. Recursive: a union arm may itself contain a union.
+ */
+function flattenIssues(issues: readonly z.ZodIssue[]): z.ZodIssue[] {
+  const out: z.ZodIssue[] = [];
+  for (const issue of issues) {
+    if (issue.code !== 'invalid_union') {
+      out.push(issue);
+      continue;
+    }
+    let best: z.ZodIssue[] | undefined;
+    for (const err of issue.unionErrors) {
+      const arm = flattenIssues(err.issues);
+      if (best === undefined || arm.length < best.length) best = arm;
+    }
+    out.push(...(best ?? [issue]));
+  }
+  return out;
+}
+
+/** True when a sequence `messages` item is a frame marker of the given key. */
+function hasKey(item: unknown, key: string): boolean {
+  return typeof item === 'object' && item !== null && !Array.isArray(item) && key in item;
+}
+
+/**
+ * Sequence frame markers must nest: every `else` / `end` needs an open frame
+ * and every frame needs its `end`. Warnings only — the renderer still draws
+ * an unclosed frame to the last row and ignores a stray marker.
+ */
+function lintSequenceFrames(
+  seg: { readonly data: unknown; readonly raw: string; readonly line: number },
+  file: string,
+  positioned: boolean,
+): Diagnostic[] {
+  const data = seg.data;
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return [];
+  const messages = (data as Record<string, unknown>)['messages'];
+  if (!Array.isArray(messages)) return [];
+
+  const at = (i: number): { line: number; column?: number } => {
+    const loc = positioned ? locateYamlPath(seg.raw, ['messages', i]) : undefined;
+    return loc !== undefined
+      ? { line: seg.line + loc.line, column: loc.column }
+      : { line: seg.line };
+  };
+  const warn = (i: number, message: string, hint: string, value: string): Diagnostic => ({
+    file,
+    ...at(i),
+    level: 'warn',
+    code: 'W_SEQ_FRAME',
+    message,
+    hint,
+    value,
+  });
+
+  const out: Diagnostic[] = [];
+  const open: Array<{ readonly i: number; readonly kind: string }> = [];
+  messages.forEach((item, i) => {
+    if (hasKey(item, 'frame')) {
+      open.push({ i, kind: String((item as Record<string, unknown>)['frame']) });
+    } else if (hasKey(item, 'else')) {
+      if (open.length === 0) {
+        out.push(
+          warn(
+            i,
+            `sequence: messages[${i}] is an \`else\` with no open frame`,
+            'Add a frame line before it (`- alt: condition`), or remove the `else`.',
+            'else',
+          ),
+        );
+      }
+    } else if (hasKey(item, 'end')) {
+      if (open.length === 0) {
+        out.push(
+          warn(
+            i,
+            `sequence: messages[${i}] is an \`end\` with no open frame`,
+            'Remove the `end`, or add the frame line it closes (`- alt: condition`).',
+            'end',
+          ),
+        );
+      } else {
+        open.pop();
+      }
+    }
+  });
+  for (const f of open) {
+    out.push(
+      warn(
+        f.i,
+        `sequence: the \`${f.kind}\` frame at messages[${f.i}] is never closed`,
+        'Add `- end` after the last message of the frame.',
+        f.kind,
+      ),
+    );
+  }
+  return out;
+}
+
+/**
  * The trailing ATX heading of a prose run, if the run ends with one (ignoring
  * trailing blank lines). Returns the heading text and its 0-based line offset
  * within the run.
@@ -248,8 +351,11 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
           )
         : seg.data;
     const result = def.schema.safeParse(dataForSchema);
+    if (result.success && seg.kind === 'sequence') {
+      diagnostics.push(...lintSequenceFrames(seg, file, !isMermaid));
+    }
     if (!result.success) {
-      for (const issue of result.error.issues) {
+      for (const issue of flattenIssues(result.error.issues)) {
         const rendered = renderIssue(seg.kind, issue);
         // Point at the offending token. For a missing required field the exact
         // path won't resolve, so fall back to the containing object/array. A

@@ -26,6 +26,10 @@ export type DiagnosticCode =
   // Density budget (see `density.ts`). Always a warning — a design nudge
   // ("split this diagram"), never blocking, never escalated by the CLI.
   | 'W_DENSE_BLOCK'
+  // Sequence frame markers out of order: an `else`/`end` with no open frame,
+  // or a frame never closed (see `validate.ts`). A warning — the renderer
+  // draws what it can; the author fixes the marker.
+  | 'W_SEQ_FRAME'
   // On-disk convention (checked by the CLI — it is path-based, not
   // content-based): kebab-case filenames, at most `docs/<area>/<doc>.md`
   // under the docs root. Always a warning; no flag escalates it.

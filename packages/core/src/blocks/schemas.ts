@@ -92,6 +92,13 @@ const sequenceActorSchema = z
     external: z.boolean().optional(),
   })
   .strict();
+//
+// Combined fragments (UML frames) live in the same `messages` list as
+// markers: `{ frame: alt, label }` opens a frame, `{ else: label }` starts
+// the next branch (alt) or lane (par), `{ end: true }` closes it. Activation
+// bars are explicit per message: `activate` opens a bar on `to`, `deactivate`
+// closes the most recent open bar on `from` (Mermaid's `+`/`-` convention).
+export const SEQUENCE_FRAME_KINDS = ['alt', 'opt', 'loop', 'par', 'break', 'critical'] as const;
 const sequenceMessageSchema = z
   .object({
     from: z.string(),
@@ -101,8 +108,24 @@ const sequenceMessageSchema = z
     summary: z.string().optional(),
     code: z.string().optional(),
     note: z.string().optional(),
+    activate: z.boolean().optional(),
+    deactivate: z.boolean().optional(),
   })
   .strict();
+const sequenceFrameOpenSchema = z
+  .object({
+    frame: z.enum(SEQUENCE_FRAME_KINDS),
+    label: z.string().optional(),
+  })
+  .strict();
+const sequenceFrameElseSchema = z.object({ else: z.string() }).strict();
+const sequenceFrameEndSchema = z.object({ end: z.literal(true) }).strict();
+const sequenceItemSchema = z.union([
+  sequenceMessageSchema,
+  sequenceFrameOpenSchema,
+  sequenceFrameElseSchema,
+  sequenceFrameEndSchema,
+]);
 const sequenceEndpointSchema = z
   .object({
     method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
@@ -123,7 +146,7 @@ export const sequenceSchema = z
     lede: z.string().optional(),
     endpoint: sequenceEndpointSchema.optional(),
     actors: z.array(sequenceActorSchema).optional(),
-    messages: z.array(sequenceMessageSchema).optional(),
+    messages: z.array(sequenceItemSchema).optional(),
     foot: z.array(sequenceFootSchema).optional(),
   })
   .strict();

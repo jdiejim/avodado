@@ -10,7 +10,21 @@
  * - `sync` — solid arrow, bold navy label (default)
  * - `response` / `async` — dashed arrow, normal label
  * - `error` — red arrow, red bold label, step list item gets `.err`
- * - `note` — no arrow, italic gray label, badge on the from-actor's lane
+ * - `note` — no arrow: a note box beside one lifeline (`from === to`) or
+ *   spanning two (`from !== to`, "note over A,B")
+ *
+ * A message from an actor to itself draws a self-loop. The `messages` list
+ * also carries frame markers — `{ frame, label? }` opens a combined fragment
+ * (alt / opt / loop / par / break / critical), `{ else }` starts its next
+ * branch, `{ end: true }` closes it — drawn as UML frames under the messages.
+ *
+ * Rows have variable heights (message 42, frame open 30, else 26, end 16,
+ * note 42 + 13 per extra wrapped line); `y` is computed per item in order.
+ *
+ * Activation bars: explicit when any message carries `activate` /
+ * `deactivate` (a bar opens on `to`, closes on `from`); otherwise inferred —
+ * a bar opens on each incoming sync/async message and closes at the next
+ * response/error back to the caller (or the actor's last outgoing message).
  */
 
 import type { BlockDataMap } from '@avodado/core';
@@ -37,44 +51,152 @@ const KIND: Record<MsgKind, KindStyle> = {
 
 const DB_PATTERN = /postgres|sql|\bdb\b|database|store/i;
 
+/* ── row model ─────────────────────────────────────────────────────────── */
+
+const ROW_MSG = 42;
+const ROW_OPEN = 30;
+const ROW_ELSE = 26;
+const ROW_END = 16;
+const NOTE_LINE = 13;
+const NOTE_CHARS = 34;
+const NOTE_LINES = 3;
+const FRAME_PAD = 18;
+const FRAME_INSET = 12;
+const BAR_PAD = 6;
+/** Approximate advance of one 10.5px mono glyph — for extents, never layout. */
+const CHAR_W = 6.5;
+
+interface MsgRow {
+  readonly kind: 'msg';
+  /** Index in `messages` (the data path). */
+  readonly idx: number;
+  /** Diagram number — counts messages only, never frame markers. */
+  readonly n: number;
+  readonly top: number;
+  /** The message line's y (a note's box bottom). */
+  readonly y: number;
+  readonly fromI: number;
+  readonly toI: number;
+  readonly msgKind: MsgKind;
+  readonly label: string;
+  readonly from: string;
+  readonly to: string;
+  readonly summary?: string;
+  readonly code?: string;
+  readonly note?: string;
+  readonly activate: boolean;
+  readonly deactivate: boolean;
+  /** Wrapped note text (notes only). */
+  readonly lines: readonly string[];
+}
+
+interface FrameRow {
+  readonly kind: 'open' | 'else' | 'end';
+  readonly idx: number;
+  readonly top: number;
+  /** The frame edge (open/end) or the divider (else) y. */
+  readonly y: number;
+  readonly frame: string;
+  readonly label: string;
+}
+
+type Row = MsgRow | FrameRow;
+
+interface Frame {
+  readonly open: FrameRow;
+  readonly elses: FrameRow[];
+  readonly children: Frame[];
+  end?: FrameRow;
+  x1: number;
+  x2: number;
+}
+
+interface Bar {
+  readonly i: number;
+  readonly y1: number;
+  readonly depth: number;
+  y2: number;
+  /** Auto mode: who called, and the actor's last outgoing row so far. */
+  readonly caller: number;
+  last: number;
+}
+
+type SeqItem = NonNullable<BlockDataMap['sequence']['messages']>[number];
+
+function isMsgRow(r: Row): r is MsgRow {
+  return r.kind === 'msg';
+}
+
+/* ── step list ─────────────────────────────────────────────────────────── */
+
 function renderStepList(
-  rows: ReadonlyArray<{ n: number; kind: MsgKind; from: string; to: string; summary?: string; code?: string; note?: string }>,
+  rows: readonly Row[],
+  frames: readonly Frame[],
   actorById: Map<string, { name: string }>,
 ): string {
-  const items = rows.filter((r) => r.summary !== undefined && r.summary.length > 0);
-  if (items.length === 0) return '';
+  const msgs = rows.filter(isMsgRow);
+  if (!msgs.some((r) => r.summary !== undefined && r.summary.length > 0)) return '';
 
-  const lis = items
-    .map((r) => {
-      const errCls = r.kind === 'error' ? ' class="err"' : '';
-      const actorErrCls = r.kind === 'error' ? ' err' : '';
-      const fromName = actorById.get(r.from)?.name ?? r.from;
-      const toName = r.kind === 'note' ? '' : ` &rarr; ${escapeHtml(actorById.get(r.to)?.name ?? r.to)}`;
-      const actorLabel = `${escapeHtml(fromName)}${toName}`;
-      const code =
-        r.code !== undefined && r.code.length > 0
-          ? `<pre class="sql">${escapeHtml(r.code)}</pre>`
-          : '';
-      const note =
-        r.note !== undefined && r.note.length > 0
-          ? `<span class="step-note">${escapeHtml(r.note)}</span>`
-          : '';
-      return (
-        `<li${errCls}${bp(`messages.${r.n - 1}`)}>` +
+  // A frame divider appears when the frame holds at least one summarised
+  // step, so the list mirrors the diagram without empty headings.
+  const dividers = new Set<number>();
+  const visit = (f: Frame): void => {
+    const lo = f.open.idx;
+    const hi = f.end?.idx ?? Number.POSITIVE_INFINITY;
+    const has = msgs.some((r) => r.idx > lo && r.idx < hi && r.summary !== undefined && r.summary.length > 0);
+    if (has) {
+      dividers.add(f.open.idx);
+      for (const e of f.elses) dividers.add(e.idx);
+    }
+    f.children.forEach(visit);
+  };
+  frames.forEach(visit);
+
+  const lis: string[] = [];
+  for (const r of rows) {
+    if (r.kind === 'open' && dividers.has(r.idx)) {
+      const label = r.label.length > 0 ? `<span class="step-frame-label">${escapeHtml(r.label)}</span>` : '';
+      lis.push(
+        `<li class="step-frame"${bp(`messages.${r.idx}`)}>` +
+          `<span class="step-frame-tag">${escapeHtml(r.frame.toUpperCase())}</span>${label}</li>`,
+      );
+      continue;
+    }
+    if (r.kind === 'else' && dividers.has(r.idx)) {
+      lis.push(
+        `<li class="step-frame else"${bp(`messages.${r.idx}`)}>` +
+          `<span class="step-frame-tag">else</span><span class="step-frame-label">${escapeHtml(r.label)}</span></li>`,
+      );
+      continue;
+    }
+    if (r.kind !== 'msg' || r.summary === undefined || r.summary.length === 0) continue;
+    const errCls = r.msgKind === 'error' ? ' class="err"' : '';
+    const actorErrCls = r.msgKind === 'error' ? ' err' : '';
+    const fromName = actorById.get(r.from)?.name ?? r.from;
+    const toName =
+      r.msgKind === 'note' || r.from === r.to
+        ? ''
+        : ` &rarr; ${escapeHtml(actorById.get(r.to)?.name ?? r.to)}`;
+    const actorLabel = `${escapeHtml(fromName)}${toName}`;
+    const code =
+      r.code !== undefined && r.code.length > 0 ? `<pre class="sql">${escapeHtml(r.code)}</pre>` : '';
+    const note =
+      r.note !== undefined && r.note.length > 0 ? `<span class="step-note">${escapeHtml(r.note)}</span>` : '';
+    lis.push(
+      `<li${errCls}${bp(`messages.${r.idx}`)}>` +
         `<span class="step-n">${r.n}</span>` +
         `<span class="step-actor${actorErrCls}">${actorLabel}</span>` +
-        `<span class="step-summary">${escapeHtml(r.summary ?? '')}</span>` +
+        `<span class="step-summary">${escapeHtml(r.summary)}</span>` +
         code +
         note +
-        `</li>`
-      );
-    })
-    .join('');
+        `</li>`,
+    );
+  }
 
   return (
     `<div class="seq-steps">` +
     `<div class="seq-steps-title">Step-by-step</div>` +
-    `<ol>${lis}</ol>` +
+    `<ol>${lis.join('')}</ol>` +
     `</div>`
   );
 }
@@ -86,6 +208,103 @@ function renderFoot(foot: NonNullable<BlockDataMap['sequence']['foot']>): string
     .join('');
   return `<div class="diagram-foot"${bl('foot')}>${parts}</div>`;
 }
+
+/* ── layout ────────────────────────────────────────────────────────────── */
+
+/** Lays the items out top to bottom; returns the rows and the y past the last row. */
+function layoutRows(items: readonly SeqItem[], idx: (id: string) => number, startY: number): { rows: Row[]; cursor: number } {
+  const rows: Row[] = [];
+  let cursor = startY - ROW_MSG;
+  let n = 0;
+  items.forEach((m, k) => {
+    const rec = m as Record<string, unknown>;
+    if ('frame' in rec) {
+      const label = typeof rec['label'] === 'string' ? rec['label'] : '';
+      rows.push({ kind: 'open', idx: k, top: cursor, y: cursor + 14, frame: String(rec['frame']), label });
+      cursor += ROW_OPEN;
+      return;
+    }
+    if ('else' in rec) {
+      rows.push({ kind: 'else', idx: k, top: cursor, y: cursor + 8, frame: '', label: String(rec['else'] ?? '') });
+      cursor += ROW_ELSE;
+      return;
+    }
+    if ('end' in rec) {
+      rows.push({ kind: 'end', idx: k, top: cursor, y: cursor + 10, frame: '', label: '' });
+      cursor += ROW_END;
+      return;
+    }
+    const msg = m as Extract<SeqItem, { from: string }>;
+    n += 1;
+    // Unknown kinds (invalid per schema, but render is lenient) fall back to
+    // the default `sync` style instead of crashing on a missing KIND entry.
+    const msgKind: MsgKind = msg.kind !== undefined && msg.kind in KIND ? (msg.kind as MsgKind) : 'sync';
+    const label = msg.label ?? '';
+    const lines = msgKind === 'note' ? wrapText(label, NOTE_CHARS, NOTE_LINES) : [];
+    const h = msgKind === 'note' ? ROW_MSG + NOTE_LINE * Math.max(0, lines.length - 1) : ROW_MSG;
+    const row: MsgRow = {
+      kind: 'msg',
+      idx: k,
+      n,
+      top: cursor,
+      y: cursor + h,
+      fromI: idx(msg.from),
+      toI: idx(msg.to),
+      msgKind,
+      label,
+      from: msg.from,
+      to: msg.to,
+      activate: msg.activate === true,
+      deactivate: msg.deactivate === true,
+      lines,
+      ...(msg.summary !== undefined ? { summary: msg.summary } : {}),
+      ...(msg.code !== undefined ? { code: msg.code } : {}),
+      ...(msg.note !== undefined ? { note: msg.note } : {}),
+    };
+    rows.push(row);
+    cursor += h;
+  });
+  return { rows, cursor };
+}
+
+/** Nests the frame markers into a tree (stray `else`/`end` are ignored). */
+function buildFrames(rows: readonly Row[]): Frame[] {
+  const roots: Frame[] = [];
+  const stack: Frame[] = [];
+  for (const r of rows) {
+    if (r.kind === 'open') {
+      const f: Frame = { open: r, elses: [], children: [], x1: 0, x2: 0 };
+      const parent = stack[stack.length - 1];
+      if (parent !== undefined) parent.children.push(f);
+      else roots.push(f);
+      stack.push(f);
+    } else if (r.kind === 'else') {
+      stack[stack.length - 1]?.elses.push(r);
+    } else if (r.kind === 'end') {
+      const f = stack.pop();
+      if (f !== undefined) f.end = r;
+    }
+  }
+  return roots;
+}
+
+/** Horizontal extent [x1, x2] a message row occupies (lifelines, loops, note boxes). */
+function rowExtent(r: MsgRow, cx: (i: number) => number, noteBox: (r: MsgRow) => { x: number; w: number } | null): [number, number] | null {
+  if (r.msgKind === 'note') {
+    const box = noteBox(r);
+    return box === null ? null : [box.x, box.x + box.w];
+  }
+  if (r.fromI < 0 && r.toI < 0) return null;
+  if (r.fromI < 0) return [cx(r.toI), cx(r.toI)];
+  if (r.toI < 0) return [cx(r.fromI), cx(r.fromI) + 36 + r.label.length * CHAR_W];
+  if (r.fromI === r.toI) {
+    const x = cx(r.fromI);
+    return [x, x + 36 + r.label.length * CHAR_W];
+  }
+  return [Math.min(cx(r.fromI), cx(r.toI)), Math.max(cx(r.fromI), cx(r.toI))];
+}
+
+/* ── main ──────────────────────────────────────────────────────────────── */
 
 export function renderSequence(data: BlockDataMap['sequence']): string {
   const actors = data.actors ?? [];
@@ -104,49 +323,116 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   const width = leftPad * 2 + N * laneW + (N - 1) * gap;
   const idx = (id: string): number => actors.findIndex((a) => a.id === id);
   const msgStartY = 92;
-  const step = 42;
 
-  type Row = {
-    n: number;
-    y: number;
-    fromI: number;
-    toI: number;
-    kind: MsgKind;
-    label: string;
-    from: string;
-    to: string;
-    summary?: string;
-    code?: string;
-    note?: string;
-  };
-  const rows: Row[] = messages.map((m, k): Row => {
-    const base: Row = {
-      n: k + 1,
-      y: msgStartY + k * step,
-      fromI: idx(m.from),
-      toI: idx(m.to),
-      // Unknown kinds (invalid per schema, but render is lenient) fall back to
-      // the default `sync` style instead of crashing on a missing KIND entry.
-      kind: m.kind !== undefined && m.kind in KIND ? (m.kind as MsgKind) : 'sync',
-      label: m.label ?? '',
-      from: m.from,
-      to: m.to,
-    };
-    if (m.summary !== undefined) base.summary = m.summary;
-    if (m.code !== undefined) base.code = m.code;
-    if (m.note !== undefined) base.note = m.note;
-    return base;
-  });
-  const bottom = msgStartY + messages.length * step + 12;
+  const { rows, cursor } = layoutRows(messages, idx, msgStartY);
+  const msgRows = rows.filter(isMsgRow);
+  // One trailing message row of air under the last item (the pre-frames
+  // geometry: `92 + n × 42 + 12`), so frame-less docs keep their viewBox.
+  const bottom = cursor + ROW_MSG + 12;
   const height = bottom + 6;
 
-  const activations = actors.map((a, i) => {
-    if (i === 0) return null;
-    const ys = rows.filter((r) => r.fromI === i || r.toI === i).map((r) => r.y);
-    if (ys.length === 0) return null;
-    const db = DB_PATTERN.test(`${a.name} ${a.sub ?? ''}`);
-    return { i, y1: Math.min(...ys) - 8, y2: Math.max(...ys) + 8, db };
-  });
+  /** The note box for a note row, or null when neither actor is known. */
+  const noteBox = (r: MsgRow): { x: number; w: number; top: number; h: number } | null => {
+    if (r.fromI < 0 && r.toI < 0) return null;
+    const chars = Math.max(0, ...r.lines.map((l) => l.length));
+    const top = r.top + 14;
+    const h = r.y - r.top - 18;
+    if (r.fromI < 0 || r.toI < 0 || r.fromI === r.toI) {
+      const x0 = cx(r.fromI < 0 ? r.toI : r.fromI);
+      const w = Math.max(72, Math.round(chars * CHAR_W) + 16);
+      // Beside the lifeline: to its right, or to its left when that would
+      // run off the canvas (the last lane).
+      const x = x0 + 12 + w <= width - 2 ? x0 + 12 : x0 - 12 - w;
+      return { x, w, top, h };
+    }
+    const a = Math.min(cx(r.fromI), cx(r.toI));
+    const b = Math.max(cx(r.fromI), cx(r.toI));
+    const w = Math.max(b - a + 60, Math.round(chars * CHAR_W) + 16);
+    const mid = (a + b) / 2;
+    return { x: Math.round(mid - w / 2), w, top, h };
+  };
+
+  // Frames: extent = the lifelines its rows touch (nested frames included,
+  // each child inset by FRAME_INSET so edges never coincide), padded.
+  const frames = buildFrames(rows);
+  const sizeFrame = (f: Frame): void => {
+    f.children.forEach(sizeFrame);
+    const lo = f.open.idx;
+    const hi = f.end?.idx ?? Number.POSITIVE_INFINITY;
+    let x1 = Number.POSITIVE_INFINITY;
+    let x2 = Number.NEGATIVE_INFINITY;
+    for (const r of msgRows) {
+      if (r.idx <= lo || r.idx >= hi) continue;
+      const ext = rowExtent(r, cx, noteBox);
+      if (ext === null) continue;
+      x1 = Math.min(x1, ext[0]);
+      x2 = Math.max(x2, ext[1]);
+    }
+    if (x1 === Number.POSITIVE_INFINITY) {
+      x1 = leftPad;
+      x2 = width - leftPad;
+    } else {
+      x1 -= FRAME_PAD;
+      x2 += FRAME_PAD;
+    }
+    for (const c of f.children) {
+      x1 = Math.min(x1, c.x1 - FRAME_INSET);
+      x2 = Math.max(x2, c.x2 + FRAME_INSET);
+    }
+    f.x1 = Math.max(2, Math.round(x1));
+    f.x2 = Math.min(width - 2, Math.round(x2));
+  };
+  frames.forEach(sizeFrame);
+  const frameBottom = (f: Frame): number => f.end?.y ?? cursor + 6;
+
+  // Activation bars.
+  const explicit = msgRows.some((r) => r.activate || r.deactivate);
+  const bars: Bar[] = [];
+  const open = new Map<number, Bar[]>();
+  const openOn = (i: number): Bar[] => {
+    let list = open.get(i);
+    if (list === undefined) {
+      list = [];
+      open.set(i, list);
+    }
+    return list;
+  };
+  const openBar = (i: number, y: number, caller: number): void => {
+    const list = openOn(i);
+    const bar: Bar = { i, y1: y, y2: Number.NaN, depth: list.length, caller, last: y };
+    list.push(bar);
+    bars.push(bar);
+  };
+  for (const r of msgRows) {
+    if (explicit) {
+      if (r.activate && r.toI >= 0) openBar(r.toI, r.y, r.fromI);
+      if (r.deactivate && r.fromI >= 0) {
+        const bar = openOn(r.fromI).pop();
+        if (bar !== undefined) bar.y2 = r.y;
+      }
+      continue;
+    }
+    if (r.msgKind === 'note' || r.fromI < 0) continue;
+    // Any outgoing message extends the actor's open bars.
+    for (const b of openOn(r.fromI)) b.last = r.y;
+    if (r.toI < 0 || r.toI === r.fromI) continue;
+    if (r.msgKind === 'sync' || r.msgKind === 'async') {
+      openBar(r.toI, r.y, r.fromI);
+    } else {
+      // response / error back to the caller closes that caller's bar.
+      const list = openOn(r.fromI);
+      for (let k = list.length - 1; k >= 0; k--) {
+        const b = list[k] as Bar;
+        if (b.caller !== r.toI) continue;
+        b.y2 = r.y;
+        list.splice(k, 1);
+        break;
+      }
+    }
+  }
+  for (const list of open.values()) {
+    for (const b of list) b.y2 = explicit ? cursor : b.last;
+  }
 
   let s =
     `<svg viewBox="0 0 ${width} ${height}" role="img">` +
@@ -160,14 +446,57 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     `<path d="M0,0 L10,5 L0,10 z" fill="#991b1b"/></marker>` +
     `</defs>`;
 
+  // Frame bodies sit under everything; their tabs and guards go above the
+  // lifelines (so a lifeline never cuts through a tab) but under messages.
+  let frameBodies = '';
+  let frameLabels = '';
+  const lifelines = actors.map((_, i) => cx(i));
+  // A guard that would start on top of a lifeline (the frame's left edge is
+  // 18px left of the leftmost lifeline it touches) moves just right of it.
+  const guardX = (x0: number, label: string): number => {
+    const span = (label.length + 2) * CHAR_W;
+    const hit = lifelines.find((x) => x >= x0 - 6 && x <= x0 + span);
+    return hit === undefined ? x0 : hit + 12;
+  };
+  const drawFrame = (f: Frame): void => {
+    const y1 = f.open.y;
+    const y2 = frameBottom(f);
+    const path = bp(`messages.${f.open.idx}`);
+    frameBodies +=
+      `<g${path}><rect x="${f.x1}" y="${y1}" width="${f.x2 - f.x1}" height="${Math.max(0, y2 - y1)}" rx="4" class="seq-frame"/></g>`;
+    const tag = f.open.frame.toUpperCase();
+    const tabW = 10 + tag.length * 7;
+    const guard =
+      f.open.label.length > 0
+        ? `<text x="${guardX(f.x1 + tabW + 8, f.open.label)}" y="${y1 + 12}" class="seq-frame-guard">[${escapeHtml(f.open.label)}]</text>`
+        : '';
+    frameLabels +=
+      `<g${path}>` +
+      `<rect x="${f.x1}" y="${y1}" width="${tabW}" height="16" rx="3" class="seq-frame-tab"/>` +
+      `<text x="${f.x1 + 5}" y="${y1 + 11.5}" class="seq-frame-tab-text">${escapeHtml(tag)}</text>` +
+      guard +
+      `</g>`;
+    for (const e of f.elses) {
+      const ep = bp(`messages.${e.idx}`);
+      frameBodies += `<g${ep}><line x1="${f.x1}" y1="${e.y}" x2="${f.x2}" y2="${e.y}" class="seq-frame-else"/></g>`;
+      frameLabels += `<g${ep}><text x="${guardX(f.x1 + 8, e.label)}" y="${e.y + 14}" class="seq-frame-guard">[${escapeHtml(e.label)}]</text></g>`;
+    }
+    f.children.forEach(drawFrame);
+  };
+  frames.forEach(drawFrame);
+  s += frameBodies;
+
   for (let i = 0; i < actors.length; i++) {
     const x = cx(i);
     s += `<line x1="${x}" y1="${headY + headH}" x2="${x}" y2="${bottom}" class="lifeline"/>`;
   }
 
-  for (const ac of activations) {
-    if (!ac) continue;
-    s += `<rect x="${cx(ac.i) - 4}" y="${ac.y1}" width="8" height="${ac.y2 - ac.y1}" class="activation${ac.db ? ' pg' : ''}"/>`;
+  for (const b of bars) {
+    const a = actors[b.i];
+    const db = a !== undefined && DB_PATTERN.test(`${a.name} ${a.sub ?? ''}`);
+    const y1 = b.y1 - BAR_PAD;
+    const y2 = b.y2 + BAR_PAD;
+    s += `<rect x="${cx(b.i) - 4 + b.depth * 4}" y="${y1}" width="8" height="${Math.max(0, y2 - y1)}" class="activation${db ? ' pg' : ''}"/>`;
   }
 
   s += `<g${bl('actors')}>`;
@@ -198,32 +527,55 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   });
   s += `</g>`;
 
-  s += `<g${bl('messages')}>`;
-  for (const r of rows) {
-    const k = KIND[r.kind];
-    const rowBp = bp(`messages.${r.n - 1}`);
+  s += frameLabels;
 
-    // `note` kind — just a numbered annotation at the from-actor's lane
-    if (r.kind === 'note' || r.toI < 0) {
-      if (r.fromI < 0) continue;
-      const x = cx(r.fromI);
+  s += `<g${bl('messages')}>`;
+  for (const r of msgRows) {
+    const k = KIND[r.msgKind];
+    const rowBp = bp(`messages.${r.idx}`);
+    const errCls = r.msgKind === 'error' ? ' err' : '';
+    const badge = (x: number, y: number): string =>
+      `<circle cx="${x}" cy="${y}" r="10" class="step-badge${errCls}"/>` +
+      `<text x="${x}" y="${y + 3.5}" class="step-badge-text">${r.n}</text>`;
+
+    // `note` kind — a note box beside one lifeline or over two.
+    if (r.msgKind === 'note') {
+      const box = noteBox(r);
+      if (box === null) continue;
+      const hasSummary = r.summary !== undefined && r.summary.length > 0;
+      const tx = box.x + box.w / 2;
+      const text = r.lines
+        .map((ln, j) => `<text x="${tx}" y="${box.top + 16 + j * NOTE_LINE}" class="seq-note-text" text-anchor="middle">${escapeHtml(ln)}</text>`)
+        .join('');
       s +=
         `<g${rowBp}>` +
-        `<circle cx="${x + 18}" cy="${r.y - 10}" r="10" class="step-badge"/>` +
-        `<text x="${x + 18}" y="${r.y - 6.5}" class="step-badge-text">${r.n}</text>` +
+        `<rect x="${box.x}" y="${box.top}" width="${box.w}" height="${box.h}" rx="3" class="seq-note"/>` +
+        `<path d="M${box.x + box.w - 7},${box.top} v7 h7" class="seq-note-fold"/>` +
+        text +
+        (hasSummary ? badge(box.x + 2, box.top) : '') +
+        `</g>`;
+      continue;
+    }
+    // One end unknown (lenient render) — number + label on the known lane.
+    if (r.fromI < 0 || r.toI < 0) {
+      if (r.fromI < 0 && r.toI < 0) continue;
+      const x = cx(r.fromI < 0 ? r.toI : r.fromI);
+      s +=
+        `<g${rowBp}>` +
+        badge(x + 18, r.y - 10) +
         `<text x="${x + 34}" y="${r.y - 6}" class="msg-text note">${escapeHtml(r.label)}</text>` +
         `</g>`;
       continue;
     }
-    // self-message — loop back to the same lane
+    // self-message — a loop out to the right and back to the same lifeline
     if (r.fromI === r.toI) {
       const x = cx(r.fromI);
-      const errCls = r.kind === 'error' ? ' err' : '';
+      const markerAttr = k.marker !== null ? ` marker-end="url(#${k.marker})"` : '';
       s +=
         `<g${rowBp}>` +
-        `<circle cx="${x + 18}" cy="${r.y - 10}" r="10" class="step-badge${errCls}"/>` +
-        `<text x="${x + 18}" y="${r.y - 6.5}" class="step-badge-text">${r.n}</text>` +
-        `<text x="${x + 34}" y="${r.y - 6}" class="msg-text note">${escapeHtml(r.label)}</text>` +
+        `<path d="M${x},${r.y - 14} H${x + 28} V${r.y} H${x + 3}" class="${k.cls} self"${markerAttr}/>` +
+        badge(x + 16, r.y - 26) +
+        `<text x="${x + 36}" y="${r.y - 4}" class="${k.txt}" text-anchor="start">${escapeHtml(r.label)}</text>` +
         `</g>`;
       continue;
     }
@@ -232,7 +584,6 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     const x2 = cx(r.toI);
     const ltr = x2 > x1;
     const end = x2 + (ltr ? -3 : 3);
-    const errBadge = r.kind === 'error' ? ' err' : '';
     // Badge sits just inside the from-lane on the side facing the target.
     const badgeX = ltr ? x1 + 18 : x1 - 18;
     // Label anchors next to the badge (start-aligned LTR, end-aligned RTL).
@@ -243,8 +594,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     s +=
       `<g${rowBp}>` +
       `<line x1="${x1}" y1="${r.y}" x2="${end}" y2="${r.y}" class="${k.cls}"${markerAttr}/>` +
-      `<circle cx="${badgeX}" cy="${r.y - 10}" r="10" class="step-badge${errBadge}"/>` +
-      `<text x="${badgeX}" y="${r.y - 6.5}" class="step-badge-text">${r.n}</text>` +
+      badge(badgeX, r.y - 10) +
       `<text x="${labelX}" y="${r.y - 6}" class="${k.txt}" text-anchor="${labelAnchor}">${escapeHtml(r.label)}</text>` +
       `</g>`;
   }
@@ -254,7 +604,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
 
   const actorById = new Map<string, { name: string }>();
   for (const a of actors) actorById.set(a.id, { name: a.name });
-  const stepList = renderStepList(rows, actorById);
+  const stepList = renderStepList(rows, frames, actorById);
   const footHtml = data.foot !== undefined ? renderFoot(data.foot) : '';
 
   // Tag + title

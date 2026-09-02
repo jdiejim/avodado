@@ -9,7 +9,7 @@
  */
 
 import type { FieldNode } from '@avodado/core';
-import { coerceUnionInput } from '../form/union.js';
+import { coerceUnionInput, unionArmFor } from '../form/union.js';
 import { defaultObject, defaultValue } from '../lib/defaults.js';
 
 /** One path segment: an object key or an array index. */
@@ -76,11 +76,14 @@ export function resolveFieldAt(root: FieldNode, path: ReadonlyArray<PathSeg>): F
     }
     if (cur.kind === 'union' && typeof seg === 'string') {
       // Descending into a union means its DETAILED (object) shape: resolve
-      // the field through the single object arm (a table cell's `tone`).
-      const arm = cur.arms.find((a) => a.kind === 'object');
-      const f = arm !== undefined && arm.kind === 'object'
-        ? arm.fields.find((x) => x.name === seg)
-        : undefined;
+      // the field through the first object arm that owns it (a table cell's
+      // `tone`; a sequence frame marker's `frame`).
+      let f: { readonly name: string; readonly node: FieldNode } | undefined;
+      for (const arm of cur.arms) {
+        if (arm.kind !== 'object') continue;
+        f = arm.fields.find((x) => x.name === seg);
+        if (f !== undefined) break;
+      }
       if (f === undefined) return null;
       cur = f.node;
       continue;
@@ -146,10 +149,14 @@ const LABELISH = new Set(['label', 'title', 'name', 'text', 'summary', 'term', '
  *   mirror the last row's width with empty cells.
  */
 export function newItemForList(
-  element: FieldNode,
+  node: FieldNode,
   siblings: readonly unknown[],
   singularName: string,
 ): unknown {
+  // A union of objects (sequence messages | frame markers) seeds the arm the
+  // last sibling uses — after a message, another message.
+  const arm = node.kind === 'union' ? unionArmFor(node, siblings[siblings.length - 1]) : null;
+  const element: FieldNode = arm ?? node;
   if (element.kind === 'array') {
     const last = siblings[siblings.length - 1];
     return Array.isArray(last) && last.length > 0 ? last.map(() => '') : [''];

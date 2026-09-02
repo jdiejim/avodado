@@ -50,7 +50,8 @@ rendering are identical.
 
 | Field | Terse item | Grammar |
 |---|---|---|
-| `sequence.messages` | `Client -> API: POST /orders` | `from -> to: label` — `->` sync · `-->` response · `-x->` error |
+| `sequence.messages` | `Client -> API: POST /orders` | `from -> to: label` — `->` sync · `-->` response · `-x->` error · `-> +to` opens an activation bar on `to` · `--> -to` closes the sender's bar |
+| `sequence.messages` frames | `alt: token valid` · `else: expired` · `end` | `alt` `opt` `loop` `par` `break` `critical` open a frame (`: guard` optional) · `else: guard` starts the next branch · a bare `end` closes the frame |
 | `flow`/`graph`/`block` `edges` · `c4.edges` · `cluster.links` | `build -> deploy: on green` | `->` solid · `-->` dashed · `-x->` error |
 | `dfd.edges` · `swimlane.links` | `a -> b: writes` | `from -> to: label` |
 | `state.transitions` | `idle -> active: submit` | the label is the **event** |

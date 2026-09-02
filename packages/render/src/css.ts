@@ -69,6 +69,17 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .msg-line.dashed{stroke-dasharray:5 3;} .docskin .msg-line.err{stroke:var(--negative);stroke-width:1.4;}
 .docskin .msg-text{fill:var(--charcoal);font-family:var(--font-mono);font-size:10.5px;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round;}
 .docskin .msg-text.em{fill:var(--navy);font-weight:700;} .docskin .msg-text.err{fill:var(--negative);font-weight:700;} .docskin .msg-text.note{fill:var(--gray);font-style:italic;}
+.docskin .msg-line.self{fill:none;}
+/* combined fragments (alt/opt/loop/par/break/critical): a light frame under the messages, a mono tab, the guard in brackets */
+.docskin .seq-frame{fill:var(--light-gray);fill-opacity:.45;stroke:var(--rule);stroke-width:1;}
+.docskin .seq-frame-tab{fill:var(--white);stroke:var(--rule);stroke-width:1;}
+.docskin .seq-frame-tab-text{fill:var(--navy);font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.docskin .seq-frame-guard{fill:var(--slate);font-family:var(--font-mono);font-size:10px;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round;}
+.docskin .seq-frame-else{stroke:var(--gray);stroke-width:1;stroke-dasharray:4 3;}
+/* note boxes: paper fill, hairline stroke, folded corner */
+.docskin .seq-note{fill:var(--white);stroke:var(--rule);stroke-width:1;}
+.docskin .seq-note-fold{fill:none;stroke:var(--rule);stroke-width:1;}
+.docskin .seq-note-text{fill:var(--slate);font-family:var(--font-mono);font-size:10.5px;font-style:italic;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round;}
 .docskin .step-badge{fill:var(--navy);} .docskin .step-badge.err{fill:var(--negative);}
 .docskin .step-badge-text{fill:var(--white);font-family:var(--font-mono);font-size:10px;font-weight:700;text-anchor:middle;}
 .docskin .seq-steps{margin-top:16px;padding:14px 18px;background:var(--light-gray);border:1px solid var(--rule);}
@@ -79,6 +90,10 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 /* The number is emitted by the renderer (the message's DIAGRAM number, so an
    annotation on step 4 reads ④ here even when steps 1-3 have no note). */
 .docskin .seq-steps .step-n{position:absolute;left:0;top:7px;width:26px;height:20px;background:var(--navy);color:var(--white);font-family:var(--font-mono);font-size:11px;font-weight:700;text-align:center;line-height:20px;border-radius:2px;}
+/* frame dividers mirror the diagram's frames: "ALT · token valid", "else · expired" */
+.docskin .seq-steps li.step-frame{padding:8px 0 4px;font-family:var(--font-mono);font-size:10px;color:var(--slate);border-bottom:1px dashed var(--rule);}
+.docskin .seq-steps li.step-frame .step-frame-tag{display:inline-block;padding:1px 6px;margin-right:8px;border:1px solid var(--rule);border-radius:3px;background:var(--white);color:var(--navy);font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.docskin .seq-steps li.step-frame.else{padding-left:12px;}
 .docskin .seq-steps li.err::before{background:var(--negative);}
 .docskin .seq-steps li.err{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;border-bottom:1px solid var(--rule);padding:7px 0 8px 40px;margin:0;white-space:normal;}
 .docskin .seq-steps li.err:last-child{border-bottom:none;}

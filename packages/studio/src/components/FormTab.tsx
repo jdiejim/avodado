@@ -18,7 +18,7 @@ import { SmartControl } from '../form/controls.js';
 import { partitionFields, resolveControl, type FieldSpec } from '../form/fieldKind.js';
 import { GridField } from '../form/GridField.js';
 import { isPristineRow, nextPrimaryField, rowEnterAction, tabOrderPaths } from '../form/keyboard.js';
-import { toDetailedValue, toSimpleValue, unionObjectArm } from '../form/union.js';
+import { toDetailedValue, toSimpleValue, unionArmFor, unionObjectArm, unionObjectArms } from '../form/union.js';
 import { focusControl, focusablesIn } from '../lib/focus.js';
 
 export { humanizeFieldName };
@@ -350,7 +350,7 @@ function UnionField({ name, node, path, value, ctx }: {
   value: unknown;
   ctx: Ctx;
 }): JSX.Element {
-  const arm = unionObjectArm(node);
+  const arm = unionArmFor(node, value);
   const detailed =
     arm !== null && value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -670,7 +670,7 @@ function FieldRow({ name, node, path, value, ctx, diags }: {
       }
       if (node.element.kind === 'opaque') {
         control = <OpaqueNote ctx={ctx} />;
-      } else if (node.element.kind === 'union' && unionObjectArm(node.element) !== null) {
+      } else if (node.element.kind === 'union' && unionObjectArms(node.element).length > 0) {
         control = (
           <UnionArrayField name={name} path={path} value={value} element={node.element} ctx={ctx} />
         );

@@ -107,7 +107,7 @@ const PIE = `pie showData
     "Referral" : 17.5`;
 
 describe('sequenceDiagram → sequence', () => {
-  it('converts participants, every arrow, notes, and skips framing', () => {
+  it('converts participants, every arrow, notes, alt/else/end frames and +/- activation', () => {
     const seg = typed(fence(SEQUENCE));
     expect(seg.kind).toBe('sequence');
     expect(seg.sourceType).toBe('mermaid');
@@ -122,10 +122,13 @@ describe('sequenceDiagram → sequence', () => {
       ],
       messages: [
         { from: 'U', to: 'Web', label: 'Click "Pay"' },
-        { from: 'Web', to: 'API', label: 'POST /orders' },
+        { from: 'Web', to: 'API', label: 'POST /orders', activate: true },
         { from: 'API', to: 'Bus', label: 'OrderPlaced', kind: 'async' },
+        { frame: 'alt', label: 'card declined' },
         { from: 'API', to: 'Web', label: '402 declined', kind: 'error' },
-        { from: 'API', to: 'Web', label: '201 created', kind: 'response' },
+        { else: 'ok' },
+        { from: 'API', to: 'Web', label: '201 created', kind: 'response', deactivate: true },
+        { end: true },
         { from: 'Web', to: 'API', label: 'Idempotency key in header', kind: 'note' },
         { from: 'U', to: 'U', label: 'Sees confirmation', kind: 'note' },
         { from: 'Web', to: 'U', label: 'Receipt', kind: 'response' },
@@ -135,6 +138,40 @@ describe('sequenceDiagram → sequence', () => {
 
   it('validates with zero diagnostics', () => {
     expect(validateDocument(parseDocument(fence(SEQUENCE), 'm'), 'm.md')).toEqual([]);
+  });
+
+  it('keeps every fragment kind, maps and/option to else, and drops rect/box with their own end', () => {
+    const seg = typed(
+      fence(
+        'sequenceDiagram\n  par fan out\n    A->>B: one\n  and second\n    A->>C: two\n  end\n' +
+          '  rect rgb(200,200,200)\n    critical open\n      A->>B: try\n    option timeout\n      A-xB: fail\n    end\n    loop every 5s\n      A->>A: tick\n    end\n  end\n' +
+          '  opt cached\n    B-->>A: hit\n  end\n  break stop\n    A->>B: halt\n  end',
+      ),
+    );
+    expect(seg.parseError).toBeUndefined();
+    expect((seg.data as { messages: unknown[] }).messages).toEqual([
+      { frame: 'par', label: 'fan out' },
+      { from: 'A', to: 'B', label: 'one' },
+      { else: 'second' },
+      { from: 'A', to: 'C', label: 'two' },
+      { end: true },
+      { frame: 'critical', label: 'open' },
+      { from: 'A', to: 'B', label: 'try' },
+      { else: 'timeout' },
+      { from: 'A', to: 'B', label: 'fail', kind: 'error' },
+      { end: true },
+      { frame: 'loop', label: 'every 5s' },
+      { from: 'A', to: 'A', label: 'tick' },
+      { end: true },
+      { frame: 'opt', label: 'cached' },
+      { from: 'B', to: 'A', label: 'hit', kind: 'response' },
+      { end: true },
+      { frame: 'break', label: 'stop' },
+      { from: 'A', to: 'B', label: 'halt' },
+      { end: true },
+    ]);
+    // Every frame closed, so the frame lint has nothing to say.
+    expect(validateDocument(parseDocument(fence('sequenceDiagram\n  alt x\n    A->>B: y\n  end'), 'm'), 'm.md')).toEqual([]);
   });
 });
 

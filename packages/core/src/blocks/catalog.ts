@@ -14,7 +14,7 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```callout\ntone: note\ntitle: Heads up\nbody: A short note that the reader should not miss.\n```\n',
   table: '```table\ncolumns: [Field, Description]\nrows:\n  - [name, Display name]\n  - [id, Stable identifier]\n```\n',
   sequence:
-    '```sequence\nid: seq-example\nactors:\n  - { id: Client, name: Client }\n  - { id: Server, name: Server }\nmessages:\n  - Client -> Server: request\n  - Server --> Client: response\n```\n',
+    '```sequence\nid: seq-example\nactors:\n  - { id: Client, name: Client }\n  - { id: Server, name: Server }\nmessages:\n  - Client -> +Server: request\n  - alt: cache hit\n  - Server --> -Client: 200 cached\n  - else: miss\n  - Server --> -Client: 200 fresh\n  - end\n```\n',
   erd:
     '```erd\nid: erd-example\nentities:\n  - name: users\n    columns:\n      - { name: id, type: uuid, pk: true }\n  - name: orders\n    columns:\n      - { name: id, type: uuid, pk: true }\n      - { name: user_id, type: uuid, fk: true }\nrelations:\n  - users ||--o{ orders: places\n```\n',
   userstory:

@@ -41,6 +41,31 @@ export function unionObjectArm(node: UnionNode): ObjectNode | null {
   return objects.length === 1 ? (objects[0] ?? null) : null;
 }
 
+/** Every object arm of the union, in arm order. */
+export function unionObjectArms(node: UnionNode): readonly ObjectNode[] {
+  return node.arms.filter((a): a is ObjectNode => a.kind === 'object');
+}
+
+/**
+ * The object arm that fits `value`: with one object arm, that arm; with
+ * several (a sequence `messages` item is a message | frame open | else |
+ * end), the first arm whose REQUIRED fields the value all carries — a
+ * `{ frame: alt }` item edits through the frame arm, `{ from, to }` through
+ * the message arm. A scalar or unmatched value falls back to the first
+ * object arm (the union's natural shape). Null for primitive-only unions.
+ */
+export function unionArmFor(node: UnionNode, value: unknown): ObjectNode | null {
+  const objects = unionObjectArms(node);
+  const first = objects[0] ?? null;
+  if (objects.length <= 1 || !isRecord(value)) return first;
+  const keys = Object.keys(value);
+  const fits = objects.find((arm) => {
+    const required = arm.fields.filter((f) => !f.node.optional).map((f) => f.name);
+    return required.length > 0 && required.every((r) => keys.includes(r));
+  });
+  return fits ?? first;
+}
+
 /** True when one of the union's arms has this scalar kind. */
 export function unionAllows(node: UnionNode, kind: 'string' | 'number' | 'boolean'): boolean {
   return node.arms.some((a) => a.kind === kind);

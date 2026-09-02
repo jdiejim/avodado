@@ -42,7 +42,7 @@ import {
   deleteColumnSets,
 } from './columnOps.js';
 import { edgeIndexFromPath, nodeIndexFromPath } from './connect.js';
-import { needsStepPrompt, twinIndices } from './duals.js';
+import { isSequenceMessage, needsStepPrompt, sequenceStepNumber, twinIndices } from './duals.js';
 import { fixupNewItem } from './seedItem.js';
 import type { DirectHost } from './host.js';
 import { MicroEditor, type Rect } from './MicroEditor.js';
@@ -864,9 +864,9 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
    *  number, so "add note" on step 2 automatically becomes entry ②. */
   const noteMatch = host.kind === 'sequence' && partPath !== null ? /^messages\.(\d+)$/.exec(partPath) : null;
   const noteInfo =
-    noteMatch !== null
+    noteMatch !== null && isSequenceMessage(valueAt(data, ['messages', Number(noteMatch[1])]))
       ? {
-          n: Number(noteMatch[1]) + 1,
+          n: sequenceStepNumber(valueAt(data, ['messages']), Number(noteMatch[1])),
           has:
             typeof valueAt(data, ['messages', Number(noteMatch[1]), 'summary']) === 'string' &&
             (valueAt(data, ['messages', Number(noteMatch[1]), 'summary']) as string).length > 0,

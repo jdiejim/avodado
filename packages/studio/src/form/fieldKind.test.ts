@@ -21,13 +21,17 @@ function fieldOf(root: FieldNode, ...names: string[]): FieldNode {
   let cur = root;
   for (const name of names) {
     if (cur.kind === 'array') cur = cur.element;
+    // A union of objects (sequence messages) descends through its first arm.
+    if (cur.kind === 'union') cur = cur.arms.find((a) => a.kind === 'object') ?? cur;
     if (cur.kind !== 'object') throw new Error(`not an object at ${name}`);
     const f = cur.fields.find((x) => x.name === name);
     if (f === undefined) throw new Error(`no field ${name}`);
     cur = f.node;
   }
-  // A trailing array field resolves to its ELEMENT (the item shape).
-  return cur.kind === 'array' ? cur.element : cur;
+  // A trailing array field resolves to its ELEMENT (the item shape); a union
+  // element resolves to its first object arm (the message shape).
+  const el = cur.kind === 'array' ? cur.element : cur;
+  return el.kind === 'union' ? (el.arms.find((a) => a.kind === 'object') ?? el) : el;
 }
 
 describe('resolveControl — color fields', () => {
@@ -271,7 +275,7 @@ describe('partitionFields', () => {
     if (message.kind !== 'object') throw new Error('expected object');
     const p = partitionFields(message.fields, { from: 'web', to: 'api' });
     expect(p.primary.map((f) => f.name)).toEqual(['from', 'to', 'label', 'summary']);
-    expect(p.more.map((f) => f.name)).toEqual(['kind', 'code', 'note']);
+    expect(p.more.map((f) => f.name)).toEqual(['kind', 'code', 'note', 'activate', 'deactivate']);
     expect(p.advanced).toEqual([]);
   });
 
@@ -279,7 +283,7 @@ describe('partitionFields', () => {
     if (message.kind !== 'object') throw new Error('expected object');
     const p = partitionFields(message.fields, { from: 'a', to: 'b', kind: 'async', note: 'x' });
     expect(p.primary.map((f) => f.name)).toEqual(['from', 'to', 'label', 'kind', 'summary', 'note']);
-    expect(p.more.map((f) => f.name)).toEqual(['code']);
+    expect(p.more.map((f) => f.name)).toEqual(['code', 'activate', 'deactivate']);
   });
 
   it('id always lands in advanced; empty layout fields too', () => {
@@ -328,7 +332,7 @@ describe('microVisibleFields', () => {
     if (message.kind !== 'object') throw new Error('expected object');
     const { visible, hidden } = microVisibleFields(message.fields, { from: 'a', to: 'b' });
     expect(visible.map((f) => f.name)).toEqual(['from', 'to', 'label', 'summary']);
-    expect(hidden).toBe(3); // kind, code, note
+    expect(hidden).toBe(5); // kind, code, note, activate, deactivate
   });
 
   it('never shows id in the popover', () => {

@@ -26,6 +26,14 @@ export interface DensityBudget {
   readonly unit: string;
   /** One STE sentence: the concrete split move for this block type. */
   readonly split: string;
+  /** Which items count. Absent → every item. Sequence frame markers do not count. */
+  readonly counts?: (item: unknown) => boolean;
+}
+
+/** True for a real message; false for a frame marker (`frame` / `else` / `end`). */
+function isSequenceMessage(item: unknown): boolean {
+  if (typeof item !== 'object' || item === null) return true;
+  return !('frame' in item || 'else' in item || 'end' in item);
 }
 
 /**
@@ -37,7 +45,13 @@ export interface DensityBudget {
 export const DENSITY_BUDGETS: Partial<Record<BlockType, readonly DensityBudget[]>> = {
   sequence: [
     { field: 'actors', cap: 8, unit: 'actors', split: 'Split the flow into one sequence per scenario.' },
-    { field: 'messages', cap: 24, unit: 'messages', split: 'Split the flow into one sequence per scenario.' },
+    {
+      field: 'messages',
+      cap: 24,
+      unit: 'messages',
+      split: 'Split the flow into one sequence per scenario.',
+      counts: isSequenceMessage,
+    },
   ],
   flow: [{ field: 'nodes', cap: 24, unit: 'nodes', split: 'Split the flow into one diagram per phase.' }],
   dfd: [{ field: 'nodes', cap: 24, unit: 'nodes', split: 'Split the diagram into one dfd per process.' }],
@@ -59,10 +73,11 @@ export const DENSITY_BUDGETS: Partial<Record<BlockType, readonly DensityBudget[]
 };
 
 /** Length of `data[field]` when it is an array; 0 for anything else. */
-function countArray(data: unknown, field: string): number {
+function countArray(data: unknown, field: string, counts?: (item: unknown) => boolean): number {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) return 0;
   const value = (data as Record<string, unknown>)[field];
-  return Array.isArray(value) ? value.length : 0;
+  if (!Array.isArray(value)) return 0;
+  return counts === undefined ? value.length : value.filter(counts).length;
 }
 
 /**
@@ -82,7 +97,7 @@ export function lintDensity(doc: Document, file: string): Diagnostic[] {
     if (budgets === undefined) continue;
 
     for (const budget of budgets) {
-      const count = countArray(seg.data, budget.field);
+      const count = countArray(seg.data, budget.field, budget.counts);
       if (count <= budget.cap) continue;
 
       const loc = locateYamlPath(seg.raw, [budget.field]);

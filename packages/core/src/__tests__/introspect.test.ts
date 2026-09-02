@@ -33,18 +33,32 @@ describe('describeBlockSchema', () => {
     });
   });
 
-  it('sequence.messages is an array of objects with typed fields', () => {
+  it('sequence.messages is an array of a union: message | frame open | else | end', () => {
     const messages = field(describeBlockSchema('sequence'), 'messages');
     expect(messages.kind).toBe('array');
     if (messages.kind !== 'array') return;
     expect(messages.optional).toBe(true);
     const element = messages.element;
-    expect(element.kind).toBe('object');
-    if (element.kind !== 'object') return;
-    const from = element.fields.find((f) => f.name === 'from');
+    expect(element.kind).toBe('union');
+    if (element.kind !== 'union') return;
+    expect(element.arms.map((a) => a.kind)).toEqual(['object', 'object', 'object', 'object']);
+    const message = element.arms[0];
+    if (message?.kind !== 'object') throw new Error('message arm');
+    const from = message.fields.find((f) => f.name === 'from');
     expect(from?.node).toEqual({ kind: 'string', optional: false });
-    const kind = element.fields.find((f) => f.name === 'kind');
+    const kind = message.fields.find((f) => f.name === 'kind');
     expect(kind?.node).toMatchObject({ kind: 'enum', optional: true });
+    expect(message.fields.find((f) => f.name === 'activate')?.node).toEqual({ kind: 'boolean', optional: true });
+    const frame = element.arms[1];
+    if (frame?.kind !== 'object') throw new Error('frame arm');
+    expect(frame.fields.find((f) => f.name === 'frame')?.node).toMatchObject({
+      kind: 'enum',
+      options: ['alt', 'opt', 'loop', 'par', 'break', 'critical'],
+    });
+    // `end: true` is a boolean literal — a boolean control, never opaque.
+    const end = element.arms[3];
+    if (end?.kind !== 'object') throw new Error('end arm');
+    expect(end.fields[0]?.node).toEqual({ kind: 'boolean', optional: false });
   });
 
   it('union fields describe as union nodes with typed arms (table cells, dfd num)', () => {

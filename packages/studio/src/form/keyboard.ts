@@ -6,6 +6,7 @@
  */
 
 import type { FieldNode } from '@avodado/core';
+import { unionArmFor } from './union.js';
 import { partitionFields, type FieldSpec, type RefOption } from './fieldKind.js';
 
 type ObjectNode = Extract<FieldNode, { kind: 'object' }>;
@@ -39,14 +40,33 @@ export function tabOrderPaths(root: ObjectNode, value: unknown): string[] {
   const rec = asRecord(value);
   const out: string[] = [];
   for (const f of partitionFields(root.fields, value).primary) {
-    if (f.node.kind === 'array' && f.node.element.kind === 'object') {
-      const element = f.node.element;
+    const element = f.node.kind === 'array' ? f.node.element : null;
+    // Object items — and union items edited through an object arm (a
+    // sequence message | frame marker) — expand to their primary scalars.
+    const armFor = (item: unknown): ObjectNode | null =>
+      element === null
+        ? null
+        : element.kind === 'object'
+          ? element
+          : element.kind === 'union' && item !== null && typeof item === 'object'
+            ? unionArmFor(element, item)
+            : null;
+    if (element !== null && (element.kind === 'object' || element.kind === 'union')) {
       const items = Array.isArray(rec[f.name]) ? (rec[f.name] as unknown[]) : [];
+      let expanded = false;
       items.forEach((item, i) => {
-        for (const p of partitionFields(element.fields, item).primary) {
+        const arm = armFor(item);
+        if (arm === null) return;
+        expanded = true;
+        for (const p of partitionFields(arm.fields, item).primary) {
           if (isScalar(p.node)) out.push(`${f.name}.${i}.${p.name}`);
         }
       });
+      // A union with scalar arms is one chip list — it keeps a slot even when
+      // empty; an object-only union (sequence messages) behaves like an
+      // object array and contributes nothing until it has items.
+      const objectOnly = element.kind === 'union' && element.arms.every((a) => a.kind === 'object');
+      if (element.kind === 'union' && !expanded && !objectOnly) out.push(f.name);
     } else if (isScalar(f.node) || f.node.kind === 'array') {
       out.push(f.name);
     }

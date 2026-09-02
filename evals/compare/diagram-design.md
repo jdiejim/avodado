@@ -21,6 +21,11 @@ where the model draws every coordinate. Each side ran its own validation.
 Tokens are the harness total per run, including the cold read of each
 skill. n = 2 per side: differences under 10% are noise.
 
+**Run C**, after sequence frames shipped the same day (fresh agent, updated
+skill, identical brief): 84,920 tokens, 15 tool calls, 2m 01s, 2,369 bytes
+written, 24 arrows inside two nested `alt` frames and one `loop`, nothing
+dropped, 0 diagnostics.
+
 ## What it says
 
 - The model writes about 7x less and the run costs 40% fewer tokens,

@@ -41,10 +41,15 @@ Mermaid or YAML.
   a message `{ from: A, to: B, kind: note }` (`to` is `A` for a one-actor
   note).
 - `title Text` → `title`.
-- Ignored: `autonumber`, `activate` / `deactivate`, `+` / `-` activation
-  suffixes on an arrow, and the framing lines `alt` / `else` / `opt` /
-  `loop` / `par` / `and` / `critical` / `option` / `break` / `rect` / `box`
-  / `end`. The messages inside a frame are kept; the frame is lost.
+- Fragments: `alt text` / `opt text` / `loop text` / `par text` /
+  `critical text` / `break text` → a frame open `{ frame, label }`; `else
+  text`, `and text`, `option text` → `{ else: text }`; `end` → `{ end: true }`.
+  The frame renders as a UML frame around its messages.
+- `A->>+B: text` sets `activate: true` on the message (a bar opens on B);
+  `B-->>-A: text` sets `deactivate: true` (the bar on B, the sender, closes).
+- Ignored: `autonumber`, standalone `activate X` / `deactivate X` lines, and
+  `rect` / `box` … `end` (the messages inside are kept; the coloured box is
+  lost).
 - Any other line is an error (`E_PARSE_MERMAID`, with the line number).
 
 ## flowchart / graph

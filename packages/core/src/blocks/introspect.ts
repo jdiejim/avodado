@@ -76,6 +76,11 @@ function describe(schema: z.ZodTypeAny): FieldNode {
   if (cur instanceof z.ZodLiteral && typeof cur.value === 'string') {
     return { kind: 'enum', optional, options: [cur.value] };
   }
+  // A boolean literal (`end: true` on a sequence frame end) is a toggle whose
+  // only valid state is on — a boolean control still represents it.
+  if (cur instanceof z.ZodLiteral && typeof cur.value === 'boolean') {
+    return { kind: 'boolean', optional };
+  }
   if (cur instanceof z.ZodArray) {
     // `.min(n)` is part of the contract: a form that seeds fewer items than
     // the schema demands produces a value that cannot validate.

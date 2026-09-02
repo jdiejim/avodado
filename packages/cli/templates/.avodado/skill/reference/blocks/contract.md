@@ -31,7 +31,7 @@ required**. The table below leaves them out and shows only the
 | `timeline` | `items[]`: `label*` `date` `desc` `status` | status: done · current · next · future |
 | `gantt` | `periods[]` · `tasks[]`: `label*` `start`(n) `span`(n) `kind` | kind: done · active · current · milestone |
 | `userstory` | `role` `want` `soThat` `priority` `points`(n) · `criteria[]`: `given` `when` `then` · `links[]`: `ref` `mode` `label` | — |
-| `sequence` | `actors[]`: `id*` `name*` `sub` `external` · `messages[]`: `from*` `to*` `label` `kind` `summary` `code` `note` · `endpoint{method*, path*, status}` · `foot[]`: `label*` `value*` | msg kind: sync · response · async · error · note — method: GET · POST · PUT · PATCH · DELETE |
+| `sequence` | `actors[]`: `id*` `name*` `sub` `external` · `messages[]`: a message `from*` `to*` `label` `kind` `summary` `code` `note` `activate` `deactivate` — or a frame marker `{frame*, label}` / `{else*}` / `{end: true}` · `endpoint{method*, path*, status}` · `foot[]`: `label*` `value*` | msg kind: sync · response · async · error · note — frame: alt · opt · loop · par · break · critical — method: GET · POST · PUT · PATCH · DELETE |
 | `state` | `dir` · `groups[]`: `id` `col*`(n) `row*`(n) `cols`(n) `rows`(n) `label*` `color` · `states[]`: `id*` `col*`(n) `row*`(n) `name` `kind` · `transitions[]`: `from*` `to*` `event*` `guard` | dir: LR (default) · TB — kind: start · terminal · active · wait |
 | `flow` | `variant` `dir` · `groups[]`: `id` `col*`(n) `row*`(n) `cols`(n) `rows`(n) `label*` `color` · `nodes[]`: `id*` `col*`(n) `row*`(n) `w`(n) `label*` `kind` · `edges[]`: `from*` `to*` `label` `kind` | variant: dag (pipeline/DAG framing) — dir: LR (default) · TB — node kind: start · end · decision · process — edge kind: error · dashed (`-->`) |
 | `dfd` | `dir` · `groups[]`: `id` `col*`(n) `row*`(n) `cols`(n) `rows`(n) `label*` `color` · `nodes[]`: `id*` `col*`(n) `row*`(n) `name*` `kind` `num` · `edges[]`: `from*` `to*` `label` | dir: LR (default) · TB — kind: process · external · store · datastore |
@@ -113,7 +113,10 @@ required**. The table below leaves them out and shows only the
   or delete it. The `*` fields are the minimum to make each item valid.
 - **Terse item strings** are the default form for four list fields —
   `sequence.messages` and `flow`/`graph`/`block` `edges` take
-  `from -> to: label` (`-->` response/dashed · `-x->` error), `erd.relations`
+  `from -> to: label` (`-->` response/dashed · `-x->` error; sequence only:
+  `-> +to` opens an activation bar, `--> -to` closes the sender's, and the
+  frame markers `alt: guard` · `opt` · `loop: guard` · `par` · `break` ·
+  `critical` · `else: guard` · `end`), `erd.relations`
   takes `from ||--o{ to: label` (crow's-foot cardinality), and
   `timeline.items` takes `[status] date · label · desc`. They expand to the
   object shapes above at parse time; use the object form for anything the

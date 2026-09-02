@@ -19,7 +19,10 @@
  *
  * - sequence.messages / flow.edges / graph.edges / block.edges:
  *   `from -> to: label` — split on the FIRST `:`; arrows: `->` plain,
- *   `-->` response (sequence) / dashed (edges), `-x->` error.
+ *   `-->` response (sequence) / dashed (edges), `-x->` error. Sequence only:
+ *   `-> +to` / `--> -to` activation signs, and the frame markers
+ *   `alt: label` / `opt` / `loop` / `par` / `break` / `critical` / `else:
+ *   label` / `end`.
  * - erd.relations: `user ||--o{ order: places` — crow's-foot cardinality
  *   (`||--||` 1:1 · `||--o{` 1:N · `}o--||` N:1 · `}o--o{` N:M); plain `->`
  *   is accepted with no cardinality.
@@ -40,6 +43,17 @@ import { fieldNamesAt, stringOnlyAt } from './schema-walk.js';
 
 /** Arrow head: `from -> to`, longest arrow first so `-->` never parses as `-` + `->`. */
 const ARROW_RE = /^(\S+?)\s*(-x->|-->|->)\s*(\S+)$/;
+
+/**
+ * Sequence arrow head: `from -> to` with an optional activation sign before
+ * the target — `A -> +B` opens a bar on B, `B --> -A` closes the bar on the
+ * SENDER (Mermaid's convention: the `-` rides on the reply that leaves the
+ * bar). The sign never becomes part of `to`.
+ */
+const SEQ_ARROW_RE = /^(\S+?)\s*(-x->|-->|->)\s*([+-]?)([^\s+-]\S*)$/;
+
+/** Frame markers: the six combined-fragment kinds, plus `else` and `end`. */
+const FRAME_HEAD_RE = /^(alt|opt|loop|par|break|critical|else|end)$/;
 
 /** ERD head: `from <card> to`, crow's-foot operators or a plain `->`. */
 const ERD_RE = /^(\S+?)\s*(\|\|--\|\||\|\|--o\{|\}o--o\{|\}o--\|\||->)\s*(\S+)$/;
@@ -67,18 +81,33 @@ function splitLabel(s: string): { readonly head: string; readonly label?: string
   return { head: s.slice(0, i).trim(), ...(label.length > 0 ? { label } : {}) };
 }
 
-/** `Client -> Server: request` → a sequence message (`-->` response, `-x->` error). */
+/**
+ * A sequence `messages` item from its terse string:
+ *
+ * - `Client -> Server: request` → a message (`-->` response, `-x->` error;
+ *   `-> +B` sets `activate`, `--> -A` sets `deactivate`);
+ * - `alt: token valid` / `opt` / `loop: every 5s` / `par` / `break` /
+ *   `critical` → a frame open (`{ frame, label? }`);
+ * - `else: expired` → a frame else; a bare `end` → a frame end.
+ */
 function messageFromString(s: string): unknown {
   const { head, label } = splitLabel(s);
-  const m = ARROW_RE.exec(head);
+  if (FRAME_HEAD_RE.test(head)) {
+    if (head === 'end') return { end: true };
+    if (head === 'else') return label !== undefined ? { else: label } : s; // label required
+    return { frame: head, ...(label !== undefined ? { label } : {}) };
+  }
+  const m = SEQ_ARROW_RE.exec(head);
   if (m === null) return s;
-  const [, from, arrow, to] = m as unknown as [string, string, string, string];
+  const [, from, arrow, sign, to] = m as unknown as [string, string, string, string, string];
   const kind = arrow === '-->' ? 'response' : arrow === '-x->' ? 'error' : undefined;
   return {
     from,
     to,
     ...(label !== undefined ? { label } : {}),
     ...(kind !== undefined ? { kind } : {}),
+    ...(sign === '+' ? { activate: true } : {}),
+    ...(sign === '-' ? { deactivate: true } : {}),
   };
 }
 
@@ -149,7 +178,12 @@ const arrowGrammar = (expand: (s: string) => unknown): Grammar => ({
   expand,
   signature: (key) => ARROW_RE.test(key),
 });
-const messageGrammar: Grammar = arrowGrammar(messageFromString);
+const messageGrammar: Grammar = {
+  expand: messageFromString,
+  // `- alt: token valid` / `- else: expired` / `- end: true` are single-pair
+  // maps too — their key is the frame keyword.
+  signature: (key) => SEQ_ARROW_RE.test(key) || FRAME_HEAD_RE.test(key),
+};
 const edgeGrammar: Grammar = arrowGrammar(edgeFromString);
 const relationGrammar: Grammar = {
   expand: relationFromString,
@@ -288,7 +322,7 @@ const linkGrammar: Grammar = {
 /** `'idle -> active: submit'` → a state transition (the label is the EVENT). */
 const transitionGrammar: Grammar = {
   expand: (s: string): unknown => {
-    const out = messageFromString(s);
+    const out = edgeFromString(s);
     if (typeof out === 'string' || !isPlainObject(out)) return out;
     const o = out as { from: string; to: string; label?: string };
     // `event` is required by the schema — seed empty when unlabelled.

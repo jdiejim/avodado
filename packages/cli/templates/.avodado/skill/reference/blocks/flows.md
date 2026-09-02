@@ -61,12 +61,56 @@ foot:
 Each message: `from` + `to` (must match an actor `id`), `label`,
 optional `kind` (`sync | response | async | error | note`). Terse strings and
 objects mix freely in one `messages` list.
-- `note` kind is a numbered annotation on one lane — no arrow.
+- `note` kind is a note box — beside one lifeline when `from` = `to`, over
+  both lifelines when they differ ("note over A,B"). No arrow, no number
+  unless it has a `summary`.
+- `from` = `to` with any other kind draws a self-message loop.
 - `summary` (long form for the step list under the SVG),
 - `code` (a code snippet inside the step item),
 - `note` field (italic-gray sub-note below the summary).
 `endpoint.method` colours the tag pill (POST → navy, GET → green, etc.).
 `foot` items render as key/value pills beneath the diagram.
+
+**Frames and activation bars.** The `messages` list also takes frame markers
+and activation signs. A frame is a UML combined fragment: a labelled tab
+(`ALT`, `OPT`, `LOOP`, `PAR`, `BREAK`, `CRITICAL`), the guard in brackets,
+and a dashed divider for each `else`. Frames nest; close every frame with
+`end` (an unclosed frame or a stray `else`/`end` is a `W_SEQ_FRAME` warning).
+```sequence
+title: Access-token refresh
+actors:
+  - { id: App, name: App }
+  - { id: Auth, name: Auth service }
+  - { id: DB, name: Token store }
+messages:
+  - App -> +Auth: POST /token/refresh
+  - alt: refresh token valid
+  - Auth -> +DB: rotate(token)
+  - DB --> -Auth: new pair
+  - Auth --> App: 200 access + refresh
+  - else: expired
+  - Auth -x-> -App: 401 invalid_grant
+  - end
+  - opt: telemetry on
+  - Auth -> Auth: emit refresh event
+  - end
+  - { from: App, to: Auth, kind: note, label: The refresh token rotates on every use. }
+```
+- Frame markers: `alt: guard` · `opt: guard` · `loop: guard` · `par: guard`
+  · `break: guard` · `critical: guard` open a frame (the guard is optional:
+  a bare `- loop` works); `else: guard` starts the next branch of an `alt` or
+  the next lane of a `par` (the guard is required); a bare `end` closes the
+  innermost open frame. Object forms: `{ frame: alt, label: guard }`,
+  `{ else: guard }`, `{ end: true }`.
+- Activation: `A -> +B: msg` opens a bar on B at that message; `B --> -A:
+  reply` closes the most recent open bar on **B** (the sender) — Mermaid's
+  convention. Object form: `activate: true` / `deactivate: true`. Only the
+  first `-` closes a bar, so inside an `alt` put the sign on the LAST
+  branch's reply — the bar then spans every branch. When no message carries
+  a sign, bars are inferred: a bar opens on each incoming sync/async call and
+  closes at the reply back to the caller.
+- The step list mirrors the frames (`ALT · guard`, `else · guard` dividers);
+  frame markers never get a step number.
 
 #### `state` — state machine (+ transition table)
 ```state

@@ -21,7 +21,7 @@ import type { FieldNode } from '@avodado/core';
 import { IconTrash } from '../components/Icons.js';
 import { SmartControl } from '../form/controls.js';
 import { microVisibleFields, resolveControl } from '../form/fieldKind.js';
-import { unionObjectArm } from '../form/union.js';
+import { unionArmFor } from '../form/union.js';
 import { focusControl, focusablesIn } from '../lib/focus.js';
 import type { DirectHost } from './host.js';
 import {
@@ -237,7 +237,7 @@ export function MicroEditor({ host, root, data, path, anchor, focusField, onClos
   // A union node behaves like its current value's shape: scalar values get
   // the one smart input (below); a DETAILED value (object) edits through the
   // union's object arm like any object item.
-  const unionArm = node !== null && node.kind === 'union' ? unionObjectArm(node) : null;
+  const unionArm = node !== null && node.kind === 'union' ? unionArmFor(node, value) : null;
   const objectNode =
     node !== null && node.kind === 'object'
       ? node
