@@ -1,12 +1,14 @@
 /**
  * Sequence frames, activation bars, self-loops and note boxes — geometry
- * pinned against the row model (message 42 · frame open 30 · else 26 ·
- * end 16 · note 42 + 13/extra line; lanes at x = 108, 334, 560).
+ * pinned against the row model (message 36 · frame open 28 · else 24 ·
+ * end 14 · note 36 + 13/extra line; first row 84). Lane x positions come
+ * from the data: 150px lanes with a 46px minimum gap that widens to fit the
+ * widest label between two adjacent lanes (see `laneGaps`).
  */
 
 import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
-import { renderSequence } from '../blocks/sequence.js';
+import { laneGaps, renderSequence } from '../blocks/sequence.js';
 
 const ACTORS = [
   { id: 'A', name: 'A' },
@@ -15,6 +17,26 @@ const ACTORS = [
 ];
 
 type Msgs = NonNullable<Parameters<typeof renderSequence>[0]['messages']>;
+
+const LEFT_PAD = 24;
+const LANE_W = 150;
+
+/** Lane centre x for each actor, from the same rule the renderer uses. */
+function laneXs(messages: Msgs, actors = ACTORS): number[] {
+  const gaps = laneGaps(actors, messages);
+  const xs: number[] = [];
+  let x = LEFT_PAD + LANE_W / 2;
+  actors.forEach((_, i) => {
+    xs.push(x);
+    x += LANE_W + (gaps[i] ?? 0);
+  });
+  return xs;
+}
+
+/** The svg width for the lanes: pads + lanes + gaps. */
+function svgWidth(messages: Msgs, actors = ACTORS): number {
+  return LEFT_PAD * 2 + actors.length * LANE_W + laneGaps(actors, messages).reduce((a, g) => a + g, 0);
+}
 
 function rects(html: string, cls: string): Array<{ x: number; y: number; w: number; h: number }> {
   const root = parse(html);
@@ -34,26 +56,27 @@ function lineYs(html: string): number[] {
 
 describe('sequence frames', () => {
   const messages: Msgs = [
-    { from: 'A', to: 'B', label: 'call', activate: true }, // y 92
-    { frame: 'alt', label: 'ok' }, // top edge 106
-    { from: 'B', to: 'C', label: 'q', activate: true }, // y 164
-    { from: 'C', to: 'B', label: 'r', kind: 'response', deactivate: true }, // y 206
-    { else: 'fail' }, // divider 214
-    { from: 'B', to: 'A', label: 'err', kind: 'error', deactivate: true }, // y 274
-    { end: true }, // bottom edge 284
+    { from: 'A', to: 'B', label: 'call', activate: true }, // y 84
+    { frame: 'alt', label: 'ok' }, // top edge 98
+    { from: 'B', to: 'C', label: 'q', activate: true }, // y 148
+    { from: 'C', to: 'B', label: 'r', kind: 'response', deactivate: true }, // y 184
+    { else: 'fail' }, // divider 192
+    { from: 'B', to: 'A', label: 'err', kind: 'error', deactivate: true }, // y 244
+    { end: true }, // bottom edge 254
   ];
   const html = renderSequence({ actors: ACTORS, messages });
+  const [xA, xB, xC] = laneXs(messages) as [number, number, number];
 
   it('rows take their own heights; message numbers skip the markers', () => {
-    expect(lineYs(html)).toEqual([92, 164, 206, 274]);
+    expect(lineYs(html)).toEqual([84, 148, 184, 244]);
     const badges = parse(html).querySelectorAll('.step-badge-text').map((t) => t.text);
     expect(badges).toEqual(['1', '2', '3', '4']);
   });
 
   it('the frame spans the lifelines its messages touch (± 18) from the open row to the end row', () => {
     const [frame] = rects(html, 'seq-frame');
-    // A (108) … C (560): 90 … 578; open edge 106, end edge 284.
-    expect(frame).toEqual({ x: 90, y: 106, w: 488, h: 178 });
+    // A … C, ± 18; open edge 98, end edge 254.
+    expect(frame).toEqual({ x: xA - 18, y: 98, w: xC - xA + 36, h: 156 });
   });
 
   it('draws the tab, the guard, and a dashed else divider with its guard', () => {
@@ -62,9 +85,9 @@ describe('sequence frames', () => {
     const guards = root.querySelectorAll('.seq-frame-guard').map((g) => g.text);
     expect(guards).toEqual(['[ok]', '[fail]']);
     const div = root.querySelector('line.seq-frame-else');
-    expect(div?.getAttribute('x1')).toBe('90');
-    expect(div?.getAttribute('x2')).toBe('578');
-    expect(div?.getAttribute('y1')).toBe('214');
+    expect(div?.getAttribute('x1')).toBe(String(xA - 18));
+    expect(div?.getAttribute('x2')).toBe(String(xC + 18));
+    expect(div?.getAttribute('y1')).toBe('192');
   });
 
   it('frame bodies are drawn before the lifelines, tabs after', () => {
@@ -79,10 +102,10 @@ describe('sequence frames', () => {
 
   it('explicit activation opens on `to` at the message row and closes on `from` at the deactivate row', () => {
     const bars = rects(html, 'activation');
-    // B: opened at 92 (call), closed at 274 (err) — padded 6 each side.
-    expect(bars).toContainEqual({ x: 330, y: 86, w: 8, h: 194 });
-    // C: opened at 164 (q), closed at 206 (r).
-    expect(bars).toContainEqual({ x: 556, y: 158, w: 8, h: 54 });
+    // B: opened at 84 (call), closed at 244 (err) — padded 6 each side; 6px wide.
+    expect(bars).toContainEqual({ x: xB - 3, y: 78, w: 6, h: 172 });
+    // C: opened at 148 (q), closed at 184 (r).
+    expect(bars).toContainEqual({ x: xC - 3, y: 142, w: 6, h: 48 });
     expect(bars).toHaveLength(2);
   });
 
@@ -104,90 +127,85 @@ describe('sequence frames', () => {
 
 describe('nested and unclosed frames', () => {
   it('a nested frame is inset 12px inside its parent and the parent grows around it', () => {
-    const html = renderSequence({
-      actors: ACTORS,
-      messages: [
-        { from: 'A', to: 'B', label: 'a' }, // 92
-        { frame: 'alt', label: 'outer' }, // 106
-        { frame: 'loop', label: 'inner' }, // 136
-        { from: 'B', to: 'C', label: 'b' }, // 194
-        { end: true }, // 204
-        { from: 'A', to: 'B', label: 'c' }, // 252
-        { end: true }, // 262
-      ],
-    });
+    const messages: Msgs = [
+        { from: 'A', to: 'B', label: 'a' }, // 84
+        { frame: 'alt', label: 'outer' }, // 98
+        { frame: 'loop', label: 'inner' }, // 126
+        { from: 'B', to: 'C', label: 'b' }, // 176
+        { end: true }, // 186
+        { from: 'A', to: 'B', label: 'c' }, // 226
+        { end: true }, // 236
+      ];
+    const html = renderSequence({ actors: ACTORS, messages });
+    const [xA, xB, xC] = laneXs(messages) as [number, number, number];
     const [outer, inner] = rects(html, 'seq-frame');
-    expect(inner).toEqual({ x: 316, y: 136, w: 262, h: 68 });
-    // Outer: A…C padded = 90…578, then the inner's right edge + 12 = 590.
-    expect(outer).toEqual({ x: 90, y: 106, w: 500, h: 156 });
+    expect(inner).toEqual({ x: xB - 18, y: 126, w: xC - xB + 36, h: 60 });
+    // Outer: A…C padded, then the inner's right edge + 12.
+    expect(outer).toEqual({ x: xA - 18, y: 98, w: xC + 18 + 12 - (xA - 18), h: 138 });
     if (outer === undefined || inner === undefined) throw new Error('two frames expected');
     expect(inner.x).toBeGreaterThanOrEqual(outer.x + 12);
     expect(inner.x + inner.w).toBeLessThanOrEqual(outer.x + outer.w - 12);
   });
 
   it('an unclosed frame runs to the last row; a stray else/end draws nothing', () => {
-    const html = renderSequence({
-      actors: ACTORS,
-      messages: [
-        { end: true }, // stray: draws nothing, still a 16px row
-        { else: 'stray' }, // stray: 26px row
-        { frame: 'opt', label: 'open' }, // top 92 + 14 = 106
-        { from: 'A', to: 'B', label: 'x' }, // 164
-      ],
-    });
+    const messages: Msgs = [
+      { end: true }, // stray: draws nothing, still a 14px row
+      { else: 'stray' }, // stray: 24px row
+      { frame: 'opt', label: 'open' }, // top 86 + 14 = 100
+      { from: 'A', to: 'B', label: 'x' }, // 150
+    ];
+    const html = renderSequence({ actors: ACTORS, messages });
+    const [xA, xB] = laneXs(messages) as [number, number];
     const frames = rects(html, 'seq-frame');
     expect(frames).toHaveLength(1);
-    // Last row ends at cursor 164; bottom edge = cursor + 6.
-    expect(frames[0]).toEqual({ x: 90, y: 106, w: 262, h: 64 });
+    // Last row ends at cursor 150; bottom edge = cursor + 6.
+    expect(frames[0]).toEqual({ x: xA - 18, y: 100, w: xB - xA + 36, h: 56 });
     expect(parse(html).querySelectorAll('.seq-frame-else')).toHaveLength(0);
   });
 });
 
 describe('auto activation', () => {
   it('a bar opens on an incoming sync call and closes at the reply to the caller; reply-only actors get none', () => {
-    const html = renderSequence({
-      actors: ACTORS,
-      messages: [
-        { from: 'A', to: 'B', label: 'call' }, // 92
-        { from: 'B', to: 'C', label: 'q' }, // 134
-        { from: 'C', to: 'B', label: 'r', kind: 'response' }, // 176
-        { from: 'B', to: 'A', label: 'done', kind: 'response' }, // 218
-      ],
-    });
+    const messages: Msgs = [
+      { from: 'A', to: 'B', label: 'call' }, // 84
+      { from: 'B', to: 'C', label: 'q' }, // 120
+      { from: 'C', to: 'B', label: 'r', kind: 'response' }, // 156
+      { from: 'B', to: 'A', label: 'done', kind: 'response' }, // 192
+    ];
+    const html = renderSequence({ actors: ACTORS, messages });
+    const [, xB, xC] = laneXs(messages) as [number, number, number];
     const bars = rects(html, 'activation');
     expect(bars).toEqual([
-      { x: 330, y: 86, w: 8, h: 138 },
-      { x: 556, y: 128, w: 8, h: 54 },
+      { x: xB - 3, y: 78, w: 6, h: 120 },
+      { x: xC - 3, y: 114, w: 6, h: 48 },
     ]);
   });
 
   it('with no reply, the bar closes at the actor\'s last outgoing message; the first actor can have a bar', () => {
-    const html = renderSequence({
-      actors: ACTORS,
-      messages: [
-        { from: 'B', to: 'A', label: 'notify', kind: 'async' }, // 92 → bar on A
-        { from: 'A', to: 'C', label: 'forward' }, // 134 → A's last outgoing; bar on C
-        { from: 'A', to: 'B', label: 'ack', kind: 'response' }, // 176 → closes A
-      ],
-    });
+    const messages: Msgs = [
+      { from: 'B', to: 'A', label: 'notify', kind: 'async' }, // 84 → bar on A
+      { from: 'A', to: 'C', label: 'forward' }, // 120 → A's last outgoing; bar on C
+      { from: 'A', to: 'B', label: 'ack', kind: 'response' }, // 156 → closes A
+    ];
+    const html = renderSequence({ actors: ACTORS, messages });
+    const [xA, , xC] = laneXs(messages) as [number, number, number];
     const bars = rects(html, 'activation');
-    expect(bars).toContainEqual({ x: 104, y: 86, w: 8, h: 96 });
+    expect(bars).toContainEqual({ x: xA - 3, y: 78, w: 6, h: 84 });
     // C never replies or sends: the bar just marks the receipt.
-    expect(bars).toContainEqual({ x: 556, y: 128, w: 8, h: 12 });
+    expect(bars).toContainEqual({ x: xC - 3, y: 114, w: 6, h: 12 });
   });
 
   it('a frame-less list renders the same rows as before', () => {
-    const html = renderSequence({
-      actors: ACTORS,
-      messages: [
-        { from: 'A', to: 'B', label: 'one' },
-        { from: 'B', to: 'C', label: 'two' },
-        { from: 'C', to: 'A', label: 'three', kind: 'response' },
-      ],
-    });
-    expect(lineYs(html)).toEqual([92, 134, 176]);
-    // 92 + 3 × 42 + 12 = 230 bottom, + 6 — the pre-frames geometry.
-    expect(html).toContain('viewBox="0 0 668 236"');
+    const messages: Msgs = [
+      { from: 'A', to: 'B', label: 'one' },
+      { from: 'B', to: 'C', label: 'two' },
+      { from: 'C', to: 'A', label: 'three', kind: 'response' },
+    ];
+    const html = renderSequence({ actors: ACTORS, messages });
+    expect(lineYs(html)).toEqual([84, 120, 156]);
+    // 84 + 2 × 36 + 36 + 12 = 204 bottom, + 6; short labels keep the 46px gaps.
+    expect(laneGaps(ACTORS, messages)).toEqual([46, 46]);
+    expect(html).toContain(`viewBox="0 0 ${svgWidth(messages)} 210"`);
     expect(html).toContain('<g data-bp="messages.0">');
     expect(html).toContain('<g data-bp="messages.2">');
   });
@@ -195,24 +213,27 @@ describe('auto activation', () => {
 
 describe('self-messages and notes', () => {
   it('a self-message is a loop path out 28 and down 14 with an arrowhead, its label to the right', () => {
-    const html = renderSequence({ actors: ACTORS, messages: [{ from: 'B', to: 'B', label: 'tick' }] });
+    const messages: Msgs = [{ from: 'B', to: 'B', label: 'tick' }];
+    const html = renderSequence({ actors: ACTORS, messages });
+    const [, xB] = laneXs(messages) as [number, number];
     const root = parse(html);
     const path = root.querySelector('path.msg-line');
-    expect(path?.getAttribute('d')).toBe('M334,78 H362 V92 H337');
+    expect(path?.getAttribute('d')).toBe(`M${xB},70 H${xB + 28} V84 H${xB + 3}`);
     expect(path?.classNames).toContain('self');
     expect(path?.getAttribute('marker-end')).toBe('url(#sqArrow)');
     const label = root.querySelector('text.msg-text');
-    expect(label?.getAttribute('x')).toBe('370');
+    expect(label?.getAttribute('x')).toBe(String(xB + 36));
     expect(label?.text).toBe('tick');
-    expect(root.querySelector('circle.step-badge')?.getAttribute('cy')).toBe('66');
+    expect(root.querySelector('circle.step-badge')?.getAttribute('cy')).toBe('58');
   });
 
   it('a note over two actors spans both lifelines; a one-actor note sits beside its lifeline', () => {
-    const over = renderSequence({
-      actors: ACTORS,
-      messages: [{ from: 'A', to: 'B', kind: 'note', label: 'hello' }],
-    });
-    expect(rects(over, 'seq-note')).toEqual([{ x: 78, y: 64, w: 286, h: 24 }]);
+    const overMsgs: Msgs = [{ from: 'A', to: 'B', kind: 'note', label: 'hello' }];
+    const over = renderSequence({ actors: ACTORS, messages: overMsgs });
+    const [xA, xB] = laneXs(overMsgs) as [number, number];
+    // Spans both lifelines + 60, centred between them.
+    const w = xB - xA + 60;
+    expect(rects(over, 'seq-note')).toEqual([{ x: Math.round((xA + xB) / 2 - w / 2), y: 62, w, h: 18 }]);
     expect(parse(over).querySelector('.seq-note-text')?.text).toBe('hello');
     expect(parse(over).querySelector('.step-badge')).toBeNull();
 
@@ -220,7 +241,7 @@ describe('self-messages and notes', () => {
       actors: ACTORS,
       messages: [{ from: 'A', to: 'A', kind: 'note', label: 'hi', summary: 'a note with a step' }],
     });
-    expect(rects(beside, 'seq-note')).toEqual([{ x: 120, y: 64, w: 72, h: 24 }]);
+    expect(rects(beside, 'seq-note')).toEqual([{ x: xA + 12, y: 62, w: 72, h: 18 }]);
     // A summary keeps the badge so the step list can reference it.
     expect(parse(beside).querySelector('.step-badge')).not.toBeNull();
     expect(parse(beside).querySelector('.seq-steps .step-n')?.text).toBe('1');
@@ -235,20 +256,43 @@ describe('self-messages and notes', () => {
       ],
     });
     expect(parse(html).querySelectorAll('.seq-note-text')).toHaveLength(3);
-    // 42 + 2×13 = 68 for the note row, then the 42px message row.
-    expect(lineYs(html)).toEqual([160]);
+    // 36 + 2×13 = 62 for the note row, then the 36px message row.
+    expect(lineYs(html)).toEqual([146]);
   });
 
   it('a note on the last lane moves to the left of its lifeline instead of running off the canvas', () => {
-    const html = renderSequence({
-      actors: ACTORS,
-      messages: [{ from: 'C', to: 'C', kind: 'note', label: 'a note too wide to sit right of the last lane' }],
-    });
+    const messages: Msgs = [{ from: 'C', to: 'C', kind: 'note', label: 'a note too wide to sit right of the last lane' }];
+    const html = renderSequence({ actors: ACTORS, messages });
+    const [, , xC] = laneXs(messages) as [number, number, number];
     const [box] = rects(html, 'seq-note');
     if (box === undefined) throw new Error('note box expected');
-    expect(box.x + box.w).toBeLessThanOrEqual(560 - 12);
+    expect(box.x + box.w).toBeLessThanOrEqual(xC - 12);
     // A short one still sits to the right.
     const short = rects(renderSequence({ actors: ACTORS, messages: [{ from: 'C', to: 'C', kind: 'note', label: 'ok' }] }), 'seq-note');
-    expect(short[0]?.x).toBe(572);
+    expect(short[0]?.x).toBe(xC + 12);
+  });
+});
+
+describe('lane spacing adapts to labels', () => {
+  it('a long label between two adjacent lanes widens only that gap; a multi-lane message uses the sum', () => {
+    const long = '401 invalid_grant (reuse) — the family was revoked';
+    const messages: Msgs = [
+      { from: 'A', to: 'B', label: 'call' },
+      { from: 'C', to: 'B', label: long, kind: 'error' },
+      { from: 'C', to: 'A', label: 'a label longer than the A–B gap alone could hold', kind: 'response' },
+    ];
+    const gaps = laneGaps(ACTORS, messages);
+    // A–B keeps the minimum; B–C fits `chars × 6.2 + 40` inside lane + gap.
+    expect(gaps[0]).toBe(46);
+    expect(gaps[1]).toBe(Math.ceil(long.length * 6.2 + 40) - 150);
+    const html = renderSequence({ actors: ACTORS, messages });
+    const [xA, xB, xC] = laneXs(messages) as [number, number, number];
+    expect(xB - xA).toBe(196);
+    expect(xC - xB).toBe(150 + (gaps[1] ?? 0));
+    expect(html).toContain(`viewBox="0 0 ${svgWidth(messages)} `);
+    // The label, anchored 34px inside the sender's lane, ends short of the receiver's lifeline.
+    const label = parse(html).querySelectorAll('text.msg-text')[1];
+    const end = Number(label?.getAttribute('x')) - long.length * 6.2;
+    expect(end).toBeGreaterThan(xB + 3);
   });
 });

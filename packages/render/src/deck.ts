@@ -23,7 +23,7 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
    runs down the left edge (same on every slide). */
 .docskin.slide{display:none;position:relative;width:min(94vw, calc((100vh - 116px) * 16 / 9), 1120px);aspect-ratio:16/9;margin:0 auto;
   padding:26px 40px 24px 50px;border:1px solid var(--rule);border-radius:14px;box-shadow:0 14px 46px rgba(0,0,0,.14);
-  overflow:hidden;background:var(--white);}
+  overflow:hidden;background:var(--white);--scale:1.5;}
 /* Static gradient rail (derived from the active theme's accent colors). */
 .docskin.slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:12px;
   background:linear-gradient(180deg,var(--navy),var(--purple),var(--teal),var(--blue),var(--highlight));}

@@ -31,3 +31,24 @@ export function edgePill(p: PillPoint, label: string | undefined, err = false): 
     `</g>`
   );
 }
+
+/**
+ * The skin's edge label: `.t-arrow` on a plain `paper` mask (no pill outline)
+ * so the text sits in a gap of the line it rides. `accent` colours the label
+ * like its edge; `err` uses `negative`.
+ */
+export function edgeMask(
+  p: PillPoint,
+  label: string | undefined,
+  tone: 'muted' | 'error' | 'accent' = 'muted',
+): string {
+  if (label === undefined || label === '') return '';
+  const w = Math.round(label.length * 6 + 8);
+  const cls = tone === 'error' ? ' c-negative' : tone === 'accent' ? ' c-accent' : '';
+  return (
+    `<g>` +
+    `<rect x="${p.lx - w / 2}" y="${p.ly - 7}" width="${w}" height="14" fill="var(--paper)"/>` +
+    `<text x="${p.lx}" y="${p.ly + 3.5}" class="t-arrow${cls}" text-anchor="middle">${escapeHtml(label)}</text>` +
+    `</g>`
+  );
+}

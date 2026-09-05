@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { KNOWN_LOGIC_KINDS, KNOWN_NODE_KINDS } from '../index.js';
-import { blockStyle } from '../svg/blockStyle.js';
+import { blockStyle } from '../svg/legacyPalette.js';
+import { nodeSkin } from '../svg/blockStyle.js';
 
 const DEFAULT_FILL = blockStyle('definitely-not-a-kind').fill;
 
@@ -15,6 +16,15 @@ describe('KNOWN_NODE_KINDS', () => {
     for (const kind of KNOWN_NODE_KINDS) {
       expect(blockStyle(kind).fill, kind).not.toBe(DEFAULT_FILL);
     }
+  });
+
+  it('every listed kind has a skin chip (the eyebrow the skin names it by)', () => {
+    for (const kind of KNOWN_NODE_KINDS) {
+      expect(nodeSkin(kind).chip, kind).not.toBe('');
+    }
+    expect(nodeSkin(undefined).chip).toBe('');
+    expect(nodeSkin('external').dashed).toBe(true);
+    expect(nodeSkin('db').fill).toBe('paper-2');
   });
 
   it('includes the house anchors and has no duplicates', () => {

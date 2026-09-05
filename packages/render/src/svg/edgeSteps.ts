@@ -11,10 +11,22 @@
 
 import { escapeHtml } from '../escape.js';
 import { bp } from '../paths.js';
-import { edgePill, type PillPoint } from './edgePill.js';
+import { edgeMask, edgePill, type PillPoint } from './edgePill.js';
 
-/** A circled step numeral at an edge midpoint. */
-export function edgeStep(p: PillPoint, n: number, err = false): string {
+/**
+ * A circled step numeral at an edge midpoint. `skin` draws the hollow badge of
+ * the skin (`muted` stroke, `.t-badge` number, `negative` for errors).
+ */
+export function edgeStep(p: PillPoint, n: number, err = false, skin = false): string {
+  if (skin) {
+    const tone = err ? ' c-negative' : '';
+    return (
+      `<g>` +
+      `<circle cx="${p.lx}" cy="${p.ly}" r="8" fill="var(--paper)" stroke="${err ? 'var(--negative)' : 'var(--muted)'}" stroke-width="1"/>` +
+      `<text x="${p.lx}" y="${p.ly + 3}" text-anchor="middle" class="t-badge${tone}">${n}</text>` +
+      `</g>`
+    );
+  }
   const stroke = err ? 'var(--negative)' : 'var(--charcoal)';
   const text = err ? 'var(--negative)' : 'var(--charcoal)';
   return (
@@ -49,6 +61,8 @@ export interface EdgeLabelPoint {
   readonly ly: number;
   readonly label?: string | undefined;
   readonly err?: boolean;
+  /** The edge carries the diagram's accent (skin renderers only). */
+  readonly accent?: boolean;
   /** Data path of the edge in the block's YAML, e.g. `edges.3` / `links.0`. */
   readonly path: string;
 }
@@ -110,11 +124,13 @@ function dodge(lx: number, ly: number, avoid: ReadonlyArray<AvoidRect>): PillPoi
  * density collide and read cluttered). Legend entries carry the same `data-bp`
  * as their arrow, so twin highlighting works out of the box. Pass the node
  * boxes as `avoid` and any badge whose midpoint lands on a node is nudged off
- * it along the edge's axis.
+ * it along the edge's axis. `opts.skin` selects the skin's label language
+ * (paper masks + hollow badges) for the migrated renderers.
  */
 export function edgeLabelLayer(
   pending: ReadonlyArray<EdgeLabelPoint>,
   avoid: ReadonlyArray<AvoidRect> = [],
+  opts: { readonly skin?: boolean } = {},
 ): {
   overlay: string;
   legend: string;
@@ -134,7 +150,10 @@ export function edgeLabelLayer(
     if (numbered) {
       placed.push({ x: at.lx - 6, y: at.ly - 6, w: 12, h: 12 });
       steps.push({ label: l.label, path: l.path, ...(err ? { err: true } : {}) });
-      overlay.push(`<g${bp(l.path)}>${edgeStep(at, steps.length, err)}</g>`);
+      overlay.push(`<g${bp(l.path)}>${edgeStep(at, steps.length, err, opts.skin === true)}</g>`);
+    } else if (opts.skin === true) {
+      const tone = err ? 'error' : l.accent === true ? 'accent' : 'muted';
+      overlay.push(`<g${bp(l.path)}>${edgeMask(at, l.label, tone)}</g>`);
     } else {
       overlay.push(`<g${bp(l.path)}>${edgePill(at, l.label, err)}</g>`);
     }

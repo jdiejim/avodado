@@ -10,4 +10,6 @@ export { globalDefsSvg } from './defs.js';
 export { ortho, type Box, type Route } from './ortho.js';
 export { wrapText } from './wrapText.js';
 export { edgePill, type PillPoint } from './edgePill.js';
-export { blockStyle, nodeGlyph, GEDGE, type NodeColors, type EdgeStyle } from './blockStyle.js';
+export { nodeGlyph, nodeSkin, GEDGE, SKIN_EDGE, type NodeSkin, type EdgeStyle } from './blockStyle.js';
+export { blockStyle, type NodeColors } from './legacyPalette.js';
+export { renderLegend, type LegendItem, type LegendSwatch } from './legend.js';

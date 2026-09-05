@@ -68,19 +68,28 @@ describe('grid groups on flow / dfd / state / c4', () => {
     ],
   ];
 
+  // The skinned renderers (flow) draw the paper-2 panel; the rest keep the
+  // dashed outline until they migrate.
+  const SKIN_RECT = /<rect [^>]*fill="var\(--paper-2\)"[^>]*stroke="var\(--rule-solid\)"[^>]*\/>/;
+  const groupRect = (kind: string): RegExp => (kind === 'flow' ? SKIN_RECT : DASHED_RECT);
+  const groupRectXY = (kind: string): RegExp =>
+    kind === 'flow'
+      ? /<rect x="(-?[\d.]+)" y="(-?[\d.]+)" [^>]*fill="var\(--paper-2\)"[^>]*\/>/
+      : /<rect x="(-?[\d.]+)" y="(-?[\d.]+)" [^>]*stroke-dasharray="7 5"\/>/;
+
   for (const [kind, html] of outputs) {
-    it(`${kind}: renders the dashed group layer beneath edges and nodes`, () => {
+    it(`${kind}: renders the group layer beneath edges and nodes`, () => {
       expect(html, kind).toContain('data-bl="groups"');
       expect(html, kind).toContain('data-bp="groups.0"');
-      expect(html, kind).toMatch(DASHED_RECT);
-      expect(html, kind).toContain('class="grp-label"');
+      expect(html, kind).toMatch(groupRect(kind));
+      expect(html, kind).toMatch(/class="grp-label( t-eyebrow)?"/);
       expect(html, kind).toContain('>Zone A</text>');
       // Beneath: the groups layer appears before the first edge/node markup.
       expect(html.indexOf('data-bl="groups"'), kind).toBeLessThan(html.indexOf('data-bp="nodes.0"') === -1 ? html.indexOf('data-bp="states.0"') : html.indexOf('data-bp="nodes.0"'));
     });
 
     it(`${kind}: an edge-hugging group stays inside the viewBox`, () => {
-      const m = /<rect x="(-?[\d.]+)" y="(-?[\d.]+)" [^>]*stroke-dasharray="7 5"\/>/.exec(html);
+      const m = groupRectXY(kind).exec(html);
       expect(m, kind).not.toBeNull();
       expect(Number(m?.[1]), kind).toBeGreaterThanOrEqual(0);
       expect(Number(m?.[2]), kind).toBeGreaterThanOrEqual(0);
@@ -107,10 +116,11 @@ describe('grid groups on flow / dfd / state / c4', () => {
       edges: [{ from: 'a', to: 'b' }],
     });
     // Captured from the renderer BEFORE groups landed, updated deliberately
-    // when the edges gained their `data-bl` list container (add-chips) —
-    // pads and layer set must not shift for documents that use no groups.
+    // when the edges gained their `data-bl` list container (add-chips) and
+    // again for the editorial skin — pads and layer set must not shift for
+    // documents that use no groups.
     expect(html).toBe(
-      '<div class="diagram"><div class="diagram-head"><span class="diagram-tag" style="background:#374151">FLOW</span></div><svg viewBox="0 0 464 118" role="img" data-grid="1" data-cols="2" data-rows="1" data-cell-w="176" data-cell-h="70" data-gap-x="60" data-gap-y="56" data-pad-x="26" data-pad-top="26"><title>Flowchart</title><g data-bl="edges"><path d="M 202 61 H 232 V 61 H 262" fill="none" stroke="var(--charcoal)" stroke-width="1.4" marker-end="url(#gArrow)" data-bp="edges.0"/></g><g data-bl="nodes"><g filter="url(#gshadow)" data-bp="nodes.0" data-col="1" data-row="1" data-w="1"><rect x="26" y="26" width="176" height="70" rx="35" fill="#dcf1e2" stroke="#1f9747" stroke-width="1.5"/><text x="114" y="65" class="fc-label" fill="#0f3d22">Start</text></g><g filter="url(#gshadow)" data-bp="nodes.1" data-col="2" data-row="1" data-w="1"><rect x="262" y="26" width="176" height="70" rx="7" fill="#e5eff8" stroke="#0e54a1" stroke-width="1.4"/><text x="350" y="65" class="fc-label" fill="#0a3a6e">Work</text></g></g></svg></div>',
+      '<div class="diagram"><div class="diagram-head"><span class="diagram-eyebrow t-eyebrow"><span class="diagram-tag">FLOW</span></span></div><div class="diagram-stage"><svg viewBox="0 0 420 104" role="img" data-grid="1" data-cols="2" data-rows="1" data-cell-w="160" data-cell-h="64" data-gap-x="56" data-gap-y="48" data-pad-x="22" data-pad-top="22" style="max-width:min(100%,calc(420px * var(--scale,1)))"><title>Flowchart</title><g data-bl="edges"><path d="M 177 54 H 210 V 54 H 243" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#skArrow)" data-bp="edges.0"/></g><g data-bl="nodes"><g data-bp="nodes.0" data-col="1" data-row="1" data-w="1"><rect x="27" y="28" width="150" height="52" rx="26" fill="var(--paper-2)" stroke="var(--rule-solid)" stroke-width="1"/><text x="102" y="58.5" class="fc-label t-name">Start</text></g><g data-bp="nodes.1" data-col="2" data-row="1" data-w="1"><rect x="243" y="28" width="150" height="52" rx="4" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"/><text x="318" y="58.5" class="fc-label t-name">Work</text></g></g></svg></div><div class="diagram-legend"><span class="lg-title t-eyebrow">Legend</span><span class="lg-item"><svg class="lg-sw" viewBox="0 0 30 14" width="30" height="14" aria-hidden="true"><rect x="1" y="1" width="28" height="12" rx="2" fill="var(--paper-2)" stroke="var(--rule-solid)" stroke-width="1"/></svg><span class="lg-label">start</span></span><span class="lg-item"><svg class="lg-sw" viewBox="0 0 30 14" width="30" height="14" aria-hidden="true"><rect x="1" y="1" width="28" height="12" rx="2" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"/></svg><span class="lg-label">step</span></span><span class="lg-item"><svg class="lg-sw" viewBox="0 0 30 14" width="30" height="14" aria-hidden="true"><line x1="1" y1="7" x2="23" y2="7" stroke="var(--muted)" stroke-width="1.5"/><path d="M23,4 L29,7 L23,10 z" fill="var(--muted)"/></svg><span class="lg-label">next</span></span></div></div>',
     );
   });
 });

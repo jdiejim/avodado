@@ -20,9 +20,9 @@ function nodeBoxes(svg: string): Array<{ x: number; y: number; w: number; h: num
   );
 }
 
-/** All step-badge circle centres (r=9.5 is the numbered-badge radius). */
+/** All step-badge circle centres (r=8 is the skin's numbered-badge radius; 9.5 the legacy one). */
 function badgeCentres(svg: string): Array<{ x: number; y: number }> {
-  return [...svg.matchAll(/<circle cx="([\d.-]+)" cy="([\d.-]+)" r="9\.5"/g)].map((m) => ({
+  return [...svg.matchAll(/<circle cx="([\d.-]+)" cy="([\d.-]+)" r="(?:9\.5|8)"/g)].map((m) => ({
     x: Number(m[1]),
     y: Number(m[2]),
   }));

@@ -3,7 +3,9 @@
  *
  * - Inlines the house CSS in `<style>` so the output is self-contained.
  * - Wraps the body in `<div class="docskin">` so the CSS rules apply.
- * - Applies an optional theme by setting CSS variables on `:root`.
+ * - Applies an optional theme by setting CSS variables on `:root`, and stamps
+ *   `data-theme` on `<html>` so an explicitly chosen theme never mixes with
+ *   the reader's system dark mode (the default theme follows the system).
  *
  * The actual rendering is done by {@link renderDocumentParts} (in `parts.ts`);
  * this function just wraps those parts into a full HTML page. Embedding
@@ -37,9 +39,11 @@ export function renderDocument(doc: Document, opts: RenderOptions = {}): string 
   const parts = renderDocumentParts(doc, opts);
   const themeBlock =
     parts.themeVars.length > 0 ? `\n<style>:root{${parts.themeVars}}</style>` : '';
+  const dataTheme =
+    opts.theme === 'dark' ? ' data-theme="dark"' : opts.theme !== undefined && opts.theme !== 'textbook' ? ' data-theme="light"' : '';
   return (
     `<!doctype html>\n` +
-    `<html lang="en">\n` +
+    `<html lang="en"${dataTheme}>\n` +
     `<head>\n` +
     `<meta charset="utf-8">\n` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">\n` +

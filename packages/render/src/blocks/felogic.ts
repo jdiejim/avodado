@@ -14,6 +14,7 @@ import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { nodeGlyph } from '../svg/blockStyle.js';
+import { blockStyle } from '../svg/legacyPalette.js';
 import { edgeAnchorRect, renderShapedNode } from './blockGraph.js';
 import { wrapText } from '../svg/wrapText.js';
 import { safeColor } from '../sanitize.js';
@@ -293,6 +294,7 @@ function renderFelogicGraph(data: Data, frame: FrameOpts): string {
       s += `<g${bp(`nodes.${ni}`)}>${renderShapedNode(
         { kind: shapeKind, name: n.name, ...(n.note !== undefined ? { tech: n.note } : {}) },
         r,
+        blockStyle(shapeKind),
       )}</g>`;
       return;
     }

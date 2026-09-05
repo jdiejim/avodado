@@ -31,6 +31,13 @@ export interface GridGroupGeom {
   readonly cellH: number;
   readonly gapX: number;
   readonly gapY: number;
+  /**
+   * The skin's group panel (`DESIGN.md`): `paper-2` fill, 1px `rule-solid`,
+   * the label as a `.t-eyebrow` in `soft`. An explicit `color` on the group
+   * still tints its outline and label — that is the author's data. Off for
+   * the renderers that have not migrated.
+   */
+  readonly skin?: boolean;
 }
 
 /**
@@ -86,7 +93,7 @@ export function gridGroupsSvg(groups: readonly GridGroup[], geo: GridGroupGeom):
   let s = `<g${bl('groups')}>`;
   for (const { g, gi } of sortedGroups) {
     const raw = groupRect(g);
-    const col = safeColor(g.color, '#475569');
+    const col = safeColor(g.color, 'var(--slate)');
     // Nested zones inset by containment depth so a subnet's border never sits
     // on top of its VPC's border — the containing area reads clearly.
     const depth = groups.filter((o) => containedBy(g, o)).length;
@@ -97,6 +104,20 @@ export function gridGroupsSvg(groups: readonly GridGroup[], geo: GridGroupGeom):
       h: raw.h - depth * 17,
     };
     const nested = depth > 0;
+    if (geo.skin === true) {
+      const tint = safeColor(g.color, '');
+      const stroke = tint.length > 0 ? tint : 'var(--rule-solid)';
+      const text = tint.length > 0 ? tint : 'var(--soft)';
+      const lbl = nested
+        ? `<text x="${r.x + r.w - 12}" y="${r.y + 16}" class="grp-label t-eyebrow" fill="${text}" text-anchor="end">${escapeHtml(g.label)}</text>`
+        : `<text x="${r.x + 12}" y="${r.y + 16}" class="grp-label t-eyebrow" fill="${text}">${escapeHtml(g.label)}</text>`;
+      s +=
+        `<g${bp(`groups.${gi}`)}>` +
+        `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="${stroke}" stroke-width="1"/>` +
+        lbl +
+        `</g>`;
+      continue;
+    }
     const label = nested
       ? `<text x="${r.x + r.w - 16}" y="${r.y + 19}" class="grp-label" fill="${col}" text-anchor="end">${escapeHtml(g.label)}</text>`
       : `<text x="${r.x + 16}" y="${r.y + 19}" class="grp-label" fill="${col}">${escapeHtml(g.label)}</text>`;

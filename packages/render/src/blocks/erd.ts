@@ -2,11 +2,16 @@
  * Renders an entity-relationship diagram as inline SVG.
  *
  * Two-stage layout, computed at render time (pure JS, no DOM, static SVG out):
- *  1. dagre places the entity boxes (layered, no overlap, edges drawn around).
+ *  1. dagre places the entity cards (layered, no overlap, edges drawn around).
  *  2. each relation is routed at the FIELD level — from the foreign-key row in
  *     the source entity to the primary-key row in the target entity — with a
- *     clean orthogonal path through the gap between the boxes and an arrowhead
- *     into the PK row (FK → PK).
+ *     clean orthogonal path through the gap between the cards.
+ *
+ * Skin (`DESIGN.md`): an entity is a paper card with an ink outline, an
+ * eyebrow (`ENTITY` / `JOIN` / `AGGREGATE ROOT`) over the name, and mono rows
+ * where `#` marks the primary key and `→` a foreign key. Relation lines carry
+ * `1` / `N` letters at each end instead of crow's feet. The entity on the
+ * "one" side of the most relations is the aggregate root and takes the accent.
  *
  * Entities longer than `MAX_ROWS` are truncated with a "… +N more" row.
  */
@@ -14,6 +19,7 @@
 import dagre from '@dagrejs/dagre';
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -24,10 +30,12 @@ type ErdColumn = NonNullable<ErdEntity['columns']>[number];
 /** Rows shown before an entity is truncated with a "… +N more" row. */
 const MAX_ROWS = 10;
 
-const COL_W = 216;
-const ROW_H = 24;
-const HEAD_H = 32;
-const BOT_PAD = 8;
+const COL_W = 200;
+const ROW_H = 20;
+const HEAD_H = 40;
+const BOT_PAD = 6;
+/** Approximate advance of one 10px mono glyph. */
+const CH = 6.2;
 
 interface Box {
   readonly name: string;
@@ -35,6 +43,7 @@ interface Box {
   readonly rows: readonly ErdColumn[]; // visible rows (after truncation)
   readonly hidden: number;
   readonly pkIdx: number; // index of the primary-key column, or -1
+  readonly join: boolean; // every column is a foreign key
   readonly w: number;
   readonly h: number;
 }
@@ -63,8 +72,8 @@ export function renderErd(data: BlockDataMap['erd']): string {
       300,
       Math.max(
         COL_W,
-        e.name.length * 7.5 + 48,
-        ...cols.map((c) => (c.name.length + (c.type?.length ?? 0)) * 6.4 + 96),
+        e.name.length * 7.5 + 40,
+        ...cols.map((c) => (c.name.length + (c.type?.length ?? 0)) * CH + 60),
       ),
     );
     return {
@@ -73,12 +82,35 @@ export function renderErd(data: BlockDataMap['erd']): string {
       rows,
       hidden,
       pkIdx: cols.findIndex((c) => c.pk === true),
-      w,
+      join: cols.length > 0 && cols.every((c) => c.fk === true),
+      w: Math.round(w),
       h: HEAD_H + bodyRows * ROW_H + BOT_PAD,
     };
   });
   const byName = new Map(boxes.map((b) => [b.name, b]));
   const validRels = rels.filter((r) => byName.has(r.from) && byName.has(r.to));
+
+  // The aggregate root: the entity on the "one" side of the most relations.
+  // A tie means no root — zero accent is a valid outcome.
+  const ones = new Map<string, number>();
+  for (const r of validRels) {
+    const card = parseCard(r.card);
+    if (!card.toMany) ones.set(r.to, (ones.get(r.to) ?? 0) + 1);
+    if (!card.fromMany) ones.set(r.from, (ones.get(r.from) ?? 0) + 1);
+  }
+  let rootName: string | undefined;
+  let best = 0;
+  let tied = false;
+  for (const [name, n] of ones) {
+    if (n > best) {
+      best = n;
+      rootName = name;
+      tied = false;
+    } else if (n === best) {
+      tied = true;
+    }
+  }
+  if (tied) rootName = undefined;
 
   // Stage 1: dagre places boxes (edges inform placement, but we route our own).
   const g = new dagre.graphlib.Graph({ multigraph: true });
@@ -102,6 +134,7 @@ export function renderErd(data: BlockDataMap['erd']): string {
 
   // Stage 2: field-level edge routing (drawn first, so boxes sit on top).
   const labels: string[] = [];
+  let hasCard = false;
   s += `<g${bl('relations')}>`; // editors add relations via this list's chip
   validRels.forEach((r) => {
     const src = byName.get(r.from);
@@ -122,71 +155,74 @@ export function renderErd(data: BlockDataMap['erd']): string {
     const midX = hi > lo ? clamp((sx + tx) / 2, lo, hi) : (sx + tx) / 2;
 
     const card = parseCard(r.card);
+    hasCard = true;
     // The whole routed connector is one editable part (`relations.N`).
     s +=
       `<g${bp(`relations.${rels.indexOf(r)}`)}>` +
-      `<path d="M${round(sx)},${round(fkY)} H${round(midX)} V${round(pkY)} H${round(tx)}" fill="none" stroke="var(--gray)" stroke-width="1.5"/>` +
-      crowFoot(sx, fkY, rightward ? 1 : -1, card.fromMany) +
-      crowFoot(tx, pkY, rightward ? -1 : 1, card.toMany) +
+      `<path d="M${round(sx)},${round(fkY)} H${round(midX)} V${round(pkY)} H${round(tx)}" fill="none" stroke="var(--muted)" stroke-width="1.25"/>` +
+      cardLetter(sx, fkY, rightward ? 1 : -1, card.fromMany) +
+      cardLetter(tx, pkY, rightward ? -1 : 1, card.toMany) +
       `</g>`;
 
     if (r.label !== undefined && r.label !== '') {
-      const w = Math.max(30, r.label.length * 6.4);
+      const w = Math.round(r.label.length * CH + 8);
       const cy = (fkY + pkY) / 2;
       labels.push(
-        `<rect x="${round(midX - w / 2)}" y="${round(cy - 9)}" width="${round(w)}" height="18" rx="9" fill="var(--white)" stroke="var(--rule)"/>` +
-          `<text x="${round(midX)}" y="${round(cy + 3)}" class="edge-label">${escapeHtml(r.label)}</text>`,
+        `<rect x="${round(midX - w / 2)}" y="${round(cy - 7)}" width="${w}" height="14" fill="var(--paper)"/>` +
+          `<text x="${round(midX)}" y="${round(cy + 3.5)}" class="t-arrow er-rel" text-anchor="middle">${escapeHtml(r.label.toUpperCase())}</text>`,
       );
     }
   });
   s += `</g>`; // close the relations list container
 
-  // Entity boxes — the clean card language: rounded, soft shadow, a tinted
-  // header band (no solid slab), zebra rows, PK/FK as small chips.
+  // Entity cards.
+  let hasPk = false;
+  let hasFk = false;
+  let hasJoin = false;
   s += `<g${bl('entities')}>`;
   for (const [bi, b] of boxes.entries()) {
     const p = at.get(b.name);
     if (!p) continue;
     const { x, y } = p;
+    const root = b.name === rootName;
+    const eyebrow = root ? 'AGGREGATE ROOT' : b.join ? 'JOIN' : 'ENTITY';
+    if (b.join && !root) hasJoin = true;
+    const stroke = root ? 'var(--accent)' : 'var(--ink)';
+    const fill = root ? 'var(--accent-tint)' : 'var(--paper)';
     s +=
-      `<g filter="url(#gshadow)"${bp(`entities.${bi}`)}>` +
-      `<rect x="${round(x)}" y="${round(y)}" width="${b.w}" height="${b.h}" rx="10" fill="var(--white)" stroke="var(--navy)" stroke-width="1.2"/>` +
-      `<path d="M${round(x)},${round(y + HEAD_H)} v${-(HEAD_H - 10)} a10,10 0 0 1 10,-10 h${b.w - 20} a10,10 0 0 1 10,10 v${HEAD_H - 10} z" fill="var(--light-blue)" fill-opacity="0.8"/>` +
-      `<path d="M${round(x)},${round(y + HEAD_H)} h${b.w}" stroke="var(--navy)" stroke-width="1" stroke-opacity="0.35"/>` +
-      `<text x="${round(x + b.w / 2)}" y="${round(y + 21)}" class="er-head-text">${escapeHtml(b.name)}</text>`;
+      `<g${bp(`entities.${bi}`)}>` +
+      `<rect x="${round(x)}" y="${round(y)}" width="${b.w}" height="${b.h}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>` +
+      `<text x="${round(x + 12)}" y="${round(y + 15)}" class="er-eyebrow t-eyebrow${root ? ' c-accent' : ''}">${eyebrow}</text>` +
+      `<text x="${round(x + 12)}" y="${round(y + 31)}" class="er-head-text t-name">${escapeHtml(b.name)}</text>` +
+      `<line x1="${round(x)}" y1="${round(y + HEAD_H)}" x2="${round(x + b.w)}" y2="${round(y + HEAD_H)}" class="er-headline"/>`;
 
     s += `<g${bl(`entities.${bi}.columns`)}>`;
     b.rows.forEach((f, j) => {
       const rowTop = y + HEAD_H + j * ROW_H;
-      const ty = rowTop + 16;
+      const ty = rowTop + 14;
       s += `<g${bp(`entities.${bi}.columns.${j}`)}>`;
-      if (j % 2 === 1) {
-        s += `<rect x="${round(x + 1)}" y="${round(rowTop)}" width="${b.w - 2}" height="${ROW_H}" fill="var(--light-gray)" opacity="0.45"/>`;
-      }
       if (j > 0) {
-        s += `<line x1="${round(x)}" y1="${round(rowTop)}" x2="${round(x + b.w)}" y2="${round(rowTop)}" class="er-rowline"/>`;
+        s += `<line x1="${round(x + 1)}" y1="${round(rowTop)}" x2="${round(x + b.w - 1)}" y2="${round(rowTop)}" class="er-rowline"/>`;
       }
-      const nameX = f.pk === true || f.fk === true ? x + 44 : x + 13;
+      const nameX = x + 24;
       if (f.pk === true) {
-        s +=
-          `<rect x="${round(x + 11)}" y="${round(ty - 10)}" width="25" height="13" rx="4" fill="var(--highlight-soft)"/>` +
-          `<text x="${round(x + 23.5)}" y="${round(ty)}" class="er-key pk" text-anchor="middle">PK</text>`;
+        hasPk = true;
+        s += `<text x="${round(x + 12)}" y="${round(ty)}" class="er-key pk t-sub c-muted">#</text>`;
       } else if (f.fk === true) {
-        s +=
-          `<rect x="${round(x + 11)}" y="${round(ty - 10)}" width="25" height="13" rx="4" fill="var(--light-blue)"/>` +
-          `<text x="${round(x + 23.5)}" y="${round(ty)}" class="er-key fk" text-anchor="middle">FK</text>`;
+        hasFk = true;
+        s += `<text x="${round(x + 12)}" y="${round(ty)}" class="er-key fk t-sub c-muted">→</text>`;
       }
       // The 300px width clamp can leave very long name+type pairs short of
       // room — ellipsize the NAME into the space the type doesn't use (the
       // full name stays available as a hover <title>), so the two never touch.
-      const typePx = (f.type?.length ?? 0) * 6.4;
-      const nameBudget = Math.floor((x + b.w - 13 - typePx - 10 - nameX) / 6.4);
+      const typePx = (f.type?.length ?? 0) * CH;
+      const nameBudget = Math.floor((x + b.w - 12 - typePx - 10 - nameX) / CH);
       const nameCut = f.name.length > nameBudget && nameBudget > 1;
       const nameShown = nameCut ? `${f.name.slice(0, nameBudget - 1)}…` : f.name;
       const nameTitle = nameCut ? `<title>${escapeHtml(f.name)}</title>` : '';
       s +=
-        `<text x="${round(nameX)}" y="${round(ty)}" class="er-col">${nameTitle}${escapeHtml(nameShown)}</text>` +
-        `<text x="${round(x + b.w - 13)}" y="${round(ty)}" class="er-col dim" text-anchor="end">${escapeHtml(f.type ?? '')}</text>`;
+        `<text x="${round(nameX)}" y="${round(ty)}" class="er-col t-sub c-ink">${nameTitle}${escapeHtml(nameShown)}</text>` +
+        `<text x="${round(x + b.w - 12)}" y="${round(ty)}" class="er-col dim t-sub c-soft" text-anchor="end">${escapeHtml(f.type ?? '')}</text>`;
       s += `</g>`;
     });
     s += `</g>`;
@@ -194,8 +230,8 @@ export function renderErd(data: BlockDataMap['erd']): string {
     if (b.hidden > 0) {
       const rowTop = y + HEAD_H + b.rows.length * ROW_H;
       s +=
-        `<line x1="${round(x)}" y1="${round(rowTop)}" x2="${round(x + b.w)}" y2="${round(rowTop)}" class="er-rowline"/>` +
-        `<text x="${round(x + b.w / 2)}" y="${round(rowTop + 16)}" class="er-col dim" text-anchor="middle">… +${b.hidden} more</text>`;
+        `<line x1="${round(x + 1)}" y1="${round(rowTop)}" x2="${round(x + b.w - 1)}" y2="${round(rowTop)}" class="er-rowline"/>` +
+        `<text x="${round(x + b.w / 2)}" y="${round(rowTop + 14)}" class="er-col dim t-sub c-soft" text-anchor="middle">… +${b.hidden} more</text>`;
     }
     s += `</g>`;
   }
@@ -204,11 +240,19 @@ export function renderErd(data: BlockDataMap['erd']): string {
   s += labels.join(''); // relation labels on top of boxes + lines
   s += `</svg>`;
 
+  const items: LegendItem[] = [];
+  if (hasPk) items.push({ swatch: 'chip', chip: '#', label: 'primary key' });
+  if (hasFk) items.push({ swatch: 'chip', chip: '→', label: 'foreign key' });
+  if (hasCard) items.push({ swatch: 'chip', chip: '1 / N', label: 'cardinality' });
+  if (hasJoin) items.push({ swatch: 'chip', chip: 'JOIN', label: 'join table' });
+  if (rootName !== undefined) items.push({ swatch: 'node-accent', label: 'aggregate root' });
+  const legend = renderLegend(items);
+
   const opts: Parameters<typeof diagramFrame>[0] = {
     tag: 'ER',
-    tagBg: '#6b21a8',
     ...(data.title !== undefined ? { title: data.title } : {}),
     ...(data.description !== undefined ? { desc: data.description } : {}),
+    ...(legend.length > 0 ? { legendHtml: legend } : {}),
   };
   return diagramFrame(opts, s);
 }
@@ -246,22 +290,14 @@ function parseCard(card: string | undefined): { fromMany: boolean; toMany: boole
 }
 
 /**
- * A crow's-foot end at the box edge (bx, y). `outward` (±1) is the direction the
- * edge leaves the box. `many` draws the three-pronged "many" fork; otherwise a
- * single perpendicular "one" tick.
+ * The cardinality letter at a box edge (bx, y): `N` for many, `1` for one,
+ * 10px in from the entity edge along the line and 4px above it — both ends on
+ * the same side of the line.
  */
-function crowFoot(bx: number, y: number, outward: number, many: boolean): string {
-  if (many) {
-    const ax = bx + outward * 14;
-    return (
-      `<path d="M${round(ax)},${round(y)} L${round(bx)},${round(y - 7)} ` +
-      `M${round(ax)},${round(y)} L${round(bx)},${round(y)} ` +
-      `M${round(ax)},${round(y)} L${round(bx)},${round(y + 7)}" ` +
-      `fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"/>`
-    );
-  }
-  const tx = bx + outward * 9;
-  return `<line x1="${round(tx)}" y1="${round(y - 6)}" x2="${round(tx)}" y2="${round(y + 6)}" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"/>`;
+function cardLetter(bx: number, y: number, outward: number, many: boolean): string {
+  const tx = bx + outward * 10;
+  const anchor = outward > 0 ? 'start' : 'end';
+  return `<text x="${round(tx)}" y="${round(y - 4)}" class="t-arrow er-card" text-anchor="${anchor}">${many ? 'N' : '1'}</text>`;
 }
 
 const clamp = (n: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, n));

@@ -6,20 +6,24 @@
  * "rich" rendering).
  *
  * Actors are objects (`{id, name, sub?, external?}`); messages reference
- * actors by `id`. Message `kind`:
- * - `sync` — solid arrow, bold navy label (default)
- * - `response` / `async` — dashed arrow, normal label
- * - `error` — red arrow, red bold label, step list item gets `.err`
+ * actors by `id`. Message `kind` (skin: `DESIGN.md` › Strokes and arrows):
+ * - `sync` — 1.5px `muted`, small filled head, ink label (default)
+ * - `response` — dashed `5 4`, open head
+ * - `async` — 1.25px dotted `2 3`, open head
+ * - `error` — `negative`, filled head; step list item gets `.err`
  * - `note` — no arrow: a note box beside one lifeline (`from === to`) or
  *   spanning two (`from !== to`, "note over A,B")
+ *
+ * The accent goes to the last `response` that reaches the first actor — the
+ * answer the caller gets — and to the endpoint method word in the eyebrow.
  *
  * A message from an actor to itself draws a self-loop. The `messages` list
  * also carries frame markers — `{ frame, label? }` opens a combined fragment
  * (alt / opt / loop / par / break / critical), `{ else }` starts its next
  * branch, `{ end: true }` closes it — drawn as UML frames under the messages.
  *
- * Rows have variable heights (message 42, frame open 30, else 26, end 16,
- * note 42 + 13 per extra wrapped line); `y` is computed per item in order.
+ * Rows have variable heights (message 36, frame open 28, else 24, end 14,
+ * note 36 + 13 per extra wrapped line); `y` is computed per item in order.
  *
  * Activation bars: explicit when any message carries `activate` /
  * `deactivate` (a bar opens on `to`, closes on `from`); otherwise inferred —
@@ -30,6 +34,7 @@
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -42,29 +47,57 @@ interface KindStyle {
 }
 
 const KIND: Record<MsgKind, KindStyle> = {
-  sync: { cls: 'msg-line', marker: 'sqArrow', txt: 'msg-text em' },
-  response: { cls: 'msg-line dashed', marker: 'sqOpen', txt: 'msg-text' },
-  async: { cls: 'msg-line dashed', marker: 'sqOpen', txt: 'msg-text' },
-  error: { cls: 'msg-line err', marker: 'sqErr', txt: 'msg-text err' },
-  note: { cls: '', marker: null, txt: 'msg-text note' },
+  sync: { cls: 'msg-line', marker: 'sqArrow', txt: 'msg-text t-arrow em' },
+  response: { cls: 'msg-line dashed', marker: 'sqOpen', txt: 'msg-text t-arrow' },
+  async: { cls: 'msg-line async', marker: 'sqOpen', txt: 'msg-text t-arrow' },
+  error: { cls: 'msg-line err', marker: 'sqErr', txt: 'msg-text t-arrow err' },
+  note: { cls: '', marker: null, txt: 'msg-text t-arrow note' },
 };
-
-const DB_PATTERN = /postgres|sql|\bdb\b|database|store/i;
 
 /* ── row model ─────────────────────────────────────────────────────────── */
 
-const ROW_MSG = 42;
-const ROW_OPEN = 30;
-const ROW_ELSE = 26;
-const ROW_END = 16;
+const ROW_MSG = 36;
+const ROW_OPEN = 28;
+const ROW_ELSE = 24;
+const ROW_END = 14;
 const NOTE_LINE = 13;
 const NOTE_CHARS = 34;
 const NOTE_LINES = 3;
 const FRAME_PAD = 18;
 const FRAME_INSET = 12;
 const BAR_PAD = 6;
-/** Approximate advance of one 10.5px mono glyph — for extents, never layout. */
-const CHAR_W = 6.5;
+/** Approximate advance of one 9.5px mono glyph — for extents, never layout. */
+const CHAR_W = 6;
+/** Lane geometry: lane width, the minimum gap, and what a label needs beyond its glyphs (badge + margins). */
+const LANE_W = 150;
+const GAP_MIN = 46;
+const LABEL_CH = 6.2;
+const LABEL_PAD = 40;
+
+/**
+ * The gap after each lane (all but the last): the 46px minimum, widened so
+ * the widest label of any message spanning exactly that adjacent pair fits
+ * between the two lifelines (`chars × 6.2 + 40` inside `laneW + gap`). A
+ * message crossing several lanes gets the sum of the gaps it crosses, so
+ * only adjacent pairs need checking.
+ */
+export function laneGaps(
+  actors: ReadonlyArray<{ readonly id: string }>,
+  items: ReadonlyArray<SeqItem>,
+): number[] {
+  const idx = (id: string): number => actors.findIndex((a) => a.id === id);
+  const gaps = actors.slice(0, -1).map(() => GAP_MIN);
+  for (const m of items) {
+    if (!('from' in m) || m.kind === 'note') continue;
+    const a = idx(m.from);
+    const b = idx(m.to);
+    if (a < 0 || b < 0 || Math.abs(a - b) !== 1) continue;
+    const lo = Math.min(a, b);
+    const need = Math.ceil((m.label ?? '').length * LABEL_CH + LABEL_PAD) - LANE_W;
+    if (need > (gaps[lo] ?? 0)) gaps[lo] = need;
+  }
+  return gaps;
+}
 
 interface MsgRow {
   readonly kind: 'msg';
@@ -311,25 +344,34 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   const messages = data.messages ?? [];
   const N = Math.max(actors.length, 1);
   const leftPad = 24;
-  const laneW = 168;
-  const gap = 58;
+  const laneW = LANE_W;
+  const gaps = laneGaps(actors, messages);
   const headY = 16;
-  // Long actor names wrap (≤2 lines) inside the head bar instead of clipping
-  // at its edges; every bar grows together when any name wraps.
-  const nameLines = actors.map((a) => wrapText(a.name, 21, 2));
+  // Long actor names wrap (≤2 lines) inside the head instead of clipping at
+  // its edges; every head grows together when any name wraps. An external
+  // actor's `EXT` chip takes the top-left corner, so its name wraps sooner.
+  const nameLines = actors.map((a) => wrapText(a.name, a.external === true ? 16 : 19, 2));
   const headWrapped = nameLines.some((ls) => ls.length > 1);
-  const headH = headWrapped ? 56 : 42;
-  const cx = (i: number): number => leftPad + laneW / 2 + i * (laneW + gap);
-  const width = leftPad * 2 + N * laneW + (N - 1) * gap;
+  const headH = headWrapped ? 54 : 40;
+  const laneX: number[] = [];
+  for (let i = 0; i < N; i++) laneX.push(leftPad + laneW / 2 + i * laneW + gaps.slice(0, i).reduce((a, g) => a + g, 0));
+  const cx = (i: number): number => laneX[i] ?? leftPad + laneW / 2;
+  const width = leftPad * 2 + N * laneW + gaps.reduce((a, g) => a + g, 0);
   const idx = (id: string): number => actors.findIndex((a) => a.id === id);
-  const msgStartY = 92;
+  const msgStartY = headY + headH + 28;
 
   const { rows, cursor } = layoutRows(messages, idx, msgStartY);
   const msgRows = rows.filter(isMsgRow);
-  // One trailing message row of air under the last item (the pre-frames
-  // geometry: `92 + n × 42 + 12`), so frame-less docs keep their viewBox.
+  // One trailing message row of air under the last item.
   const bottom = cursor + ROW_MSG + 12;
   const height = bottom + 6;
+
+  // The accent: the last response that reaches the first actor (the answer
+  // the caller gets). None when no response ever comes back to it.
+  let accentIdx = -1;
+  for (const r of msgRows) {
+    if (r.msgKind === 'response' && r.toI === 0 && r.fromI > 0) accentIdx = r.idx;
+  }
 
   /** The note box for a note row, or null when neither actor is known. */
   const noteBox = (r: MsgRow): { x: number; w: number; top: number; h: number } | null => {
@@ -439,11 +481,13 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     `<title>Sequence diagram</title>` +
     `<defs>` +
     `<marker id="sqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
-    `<path d="M0,0 L10,5 L0,10 z" fill="var(--charcoal)"/></marker>` +
+    `<path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>` +
     `<marker id="sqOpen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
-    `<path d="M0,0 L10,5 L0,10" fill="none" stroke="var(--charcoal)" stroke-width="1.2"/></marker>` +
+    `<path d="M1,1 L9,5 L1,9" fill="none" stroke="var(--muted)" stroke-width="1.6"/></marker>` +
     `<marker id="sqErr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
-    `<path d="M0,0 L10,5 L0,10 z" fill="#991b1b"/></marker>` +
+    `<path d="M0,0 L10,5 L0,10 z" fill="var(--negative)"/></marker>` +
+    `<marker id="sqAccent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
+    `<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>` +
     `</defs>`;
 
   // Frame bodies sit under everything; their tabs and guards go above the
@@ -468,18 +512,18 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     const tabW = 10 + tag.length * 7;
     const guard =
       f.open.label.length > 0
-        ? `<text x="${guardX(f.x1 + tabW + 8, f.open.label)}" y="${y1 + 12}" class="seq-frame-guard">[${escapeHtml(f.open.label)}]</text>`
+        ? `<text x="${guardX(f.x1 + tabW + 8, f.open.label)}" y="${y1 + 12}" class="seq-frame-guard t-arrow c-soft">[${escapeHtml(f.open.label)}]</text>`
         : '';
     frameLabels +=
       `<g${path}>` +
-      `<rect x="${f.x1}" y="${y1}" width="${tabW}" height="16" rx="3" class="seq-frame-tab"/>` +
-      `<text x="${f.x1 + 5}" y="${y1 + 11.5}" class="seq-frame-tab-text">${escapeHtml(tag)}</text>` +
+      `<rect x="${f.x1}" y="${y1}" width="${tabW}" height="16" rx="2" class="seq-frame-tab"/>` +
+      `<text x="${f.x1 + 5}" y="${y1 + 11.5}" class="seq-frame-tab-text t-eyebrow">${escapeHtml(tag)}</text>` +
       guard +
       `</g>`;
     for (const e of f.elses) {
       const ep = bp(`messages.${e.idx}`);
       frameBodies += `<g${ep}><line x1="${f.x1}" y1="${e.y}" x2="${f.x2}" y2="${e.y}" class="seq-frame-else"/></g>`;
-      frameLabels += `<g${ep}><text x="${guardX(f.x1 + 8, e.label)}" y="${e.y + 14}" class="seq-frame-guard">[${escapeHtml(e.label)}]</text></g>`;
+      frameLabels += `<g${ep}><text x="${guardX(f.x1 + 8, e.label)}" y="${e.y + 14}" class="seq-frame-guard t-arrow c-soft">[${escapeHtml(e.label)}]</text></g>`;
     }
     f.children.forEach(drawFrame);
   };
@@ -492,35 +536,38 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   }
 
   for (const b of bars) {
-    const a = actors[b.i];
-    const db = a !== undefined && DB_PATTERN.test(`${a.name} ${a.sub ?? ''}`);
     const y1 = b.y1 - BAR_PAD;
     const y2 = b.y2 + BAR_PAD;
-    s += `<rect x="${cx(b.i) - 4 + b.depth * 4}" y="${y1}" width="8" height="${Math.max(0, y2 - y1)}" class="activation${db ? ' pg' : ''}"/>`;
+    s += `<rect x="${cx(b.i) - 3 + b.depth * 4}" y="${y1}" width="6" height="${Math.max(0, y2 - y1)}" class="activation"/>`;
   }
 
   s += `<g${bl('actors')}>`;
   actors.forEach((a, i) => {
-    const extCls = a.external === true ? ' ext' : '';
+    const ext = a.external === true;
+    const extCls = ext ? ' ext' : '';
     const ls = nameLines[i] ?? [];
-    // Single-line bars keep the original geometry; wrapped bars stack the two
-    // name lines and push the subtitle down with the taller bar.
+    const hasSub = a.sub !== undefined;
+    // Vertical rhythm inside the head: an `EXT` chip (external actors) takes
+    // the top band, the name sits under it, the subtitle at the bottom.
+    const nameY = ls.length > 1 ? headY + (ext ? 21 : 17) : hasSub ? headY + (ext ? 22 : 17) : headY + (ext ? 25 : 24);
+    const subY = headY + (headWrapped ? 47 : 33);
     const name =
       ls.length <= 1
-        ? `<text x="${cx(i)}" y="${headY + (headWrapped ? 26 : 22)}" class="lane-head-text">${escapeHtml(a.name)}</text>`
+        ? `<text x="${cx(i)}" y="${nameY}" class="lane-head-text t-name">${escapeHtml(a.name)}</text>`
         : ls
             .map(
               (ln, j) =>
-                `<text x="${cx(i)}" y="${headY + 17 + j * 14}" class="lane-head-text">${escapeHtml(ln)}</text>`,
+                `<text x="${cx(i)}" y="${nameY + j * 14}" class="lane-head-text t-name">${escapeHtml(ln)}</text>`,
             )
             .join('');
-    const sub =
-      a.sub !== undefined
-        ? `<text x="${cx(i)}" y="${headY + (headWrapped ? 48 : 36)}" class="lane-head-sub${extCls}">${escapeHtml(a.sub)}</text>`
-        : '';
+    const sub = hasSub
+      ? `<text x="${cx(i)}" y="${subY}" class="lane-head-sub t-sub">${escapeHtml(a.sub ?? '')}</text>`
+      : '';
+    const chip = ext ? `<text x="${cx(i) - laneW / 2 + 8}" y="${headY + 11}" class="lane-head-chip t-eyebrow">EXT</text>` : '';
     s +=
       `<g${bp(`actors.${i}`)}>` +
-      `<rect x="${cx(i) - laneW / 2}" y="${headY}" width="${laneW}" height="${headH}" class="lane-head${extCls}"/>` +
+      `<rect x="${cx(i) - laneW / 2}" y="${headY}" width="${laneW}" height="${headH}" rx="4" class="lane-head${extCls}"/>` +
+      chip +
       name +
       sub +
       `</g>`;
@@ -530,13 +577,19 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   s += frameLabels;
 
   s += `<g${bl('messages')}>`;
+  const used = { sync: false, response: false, async: false, error: false, note: false };
   for (const r of msgRows) {
-    const k = KIND[r.msgKind];
+    const base = KIND[r.msgKind];
+    const isAccent = r.idx === accentIdx;
+    const k: KindStyle = isAccent
+      ? { cls: `${base.cls} accent`, marker: 'sqAccent' as unknown as 'sqArrow', txt: `${base.txt} accent` }
+      : base;
+    used[r.msgKind] = true;
     const rowBp = bp(`messages.${r.idx}`);
     const errCls = r.msgKind === 'error' ? ' err' : '';
     const badge = (x: number, y: number): string =>
-      `<circle cx="${x}" cy="${y}" r="10" class="step-badge${errCls}"/>` +
-      `<text x="${x}" y="${y + 3.5}" class="step-badge-text">${r.n}</text>`;
+      `<circle cx="${x}" cy="${y}" r="8" class="step-badge${errCls}"/>` +
+      `<text x="${x}" y="${y + 3}" class="step-badge-text t-badge${errCls === '' ? '' : ' c-negative'}">${r.n}</text>`;
 
     // `note` kind — a note box beside one lifeline or over two.
     if (r.msgKind === 'note') {
@@ -545,7 +598,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
       const hasSummary = r.summary !== undefined && r.summary.length > 0;
       const tx = box.x + box.w / 2;
       const text = r.lines
-        .map((ln, j) => `<text x="${tx}" y="${box.top + 16 + j * NOTE_LINE}" class="seq-note-text" text-anchor="middle">${escapeHtml(ln)}</text>`)
+        .map((ln, j) => `<text x="${tx}" y="${box.top + 16 + j * NOTE_LINE}" class="seq-note-text t-sub" text-anchor="middle">${escapeHtml(ln)}</text>`)
         .join('');
       s +=
         `<g${rowBp}>` +
@@ -607,22 +660,27 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   const stepList = renderStepList(rows, frames, actorById);
   const footHtml = data.foot !== undefined ? renderFoot(data.foot) : '';
 
-  // Tag + title
-  const method = data.endpoint?.method.toLowerCase();
-  const tag = data.endpoint?.method ?? 'FLOW';
-  const titleHtml = (() => {
-    if (data.endpoint?.path !== undefined) {
-      const t = data.title !== undefined ? ` &mdash; ${escapeHtml(data.title)}` : '';
-      return `<code>${escapeHtml(data.endpoint.path)}</code>${t}`;
-    }
-    return data.title !== undefined ? escapeHtml(data.title) : '';
-  })();
+  // Legend: one item per encoding the diagram used.
+  const items: LegendItem[] = [];
+  if (used.sync) items.push({ swatch: 'edge', label: 'call' });
+  if (used.response) items.push({ swatch: 'edge-dashed', label: 'response' });
+  if (used.async) items.push({ swatch: 'edge-async', label: 'async' });
+  if (used.error) items.push({ swatch: 'edge-error', label: 'error' });
+  if (accentIdx >= 0) items.push({ swatch: 'edge-accent', label: 'the answer the caller gets' });
+  if (actors.some((a) => a.external === true)) items.push({ swatch: 'chip', chip: 'EXT', label: 'external actor' });
+  if (frames.length > 0) items.push({ swatch: 'node-fill2', label: 'fragment (alt / opt / loop)' });
+  if (bars.length > 0) items.push({ swatch: 'node', label: 'active' });
+  const legend = renderLegend(items);
 
+  // Eyebrow: `SEQUENCE · POST /oauth/token`; the method word takes the accent.
+  const method = data.endpoint?.method;
   const frameOpts: Parameters<typeof diagramFrame>[0] = {
-    tag,
-    ...(method !== undefined ? { tagClass: method } : { tagBg: '#374151' }),
-    ...(titleHtml.length > 0 ? { titleHtml } : {}),
+    tag: 'SEQUENCE',
+    ...(method !== undefined ? { tagClass: method.toLowerCase(), method } : {}),
+    ...(data.endpoint?.path !== undefined ? { path: data.endpoint.path } : {}),
+    ...(data.title !== undefined ? { title: data.title } : {}),
     ...(data.description !== undefined ? { desc: data.description } : {}),
+    ...(legend.length > 0 ? { legendHtml: legend } : {}),
     ...(footHtml.length > 0 ? { footerHtml: footHtml } : {}),
   };
 

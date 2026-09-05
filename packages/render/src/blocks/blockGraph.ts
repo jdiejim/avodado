@@ -7,6 +7,12 @@
  * - **Grid:** otherwise nodes use `(col, row, w?)` placements, optionally
  *   wrapped in dashed group boxes.
  *
+ * Skin (`DESIGN.md`): every node is paper (stores, caches and queues take
+ * `paper-2`) with an ink or hairline outline, dashed for external kinds, and
+ * an eyebrow chip (`SVC`, `DB`, `QUEUE`, …) naming the kind. Hue is spent on
+ * one thing: the entry node (`gateway`, or the preset's entry kind) when
+ * exactly one exists. Groups and layers are `paper-2` panels with an eyebrow.
+ *
  * Ported from doc-studio.jsx `GridBlock` + `LayeredBlock` + `BlockDiagram`.
  */
 
@@ -14,8 +20,17 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
-import { blockStyle, nodeGlyph, GEDGE } from '../svg/blockStyle.js';
+import {
+  nodeGlyph,
+  nodeSkin,
+  skinFill,
+  SKIN_EDGE,
+  type EdgeStyle,
+  type NodeSkin,
+} from '../svg/blockStyle.js';
+import type { NodeColors } from '../svg/legacyPalette.js';
 import { gridGroupsSvg } from '../svg/gridGroups.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { wrapText } from '../svg/wrapText.js';
 import { safeColor } from '../sanitize.js';
@@ -27,18 +42,86 @@ type Data = BlockDataMap['block'];
 type Node = NonNullable<Data['nodes']>[number];
 
 interface FrameOpts {
+  /** Eyebrow family word. */
   readonly tag: string;
-  readonly tagBg?: string;
-  readonly tagClass?: string;
+  /** Kinds that mark the diagram's entry; the accent goes to the one node of these kinds, if exactly one. */
+  readonly entry: readonly string[];
 }
 
-const FALLBACK_EDGE = {
-  stroke: 'var(--charcoal)',
-  sw: 1.4,
+const FALLBACK_EDGE: EdgeStyle = SKIN_EDGE['solid'] ?? {
+  stroke: 'var(--muted)',
+  sw: 1.5,
   dash: '',
-  marker: 'gArrow',
+  marker: 'skArrow',
   err: false,
-} as const;
+};
+
+/** Legend wording per chip. */
+const CHIP_LABEL: Record<string, string> = {
+  CLIENT: 'client',
+  SVC: 'service',
+  DATA: 'data',
+  DB: 'database',
+  BUCKET: 'object store',
+  WAREHOUSE: 'warehouse',
+  QUEUE: 'queue',
+  TOPIC: 'topic',
+  BUS: 'stream',
+  CACHE: 'cache',
+  SEARCH: 'search index',
+  REGISTRY: 'registry',
+  GATEWAY: 'gateway',
+  LB: 'load balancer',
+  FN: 'function',
+  EDGE: 'edge / CDN',
+  EXT: 'external',
+  PRODUCER: 'producer',
+  CONSUMER: 'consumer',
+  CONTEXT: 'bounded context',
+  WAF: 'firewall',
+  DNS: 'DNS',
+  AUTH: 'identity',
+  OBS: 'observability',
+  CRON: 'scheduler',
+  ANALYTICS: 'analytics',
+  CI: 'pipeline',
+  GIT: 'repository',
+  EMAIL: 'messaging',
+  CONFIG: 'config',
+  AI: 'model / agent',
+  HOST: 'host',
+  SECRETS: 'secrets',
+  WEBHOOK: 'webhook',
+  REGION: 'region',
+};
+
+/** The single accent node id: the one node whose kind is an entry kind, else none. */
+function accentNodeId(nodes: readonly { readonly id: string; readonly kind?: string | undefined }[], entry: readonly string[]): string | undefined {
+  const hits = nodes.filter((n) => entry.includes((n.kind ?? '').toLowerCase()));
+  return hits.length === 1 ? hits[0]?.id : undefined;
+}
+
+/** Legend items for the kinds and edge styles a diagram used. */
+function blockLegend(
+  nodes: readonly { readonly kind?: string | undefined }[],
+  edgeKinds: ReadonlySet<string>,
+  accent: boolean,
+): string {
+  const items: LegendItem[] = [];
+  const seen = new Set<string>();
+  for (const n of nodes) {
+    const sk = nodeSkin(n.kind);
+    if (sk.chip === '' || seen.has(sk.chip)) continue;
+    seen.add(sk.chip);
+    items.push({ swatch: 'chip', chip: sk.chip, label: CHIP_LABEL[sk.chip] ?? sk.chip.toLowerCase() });
+  }
+  if (edgeKinds.has('solid')) items.push({ swatch: 'edge', label: 'calls' });
+  if (edgeKinds.has('dashed')) items.push({ swatch: 'edge-dashed', label: 'async / optional' });
+  if (edgeKinds.has('forbidden')) items.push({ swatch: 'edge-error', label: 'forbidden' });
+  if (edgeKinds.has('error')) items.push({ swatch: 'edge-error', label: 'error' });
+  if (accent) items.push({ swatch: 'node-accent', label: 'entry point' });
+  return renderLegend(items);
+}
 
 /**
  * Renders a node's `name` (wrapped to ≤2 lines) and optional `tech` (≤2 lines),
@@ -55,25 +138,31 @@ function nodeLabels(opts: {
   readonly nameFill: string;
   readonly techFill: string;
   readonly anchor?: 'middle';
+  /** Skin mode: type-role classes carry the colour (`nameFill`/`techFill` ignored). */
+  readonly skin?: boolean;
+  readonly accent?: boolean;
 }): string {
   const nameLineH = 15;
   const techLineH = 12;
   const gap = 4;
   const anchorAttr = opts.anchor === 'middle' ? ' text-anchor="middle"' : '';
-  const nameLines = wrapText(opts.name, Math.max(6, Math.floor(opts.textW / 6.6)), 2);
+  const nameLines = wrapText(opts.name, Math.max(6, Math.floor(opts.textW / (opts.skin === true ? 7 : 6.6))), 2);
   const techLines =
-    opts.tech !== undefined ? wrapText(opts.tech, Math.max(6, Math.floor(opts.textW / 5.8)), 2) : [];
+    opts.tech !== undefined ? wrapText(opts.tech, Math.max(6, Math.floor(opts.textW / (opts.skin === true ? 6.2 : 5.8))), 2) : [];
+  const nameAttrs =
+    opts.skin === true ? ` class="blk-name t-name${opts.accent === true ? ' c-accent' : ''}"` : ` class="blk-name" fill="${opts.nameFill}"`;
+  const techAttrs = opts.skin === true ? ' class="blk-tech t-sub"' : ` class="blk-tech" fill="${opts.techFill}"`;
   const blockH = nameLines.length * nameLineH + (techLines.length > 0 ? gap + techLines.length * techLineH : 0);
   let y = opts.boxY + (opts.boxH - blockH) / 2 + nameLineH - 4;
   let s = '';
   for (const ln of nameLines) {
-    s += `<text x="${opts.x}" y="${y.toFixed(1)}" class="blk-name" fill="${opts.nameFill}"${anchorAttr}>${escapeHtml(ln)}</text>`;
+    s += `<text x="${opts.x}" y="${y.toFixed(1)}"${nameAttrs}${anchorAttr}>${escapeHtml(ln)}</text>`;
     y += nameLineH;
   }
   if (techLines.length > 0) {
     y += gap - nameLineH + techLineH;
     for (const ln of techLines) {
-      s += `<text x="${opts.x}" y="${y.toFixed(1)}" class="blk-tech" fill="${opts.techFill}"${anchorAttr}>${escapeHtml(ln)}</text>`;
+      s += `<text x="${opts.x}" y="${y.toFixed(1)}"${techAttrs}${anchorAttr}>${escapeHtml(ln)}</text>`;
       y += techLineH;
     }
   }
@@ -109,9 +198,7 @@ export function edgeAnchorRect(kind: string | undefined, r: Rect): Rect {
  * as cylinders, queues/streams as pipes (stadiums), CDN/external as clouds,
  * gateways/load-balancers as hexagons. Everything else keeps the accent card.
  */
-function shapeFor(
-  kind: string | undefined,
-):
+type Shape =
   | 'cylinder'
   | 'pipe'
   | 'cloud'
@@ -132,7 +219,9 @@ function shapeFor(
   | 'shards'
   | 'replica'
   | 'globe'
-  | 'card' {
+  | 'card';
+
+function shapeFor(kind: string | undefined): Shape {
   switch ((kind ?? '').toLowerCase()) {
     case 'db':
     case 'database':
@@ -223,10 +312,93 @@ function shapeFor(
   }
 }
 
+/** A node's outline / fill / text colours, plus the skin's stroke attributes. */
+interface Paint extends NodeColors {
+  /** Legacy palette mode (pre-skin renderers): shadows on, hex palette, no chip. */
+  readonly legacy: boolean;
+  /** Outline stroke width. */
+  readonly sw: number;
+  /** Dashed outline (external / boundary kinds). */
+  readonly dashed: boolean;
+  /** The node carries the diagram's accent (`accent` itself is the outline colour, a legacy field name). */
+  readonly focal: boolean;
+}
+
+function skinPaint(sk: NodeSkin, focal: boolean): Paint {
+  return {
+    accent: focal ? 'var(--accent)' : sk.primary ? 'var(--ink)' : 'var(--rule-solid)',
+    fill: skinFill(sk, focal),
+    text: 'var(--ink)',
+    legacy: false,
+    sw: focal || sk.primary ? 1.5 : 1,
+    dashed: sk.dashed,
+    focal,
+  };
+}
+
+/** Where a kind's eyebrow chip sits: boxy shapes top-left, stores under the rim, the rest top-right. */
+function chipFor(shape: Shape, sk: NodeSkin, r: Rect): string {
+  if (sk.chip === '') return '';
+  const cx = r.x + r.w / 2;
+  let x: number;
+  let y: number;
+  let anchor = '';
+  switch (shape) {
+    case 'cylinder':
+    case 'tiered':
+    case 'pail': {
+      const ry = shape === 'pail' ? Math.min(11, r.h * 0.13) : Math.min(13, r.h * 0.16);
+      x = cx;
+      y = r.y + ry * 2 + 8;
+      anchor = ' text-anchor="middle"';
+      break;
+    }
+    case 'pipe':
+      x = r.x + Math.min(15, r.w * 0.11) + 6;
+      y = r.y + 12;
+      break;
+    case 'hex':
+      x = r.x + Math.min(26, r.w * 0.16) + 4;
+      y = r.y + 12;
+      break;
+    case 'octagon':
+      x = r.x + Math.min(24, r.w * 0.15) + 4;
+      y = r.y + 12;
+      break;
+    case 'fn': {
+      const rad = Math.min(r.h / 2, r.w * 0.32);
+      x = cx;
+      y = r.y + r.h / 2 - rad * 0.62;
+      anchor = ' text-anchor="middle"';
+      break;
+    }
+    case 'vault':
+      x = cx;
+      y = r.y + r.h * 0.3 + 11;
+      anchor = ' text-anchor="middle"';
+      break;
+    case 'card':
+    case 'stack':
+    case 'rack':
+    case 'window':
+    case 'phone':
+    case 'clock':
+      x = r.x + 10;
+      y = r.y + (shape === 'clock' ? Math.min(18, r.h * 0.22) + 14 : 12);
+      break;
+    default:
+      x = r.x + r.w - 4;
+      y = r.y + 12;
+      anchor = ' text-anchor="end"';
+  }
+  return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="blk-chip t-eyebrow"${anchor}>${escapeHtml(sk.chip)}</text>`;
+}
+
 /**
  * Renders one node — shaped by kind — inside its grid rect. Exported so other
  * architecture renderers (felogic/belogic, …) can reuse the shape language for
- * their data/queue/cache/external nodes.
+ * their data/queue/cache/external nodes: passing `legacy` colours keeps the
+ * pre-skin look (shadow, palette hue, no chip); without it the skin applies.
  */
 export function renderShapedNode(
   n: {
@@ -235,19 +407,47 @@ export function renderShapedNode(
     readonly tech?: string | undefined;
   },
   r: Rect,
+  legacy?: NodeColors,
+  accent = false,
 ): string {
-  const st = blockStyle(n.kind);
+  const sk = nodeSkin(n.kind);
+  const st: Paint =
+    legacy !== undefined
+      ? { ...legacy, legacy: true, sw: 1.2, dashed: false, focal: false }
+      : skinPaint(sk, accent);
   const shape = shapeFor(n.kind);
+  const body = shapedBody(n, r, st, shape);
+  if (st.legacy) return body;
+  const chip = chipFor(shape, sk, r);
+  return chip.length > 0 ? body.replace(/<\/g>$/, `${chip}</g>`) : body;
+}
+
+function shapedBody(
+  n: {
+    readonly kind?: string | undefined;
+    readonly name: string;
+    readonly tech?: string | undefined;
+  },
+  r: Rect,
+  st: Paint,
+  shape: Shape,
+): string {
   const cx = r.x + r.w / 2;
   const tech = n.tech !== undefined ? { tech: n.tech } : {};
+  const shadow = st.legacy ? ' filter="url(#gshadow)"' : '';
+  const sw = st.sw;
+  const dashA = st.dashed ? ' stroke-dasharray="4 3"' : '';
+  const gc = st.legacy ? st.accent : 'var(--muted)';
+  const techTok = st.legacy ? st.accent : 'var(--muted)';
+  const skinOpts = st.legacy ? {} : { skin: true, accent: st.focal };
 
   if (shape === 'cylinder') {
     const ry = Math.min(13, r.h * 0.16);
     const rx = r.w / 2;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} V ${r.y + r.h - ry} A ${rx} ${ry} 0 0 1 ${r.x} ${r.y + r.h - ry} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="1.2"/>` +
+      `<g${shadow}>` +
+      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} V ${r.y + r.h - ry} A ${rx} ${ry} 0 0 1 ${r.x} ${r.y + r.h - ry} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -256,7 +456,8 @@ export function renderShapedNode(
         boxH: r.h - ry * 2.6,
         textW: r.w - 30,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -269,8 +470,8 @@ export function renderShapedNode(
     const ry = r.h / 2;
     const cy = r.y + ry;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="M${r.x + ex} ${r.y} H ${r.x + r.w - ex} A ${ex} ${ry} 0 0 1 ${r.x + r.w - ex} ${r.y + r.h} H ${r.x + ex} A ${ex} ${ry} 0 0 1 ${r.x + ex} ${r.y} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
+      `<g${shadow}>` +
+      `<path d="M${r.x + ex} ${r.y} H ${r.x + r.w - ex} A ${ex} ${ry} 0 0 1 ${r.x + r.w - ex} ${r.y + r.h} H ${r.x + ex} A ${ex} ${ry} 0 0 1 ${r.x + ex} ${r.y} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       `<ellipse cx="${r.x + r.w - ex}" cy="${cy}" rx="${ex}" ry="${ry}" fill="none" stroke="${st.accent}" stroke-width="1.1" stroke-opacity="0.7"/>` +
       nodeLabels({
         name: n.name,
@@ -280,7 +481,8 @@ export function renderShapedNode(
         boxH: r.h,
         textW: r.w - ex * 3.2,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -292,13 +494,13 @@ export function renderShapedNode(
     const off = 6;
     const back = (i: number, op: number): string =>
       `<rect x="${r.x + off * i}" y="${r.y - off * i}" width="${r.w}" height="${r.h}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="1" opacity="${op}"/>`;
-    const gl = nodeGlyph(n.kind, r.x + 14, r.y + r.h / 2 - 8, st.accent);
+    const gl = nodeGlyph(n.kind, r.x + 14, r.y + r.h / 2 - 8, gc);
     const nx = gl.length > 0 ? r.x + 40 : r.x + 16;
     return (
-      `<g filter="url(#gshadow)">` +
+      `<g${shadow}>` +
       back(2, 0.45) +
       back(1, 0.7) +
-      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
+      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       gl +
       nodeLabels({
         name: n.name,
@@ -308,7 +510,8 @@ export function renderShapedNode(
         boxH: r.h,
         textW: r.x + r.w - nx - 14,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
       }) +
       `</g>`
     );
@@ -322,8 +525,8 @@ export function renderShapedNode(
       `A ${r.w * 0.18} ${r.h * 0.26} 0 0 1 ${r.x + r.w * 0.72} ${b - r.h * 0.5} ` +
       `A ${r.w * 0.13} ${r.h * 0.21} 0 0 1 ${r.x + r.w * 0.82} ${b} Z`;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2" stroke-linejoin="round"/>` +
+      `<g${shadow}>` +
+      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA} stroke-linejoin="round"/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -332,7 +535,8 @@ export function renderShapedNode(
         boxH: r.h * 0.58,
         textW: r.w * 0.52,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -344,8 +548,8 @@ export function renderShapedNode(
       `M${r.x + inset} ${r.y} L ${r.x + r.w - inset} ${r.y} L ${r.x + r.w} ${r.y + r.h / 2} ` +
       `L ${r.x + r.w - inset} ${r.y + r.h} L ${r.x + inset} ${r.y + r.h} L ${r.x} ${r.y + r.h / 2} Z`;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2" stroke-linejoin="round"/>` +
+      `<g${shadow}>` +
+      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA} stroke-linejoin="round"/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -354,7 +558,8 @@ export function renderShapedNode(
         boxH: r.h,
         textW: r.w - inset * 2 - 6,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -366,9 +571,9 @@ export function renderShapedNode(
     const ry = Math.min(11, r.h * 0.13);
     const tp = r.w * 0.12;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="M${r.x} ${r.y + ry} A ${r.w / 2} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} L ${r.x + r.w - tp} ${r.y + r.h - 6} A ${(r.w - tp * 2) / 2} 6 0 0 1 ${r.x + tp} ${r.y + r.h - 6} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-      `<path d="M${r.x} ${r.y + ry} A ${r.w / 2} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="1.2"/>` +
+      `<g${shadow}>` +
+      `<path d="M${r.x} ${r.y + ry} A ${r.w / 2} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} L ${r.x + r.w - tp} ${r.y + r.h - 6} A ${(r.w - tp * 2) / 2} 6 0 0 1 ${r.x + tp} ${r.y + r.h - 6} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+      `<path d="M${r.x} ${r.y + ry} A ${r.w / 2} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -377,7 +582,8 @@ export function renderShapedNode(
         boxH: r.h - ry * 2.6,
         textW: r.w - tp * 2 - 16,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -390,9 +596,9 @@ export function renderShapedNode(
     const rim = (dy: number): string =>
       `<path d="M${r.x} ${r.y + dy} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + dy}" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.55"/>`;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} V ${r.y + r.h - ry} A ${rx} ${ry} 0 0 1 ${r.x} ${r.y + r.h - ry} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="1.2"/>` +
+      `<g${shadow}>` +
+      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} V ${r.y + r.h - ry} A ${rx} ${ry} 0 0 1 ${r.x} ${r.y + r.h - ry} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       rim(ry + (r.h - ry * 2) * 0.42) +
       nodeLabels({
         name: n.name,
@@ -402,7 +608,8 @@ export function renderShapedNode(
         boxH: r.h - ry * 2.6 - (r.h - ry * 2) * 0.3,
         textW: r.w - 30,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -416,12 +623,12 @@ export function renderShapedNode(
     for (let i = 0; i < 3; i++) {
       const sy = r.y + i * (slabH + gap);
       slabs +=
-        `<rect x="${r.x}" y="${sy.toFixed(1)}" width="${r.w}" height="${slabH.toFixed(1)}" rx="6" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-        `<circle cx="${r.x + 12}" cy="${(sy + slabH / 2).toFixed(1)}" r="2.4" fill="${st.accent}" opacity="0.8"/>` +
+        `<rect x="${r.x}" y="${sy.toFixed(1)}" width="${r.w}" height="${slabH.toFixed(1)}" rx="6" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+        `<circle cx="${r.x + 12}" cy="${(sy + slabH / 2).toFixed(1)}" r="2.4" fill="${gc}" opacity="0.8"/>` +
         `<path d="M${r.x + 20} ${(sy + slabH / 2).toFixed(1)} H ${r.x + 32}" stroke="${st.accent}" stroke-width="1.4" stroke-opacity="0.5"/>`;
     }
     return (
-      `<g filter="url(#gshadow)">` +
+      `<g${shadow}>` +
       slabs +
       nodeLabels({
         name: n.name,
@@ -431,7 +638,8 @@ export function renderShapedNode(
         boxH: r.h,
         textW: r.w - 84,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -444,8 +652,8 @@ export function renderShapedNode(
       `Q ${r.x + r.w * 0.9} ${r.y + r.h * 0.82} ${cx} ${r.y + r.h} ` +
       `Q ${r.x + r.w * 0.1} ${r.y + r.h * 0.82} ${r.x + r.w * 0.1} ${r.y + r.h * 0.5} V ${r.y + r.h * 0.14} Z`;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.3" stroke-linejoin="round"/>` +
+      `<g${shadow}>` +
+      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA} stroke-linejoin="round"/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -454,7 +662,8 @@ export function renderShapedNode(
         boxH: r.h * 0.62,
         textW: r.w * 0.6,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -467,8 +676,8 @@ export function renderShapedNode(
     const shoulderY = headCy + headR + 20;
     return (
       `<g>` +
-      `<circle cx="${cx}" cy="${headCy.toFixed(1)}" r="${headR}" fill="${st.accent}"/>` +
-      `<path d="M ${cx - headR * 1.8} ${shoulderY.toFixed(1)} a ${headR * 1.8} ${headR * 2} 0 0 1 ${headR * 3.6} 0 z" fill="${st.accent}"/>` +
+      `<circle cx="${cx}" cy="${headCy.toFixed(1)}" r="${headR}" fill="${gc}"/>` +
+      `<path d="M ${cx - headR * 1.8} ${shoulderY.toFixed(1)} a ${headR * 1.8} ${headR * 2} 0 0 1 ${headR * 3.6} 0 z" fill="${gc}"/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -476,8 +685,9 @@ export function renderShapedNode(
         boxY: shoulderY + 2,
         boxH: r.y + r.h - shoulderY - 2,
         textW: r.w - 12,
-        nameFill: 'var(--charcoal)',
-        techFill: st.accent,
+        nameFill: st.text,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -491,8 +701,8 @@ export function renderShapedNode(
       `M${r.x + ic} ${r.y} H ${r.x + r.w - ic} L ${r.x + r.w} ${r.y + ich} V ${r.y + r.h - ich} ` +
       `L ${r.x + r.w - ic} ${r.y + r.h} H ${r.x + ic} L ${r.x} ${r.y + r.h - ich} V ${r.y + ich} Z`;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2" stroke-linejoin="round"/>` +
+      `<g${shadow}>` +
+      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA} stroke-linejoin="round"/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -501,7 +711,8 @@ export function renderShapedNode(
         boxH: r.h,
         textW: r.w - ic * 2 - 6,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -512,9 +723,9 @@ export function renderShapedNode(
     const rad = Math.min(r.h / 2, r.w * 0.32);
     const cy = r.y + r.h / 2;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-      `<text x="${cx}" y="${(cy - rad * 0.25).toFixed(1)}" font-family="Georgia, serif" font-size="${Math.max(15, rad * 0.42).toFixed(0)}" font-style="italic" font-weight="700" fill="${st.accent}" text-anchor="middle">ƒ</text>` +
+      `<g${shadow}>` +
+      `<circle cx="${cx}" cy="${cy}" r="${rad}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+      `<text x="${cx}" y="${(cy - rad * 0.25).toFixed(1)}" font-family="Georgia, serif" font-size="${Math.max(15, rad * 0.42).toFixed(0)}" font-style="italic" font-weight="700" fill="${gc}" text-anchor="middle">ƒ</text>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -523,7 +734,8 @@ export function renderShapedNode(
         boxH: rad,
         textW: rad * 1.7,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -539,13 +751,13 @@ export function renderShapedNode(
     const ccy = r.y + r.h - 16;
     const cr = Math.min(11, r.h * 0.14);
     return (
-      `<g filter="url(#gshadow)">` +
-      `<rect x="${r.x}" y="${r.y + 3}" width="${r.w}" height="${r.h - 3}" rx="9" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-      `<path d="M${r.x} ${r.y + 12} a 9 9 0 0 1 9 -9 H ${r.x + r.w - 9} a 9 9 0 0 1 9 9 V ${r.y + 3 + hh} H ${r.x} Z" fill="${st.accent}" fill-opacity="0.16"/>` +
+      `<g${shadow}>` +
+      `<rect x="${r.x}" y="${r.y + 3}" width="${r.w}" height="${r.h - 3}" rx="9" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+      `<path d="M${r.x} ${r.y + 12} a 9 9 0 0 1 9 -9 H ${r.x + r.w - 9} a 9 9 0 0 1 9 9 V ${r.y + 3 + hh} H ${r.x} Z" fill="${gc}" fill-opacity="0.16"/>` +
       `<path d="M${r.x} ${r.y + 3 + hh} H ${r.x + r.w}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.5"/>` +
       ring(r.x + r.w * 0.3) +
       ring(r.x + r.w * 0.7) +
-      `<circle cx="${ccx}" cy="${ccy}" r="${cr}" fill="var(--white)" stroke="${st.accent}" stroke-width="1.4"/>` +
+      `<circle cx="${ccx}" cy="${ccy}" r="${cr}" fill="var(--paper)" stroke="${st.accent}" stroke-width="1.4"/>` +
       `<path d="M${ccx} ${(ccy - cr * 0.55).toFixed(1)} V ${ccy} L ${(ccx + cr * 0.45).toFixed(1)} ${(ccy + cr * 0.3).toFixed(1)}" stroke="${st.accent}" stroke-width="1.4" fill="none" stroke-linecap="round"/>` +
       nodeLabels({
         name: n.name,
@@ -555,7 +767,8 @@ export function renderShapedNode(
         boxH: r.h - 3 - hh,
         textW: r.w - 40,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -569,9 +782,9 @@ export function renderShapedNode(
     const bx = cx - bw / 2;
     const shR = bw * 0.22;
     return (
-      `<g filter="url(#gshadow)">` +
+      `<g${shadow}>` +
       `<path d="M${(cx - shR).toFixed(1)} ${(bodyY + 4).toFixed(1)} V ${(r.y + shR * 0.9 + 4).toFixed(1)} A ${shR.toFixed(1)} ${(shR * 0.95).toFixed(1)} 0 0 1 ${(cx + shR).toFixed(1)} ${(r.y + shR * 0.9 + 4).toFixed(1)} V ${(bodyY + 4).toFixed(1)}" fill="none" stroke="${st.accent}" stroke-width="4" stroke-linecap="round"/>` +
-      `<rect x="${bx.toFixed(1)}" y="${bodyY.toFixed(1)}" width="${bw.toFixed(1)}" height="${bodyH.toFixed(1)}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.3"/>` +
+      `<rect x="${bx.toFixed(1)}" y="${bodyY.toFixed(1)}" width="${bw.toFixed(1)}" height="${bodyH.toFixed(1)}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -580,7 +793,8 @@ export function renderShapedNode(
         boxH: bodyH,
         textW: bw - 18,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -601,7 +815,7 @@ export function renderShapedNode(
         `<path d="M${sx.toFixed(1)} ${r.y + ry} A ${cw / 2} ${ry} 0 0 0 ${(sx + cw).toFixed(1)} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="1.1"/>`;
     }
     return (
-      `<g filter="url(#gshadow)">` +
+      `<g${shadow}>` +
       cyls +
       nodeLabels({
         name: n.name,
@@ -611,7 +825,8 @@ export function renderShapedNode(
         boxH: r.h - ch - 2,
         textW: r.w - 16,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -626,7 +841,7 @@ export function renderShapedNode(
       `<g opacity="${op}"><path d="M${(r.x + dx).toFixed(1)} ${(r.y + dy + ry).toFixed(1)} A ${cw / 2} ${ry} 0 0 1 ${(r.x + dx + cw).toFixed(1)} ${(r.y + dy + ry).toFixed(1)} V ${(r.y + dy + r.h - off * 2 - ry).toFixed(1)} A ${cw / 2} ${ry} 0 0 1 ${(r.x + dx).toFixed(1)} ${(r.y + dy + r.h - off * 2 - ry).toFixed(1)} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"/>` +
       `<path d="M${(r.x + dx).toFixed(1)} ${(r.y + dy + ry).toFixed(1)} A ${cw / 2} ${ry} 0 0 0 ${(r.x + dx + cw).toFixed(1)} ${(r.y + dy + ry).toFixed(1)}" fill="none" stroke="${st.accent}" stroke-width="${sw}"/></g>`;
     return (
-      `<g filter="url(#gshadow)">` +
+      `<g${shadow}>` +
       cyl(off * 2, 0, 0.5, 1) +
       cyl(off, off, 0.75, 1) +
       cyl(0, off * 2, 1, 1.2) +
@@ -638,7 +853,8 @@ export function renderShapedNode(
         boxH: r.h - off * 2 - ry * 2.6,
         textW: cw - 24,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -651,8 +867,8 @@ export function renderShapedNode(
       const rr = hr * scale;
       return (
         `<g opacity="${op}">` +
-        `<circle cx="${fx}" cy="${(fy + rr).toFixed(1)}" r="${rr.toFixed(1)}" fill="${st.accent}"/>` +
-        `<path d="M ${(fx - rr * 1.7).toFixed(1)} ${(fy + rr * 2 + rr * 1.9).toFixed(1)} a ${(rr * 1.7).toFixed(1)} ${(rr * 1.9).toFixed(1)} 0 0 1 ${(rr * 3.4).toFixed(1)} 0 z" fill="${st.accent}"/>` +
+        `<circle cx="${fx}" cy="${(fy + rr).toFixed(1)}" r="${rr.toFixed(1)}" fill="${gc}"/>` +
+        `<path d="M ${(fx - rr * 1.7).toFixed(1)} ${(fy + rr * 2 + rr * 1.9).toFixed(1)} a ${(rr * 1.7).toFixed(1)} ${(rr * 1.9).toFixed(1)} 0 0 1 ${(rr * 3.4).toFixed(1)} 0 z" fill="${gc}"/>` +
         `</g>`
       );
     };
@@ -669,8 +885,9 @@ export function renderShapedNode(
         boxY: baseY + hr * 4.6,
         boxH: r.y + r.h - (baseY + hr * 4.6),
         textW: r.w - 12,
-        nameFill: 'var(--charcoal)',
-        techFill: st.accent,
+        nameFill: st.text,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -682,7 +899,7 @@ export function renderShapedNode(
     const gcy = r.y + rad + 2;
     return (
       `<g>` +
-      `<circle cx="${cx}" cy="${gcy.toFixed(1)}" r="${rad}" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.3"/>` +
+      `<circle cx="${cx}" cy="${gcy.toFixed(1)}" r="${rad}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       `<ellipse cx="${cx}" cy="${gcy.toFixed(1)}" rx="${(rad * 0.42).toFixed(1)}" ry="${rad}" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.65"/>` +
       `<path d="M${(cx - rad).toFixed(1)} ${gcy.toFixed(1)} H ${(cx + rad).toFixed(1)}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.65"/>` +
       `<path d="M${(cx - rad * 0.87).toFixed(1)} ${(gcy - rad * 0.45).toFixed(1)} a ${rad * 1.15} ${rad * 1.15} 0 0 1 ${(rad * 1.74).toFixed(1)} 0" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.45"/>` +
@@ -693,8 +910,9 @@ export function renderShapedNode(
         boxY: gcy + rad + 2,
         boxH: r.y + r.h - (gcy + rad + 2),
         textW: r.w - 12,
-        nameFill: 'var(--charcoal)',
-        techFill: st.accent,
+        nameFill: st.text,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
@@ -708,11 +926,11 @@ export function renderShapedNode(
     const ph = r.h - 10;
     const nx = px2 + pw + 14;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-      `<rect x="${px2}" y="${py}" width="${pw}" height="${ph}" rx="7" fill="var(--white)" stroke="${st.accent}" stroke-width="1.2"/>` +
+      `<g${shadow}>` +
+      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+      `<rect x="${px2}" y="${py}" width="${pw}" height="${ph}" rx="7" fill="var(--paper)" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       `<path d="M${px2 + pw / 2 - 5} ${py + 6} H ${px2 + pw / 2 + 5}" stroke="${st.accent}" stroke-width="1.4" stroke-linecap="round"/>` +
-      `<circle cx="${px2 + pw / 2}" cy="${py + ph - 7}" r="2" fill="${st.accent}"/>` +
+      `<circle cx="${px2 + pw / 2}" cy="${py + ph - 7}" r="2" fill="${gc}"/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -721,7 +939,8 @@ export function renderShapedNode(
         boxH: r.h,
         textW: r.x + r.w - nx - 12,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
       }) +
       `</g>`
     );
@@ -730,11 +949,11 @@ export function renderShapedNode(
     // A browser window: rounded frame, header band with traffic dots.
     const hh = 18;
     const dot = (i: number): string =>
-      `<circle cx="${r.x + 12 + i * 10}" cy="${r.y + hh / 2}" r="2.6" fill="${st.accent}" opacity="${0.85 - i * 0.2}"/>`;
+      `<circle cx="${r.x + 12 + i * 10}" cy="${r.y + hh / 2}" r="2.6" fill="${gc}" opacity="${0.85 - i * 0.2}"/>`;
     return (
-      `<g filter="url(#gshadow)">` +
-      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="9" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-      `<path d="M${r.x} ${r.y + 9} a 9 9 0 0 1 9 -9 H ${r.x + r.w - 9} a 9 9 0 0 1 9 9 V ${r.y + hh} H ${r.x} Z" fill="${st.accent}" fill-opacity="0.14"/>` +
+      `<g${shadow}>` +
+      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="9" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
+      `<path d="M${r.x} ${r.y + 9} a 9 9 0 0 1 9 -9 H ${r.x + r.w - 9} a 9 9 0 0 1 9 9 V ${r.y + hh} H ${r.x} Z" fill="${gc}" fill-opacity="0.14"/>` +
       `<path d="M${r.x} ${r.y + hh} H ${r.x + r.w}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.5"/>` +
       dot(0) +
       dot(1) +
@@ -747,20 +966,21 @@ export function renderShapedNode(
         boxH: r.h - hh,
         textW: r.w - 24,
         nameFill: st.text,
-        techFill: st.accent,
+        techFill: techTok,
+        ...skinOpts,
         anchor: 'middle',
       }) +
       `</g>`
     );
   }
 
-  return renderCardNode(n, r);
+  return cardBody(n, r, st);
 }
 
 /**
- * The clean card alone (rounded, soft fill, accent border, glyph — no left
- * bar). The layered band layout uses this directly: its short bands crowd the
- * taller kind silhouettes, so every node stays a calm box there.
+ * The clean card alone (rounded, glyph, no left bar). The layered band layout
+ * uses this directly: its short bands crowd the taller kind silhouettes, so
+ * every node stays a calm box there.
  */
 function renderCardNode(
   n: {
@@ -769,29 +989,52 @@ function renderCardNode(
     readonly tech?: string | undefined;
   },
   r: Rect,
+  accent = false,
 ): string {
-  const st = blockStyle(n.kind);
-  const gl = nodeGlyph(n.kind, r.x + 14, r.y + r.h / 2 - 8, st.accent);
+  const sk = nodeSkin(n.kind);
+  const body = cardBody(n, r, skinPaint(sk, accent));
+  const chip = chipFor('card', sk, r);
+  return chip.length > 0 ? body.replace(/<\/g>$/, `${chip}</g>`) : body;
+}
+
+function cardBody(
+  n: {
+    readonly kind?: string | undefined;
+    readonly name: string;
+    readonly tech?: string | undefined;
+  },
+  r: Rect,
+  st: Paint,
+): string {
+  const gc = st.legacy ? st.accent : 'var(--muted)';
+  const gl = nodeGlyph(n.kind, r.x + 14, r.y + r.h / 2 - 8, gc);
   const nx = gl.length > 0 ? r.x + 40 : r.x + 16;
+  const shadow = st.legacy ? ' filter="url(#gshadow)"' : '';
+  const dashA = st.dashed ? ' stroke-dasharray="4 3"' : '';
+  // With a chip in the top-left corner the label block centres in the space below it.
+  const hasChip = !st.legacy && nodeSkin(n.kind).chip !== '';
+  const boxY = hasChip ? r.y + 10 : r.y;
+  const boxH = hasChip ? r.h - 10 : r.h;
   return (
-    `<g filter="url(#gshadow)">` +
-    `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
+    `<g${shadow}>` +
+    `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="${st.legacy ? 10 : 6}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${st.sw}"${dashA}/>` +
     gl +
     nodeLabels({
       name: n.name,
       ...(n.tech !== undefined ? { tech: n.tech } : {}),
       x: nx,
-      boxY: r.y,
-      boxH: r.h,
+      boxY,
+      boxH,
       textW: r.x + r.w - nx - 14,
       nameFill: st.text,
-      techFill: st.accent,
+      techFill: st.legacy ? st.accent : 'var(--muted)',
+      ...(st.legacy ? {} : { skin: true, accent: st.focal }),
     }) +
     `</g>`
   );
 }
 
-function renderGrid(data: Data): string {
+function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend: string } {
   const groups = data.groups ?? [];
   const edges = data.edges ?? [];
   const rawNodes = data.nodes ?? [];
@@ -842,9 +1085,11 @@ function renderGrid(data: Data): string {
 
   let s = `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>Block diagram</title>`;
 
-  // Dashed group zones (shared drawing across the grid diagrams).
-  s += gridGroupsSvg(groups, { xOf, yOf, cellW, cellH, gapX, gapY });
+  // Group panels (shared drawing across the grid diagrams).
+  s += gridGroupsSvg(groups, { xOf, yOf, cellW, cellH, gapX, gapY, skin: true });
 
+  const accentId = accentNodeId(nodes, entry);
+  const edgeKinds = new Set<string>();
   const pending: EdgeLabelPoint[] = [];
   s += `<g${bl('edges')}>`;
   const lanes = edgeLanes(edges);
@@ -857,7 +1102,9 @@ function renderGrid(data: Data): string {
     const B = byId.get(e.to);
     if (!A || !B) return;
     const p = ortho(edgeAnchorRect(A.kind, rectFor(A)), edgeAnchorRect(B.kind, rectFor(B)), lanes[ei] ?? 0, entries[ei] ?? 0);
-    const st = GEDGE[e.kind ?? 'solid'] ?? GEDGE['solid'] ?? FALLBACK_EDGE;
+    const kind = e.kind ?? 'solid';
+    edgeKinds.add(kind in SKIN_EDGE ? kind : 'solid');
+    const st = SKIN_EDGE[kind] ?? FALLBACK_EDGE;
     s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), err: st.err, path: `edges.${ei}` });
   });
@@ -866,17 +1113,17 @@ function renderGrid(data: Data): string {
   s += `<g${bl('nodes')}>`;
   nodes.forEach((n, ni) => {
     const place = nodeCellAttrs(n.col ?? 1, n.row ?? 1, n.w ?? 1);
-    s += `<g${bp(`nodes.${ni}`)}${place}>${renderShapedNode(n, rectFor(n))}</g>`;
+    s += `<g${bp(`nodes.${ni}`)}${place}>${renderShapedNode(n, rectFor(n), undefined, n.id === accentId)}</g>`;
   });
   s += `</g>`; // close the nodes list container
 
-  const { overlay, legend } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)));
+  const { overlay, legend } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)), { skin: true });
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
-  return s + legend;
+  return { svg: s + legend, legend: blockLegend(nodes, edgeKinds, accentId !== undefined) };
 }
 
-function renderLayered(data: Data): string {
+function renderLayered(data: Data, entry: readonly string[]): { svg: string; legend: string } {
   const layers = data.layers ?? [];
   const nodes = data.nodes ?? [];
   const edges = data.edges ?? [];
@@ -921,31 +1168,33 @@ function renderLayered(data: Data): string {
 
   let s =
     `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Layered architecture</title>` +
-    // The refined zone language: a dashed system boundary instead of a heavy
-    // solid frame.
-    `<rect x="${outerPad}" y="${outerPad}" width="${width - outerPad * 2}" height="${height - outerPad * 2}" rx="12" fill="none" stroke="var(--navy)" stroke-opacity="0.6" stroke-width="1.3" stroke-dasharray="7 5"/>`;
+    // The system boundary: a dashed hairline, the label as an eyebrow.
+    `<rect x="${outerPad}" y="${outerPad}" width="${width - outerPad * 2}" height="${height - outerPad * 2}" rx="8" fill="none" stroke="var(--rule-solid)" stroke-width="1" stroke-dasharray="4 3"/>`;
   if (data.systemLabel !== undefined) {
-    s += `<text x="${outerPad + 14}" y="${outerPad + 19}" class="grp-label" fill="var(--navy)"${bp('systemLabel')}>${escapeHtml(data.systemLabel)}</text>`;
+    s += `<text x="${outerPad + 14}" y="${outerPad + 18}" class="grp-label t-eyebrow c-muted"${bp('systemLabel')}>${escapeHtml(data.systemLabel)}</text>`;
   }
+  const accentId = accentNodeId(nodes, entry);
+  const edgeKinds = new Set<string>();
   s += `<g${bl('layers')}>`;
   for (let i = 0; i < layers.length; i++) {
     const L = layers[i];
     if (L === undefined) continue;
-    const lc = safeColor(L.color, '#233a5e');
+    // An explicit layer colour is the author's data and tints the label and
+    // outline; otherwise the band is the skin's paper-2 panel.
+    const tint = safeColor(L.color, '');
+    const stroke = tint.length > 0 ? tint : 'var(--rule-solid)';
+    const text = tint.length > 0 ? tint : 'var(--soft)';
     // Wrap the band label (≤3 lines) so long names stay inside the label column.
-    const lblLines = wrapText(L.label, Math.max(8, Math.floor((labelW - 24) / 6.4)), 3);
+    const lblLines = wrapText(L.label, Math.max(8, Math.floor((labelW - 24) / 6.8)), 3);
     const lblText = lblLines
       .map(
         (ln, j) =>
-          `<text x="${innerX + 14}" y="${(bandY(i) + bandH / 2 + 4 - (lblLines.length - 1) * 7 + j * 14).toFixed(1)}" class="layer-label" style="fill:${lc}">${escapeHtml(ln)}</text>`,
+          `<text x="${innerX + 12}" y="${(bandY(i) + 16 + j * 12).toFixed(1)}" class="layer-label t-eyebrow" fill="${text}">${escapeHtml(ln)}</text>`,
       )
       .join('');
-    // Quiet band: a soft wash + hairline (no solid navy label slab), the layer
-    // name as a colored kicker in the label column with a thin tick beside it.
     s +=
       `<g${bp(`layers.${i}`)}>` +
-      `<rect x="${innerX}" y="${bandY(i)}" width="${labelW + bandInnerW}" height="${bandH}" rx="9" fill="${lc}" fill-opacity="0.045" stroke="${lc}" stroke-opacity="0.28"/>` +
-      `<rect x="${innerX}" y="${bandY(i) + 10}" width="3" height="${bandH - 20}" rx="1.5" fill="${lc}" fill-opacity="0.75"/>` +
+      `<rect x="${innerX}" y="${bandY(i)}" width="${labelW + bandInnerW}" height="${bandH}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="${stroke}" stroke-width="1"/>` +
       lblText +
       `</g>`;
   }
@@ -960,7 +1209,9 @@ function renderLayered(data: Data): string {
     const B = rects.get(e.to);
     if (!A || !B) return;
     const p = ortho(A, B, lanes[ei] ?? 0, entries[ei] ?? 0);
-    const st = GEDGE[e.kind ?? 'solid'] ?? GEDGE['solid'] ?? FALLBACK_EDGE;
+    const kind = e.kind ?? 'solid';
+    edgeKinds.add(kind in SKIN_EDGE ? kind : 'solid');
+    const st = SKIN_EDGE[kind] ?? FALLBACK_EDGE;
     s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), err: st.err, path: `edges.${ei}` });
   });
@@ -970,42 +1221,43 @@ function renderLayered(data: Data): string {
   nodes.forEach((n, ni) => {
     const r = rects.get(n.id);
     if (r === undefined) return;
-    s += `<g${bp(`nodes.${ni}`)}>${renderCardNode(n, r)}</g>`;
+    s += `<g${bp(`nodes.${ni}`)}>${renderCardNode(n, r, n.id === accentId)}</g>`;
   });
   s += `</g>`; // close the nodes list container
 
-  const { overlay, legend } = edgeLabelLayer(pending, [...rects.values()]);
+  const { overlay, legend } = edgeLabelLayer(pending, [...rects.values()], { skin: true });
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
-  return s + legend;
+  return { svg: s + legend, legend: blockLegend(nodes, edgeKinds, accentId !== undefined) };
 }
 
 function renderBlockGraph(data: Data, frame: FrameOpts): string {
-  const svg = data.layers !== undefined && data.layers.length > 0 ? renderLayered(data) : renderGrid(data);
+  const { svg, legend } =
+    data.layers !== undefined && data.layers.length > 0 ? renderLayered(data, frame.entry) : renderGrid(data, frame.entry);
   const opts: Parameters<typeof diagramFrame>[0] = {
     tag: frame.tag,
-    ...(frame.tagClass !== undefined ? { tagClass: frame.tagClass } : {}),
-    ...(frame.tagBg !== undefined ? { tagBg: frame.tagBg } : {}),
     ...(data.title !== undefined ? { title: data.title } : {}),
     ...(data.description !== undefined ? { desc: data.description } : {}),
+    ...(legend.length > 0 ? { legendHtml: legend } : {}),
   };
   return diagramFrame(opts, svg);
 }
 
 /**
- * Frame tag + pill colour per `preset` — the ONLY thing that ever differed
+ * Eyebrow word + entry kinds per `preset` — the ONLY things that ever differed
  * between the former `block` / `infra` / `event` / `ddd` / `network` types.
- * No preset = the generic architecture look (the old bare `block`).
+ * No preset = the generic architecture look (the old bare `block`). The
+ * presets keep their meaning through chips and dash, never hue.
  */
 const PRESET_FRAME: Record<'arch' | NonNullable<Data['preset']>, FrameOpts> = {
-  arch: { tag: 'ARCH', tagBg: '#0f766e' },
-  infra: { tag: 'INFRA', tagBg: '#0078d4' },
-  event: { tag: 'EVENT', tagBg: '#0f766e' },
-  ddd: { tag: 'DDD', tagBg: '#6b21a8' },
-  network: { tag: 'ZONES', tagBg: '#991b1b' },
+  arch: { tag: 'ARCH', entry: ['gateway'] },
+  infra: { tag: 'INFRA', entry: ['gateway'] },
+  event: { tag: 'EVENT', entry: ['producer'] },
+  ddd: { tag: 'DDD', entry: [] },
+  network: { tag: 'ZONES', entry: ['gateway', 'firewall', 'waf', 'shield'] },
 };
 
-/** `block` block — generic architecture (grid or layered); `preset` picks the frame tag. */
+/** `block` block — generic architecture (grid or layered); `preset` picks the eyebrow + entry kind. */
 export function renderBlock(data: BlockDataMap['block']): string {
   return renderBlockGraph(data, PRESET_FRAME[data.preset ?? 'arch']);
 }

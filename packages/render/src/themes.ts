@@ -46,6 +46,12 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
       '--highlight': '#0070f3',
       '--highlight-soft': '#e5f0ff',
       '--white': '#ffffff',
+      '--paper': '#ffffff',
+      '--paper-2': '#f4f4f4',
+      '--ink': '#111111',
+      '--rule-solid': '#e2e2e2',
+      '--accent': '#0070f3',
+      '--accent-tint': 'rgba(0,112,243,.08)',
       '--radius': '8px',
       '--font-display':
         '"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
@@ -75,16 +81,27 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
   // Full dark mode. Surfaces (--white) and ink (--charcoal) flip; neutrals are
   // remapped so hairlines/edges read as light-on-dark. Accent hues are brightened
   // for contrast. Node "chip" pastels (in the SVG palette) stay light by design —
-  // they read as colored cards on the dark canvas.
+  // they read as colored cards on the dark canvas. The skin's role tokens
+  // (`--paper`, `--ink`, …) flip too, so the migrated renderers follow.
   dark: {
     label: 'Dark',
     vars: {
+      '--paper': '#161b26',
+      '--paper-2': '#222a39',
+      '--ink': '#e6e9f2',
+      '--muted': '#a3abbb',
+      '--soft': '#7d8596',
+      '--rule': 'rgba(230,233,242,.14)',
+      '--rule-solid': '#333f54',
+      '--accent': '#f0865c',
+      '--accent-tint': 'rgba(240,134,92,.14)',
+      '--link': '#7fb0ff',
+      '--negative-tint': 'rgba(255,107,107,.14)',
       '--white': '#161b26', // surfaces: page + cards + diagram bg
       '--charcoal': '#e6e9f2', // primary ink + structural strokes
       '--slate': '#c2c9d6', // secondary text
       '--gray': '#94a0b4', // muted text / dashed edges
       '--light-gray': '#222a39', // subtle panels / zone fills / bars
-      '--rule': '#333f54', // hairlines / borders
       '--navy': '#5b9cff', // primary accent (headings, links, primary nodes)
       '--navy-tint': '#1e2a44',
       '--blue': '#7fb0ff',
@@ -113,8 +130,14 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
       '--gray': '#646c7e',
       '--rule': '#e6e8ef',
       '--light-gray': '#f5f6fa',
+      '--paper': '#ffffff',
+      '--paper-2': '#f5f6fa',
+      '--ink': '#1f2433',
+      '--rule-solid': '#e6e8ef',
       // Deep amber: the bright #f59e0b read at 2.07:1 as text on the page.
       '--highlight': '#b45309',
+      '--accent': '#b45309',
+      '--accent-tint': 'rgba(180,83,9,.09)',
       '--radius': '16px',
       '--font-display': '"Helvetica Neue", Arial, sans-serif',
     },

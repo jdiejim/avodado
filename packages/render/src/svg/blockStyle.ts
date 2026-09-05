@@ -1,16 +1,12 @@
 /**
- * Shared color palette + node-glyph helpers used by architecture-flavoured
- * blocks (cluster, block, infra, felogic, belogic, …).
+ * Node-kind vocabulary + skin helpers for the architecture-flavoured blocks
+ * (block / infra / event / ddd / network, cluster, felogic, …).
  *
- * Ported from doc-studio.jsx `blockStyle` + `nodeGlyph`.
+ * The skin (see `DESIGN.md`) tells kinds apart by stroke weight, dash, fill
+ * and an eyebrow chip — never by hue. {@link nodeSkin} is that mapping;
+ * {@link nodeGlyph} keeps the small icons (drawn in `muted`). No hex here:
+ * every colour is a role token.
  */
-
-/** Color triple for a node kind: accent (stripe / border), fill, text color. */
-export interface NodeColors {
-  readonly accent: string;
-  readonly fill: string;
-  readonly text: string;
-}
 
 /**
  * Every node `kind` {@link blockStyle} styles specially — the case labels of
@@ -58,163 +54,78 @@ export const KNOWN_NODE_KINDS: readonly string[] = [
   'region', 'geo', 'globe',
 ];
 
-/** Maps a node `kind` (client / service / store / queue / ...) to colors. */
-export function blockStyle(kind: string | undefined): NodeColors {
-  switch ((kind ?? '').toLowerCase()) {
-    case 'client':
-      return { accent: '#0e54a1', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'service':
-    case 'microservice':
-    case 'compute':
-    case 'container':
-      return { accent: '#1f9747', fill: '#dcf1e2', text: '#0f3d22' };
-    case 'data':
-      return { accent: '#6b21a8', fill: '#ede9fe', text: '#4a1772' };
-    case 'store':
-    case 'db':
-    case 'database':
-    case 'postgres':
-    case 'mysql':
-    case 'mongo':
-    case 'mongodb':
-    case 'dynamo':
-      return { accent: '#f7952c', fill: '#fde7cd', text: '#7a3d00' };
-    case 'bucket':
-    case 'blob':
-    case 'object':
-    case 's3':
-      return { accent: '#b45309', fill: '#fef3c7', text: '#7a3d00' };
-    case 'queue':
-    case 'mq':
-    case 'broker':
-    case 'sqs':
-    case 'rabbitmq':
-      return { accent: '#0f766e', fill: '#ccfbf1', text: '#0f4f49' };
-    case 'cache':
-    case 'redis':
-    case 'memcached':
-      return { accent: '#0891b2', fill: '#cffafe', text: '#0e4f5c' };
-    case 'gateway':
-    case 'lb':
-    case 'proxy':
-      return { accent: '#0e54a1', fill: '#cfe0f3', text: '#0a3a6e' };
-    case 'function':
-    case 'lambda':
-      return { accent: '#7c3aed', fill: '#ede9fe', text: '#4a1772' };
-    case 'cdn':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'external':
-      return { accent: '#6b7280', fill: '#f3f4f6', text: '#374151' };
-    case 'producer':
-      return { accent: '#1f9747', fill: '#dcf1e2', text: '#0f3d22' };
-    case 'topic':
-      return { accent: '#0f766e', fill: '#ccfbf1', text: '#0f4f49' };
-    case 'consumer':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'context':
-      return { accent: '#6b21a8', fill: '#ede9fe', text: '#4a1772' };
-    case 'firewall':
-    case 'waf':
-    case 'shield':
-      return { accent: '#991b1b', fill: '#fee2e2', text: '#991b1b' };
-    case 'dns':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'auth':
-    case 'identity':
-    case 'idp':
-    case 'iam':
-    case 'oauth':
-    case 'sso':
-      return { accent: '#6b21a8', fill: '#ede9fe', text: '#4a1772' };
-    case 'monitor':
-    case 'observability':
-    case 'metrics':
-    case 'logs':
-    case 'tracing':
-    case 'apm':
-      return { accent: '#0891b2', fill: '#cffafe', text: '#0e4f5c' };
-    case 'scheduler':
-    case 'cron':
-    case 'job':
-      return { accent: '#475569', fill: '#e2e8f0', text: '#1e293b' };
-    case 'stream':
-    case 'kafka':
-    case 'kinesis':
-      return { accent: '#0369a1', fill: '#e0f2fe', text: '#0c4a6e' };
-    case 'warehouse':
-    case 'lake':
-      return { accent: '#4338ca', fill: '#e0e7ff', text: '#312e81' };
-    case 'analytics':
-    case 'bi':
-      return { accent: '#4338ca', fill: '#e0e7ff', text: '#312e81' };
-    case 'search':
-    case 'index':
-    case 'elasticsearch':
-    case 'opensearch':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'registry':
-      return { accent: '#b45309', fill: '#fef3c7', text: '#7a3d00' };
-    case 'ci':
-    case 'cicd':
-    case 'pipeline':
-      return { accent: '#0e54a1', fill: '#cfe0f3', text: '#0a3a6e' };
-    case 'git':
-    case 'repo':
-    case 'scm':
-      return { accent: '#475569', fill: '#e2e8f0', text: '#1e293b' };
-    case 'device':
-    case 'iot':
-      return { accent: '#0e54a1', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'email':
-    case 'sms':
-      return { accent: '#b45309', fill: '#fef3c7', text: '#7a3d00' };
-    case 'config':
-    case 'settings':
-      return { accent: '#475569', fill: '#e2e8f0', text: '#1e293b' };
-    case 'ml':
-    case 'model':
-    case 'llm':
-    case 'agent':
-    case 'ai':
-      return { accent: '#7c3aed', fill: '#ede9fe', text: '#4a1772' };
-    case 'user':
-    case 'person':
-    case 'actor':
-    case 'browser':
-    case 'web':
-    case 'mobile':
-      return { accent: '#0e54a1', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'vm':
-    case 'server':
-    case 'host':
-      return { accent: '#475569', fill: '#f1f5f9', text: '#1e293b' };
-    case 'secrets':
-    case 'vault':
-    case 'kms':
-      return { accent: '#334155', fill: '#e2e8f0', text: '#0f172a' };
-    case 'notification':
-    case 'webhook':
-      return { accent: '#b45309', fill: '#fef3c7', text: '#7a3d00' };
-    case 'worker':
-    case 'etl':
-      return { accent: '#1f9747', fill: '#dcf1e2', text: '#0f3d22' };
-    case 'shard':
-    case 'shards':
-    case 'sharded':
-    case 'replica':
-    case 'replicas':
-    case 'replicaset':
-      return { accent: '#f7952c', fill: '#fde7cd', text: '#7a3d00' };
-    case 'users':
-    case 'crowd':
-      return { accent: '#0e54a1', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'region':
-    case 'geo':
-    case 'globe':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e' };
-    default:
-      return { accent: '#374151', fill: '#fff', text: 'var(--charcoal)' };
-  }
+/** How the skin draws one node kind. */
+export interface NodeSkin {
+  /** The eyebrow chip text (`SVC`, `DB`, …); `''` when the kind has none. */
+  readonly chip: string;
+  /** Primary nodes: 1.5px `ink`. Secondary (stores, transport): 1px `rule-solid`. */
+  readonly primary: boolean;
+  /** `paper` (default) or `paper-2` (stores, queues, caches — the "inactive" fill). */
+  readonly fill: 'paper' | 'paper-2';
+  /** Dashed outline for external / boundary kinds. */
+  readonly dashed: boolean;
+}
+
+const SKIN: Record<string, NodeSkin> = {};
+const def = (kinds: readonly string[], skin: NodeSkin): void => {
+  for (const k of kinds) SKIN[k] = skin;
+};
+const primary = (chip: string): NodeSkin => ({ chip, primary: true, fill: 'paper', dashed: false });
+const secondary = (chip: string): NodeSkin => ({ chip, primary: false, fill: 'paper-2', dashed: false });
+const external = (chip: string): NodeSkin => ({ chip, primary: true, fill: 'paper', dashed: true });
+
+def(['client', 'user', 'person', 'actor', 'users', 'crowd', 'browser', 'web', 'mobile', 'device', 'iot'], primary('CLIENT'));
+def(['service', 'microservice', 'compute', 'container', 'worker', 'etl'], primary('SVC'));
+def(['data'], primary('DATA'));
+def(['store', 'db', 'database', 'postgres', 'mysql', 'mongo', 'mongodb', 'dynamo'], secondary('DB'));
+def(['shard', 'shards', 'sharded', 'replica', 'replicas', 'replicaset'], secondary('DB'));
+def(['bucket', 'blob', 'object', 's3'], secondary('BUCKET'));
+def(['warehouse', 'lake'], secondary('WAREHOUSE'));
+def(['queue', 'mq', 'broker', 'sqs', 'rabbitmq'], secondary('QUEUE'));
+def(['topic'], secondary('TOPIC'));
+def(['stream', 'kafka', 'kinesis'], secondary('BUS'));
+def(['cache', 'redis', 'memcached'], secondary('CACHE'));
+def(['search', 'index', 'elasticsearch', 'opensearch'], secondary('SEARCH'));
+def(['registry'], secondary('REGISTRY'));
+def(['gateway', 'proxy'], primary('GATEWAY'));
+def(['lb'], primary('LB'));
+def(['function', 'lambda'], primary('FN'));
+def(['cdn'], external('EDGE'));
+def(['external'], external('EXT'));
+def(['producer'], primary('PRODUCER'));
+def(['consumer'], primary('CONSUMER'));
+def(['context'], primary('CONTEXT'));
+def(['firewall', 'waf', 'shield'], primary('WAF'));
+def(['dns'], external('DNS'));
+def(['auth', 'identity', 'idp', 'iam', 'oauth', 'sso'], primary('AUTH'));
+def(['monitor', 'observability', 'metrics', 'logs', 'tracing', 'apm'], primary('OBS'));
+def(['scheduler', 'cron', 'job'], primary('CRON'));
+def(['analytics', 'bi'], primary('ANALYTICS'));
+def(['ci', 'cicd', 'pipeline'], primary('CI'));
+def(['git', 'repo', 'scm'], secondary('GIT'));
+def(['email', 'sms'], external('EMAIL'));
+def(['config', 'settings'], secondary('CONFIG'));
+def(['ml', 'model', 'llm', 'agent', 'ai'], primary('AI'));
+def(['vm', 'server', 'host'], primary('HOST'));
+def(['secrets', 'vault', 'kms'], secondary('SECRETS'));
+def(['notification', 'webhook'], external('WEBHOOK'));
+def(['region', 'geo', 'globe'], external('REGION'));
+
+/**
+ * Maps a node `kind` to its skin. Unknown kinds are primary paper nodes whose
+ * chip is the kind word itself (so an author's `kind: billing` still reads);
+ * no kind → no chip.
+ */
+export function nodeSkin(kind: string | undefined): NodeSkin {
+  const k = (kind ?? '').trim().toLowerCase();
+  if (k === '') return { chip: '', primary: true, fill: 'paper', dashed: false };
+  return SKIN[k] ?? primary(k.toUpperCase());
+}
+
+/** The node's fill from its skin (accent nodes take the tint). */
+export function skinFill(sk: NodeSkin, accent = false): string {
+  if (accent) return 'var(--accent-tint)';
+  return sk.fill === 'paper-2' ? 'var(--paper-2)' : 'var(--paper)';
 }
 
 /**
@@ -444,7 +355,7 @@ export function nodeGlyph(kind: string | undefined, x: number, y: number, c: str
     return (
       `<g stroke="${c}" stroke-width="1.3">` +
       `<rect x="${x + 4}" y="${y + 1}" width="11" height="11" rx="1.5" fill="none"/>` +
-      `<rect x="${x + 1}" y="${y + 4}" width="11" height="11" rx="1.5" fill="#fff"/>` +
+      `<rect x="${x + 1}" y="${y + 4}" width="11" height="11" rx="1.5" fill="var(--paper)"/>` +
       `</g>`
     );
   }
@@ -460,10 +371,34 @@ export interface EdgeStyle {
   readonly err: boolean;
 }
 
-/** Edge style table — `solid | dashed | forbidden | error` → SVG attributes. */
+/**
+ * Legacy edge table (cluster / c4 still read it) — `solid | dashed |
+ * forbidden | error` → SVG attributes, on the legacy token names.
+ */
 export const GEDGE: Record<string, EdgeStyle> = {
   solid: { stroke: 'var(--charcoal)', sw: 1.4, dash: '', marker: 'gArrow', err: false },
   dashed: { stroke: 'var(--gray)', sw: 1.4, dash: '5 4', marker: 'gSoft', err: false },
-  forbidden: { stroke: '#991b1b', sw: 2, dash: '', marker: 'gErr', err: true },
-  error: { stroke: '#991b1b', sw: 1.6, dash: '', marker: 'gErr', err: true },
+  forbidden: { stroke: 'var(--negative)', sw: 2, dash: '', marker: 'gErr', err: true },
+  error: { stroke: 'var(--negative)', sw: 1.6, dash: '', marker: 'gErr', err: true },
+};
+
+/**
+ * The skin's edge table (`DESIGN.md` › Strokes and arrows): default 1.5px
+ * `muted` with a small filled head; dashed = open head; forbidden / error =
+ * `negative` (forbidden also dashed, so the "never" reads without hue).
+ */
+export const SKIN_EDGE: Record<string, EdgeStyle> = {
+  solid: { stroke: 'var(--muted)', sw: 1.5, dash: '', marker: 'skArrow', err: false },
+  dashed: { stroke: 'var(--muted)', sw: 1.5, dash: '5 4', marker: 'skOpen', err: false },
+  forbidden: { stroke: 'var(--negative)', sw: 1.5, dash: '4 3', marker: 'skErr', err: true },
+  error: { stroke: 'var(--negative)', sw: 1.5, dash: '', marker: 'skErr', err: true },
+};
+
+/** The accent edge: 1.75px `accent`, filled head. */
+export const SKIN_EDGE_ACCENT: EdgeStyle = {
+  stroke: 'var(--accent)',
+  sw: 1.75,
+  dash: '',
+  marker: 'skAccent',
+  err: false,
 };

@@ -1,9 +1,10 @@
 /**
- * Wraps block content in doc-studio's "diagram frame" — a bordered card with
- * a header (tag pill + title + figure number) and optional description.
+ * Wraps block content in the figure chrome of the skin (`DESIGN.md` › Chrome
+ * around a figure): a `paper-2` ground on a dot grid with a hairline border,
+ * a plain `.t-eyebrow` (`SEQUENCE · GET /orders`), the title / description,
+ * the drawing, then the legend strip and any footer.
  *
- * Used by diagram-type blocks (sequence, erd, …) so the output matches
- * doc-studio.jsx's `DiagramFrame` component.
+ * Used by every diagram-type block (sequence, erd, block, …).
  */
 
 import type { BlockType } from '@avodado/core';
@@ -12,12 +13,19 @@ import { escapeHtml } from '../escape.js';
 import { bp } from '../paths.js';
 
 interface FrameOptions {
-  /** Tag pill text (e.g. `SEQUENCE`, `ER`, `POST`). */
+  /** Eyebrow family word (e.g. `SEQUENCE`, `ER`, `ARCH`). */
   readonly tag: string;
-  /** Optional CSS class added to the tag pill (e.g. `post`, `get`). */
+  /** Optional CSS class added to the eyebrow's family word (e.g. `post`, `c4`). */
   readonly tagClass?: string;
-  /** Optional inline background color for the tag pill (used when no class). */
+  /**
+   * @deprecated The skin has no coloured family pill; the value is ignored.
+   * Kept so the renderers that have not migrated still type-check.
+   */
   readonly tagBg?: string;
+  /** HTTP method word after the family word — the one eyebrow part that may take `accent`. */
+  readonly method?: string;
+  /** Endpoint path shown after the method (`SEQUENCE · GET /orders`). */
+  readonly path?: string;
   /** Title shown next to the tag (often `data.title`). Plain text. */
   readonly title?: string;
   /** Pre-rendered HTML for the title — wins over `title` if provided. */
@@ -26,17 +34,60 @@ interface FrameOptions {
   readonly fignum?: string;
   /** Optional description shown under the header. */
   readonly desc?: string;
+  /** Pre-rendered legend strip (see `svg/legend.ts`), rendered under the drawing. */
+  readonly legendHtml?: string;
   /** Optional pre-rendered HTML rendered AFTER the inner content (e.g. footers). */
   readonly footerHtml?: string;
+}
+
+const VIEWBOX_RE = /<svg\b[^>]*\bviewBox="-?[\d.]+ -?[\d.]+ ([\d.]+) [\d.]+"[^>]*>/;
+
+/**
+ * The drawing's stage: the first `<svg viewBox>` in `inner` is wrapped in
+ * `.diagram-stage` (the dot grid lives there, not under the text around it)
+ * and capped at `max-width:min(100%, W × --scale)` — figures never upscale,
+ * so a small diagram stays small and a wide one fills the column. Decks set
+ * `--scale` on the slide root.
+ */
+function stageSvg(inner: string): string {
+  const m = VIEWBOX_RE.exec(inner);
+  if (m === null || m[1] === undefined) return inner;
+  const tag = m[0];
+  if (tag.includes(' style=')) return inner;
+  const w = Math.ceil(Number(m[1]));
+  if (!Number.isFinite(w) || w <= 0) return inner;
+  const close = inner.indexOf('</svg>', m.index + tag.length);
+  if (close < 0) return inner;
+  const capped = `${tag.slice(0, -1)} style="max-width:min(100%,calc(${w}px * var(--scale,1)))">`;
+  const end = close + '</svg>'.length;
+  return (
+    inner.slice(0, m.index) +
+    `<div class="diagram-stage">` +
+    capped +
+    inner.slice(m.index + tag.length, end) +
+    `</div>` +
+    inner.slice(end)
+  );
 }
 
 /** Wraps the given inner HTML in a `.diagram` card. */
 export function diagramFrame(opts: FrameOptions, inner: string): string {
   const tagClass = opts.tagClass !== undefined ? ` ${opts.tagClass}` : '';
-  const tagStyle =
-    opts.tagBg !== undefined && opts.tagClass === undefined
-      ? ` style="background:${opts.tagBg}"`
+  const method =
+    opts.method !== undefined && opts.method.length > 0
+      ? `<span class="diagram-tag-sep">·</span>` +
+        `<span class="diagram-tag-method${tagClass}">${escapeHtml(opts.method)}</span>`
       : '';
+  const path =
+    opts.path !== undefined && opts.path.length > 0
+      ? `<span class="diagram-tag-path">${escapeHtml(opts.path)}</span>`
+      : '';
+  const eyebrow =
+    `<span class="diagram-eyebrow t-eyebrow">` +
+    `<span class="diagram-tag${tagClass}">${escapeHtml(opts.tag)}</span>` +
+    method +
+    path +
+    `</span>`;
   const titleHtml =
     opts.titleHtml !== undefined
       ? `<span class="diagram-title">${opts.titleHtml}</span>`
@@ -48,21 +99,23 @@ export function diagramFrame(opts: FrameOptions, inner: string): string {
       ? `<span class="diagram-fignum">${escapeHtml(opts.fignum)}</span>`
       : '';
   // Every frame caller passes `data.description` — tagging it here gives all
-  // 26 framed diagram blocks a clickable description at once.
+  // framed diagram blocks a clickable description at once.
   const descHtml =
     opts.desc !== undefined && opts.desc.length > 0
       ? `<p class="diagram-desc"${bp('description')}>${escapeHtml(opts.desc)}</p>`
       : '';
+  const legendHtml = opts.legendHtml ?? '';
   const footerHtml = opts.footerHtml ?? '';
   return (
     `<div class="diagram">` +
     `<div class="diagram-head">` +
-    `<span class="diagram-tag${tagClass}"${tagStyle}>${escapeHtml(opts.tag)}</span>` +
+    eyebrow +
     titleHtml +
     fignumHtml +
     `</div>` +
     descHtml +
-    inner +
+    stageSvg(inner) +
+    legendHtml +
     footerHtml +
     `</div>`
   );

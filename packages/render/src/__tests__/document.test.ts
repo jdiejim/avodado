@@ -42,7 +42,7 @@ describe('renderDocument', () => {
     expect(root.querySelector('.seq-steps')).toBeTruthy();
     expect(root.querySelector('.diagram-foot')).toBeTruthy();
     // POST endpoint tag with method class
-    expect(root.querySelector('.diagram-tag.post')?.text).toBe('POST');
+    expect(root.querySelector('.diagram-tag-method.post')?.text).toBe('POST');
   });
 
   it('applies a theme via :root CSS variable overrides', () => {

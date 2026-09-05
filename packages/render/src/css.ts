@@ -14,17 +14,41 @@ html{scroll-behavior:smooth;}
 /* Design tokens live on :root so a theme (applied as :root overrides) reaches
    the whole page — body chrome included, not just .docskin content. */
 :root{
-  /* Default = "textbook": warm cream paper, deep academic navy, terracotta accent,
-     classic serif display + body. Bigger headings for a printed-page feel. */
-  --navy:#233a5e; --navy-tint:#c4d0e2; --blue:#2f5c8f; --light-blue:#e8eef6;
-  --charcoal:#211f1a; --slate:#4a463d; --gray:#6f695b; --light-gray:#f2efe6;
-  --rule:#e4dccb; --highlight:#9c4a2f; --highlight-soft:#f3e4dc;
-  --positive:#3f7d4e; --positive-soft:#e3efe2; --negative:#a13b2e; --negative-soft:#f4e0db;
-  --purple:#5b4a8a; --purple-soft:#ebe6f3; --teal:#2f6f6a; --teal-soft:#e0eeec; --white:#fcfbf7;
+  /* The skin's role tokens (packages/render/DESIGN.md). Renderers name the
+     role, never the value; a theme overrides these on :root. */
+  --paper:#f7f6f2; --paper-2:#efede8; --ink:#1f2430; --muted:#5b6577; --soft:#8a93a5;
+  --rule:rgba(31,36,48,.14); --rule-solid:#c9c6bd;
+  --accent:#c4562e; --accent-tint:rgba(196,86,46,.09); --link:#2f5c8f;
+  --negative:#9a3f34; --negative-tint:rgba(154,63,52,.08);
+  /* Figure scale: decks set it on the slide root to enlarge small diagrams. */
+  --scale:1;
+  /* Legacy token names — aliases of the roles above so the renderers that
+     have not migrated keep working. New code never uses these. */
+  --navy:var(--ink); --navy-tint:var(--paper-2); --blue:var(--link); --light-blue:var(--paper-2);
+  --charcoal:var(--ink); --slate:var(--muted); --gray:var(--muted); --light-gray:var(--paper-2);
+  --highlight:var(--accent); --highlight-soft:var(--accent-tint);
+  --positive:var(--muted); --positive-soft:var(--paper-2); --negative-soft:var(--negative-tint);
+  --purple:var(--muted); --purple-soft:var(--paper-2); --teal:var(--muted); --teal-soft:var(--paper-2); --white:var(--paper);
   --radius:6px;
   --font-display:"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
   --font-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
   --font-mono:"SF Mono",ui-monospace,Menlo,Consolas,"Courier New",monospace;
+}
+/* Dark: the neutrals invert, accent lifts one step. Once, here — a page opts
+   in with data-theme="dark", or follows the system unless it says "light". */
+:root[data-theme="dark"],[data-theme="dark"] .docskin,.docskin[data-theme="dark"]{
+  --paper:#1b1e26; --paper-2:#232732; --ink:#e8e6df; --muted:#a3abbb; --soft:#7d8596;
+  --rule:rgba(232,230,223,.14); --rule-solid:#3a4050;
+  --accent:#e0714a; --accent-tint:rgba(224,113,74,.14); --link:#8fb4e6;
+  --negative:#d9776a; --negative-tint:rgba(217,119,106,.14);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1b1e26; --paper-2:#232732; --ink:#e8e6df; --muted:#a3abbb; --soft:#7d8596;
+    --rule:rgba(232,230,223,.14); --rule-solid:#3a4050;
+    --accent:#e0714a; --accent-tint:rgba(224,113,74,.14); --link:#8fb4e6;
+    --negative:#d9776a; --negative-tint:rgba(217,119,106,.14);
+  }
 }
 body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);font-size:15px;line-height:1.6;}
 .docskin{
@@ -40,7 +64,7 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .cover-sub{font-size:19px;line-height:1.55;color:var(--slate);max-width:860px;margin:0 0 36px;}
 .docskin .section{padding:0;margin-bottom:64px;}
 .docskin .section > *:last-child{margin-bottom:0;}
-.docskin .section-num{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--highlight);font-weight:700;margin-bottom:8px;}
+.docskin .section-num{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--soft);font-weight:700;margin-bottom:8px;}
 .docskin .section-head{margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid var(--navy);}
 .docskin .section-head.bare{border-bottom:0;padding-bottom:0;margin-bottom:14px;}
 .docskin .section-head.bare .section-num{margin-bottom:0;font-size:10px;opacity:.8;}
@@ -50,58 +74,79 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .section-block{margin-bottom:64px;scroll-margin-top:16px;}
 .docskin .section-block:last-child{margin-bottom:0;}
 .docskin .block-anchor{position:relative;display:block;height:0;scroll-margin-top:16px;}
-.docskin .diagram{margin:28px 0 36px;border:1px solid var(--rule);background:var(--white);padding:24px 28px 20px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.03),0 8px 20px -14px rgba(0,0,0,.10);}
-.docskin .diagram-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding-bottom:12px;margin-bottom:16px;border-bottom:1px dashed var(--rule);}
-.docskin .diagram-tag{font-family:var(--font-mono);font-size:10px;font-weight:700;padding:3px 9px;background:var(--navy);color:var(--white);letter-spacing:.08em;text-transform:uppercase;}
-.docskin .diagram-tag.post{background:var(--navy);} .docskin .diagram-tag.get{background:var(--positive);} .docskin .diagram-tag.c4{background:var(--blue);}
-.docskin .diagram-title{font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--charcoal);flex:1;}
-.docskin .diagram-fignum{font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
-.docskin .diagram-desc{font-size:14px;color:var(--slate);margin:0 0 12px;}
+.docskin .diagram{margin:28px 0 36px;border:1px solid var(--rule-solid);background:var(--paper-2);padding:20px 24px 18px;border-radius:6px;box-shadow:none;}
+/* The dot grid sits only behind the drawing, never under the text around it. */
+.docskin .diagram-stage{background-image:radial-gradient(var(--rule) 1px,transparent 1px);background-size:24px 24px;background-position:center;padding:10px 0;border-radius:4px;}
+.docskin .diagram-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--rule);}
+.docskin .diagram-eyebrow{display:inline-flex;align-items:baseline;gap:6px;color:var(--soft);}
+.docskin .diagram-tag{color:var(--soft);}
+.docskin .diagram-tag-sep{color:var(--soft);}
+.docskin .diagram-tag-method{color:var(--accent);font-weight:600;}
+.docskin .diagram-tag-path{color:var(--muted);text-transform:none;letter-spacing:.02em;font-size:10px;}
+.docskin .diagram-title{font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--ink);flex:1;}
+.docskin .diagram-fignum{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
+.docskin .diagram-desc{font-size:14px;color:var(--muted);margin:0 0 12px;}
 .docskin .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto;}
-/* sequence */
-.docskin .lane-head{fill:var(--navy);} .docskin .lane-head.ext{fill:var(--slate);}
-.docskin .lane-head-text{fill:var(--white);font-family:var(--font-body);font-size:12px;font-weight:700;text-anchor:middle;}
-.docskin .lane-head-sub{fill:var(--navy-tint);font-family:var(--font-mono);font-size:9px;text-anchor:middle;letter-spacing:.06em;}
-.docskin .lane-head-sub.ext{fill:#cbd5e1;}
-.docskin .lifeline{stroke:var(--gray);stroke-width:1;stroke-dasharray:3 3;}
-.docskin .activation{fill:var(--light-blue);stroke:var(--navy);stroke-width:1;} .docskin .activation.pg{fill:var(--positive-soft);stroke:var(--positive);}
-.docskin .msg-line{stroke:var(--charcoal);stroke-width:1.2;fill:none;}
-.docskin .msg-line.dashed{stroke-dasharray:5 3;} .docskin .msg-line.err{stroke:var(--negative);stroke-width:1.4;}
-.docskin .msg-text{fill:var(--charcoal);font-family:var(--font-mono);font-size:10.5px;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round;}
-.docskin .msg-text.em{fill:var(--navy);font-weight:700;} .docskin .msg-text.err{fill:var(--negative);font-weight:700;} .docskin .msg-text.note{fill:var(--gray);font-style:italic;}
+/* Type roles (DESIGN.md › Type roles). Fixed figure sizes; usable on SVG
+   <text> (fill) and HTML (color). Every SVG text gets the paper halo so it
+   survives crossing a line. */
+.docskin .t-name{font-family:var(--font-body);font-size:13px;font-weight:600;fill:var(--ink);color:var(--ink);}
+.docskin .t-sub{font-family:var(--font-mono);font-size:10px;font-weight:400;fill:var(--muted);color:var(--muted);}
+.docskin .t-eyebrow{font-family:var(--font-mono);font-size:8.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;fill:var(--soft);color:var(--soft);}
+.docskin .t-arrow{font-family:var(--font-mono);font-size:9.5px;font-weight:400;letter-spacing:.04em;fill:var(--muted);color:var(--muted);}
+.docskin .t-badge{font-family:var(--font-mono);font-size:9px;font-weight:600;fill:var(--muted);color:var(--muted);}
+.docskin svg .t-name,.docskin svg .t-sub,.docskin svg .t-eyebrow,.docskin svg .t-arrow,.docskin svg .t-badge{paint-order:stroke;stroke:var(--paper);stroke-width:2.5px;stroke-linejoin:round;}
+.docskin svg .t-name{stroke-width:3px;}
+/* Colour modifiers for the type roles — the only colours a figure spends. */
+.docskin .c-ink{fill:var(--ink);color:var(--ink);} .docskin .c-muted{fill:var(--muted);color:var(--muted);} .docskin .c-soft{fill:var(--soft);color:var(--soft);}
+.docskin .c-accent{fill:var(--accent);color:var(--accent);} .docskin .c-negative{fill:var(--negative);color:var(--negative);} .docskin .c-link{fill:var(--link);color:var(--link);}
+/* Legend strip: a hairline row under the drawing, one item per encoding used. */
+.docskin .diagram-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;margin-top:12px;padding-top:10px;border-top:1px solid var(--rule);}
+.docskin .lg-title{margin-right:2px;}
+.docskin .lg-item{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:10px;letter-spacing:.03em;color:var(--muted);}
+.docskin .lg-sw{flex:none;display:block;}
+.docskin .lg-chip{display:inline-block;padding:1px 5px;border:1px solid var(--rule-solid);border-radius:2px;background:var(--paper);color:var(--muted);line-height:1.3;}
+/* sequence — paper actor heads, hairline lifelines, arrows per kind, hollow badges */
+.docskin .lane-head{fill:var(--paper);stroke:var(--ink);stroke-width:1.5;} .docskin .lane-head.ext{stroke-dasharray:4 3;}
+.docskin .lane-head-text{text-anchor:middle;}
+.docskin .lane-head-sub{text-anchor:middle;}
+.docskin .lifeline{stroke:var(--rule-solid);stroke-width:1;stroke-dasharray:4 3;}
+.docskin .activation{fill:var(--paper-2);stroke:var(--ink);stroke-width:1;}
+.docskin .msg-line{stroke:var(--muted);stroke-width:1.5;fill:none;}
+.docskin .msg-line.dashed{stroke-dasharray:5 4;} .docskin .msg-line.async{stroke-width:1.25;stroke-dasharray:2 3;}
+.docskin .msg-line.err{stroke:var(--negative);} .docskin .msg-line.accent{stroke:var(--accent);stroke-width:1.75;}
+.docskin .msg-text.em{fill:var(--ink);} .docskin .msg-text.err{fill:var(--negative);} .docskin .msg-text.note{fill:var(--soft);font-style:italic;} .docskin .msg-text.accent{fill:var(--accent);font-weight:600;}
 .docskin .msg-line.self{fill:none;}
-/* combined fragments (alt/opt/loop/par/break/critical): a light frame under the messages, a mono tab, the guard in brackets */
-.docskin .seq-frame{fill:var(--light-gray);fill-opacity:.45;stroke:var(--rule);stroke-width:1;}
-.docskin .seq-frame-tab{fill:var(--white);stroke:var(--rule);stroke-width:1;}
-.docskin .seq-frame-tab-text{fill:var(--navy);font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
-.docskin .seq-frame-guard{fill:var(--slate);font-family:var(--font-mono);font-size:10px;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round;}
-.docskin .seq-frame-else{stroke:var(--gray);stroke-width:1;stroke-dasharray:4 3;}
+/* combined fragments (alt/opt/loop/par/break/critical): a paper-2 panel, a paper tab chip, the guard in brackets */
+.docskin .seq-frame{fill:var(--paper-2);fill-opacity:.6;stroke:var(--rule-solid);stroke-width:1;}
+.docskin .seq-frame-tab{fill:var(--paper);stroke:var(--rule-solid);stroke-width:1;}
+.docskin .seq-frame-else{stroke:var(--rule-solid);stroke-width:1;stroke-dasharray:4 3;}
 /* note boxes: paper fill, hairline stroke, folded corner */
-.docskin .seq-note{fill:var(--white);stroke:var(--rule);stroke-width:1;}
-.docskin .seq-note-fold{fill:none;stroke:var(--rule);stroke-width:1;}
-.docskin .seq-note-text{fill:var(--slate);font-family:var(--font-mono);font-size:10.5px;font-style:italic;paint-order:stroke;stroke:var(--white);stroke-width:3px;stroke-linejoin:round;}
-.docskin .step-badge{fill:var(--navy);} .docskin .step-badge.err{fill:var(--negative);}
-.docskin .step-badge-text{fill:var(--white);font-family:var(--font-mono);font-size:10px;font-weight:700;text-anchor:middle;}
-.docskin .seq-steps{margin-top:16px;padding:14px 18px;background:var(--light-gray);border:1px solid var(--rule);}
-.docskin .seq-steps-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--navy);font-weight:700;margin-bottom:8px;}
+.docskin .seq-note{fill:var(--paper);stroke:var(--rule-solid);stroke-width:1;}
+.docskin .seq-note-fold{fill:none;stroke:var(--rule-solid);stroke-width:1;}
+.docskin .seq-note-text{font-style:italic;}
+.docskin .step-badge{fill:var(--paper);stroke:var(--muted);stroke-width:1;} .docskin .step-badge.err{stroke:var(--negative);}
+.docskin .step-badge-text{text-anchor:middle;}
+.docskin .seq-steps{margin-top:16px;padding:14px 18px;background:var(--paper);border:1px solid var(--rule-solid);border-radius:4px;}
+.docskin .seq-steps-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--soft);font-weight:600;margin-bottom:8px;font-family:var(--font-mono);}
 .docskin .seq-steps ol{list-style:none;padding:0;margin:0;}
 .docskin .seq-steps li{padding:7px 0 8px 40px;position:relative;border-bottom:1px solid var(--rule);}
 .docskin .seq-steps li:last-child{border-bottom:none;}
 /* The number is emitted by the renderer (the message's DIAGRAM number, so an
    annotation on step 4 reads ④ here even when steps 1-3 have no note). */
-.docskin .seq-steps .step-n{position:absolute;left:0;top:7px;width:26px;height:20px;background:var(--navy);color:var(--white);font-family:var(--font-mono);font-size:11px;font-weight:700;text-align:center;line-height:20px;border-radius:2px;}
+.docskin .seq-steps .step-n{position:absolute;left:2px;top:7px;width:20px;height:20px;border:1px solid var(--muted);border-radius:50%;color:var(--muted);font-family:var(--font-mono);font-size:9px;font-weight:600;text-align:center;line-height:18px;background:var(--paper);}
 /* frame dividers mirror the diagram's frames: "ALT · token valid", "else · expired" */
-.docskin .seq-steps li.step-frame{padding:8px 0 4px;font-family:var(--font-mono);font-size:10px;color:var(--slate);border-bottom:1px dashed var(--rule);}
-.docskin .seq-steps li.step-frame .step-frame-tag{display:inline-block;padding:1px 6px;margin-right:8px;border:1px solid var(--rule);border-radius:3px;background:var(--white);color:var(--navy);font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.docskin .seq-steps li.step-frame{padding:8px 0 4px;font-family:var(--font-mono);font-size:10px;color:var(--muted);border-bottom:1px dashed var(--rule);}
+.docskin .seq-steps li.step-frame .step-frame-tag{display:inline-block;padding:1px 6px;margin-right:8px;border:1px solid var(--rule-solid);border-radius:2px;background:var(--paper);color:var(--soft);font-size:8.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;}
 .docskin .seq-steps li.step-frame.else{padding-left:12px;}
-.docskin .seq-steps li.err::before{background:var(--negative);}
+.docskin .seq-steps li.err .step-n{border-color:var(--negative);color:var(--negative);}
 .docskin .seq-steps li.err{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;border-bottom:1px solid var(--rule);padding:7px 0 8px 40px;margin:0;white-space:normal;}
 .docskin .seq-steps li.err:last-child{border-bottom:none;}
-.docskin .diagram-foot{display:flex;flex-wrap:wrap;gap:6px 24px;margin-top:14px;font-size:12.5px;color:var(--charcoal);}
-.docskin .diagram-foot strong{color:var(--navy);}
-.docskin .step-actor{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--navy);margin-right:8px;text-transform:uppercase;letter-spacing:.06em;}
-.docskin .step-actor.err{color:var(--negative);}
-.docskin .step-summary{font-size:13px;color:var(--charcoal);}
+.docskin .diagram-foot{display:flex;flex-wrap:wrap;gap:6px 24px;margin-top:14px;font-size:12.5px;color:var(--ink);}
+.docskin .diagram-foot strong{color:var(--muted);font-weight:600;}
+.docskin .step-actor{font-family:var(--font-mono);font-size:10px;font-weight:600;color:var(--muted);margin-right:8px;text-transform:uppercase;letter-spacing:.06em;}
+.docskin .step-actor.err{color:var(--negative);background:none;border:none;padding:0;margin:0 8px 0 0;font-size:10px;white-space:normal;}
+.docskin .step-summary{font-size:13px;color:var(--ink);}
 /* c4 */
 .docskin .c4-name{font-family:var(--font-display);font-size:14px;font-weight:700;}
 .docskin .c4-tech{font-family:var(--font-mono);font-size:9.5px;}
@@ -130,18 +175,19 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 /* macOS-style traffic lights on full code blocks (not the tighter gallery cards). */
 .docskin .code-block>.code-header::before{content:"";flex:none;width:11px;height:11px;border-radius:50%;background:#ff5f56;box-shadow:17px 0 0 #ffbd2e,34px 0 0 #27c93f;margin-right:42px;}
 .docskin .code-block>pre{border-radius:0;}
-/* er */
-.docskin .er-head-text{fill:var(--navy);font-family:var(--font-display);font-size:13px;font-weight:700;text-anchor:middle;}
-.docskin .er-col{font-family:var(--font-mono);font-size:10.5px;fill:var(--charcoal);} .docskin .er-col.dim{fill:var(--gray);}
-.docskin .er-key{font-family:var(--font-mono);font-size:9px;font-weight:700;fill:var(--navy);} .docskin .er-key.pk{fill:var(--highlight);} .docskin .er-key.fk{fill:var(--navy);}
-.docskin .er-rowline{stroke:var(--light-gray);stroke-width:1;}
+/* er — paper cards, an eyebrow + name header, mono rows with # (pk) and → (fk) */
+.docskin .er-head-text{text-anchor:start;}
+.docskin .er-col{font-family:var(--font-mono);font-size:10px;fill:var(--ink);} .docskin .er-col.dim{fill:var(--soft);}
+.docskin .er-key{font-family:var(--font-mono);font-size:10px;font-weight:600;fill:var(--muted);}
+.docskin .er-rowline{stroke:var(--rule);stroke-width:1;}
+.docskin .er-headline{stroke:var(--rule-solid);stroke-width:1;}
 /* block / state / flow shared text */
 .docskin .blk-name{font-family:var(--font-display);font-size:13px;font-weight:700;}
 .docskin .blk-tech{font-family:var(--font-mono);font-size:9.5px;}
 .docskin .blk-chip{font-family:var(--font-body);font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
 .docskin .grp-label{font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
 .docskin .sm-name{font-family:var(--font-display);font-size:13px;font-weight:700;text-anchor:middle;}
-.docskin .fc-label{font-family:var(--font-display);font-size:12px;font-weight:700;text-anchor:middle;}
+.docskin .fc-label{text-anchor:middle;}
 .docskin .endpoint-card{border:1px solid var(--rule);margin:16px 0;padding:18px 22px;background:var(--white);}
 .docskin .endpoint-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--rule);}
 .docskin .endpoint-method{font-family:var(--font-mono);font-size:11px;font-weight:700;padding:4px 10px;color:var(--white);letter-spacing:.08em;text-transform:uppercase;}
@@ -331,8 +377,8 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .wf-url{font-family:var(--font-mono);font-size:8.5px;fill:var(--gray);}
 .docskin .wf-tab{font-family:var(--font-body);font-size:8px;}
 .docskin .wf-caption{font-family:var(--font-mono);font-size:10px;fill:var(--gray);letter-spacing:.04em;}
-/* parse error */
-.docskin .err{font-family:var(--font-mono);font-size:12px;color:var(--negative);background:#fdf2f2;border:1px solid #f3c9c9;padding:8px 12px;margin:12px 0;white-space:pre-wrap;}
+/* parse error (the block-level div only; .err modifiers on labels and rows have their own rules) */
+.docskin div.err{font-family:var(--font-mono);font-size:12px;color:var(--negative);background:#fdf2f2;border:1px solid #f3c9c9;padding:8px 12px;margin:12px 0;white-space:pre-wrap;}
 /* endpoint (API reference card) */
 .docskin .endpoint{border:1px solid var(--rule);border-radius:var(--radius);margin:18px 0;overflow:hidden;background:var(--white);}
 .docskin .ep-head{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--light-gray);border-bottom:1px solid var(--rule);flex-wrap:wrap;}

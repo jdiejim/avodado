@@ -10,7 +10,8 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
-import { blockStyle, nodeGlyph, GEDGE } from '../svg/blockStyle.js';
+import { nodeGlyph, GEDGE } from '../svg/blockStyle.js';
+import { blockStyle } from '../svg/legacyPalette.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
