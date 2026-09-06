@@ -2,13 +2,12 @@
  * Smart bare `avo` — the mini project status shown when `avo` is run with no
  * arguments inside an Avodado project (TTY only). Answers "where am I and
  * what next?" without picking through 14 commands: doc count, a quick
- * validate summary (parse + validate via core — no rendering), the active
- * theme, and the 4-5 next actions.
+ * validate summary (parse + validate via core — no rendering), and the 4-5
+ * next actions.
  */
 
 import pc from 'picocolors';
 import { loadConfig } from '../io/config.js';
-import { activeTheme, listSavedThemes } from '../io/theme.js';
 import { runCheck } from './check.js';
 
 /** The data behind the bare-`avo` status panel. */
@@ -21,11 +20,9 @@ export interface ProjectStatus {
   readonly warnings: number;
   /** The configured docs directory. */
   readonly docsDir: string;
-  /** The active theme name (built-in, saved slug, or `custom`). */
-  readonly theme: string;
 }
 
-/** Gathers the status: doc count + quick validate + active theme. */
+/** Gathers the status: doc count + quick validate. */
 export async function projectStatus(cwd: string): Promise<ProjectStatus> {
   const config = await loadConfig(cwd);
   const result = await runCheck({
@@ -34,15 +31,11 @@ export async function projectStatus(cwd: string): Promise<ProjectStatus> {
     docsRoot: config.docsDir,
   });
   const errors = result.diagnostics.filter((d) => d.level === 'error').length;
-  const cur = activeTheme(cwd, listSavedThemes(cwd));
-  const theme =
-    cur.kind === 'custom' ? 'custom' : cur.kind === 'none' ? 'textbook (default)' : (cur.id ?? 'textbook');
   return {
     docCount: result.files.length,
     errors,
     warnings: result.diagnostics.length - errors,
     docsDir: config.docsDir,
-    theme,
   };
 }
 
@@ -76,7 +69,6 @@ export function formatStatus(status: ProjectStatus, plain = false): string {
   return [
     `  ${dim('docs'.padEnd(8))}${status.docCount} document(s) ${dim(`in ${status.docsDir}/`)}`,
     `  ${dim('check'.padEnd(8))}${checkLine}`,
-    `  ${dim('theme'.padEnd(8))}${status.theme}`,
     '',
     `  ${bold('Next:')}`,
     ...NEXT_ACTIONS.map(([cmd, note]) => `    ${cyan(cmd.padEnd(width))}  ${dim(note)}`),

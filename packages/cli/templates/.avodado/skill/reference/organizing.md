@@ -11,7 +11,7 @@ a single file — or when you're deciding whether it has.
 | `docs/` (or the configured `docsDir`) | All docs. One group level: `docs/<area>/<doc>.md`. Deeper nesting is drift. |
 | `dist/` (the build default) | Generated output. Never commit it. |
 | `.avodado/` | Tooling state — `skill/` is the authoring skill. |
-| `avodado.config.json`, `*.theme.json` | Project config and themes, at the root. |
+| `avodado.config.json` | Project config, at the root. |
 | `resources/` (or any folder outside `docsDir`) | Demo and fixture docs. Not part of the built site. |
 
 Doc filenames are kebab-case slugs: lowercase a-z, 0-9, hyphens, `.md`. The

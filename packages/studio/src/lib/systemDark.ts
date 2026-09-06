@@ -1,8 +1,8 @@
 /**
  * Whether the system prefers a dark color scheme, as a React value that
  * follows the OS setting. The renderer's tokens flip on
- * `prefers-color-scheme` when no theme pins the paper, so the doc surface
- * (and the selection outlines that ride on it) must know the same thing.
+ * `prefers-color-scheme`, so the doc surface (and the selection outlines that
+ * ride on it) must know the same thing.
  */
 
 import { useEffect, useState } from 'react';

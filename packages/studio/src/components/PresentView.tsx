@@ -26,7 +26,7 @@ export function PresentView(): JSX.Element {
     if (s.currentSlug === null) return { html: null, error: 'No document open.' };
     try {
       return {
-        html: presentDeckHtml(s.source, s.currentSlug, s.theme, s.themeVars),
+        html: presentDeckHtml(s.source, s.currentSlug),
         error: null,
       };
     } catch (err) {

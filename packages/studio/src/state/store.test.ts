@@ -14,8 +14,6 @@ const DOC = '```meta\ntitle: T\n```\n\nHello prose.\n';
 let server: { source: string; hash: string };
 /** Version `/api/meta` reports (the stale-tab guard compares against it). */
 let serverVersion = '1.0.0';
-/** Theme portion of `/api/meta` — tests mutate it to simulate disk changes. */
-let serverTheme: object = { theme: 'textbook' };
 
 function stubFetch(): void {
   vi.stubGlobal(
@@ -25,9 +23,7 @@ function stubFetch(): void {
       const json = (body: unknown, status = 200): Response =>
         new Response(JSON.stringify(body), { status });
       if (url === '/api/meta') {
-        return Promise.resolve(
-          json({ version: serverVersion, docsDir: 'docs', ...serverTheme }),
-        );
+        return Promise.resolve(json({ version: serverVersion, docsDir: 'docs' }));
       }
       if (url === '/api/docs') {
         return Promise.resolve(json([{ slug: 'guide', file: 'guide.md', title: 'T', mtimeMs: 1 }]));
@@ -65,9 +61,6 @@ function resetStore(): void {
     autosave: false, // keep timers out of these tests
     selection: null,
     partSel: null,
-    themeChoice: 'textbook',
-    theme: 'textbook',
-    themeVars: undefined,
     conflict: null,
     undoStack: [],
     redoStack: [],
@@ -83,7 +76,6 @@ function resetStore(): void {
 beforeEach(() => {
   server = { source: DOC, hash: 'h1' };
   serverVersion = '1.0.0';
-  serverTheme = { theme: 'textbook' };
   stubFetch();
   resetStore();
 });
@@ -462,71 +454,23 @@ describe('pending delete confirm', () => {
   });
 });
 
-describe('handleServerEvent (meta) — theme sync', () => {
-  const EMBER_VARS = { '--navy': '#ff5a1f' };
-  const EMBER_META = {
-    theme: 'dark',
-    themeVars: EMBER_VARS,
-    active: { kind: 'saved', id: 'ember', name: 'Ember' },
-    savedThemes: [{ slug: 'ember', name: 'Ember', scope: 'project', theme: 'dark', themeVars: EMBER_VARS }],
-  };
-
-  it('a disk theme change refetches meta and repaints BOTH base and vars', async () => {
-    serverTheme = EMBER_META;
+describe('handleServerEvent (meta)', () => {
+  it('refetches meta and flags a stale tab when the server version moved on', async () => {
+    serverVersion = '2.0.0';
     useStudio.getState().handleServerEvent({ type: 'meta' });
     await flush();
     const s = useStudio.getState();
-    expect(s.themeChoice).toBe('saved:ember');
-    expect(s.theme).toBe('dark');
-    expect(s.themeVars).toEqual(EMBER_VARS);
-    expect(s.toasts.some((t) => t.message.includes('Theme changed on disk'))).toBe(true);
+    expect(s.meta?.version).toBe('2.0.0');
+    expect(s.updateAvailable).toBe(true);
   });
 
-  it('disk is truth: a disk change overrides a session-local picker choice', async () => {
-    useStudio.getState().setTheme('minimal'); // session preview
-    expect(useStudio.getState().theme).toBe('minimal');
-    serverTheme = { theme: 'dark', active: { kind: 'builtin', id: 'dark' }, savedThemes: [] };
+  it('a meta event with the same version stays quiet', async () => {
     useStudio.getState().handleServerEvent({ type: 'meta' });
     await flush();
     const s = useStudio.getState();
-    expect(s.themeChoice).toBe('dark');
-    expect(s.theme).toBe('dark');
-    expect(s.themeVars).toBeUndefined();
-  });
-
-  it('a meta event WITHOUT a disk theme change keeps the session choice, no toast', async () => {
-    // Baseline meta in the store matches what the server will report.
-    const base = { version: '1.0.0', docsDir: 'docs', theme: 'textbook' };
-    useStudio.setState({ meta: base as never });
-    serverTheme = { theme: 'textbook' };
-    useStudio.getState().setTheme('teal'); // session preview
-    useStudio.getState().handleServerEvent({ type: 'meta' }); // e.g. a config tweak
-    await flush();
-    const s = useStudio.getState();
-    expect(s.themeChoice).toBe('teal');
-    expect(s.theme).toBe('teal');
-    expect(s.toasts.some((t) => t.message.includes('Theme changed'))).toBe(false);
-  });
-
-  it('setTheme resolves a saved choice against meta (base + vars), built-ins stay pure', () => {
-    useStudio.setState({ meta: { version: '1.0.0', docsDir: 'docs', ...EMBER_META } as never });
-    useStudio.getState().setTheme('saved:ember');
-    let s = useStudio.getState();
-    expect(s.theme).toBe('dark');
-    expect(s.themeVars).toEqual(EMBER_VARS);
-    useStudio.getState().setTheme('minimal');
-    s = useStudio.getState();
-    expect(s.theme).toBe('minimal');
-    expect(s.themeVars).toBeUndefined();
-  });
-
-  it('init mirrors the disk theme into the picker choice', async () => {
-    serverTheme = EMBER_META;
-    await useStudio.getState().init();
-    const s = useStudio.getState();
-    expect(s.themeChoice).toBe('saved:ember');
-    expect(s.theme).toBe('dark');
-    expect(s.themeVars).toEqual(EMBER_VARS);
+    expect(s.meta?.version).toBe('1.0.0');
+    expect(s.updateAvailable).toBe(false);
+    expect(s.toasts).toHaveLength(0);
   });
 });
 

@@ -15,7 +15,7 @@ describe('buildBlockSource', () => {
 
 describe('previewBlock', () => {
   it('renders a valid draft to HTML with no diagnostics', () => {
-    const p = previewBlock('callout', 'tone: note\ntitle: Hi\nbody: There.', 'textbook');
+    const p = previewBlock('callout', 'tone: note\ntitle: Hi\nbody: There.');
     expect(p.seg?.kind).toBe('callout');
     expect(p.seg?.parseError).toBeUndefined();
     expect(p.html).toContain('Hi');
@@ -23,18 +23,18 @@ describe('previewBlock', () => {
   });
 
   it('surfaces a YAML parse error as a segment parseError + diagnostic', () => {
-    const p = previewBlock('callout', 'tone: [unclosed', 'textbook');
+    const p = previewBlock('callout', 'tone: [unclosed');
     expect(p.seg?.parseError).toBeDefined();
     expect(p.diagnostics.some((d) => d.code === 'E_PARSE_YAML')).toBe(true);
   });
 
   it('surfaces schema violations as diagnostics without crashing the render', () => {
-    const p = previewBlock('callout', 'tone: shouty\ntitle: Hi', 'textbook');
+    const p = previewBlock('callout', 'tone: shouty\ntitle: Hi');
     expect(p.diagnostics.length).toBeGreaterThan(0);
   });
 
   it('renders the meta block as the cover', () => {
-    const p = previewBlock('meta', 'title: My doc\nsubtitle: Sub.', 'textbook');
+    const p = previewBlock('meta', 'title: My doc\nsubtitle: Sub.');
     expect(p.html).toContain('My doc');
     expect(p.html).toContain('cover-title');
   });

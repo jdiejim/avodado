@@ -22,8 +22,6 @@ describe('projectStatus (smart bare `avo`)', () => {
       expect(status.docCount).toBe(2);
       expect(status.errors).toBe(0);
       expect(status.docsDir).toBe('docs');
-      // exact value depends on a possible machine-global theme — just non-empty
-      expect(status.theme.length).toBeGreaterThan(0);
 
       const text = formatStatus(status, true);
       expect(text).toContain('2 document(s)');

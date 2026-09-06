@@ -98,7 +98,6 @@ rows:
   - ["avo design [slug]", "Grab a design-pattern template; -p/-s render the gallery"]
   - ["avo block / template", Scaffold a single block or a doc template]
   - ["avo skill", "Copy the authoring grammar as a system prompt — for Copilot / custom GPTs / any AI"]
-  - ["avo theme [name]", Pick / list / install a document theme]
   - ["avo sync openapi <spec>", Generate an API doc straight from an OpenAPI file]
 ```
 
@@ -109,7 +108,7 @@ You compose a doc from **2–5 blocks, each a different lens**. A KPI strip:
 ```stats
 stats:
   - { value: "76", label: Block types, trend: flat }
-  - { value: "6", label: Built-in themes, trend: up }
+  - { value: "12", label: Block families, trend: flat }
   - { value: "3", label: Export formats, trend: flat }
 ```
 
@@ -143,11 +142,10 @@ links:
   - { ref: "#seq-gs-checkout", mode: sequence, label: Request flow }
 ```
 
-## Themes & slides
+## Look & slides
 
-- **Themes.** Six built-ins (`textbook` · `minimal` · `soft` · `dark` · `teal` ·
-  `slate`). Run `avo theme` to pick one, or `avo theme new <name>` to craft a
-  custom one in `.avodado/themes/`. No rebuild — re-render and it's applied.
+- **Look.** One editorial skin for every export. Pages follow your OS
+  light/dark setting. There is nothing to pick.
 - **Slides.** Any doc is a deck: `avo slides <file>`. Each `#`/`##` heading starts
   a new slide and is its title; everything under it rides along. See the advanced
   tutorial (`docs/tutorial.md`) for a deck-first walkthrough of the whole feature

@@ -31,7 +31,7 @@ Transport is stdio; no configuration or API key required.
 | `list_block_types` | Every supported block type. |
 | `get_block_schema(type)` | JSON Schema (fields, enums) for one block type. |
 | `check_document(markdown, slug?)` | Parse + validate; returns diagnostics (empty = valid). |
-| `render_document(markdown, slug?, theme?)` | Render to standalone styled HTML. |
+| `render_document(markdown, slug?)` | Render to standalone styled HTML. |
 | `resolve_refs(documents[])` | Cross-check `doc#id` references (dangling refs, duplicate ids). |
 | `sync_openapi(spec, slug?)` | Generate an Avodado doc from an OpenAPI (JSON) spec. |
 

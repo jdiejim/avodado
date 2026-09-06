@@ -1,8 +1,7 @@
 /**
- * `createConfigWatcher` must see every location a theme change can land in:
- * the project root, `.avodado/themes/` (even created after startup), and the
- * global `~/.avodado` root + its `themes/` — that's what keeps the studio's
- * theme picker and canvas live.
+ * `createConfigWatcher` must see `avodado.config.*` writes at the project
+ * root — that's what keeps `avo serve` and the studio's Site mode in step
+ * with config changes — and nothing else.
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -15,14 +14,12 @@ import { createConfigWatcher, type ConfigWatcher } from '../io/watch.js';
 const roots: string[] = [];
 const watchers: ConfigWatcher[] = [];
 
-function scaffold(): { cwd: string; globalRoot: string } {
+function scaffold(): { cwd: string } {
   const base = join(tmpdir(), `avo-watch-${randomBytes(6).toString('hex')}`);
   const cwd = join(base, 'proj');
-  const globalRoot = join(base, 'home', '.avodado');
   mkdirSync(cwd, { recursive: true });
-  mkdirSync(globalRoot, { recursive: true });
   roots.push(base);
-  return { cwd, globalRoot };
+  return { cwd };
 }
 
 afterEach(() => {
@@ -56,65 +53,34 @@ async function triggerAndWait(
 }
 
 describe('createConfigWatcher', () => {
-  it('fires for project avodado.theme.json / avodado.config.* writes', async () => {
-    const { cwd, globalRoot } = scaffold();
+  it('fires for project avodado.config.* writes, including files created after startup', async () => {
+    const { cwd } = scaffold();
     let n = 0;
-    watchers.push(createConfigWatcher(cwd, () => (n += 1), globalRoot));
+    watchers.push(createConfigWatcher(cwd, () => (n += 1)));
 
-    const writeTheme = (): void =>
-      writeFileSync(join(cwd, 'avodado.theme.json'), '{ "theme": "dark" }\n');
-    await triggerAndWait(() => n, 0, writeTheme, 'project theme write');
-
-    const before = n;
     const writeConfig = (): void =>
       writeFileSync(join(cwd, 'avodado.config.json'), '{ "docsDir": "docs" }\n');
-    await triggerAndWait(() => n, before, writeConfig, 'project config write');
+    await triggerAndWait(() => n, 0, writeConfig, 'project config write');
+
+    const before = n;
+    const writeYaml = (): void => writeFileSync(join(cwd, 'avodado.config.yml'), 'docsDir: docs\n');
+    await triggerAndWait(() => n, before, writeYaml, 'second config file');
   }, 20_000);
 
   it('ignores unrelated files in the project root', async () => {
-    const { cwd, globalRoot } = scaffold();
+    const { cwd } = scaffold();
     let n = 0;
-    watchers.push(createConfigWatcher(cwd, () => (n += 1), globalRoot));
+    watchers.push(createConfigWatcher(cwd, () => (n += 1)));
     writeFileSync(join(cwd, 'README.md'), 'hi\n');
+    writeFileSync(join(cwd, 'avodado.theme.json'), '{}\n'); // a leftover from older versions
     await new Promise((r) => setTimeout(r, 300));
     expect(n).toBe(0);
   });
 
-  it('fires when a theme is installed into .avodado/themes/ created AFTER startup', async () => {
-    const { cwd, globalRoot } = scaffold();
-    let n = 0;
-    watchers.push(createConfigWatcher(cwd, () => (n += 1), globalRoot));
-
-    // Simulates `avo theme install --local` on a fresh project.
-    const install = (): void => {
-      mkdirSync(join(cwd, '.avodado', 'themes'), { recursive: true });
-      writeFileSync(join(cwd, '.avodado', 'themes', 'ember.theme.json'), '{ "theme": "dark" }\n');
-    };
-    await triggerAndWait(() => n, 0, install, 'local install into new dir');
-  }, 20_000);
-
-  it('fires for the global active theme and global installs', async () => {
-    const { cwd, globalRoot } = scaffold();
-    mkdirSync(join(globalRoot, 'themes'), { recursive: true });
-    let n = 0;
-    watchers.push(createConfigWatcher(cwd, () => (n += 1), globalRoot));
-
-    // `avo theme <name> --global` / `avo theme install --use`.
-    const setGlobal = (): void =>
-      writeFileSync(join(globalRoot, 'avodado.theme.json'), '{ "theme": "soft" }\n');
-    await triggerAndWait(() => n, 0, setGlobal, 'global active write');
-
-    const before = n;
-    // `avo theme install` (global is the default destination).
-    const installGlobal = (): void =>
-      writeFileSync(join(globalRoot, 'themes', 'sunset.theme.json'), '{ "theme": "dark" }\n');
-    await triggerAndWait(() => n, before, installGlobal, 'global install');
-  }, 20_000);
-
   it('is inert (but closeable) when nothing exists to watch', () => {
     const base = join(tmpdir(), `avo-watch-${randomBytes(6).toString('hex')}`);
     roots.push(base);
-    const w = createConfigWatcher(join(base, 'nope'), () => {}, join(base, 'nohome'));
+    const w = createConfigWatcher(join(base, 'nope'), () => {});
     w.close(); // no throw
   });
 });

@@ -45,7 +45,7 @@ const cpl = (pt: number, w: number): number => Math.max(8, Math.floor((w * 131) 
 const linesFor = (s: string, pt: number, w: number): number =>
   s.split('\n').reduce((a, l) => a + Math.max(1, Math.ceil(l.length / cpl(pt, w))), 0);
 
-// ── Theme → PowerPoint palette ──────────────────────────────────────────────
+// ── Skin tokens → PowerPoint palette ────────────────────────────────────────
 
 interface Palette {
   readonly navy: string;
@@ -66,7 +66,7 @@ interface Palette {
   readonly mono: string;
 }
 
-/** House defaults (the textbook theme's `:root` values), no `#`. */
+/** House defaults (the skin's `:root` values), no `#`. */
 const DEFAULTS: Record<string, string> = {
   navy: '233a5e',
   charcoal: '211f1a',
@@ -91,7 +91,7 @@ function firstFamily(stack: string | undefined, fallback: string): string {
   return first === '' ? fallback : first;
 }
 
-/** Parses the theme-variable declaration string into a PowerPoint palette. */
+/** Parses the `:root` variable declaration string into a PowerPoint palette. */
 function paletteFrom(themeVars: string): Palette {
   const vars: Record<string, string> = {};
   for (const decl of themeVars.split(';')) {

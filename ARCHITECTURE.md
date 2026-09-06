@@ -10,7 +10,7 @@ Avodado is a documentation-as-code system. A pnpm monorepo of five published pac
 
 ```
 @avodado/core   ← pure: parse, schemas (87 + aliases), validate, resolve, edit ops. No I/O.
-@avodado/render ← @avodado/core. HTML + slide decks out. No DOM, no browser. Theme support.
+@avodado/render ← @avodado/core. HTML + slide decks out. No DOM, no browser. One look; OS dark mode.
 @avodado/studio ← @avodado/{core, render}. Browser SPA (Vite/React), ships built static assets.
 @avodado/mcp    ← @avodado/{core, render}. MCP server over stdio.
 @avodado/cli    ← @avodado/{core, render, studio}. Ink TUI. PDF (Playwright) + sync I/O (OpenAPI, CSV). Owns process.exit.
@@ -106,9 +106,11 @@ Shared SVG utilities live under `packages/render/src/svg/`:
 | `nodeGlyph(kind, x, y, c)` | Returns small SVG glyph (database cylinder, queue bars, function ƒ, …) |
 | `GEDGE` | Per-kind edge stroke style table (`solid`/`dashed`/`forbidden`/`error`) |
 
-## Theme system
+## Look and dark mode
 
-Six built-in themes (`textbook` — the default — plus `minimal` / `teal` / `slate` / `dark` / `soft`). Switching is purely a CSS-variable override applied via `style="…"` on the `.docskin` root — no per-block code changes, no SVG regeneration. Adding a theme means adding one entry to `packages/render/src/themes.ts`.
+There is one look: the editorial skin in `packages/render/src/css.ts` (see `packages/render/DESIGN.md`). Every colour is a role token on `:root` (`--paper`, `--ink`, `--accent`, …); the dark set replaces them on `prefers-color-scheme: dark` and on `[data-theme="dark"]`, so a page follows the reader's OS and a host page can still force dark. Rendered pages never stamp `data-theme` themselves.
+
+There is no theme choice anywhere — no `avo theme`, no `--theme`, no Studio panel. `packages/render/src/themes.ts` keeps the single-entry shape (`ThemeName = 'textbook'`, label `Editorial`, `themeStyle()` returns `''`) so presets can return without an API change, and `RenderPartsOptions.themeVars` stays as an internal `:root` override with no user surface (the CLI uses it for `--size`).
 
 ## Reference scheme
 

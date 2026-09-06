@@ -24,11 +24,9 @@ import {
   type Diagnostic,
   type InputDocument,
 } from '@avodado/core';
-import { renderDocument, type ThemeName } from '@avodado/render';
+import { renderDocument } from '@avodado/render';
 import { blockTypesListing } from './blockTypes.js';
 import { SKILL_MD } from './skill.generated.js';
-
-const THEMES = ['textbook', 'minimal', 'soft', 'dark', 'teal', 'slate'] as const;
 
 function formatDiagnostics(diags: readonly Diagnostic[]): string {
   if (diags.length === 0) return 'OK — no diagnostics. The document is valid.';
@@ -75,14 +73,10 @@ server.registerTool(
     inputSchema: {
       markdown: z.string(),
       slug: z.string().optional(),
-      theme: z.enum(THEMES).optional().describe('Visual theme (default textbook).'),
     },
   },
-  ({ markdown, slug, theme }) => {
-    const html = renderDocument(
-      parseDocument(markdown, slug ?? 'doc'),
-      theme !== undefined ? { theme: theme as ThemeName } : {},
-    );
+  ({ markdown, slug }) => {
+    const html = renderDocument(parseDocument(markdown, slug ?? 'doc'));
     return { content: [{ type: 'text', text: html }] };
   },
 );

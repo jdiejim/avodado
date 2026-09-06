@@ -11,7 +11,7 @@ import {
   type Diagnostic,
   type TypedSegment,
 } from '@avodado/core';
-import { renderDocumentSegments, type ThemeName } from '@avodado/render';
+import { renderDocumentSegments } from '@avodado/render';
 import { diagnosticsInSpan } from './segDiagnostics.js';
 
 /** A single fenced block as a standalone document source. */
@@ -30,12 +30,7 @@ export interface BlockPreview {
 }
 
 /** Parses, validates, and renders a draft block body. Never throws. */
-export function previewBlock(
-  kind: BlockType,
-  raw: string,
-  theme: ThemeName,
-  themeVars?: Readonly<Record<string, string>>,
-): BlockPreview {
+export function previewBlock(kind: BlockType, raw: string): BlockPreview {
   const source = buildBlockSource(kind, raw);
   const doc = parseDocument(source, 'preview');
   const first = doc.segments[0];
@@ -45,10 +40,7 @@ export function previewBlock(
   const diagnostics = diagnosticsInSpan(all, { startLine: 1, endLine: lineCount });
   let html = '';
   try {
-    const r = renderDocumentSegments(doc, {
-      theme,
-      ...(themeVars !== undefined ? { themeVars } : {}),
-    });
+    const r = renderDocumentSegments(doc);
     const body = kind === 'meta' ? r.cover : (r.segments[0]?.html ?? '');
     html = body === '' ? '' : r.defs + body;
   } catch {

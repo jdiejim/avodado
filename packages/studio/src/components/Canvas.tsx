@@ -496,8 +496,6 @@ export function Canvas(): JSX.Element {
   const currentSlug = useStudio((s) => s.currentSlug);
   const select = useStudio((s) => s.select);
   const slashHintAt = useStudio((s) => s.slashHintAt);
-  const theme = useStudio((s) => s.theme);
-  const themeVars = useStudio((s) => s.themeVars);
   const sysDark = useSystemDark();
   const showSlashHint = slashHintAt !== null && !slashUsed();
 
@@ -531,10 +529,9 @@ export function Canvas(): JSX.Element {
   return (
     <main className="stu-canvas" data-tour="canvas" onClick={() => select(null)}>
       <style>{rendered.css}</style>
-      <style>{`.docskin{${rendered.themeVars}}`}</style>
       <div
         className="stu-page"
-        data-doc-theme={docSurface(theme, themeVars, sysDark)}
+        data-doc-theme={docSurface(sysDark)}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="docskin">

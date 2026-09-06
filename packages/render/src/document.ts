@@ -3,9 +3,9 @@
  *
  * - Inlines the house CSS in `<style>` so the output is self-contained.
  * - Wraps the body in `<div class="docskin">` so the CSS rules apply.
- * - Applies an optional theme by setting CSS variables on `:root`, and stamps
- *   `data-theme` on `<html>` so an explicitly chosen theme never mixes with
- *   the reader's system dark mode (the default theme follows the system).
+ * - Emits internal `themeVars` overrides (if any) as CSS variables on `:root`.
+ *   The page never stamps `data-theme`: the look follows the reader's system
+ *   dark mode, and a host page can still force it with `data-theme="dark"`.
  *
  * The actual rendering is done by {@link renderDocumentParts} (in `parts.ts`);
  * this function just wraps those parts into a full HTML page. Embedding
@@ -16,7 +16,7 @@
  * import { parseDocument } from '@avodado/core';
  * import { renderDocument } from '@avodado/render';
  *
- * const html = renderDocument(parseDocument(md, 'orders'), { theme: 'teal' });
+ * const html = renderDocument(parseDocument(md, 'orders'));
  * ```
  */
 
@@ -32,18 +32,16 @@ export type RenderOptions = RenderPartsOptions;
  * Renders a document to a standalone HTML page.
  *
  * @param doc - The parsed Avodado document.
- * @param opts - Optional render options (theme).
+ * @param opts - Optional render options (internal variable overrides).
  * @returns A complete HTML string (`<!doctype html>…</html>`).
  */
 export function renderDocument(doc: Document, opts: RenderOptions = {}): string {
   const parts = renderDocumentParts(doc, opts);
   const themeBlock =
     parts.themeVars.length > 0 ? `\n<style>:root{${parts.themeVars}}</style>` : '';
-  const dataTheme =
-    opts.theme === 'dark' ? ' data-theme="dark"' : opts.theme !== undefined && opts.theme !== 'textbook' ? ' data-theme="light"' : '';
   return (
     `<!doctype html>\n` +
-    `<html lang="en"${dataTheme}>\n` +
+    `<html lang="en">\n` +
     `<head>\n` +
     `<meta charset="utf-8">\n` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">\n` +

@@ -70,7 +70,6 @@ avo html | slides | pdf <file>    # render one doc (-p opens it, -o writes to a 
 avo build                         # build a static HTML site from all docs → dist/
 avo studio                        # local visual editor: edit, browse the site, present as slides
 avo new <template|block>          # scaffold a doc (adr, runbook…) or a single block (sequence, erd…)
-avo theme                         # pick a theme (textbook · minimal · soft · dark · teal · slate)
 avo sync openapi <spec>           # generate an API doc from an OpenAPI spec
 avo sync csv <file>               # turn a CSV into a table / chart block
 avo sync sql|dbml|prisma <file>   # turn a database schema into an erd block

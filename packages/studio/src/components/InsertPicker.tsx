@@ -61,7 +61,7 @@ const FAMILY_LABELS: ReadonlyMap<string, string> = new Map(
 /** Where the picker's insert lands, resolved against the store RIGHT NOW. */
 function resolveIndex(pinned: number | null): number {
   const s = useStudio.getState();
-  const { doc } = derive(s.source, s.currentSlug ?? 'untitled', s.theme, s.themeVars);
+  const { doc } = derive(s.source, s.currentSlug ?? 'untitled');
   return pickerInsertIndex(pinned, s.selection, doc.segments.length);
 }
 
@@ -300,8 +300,6 @@ function DetailDialog({ hit, canInsert, onClose, onInsert }: {
   onClose: () => void;
   onInsert: (hit: PickerHit) => void;
 }): JSX.Element {
-  const theme = useStudio((s) => s.theme);
-  const themeVars = useStudio((s) => s.themeVars);
   const sysDark = useSystemDark();
   const rootRef = useRef<HTMLDivElement>(null);
   const insertRef = useRef<HTMLButtonElement>(null);
@@ -309,10 +307,7 @@ function DetailDialog({ hit, canInsert, onClose, onInsert }: {
 
   const body = useMemo(() => hitInsertBody(hit), [hit]);
   const snippet = useMemo(() => buildBlockSource(hit.item.type, body).trimEnd(), [hit, body]);
-  const preview = useMemo(
-    () => previewBlock(hit.item.type, body, theme, themeVars),
-    [hit, body, theme, themeVars],
-  );
+  const preview = useMemo(() => previewBlock(hit.item.type, body), [hit, body]);
 
   // Land on Insert: ⏎ from the card flows ⏎ → details → ⏎ → inserted.
   useEffect(() => {
@@ -376,7 +371,7 @@ function DetailDialog({ hit, canInsert, onClose, onInsert }: {
         <div className="stu-picker-detail-body">
           <div className="stu-picker-pane stu-picker-pane-preview">
             <div className="stu-picker-pane-label">Preview</div>
-            <div className="stu-picker-preview" data-doc-theme={docSurface(theme, themeVars, sysDark)}>
+            <div className="stu-picker-preview" data-doc-theme={docSurface(sysDark)}>
               {preview.html !== '' ? (
                 <div
                   className="docskin stu-picker-preview-doc"
@@ -426,8 +421,6 @@ function BrowsePicker({ picker, query, setQuery }: {
 }): JSX.Element {
   const closePicker = useStudio((s) => s.closePicker);
   const currentSlug = useStudio((s) => s.currentSlug);
-  const theme = useStudio((s) => s.theme);
-  const themeVars = useStudio((s) => s.themeVars);
   const [family, setFamily] = useState<FamilyFilter>('all');
   const [detail, setDetail] = useState<PickerHit | null>(null);
   const [focusIdx, setFocusIdx] = useState(0);
@@ -449,16 +442,13 @@ function BrowsePicker({ picker, query, setQuery }: {
     el?.scrollIntoView({ block: 'nearest' });
   };
 
-  // The docskin stylesheet + theme vars for thumbnails and the preview pane —
-  // injected here (scoped to the overlay) so the gallery is fully styled even
-  // when the Canvas (which injects them for Edit mode) isn't mounted.
+  // The docskin stylesheet for thumbnails and the preview pane — injected here
+  // (scoped to the overlay) so the gallery is fully styled even when the
+  // Canvas (which injects it for Edit mode) isn't mounted.
   const skin = useMemo(() => {
-    const r = renderDocumentSegments(parseDocument('', 'picker-skin'), {
-      theme,
-      ...(themeVars !== undefined ? { themeVars } : {}),
-    });
-    return { css: r.css, vars: r.themeVars };
-  }, [theme, themeVars]);
+    const r = renderDocumentSegments(parseDocument('', 'picker-skin'));
+    return { css: r.css };
+  }, []);
 
   // Autofocus the search; remember and restore the opener's focus.
   useEffect(() => {
@@ -537,7 +527,6 @@ function BrowsePicker({ picker, query, setQuery }: {
         }}
       >
         <style>{skin.css}</style>
-        <style>{`.stu-picker-browse .docskin{${skin.vars}}`}</style>
         <header className="stu-picker-head">
           <div className="stu-picker-title">
             <span className="stu-picker-title-icon">

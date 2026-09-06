@@ -1,12 +1,12 @@
 /**
  * The single top bar over the canvas: breadcrumb (folder / doc title) on the
- * left; check chip, Share ▾ (link · exports · site), Theme, Present, and ONE
- * Save button with a plain save-status text on the right. Navigation lives in
- * the left rail; autosave lives in the rail's Settings.
+ * left; check chip, Share ▾ (link · exports · site), Present, and ONE Save
+ * button with a plain save-status text on the right. Navigation lives in the
+ * left rail; autosave lives in the rail's Settings.
  *
  * Narrow windows (≤820px) keep the check chip and Save visible and fold
- * Library / Share / Theme / Present behind a ⋯ overflow menu (CSS-gated —
- * both sets render; the media query shows one).
+ * Library / Share / Present behind a ⋯ overflow menu (CSS-gated — both sets
+ * render; the media query shows one).
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -17,8 +17,7 @@ import { docFolder, editedAgo } from '../lib/docList.js';
 import { buildShareUrl, SHARE_LIMIT } from '../lib/shareLink.js';
 import { useDerived, useStudio } from '../state/store.js';
 import { CheckChip, HomeCheckChip } from './CheckChip.js';
-import { IconChevronDown, IconLibrary, IconPalette } from './Icons.js';
-import { ThemePanel } from './ThemePanel.js';
+import { IconChevronDown, IconLibrary } from './Icons.js';
 
 /** Opens the Block Library — the browsable gallery of every block type. */
 function LibraryButton(): JSX.Element {
@@ -67,8 +66,6 @@ function useMenuDismiss(
  */
 function ShareItems({ onDone }: { onDone: () => void }): JSX.Element {
   const currentSlug = useStudio((s) => s.currentSlug);
-  const theme = useStudio((s) => s.theme);
-  const themeVars = useStudio((s) => s.themeVars);
   const toast = useStudio((s) => s.toast);
   const { doc } = useDerived();
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -96,19 +93,19 @@ function ShareItems({ onDone }: { onDone: () => void }): JSX.Element {
 
   const slug = currentSlug ?? 'document';
   const doHtml = (): void => {
-    exportDocHtml(doc, slug, theme, themeVars);
+    exportDocHtml(doc, slug);
     toast('Exported HTML page', 'info');
     onDone();
   };
   const doSlides = (): void => {
-    exportDeckHtml(doc, slug, theme, themeVars);
+    exportDeckHtml(doc, slug);
     toast('Exported slide deck', 'info');
     onDone();
   };
   const doPdf = async (): Promise<void> => {
     setPdfBusy(true);
     try {
-      await exportPdf(doc, slug, theme, themeVars);
+      await exportPdf(doc, slug);
       toast('Exported PDF', 'info');
       onDone();
     } catch (err) {
@@ -120,7 +117,7 @@ function ShareItems({ onDone }: { onDone: () => void }): JSX.Element {
   const doPptx = async (): Promise<void> => {
     setPptxBusy(true);
     try {
-      await exportPptx(doc, slug, theme, themeVars);
+      await exportPptx(doc, slug);
       toast('Exported PowerPoint deck', 'info');
       onDone();
     } catch (err) {
@@ -216,10 +213,10 @@ function ShareMenu(): JSX.Element {
 
 /**
  * ⋯ — the narrow bar's overflow menu (CSS shows it only ≤820px): Library /
- * Theme / Present as menu rows, then the same share/export items. The check
- * chip and Save never fold — they stay on the bar itself.
+ * Present as menu rows, then the same share/export items. The check chip and
+ * Save never fold — they stay on the bar itself.
  */
-function OverflowMenu({ onTheme }: { onTheme: () => void }): JSX.Element {
+function OverflowMenu(): JSX.Element {
   const mode = useStudio((s) => s.mode);
   const setMode = useStudio((s) => s.setMode);
   const openLibrary = useStudio((s) => s.openLibrary);
@@ -258,17 +255,6 @@ function OverflowMenu({ onTheme }: { onTheme: () => void }): JSX.Element {
               Block library
             </button>
           )}
-          <button
-            type="button"
-            role="menuitem"
-            className="stu-export-item"
-            onClick={() => {
-              setOpen(false);
-              onTheme();
-            }}
-          >
-            Theme…
-          </button>
           {onDoc && (
             <button
               type="button"
@@ -404,40 +390,25 @@ function Crumb(): JSX.Element {
 }
 
 export function TopBar(): JSX.Element {
-  const [themeOpen, setThemeOpen] = useState(false);
   const mode = useStudio((s) => s.mode);
   const currentSlug = useStudio((s) => s.currentSlug);
   const onDoc = mode !== 'home' && currentSlug !== null;
 
   return (
-    <>
-      <header className="stu-topbar" data-tour="topbar">
-        <Crumb />
-        <span className="stu-spacer" />
-        {onDoc && <CheckChip />}
-        {/* All-documents view: the AGGREGATE chip (per-doc errorCounts). */}
-        {mode === 'home' && <HomeCheckChip />}
-        {/* Wide-only controls: ≤820px they fold behind the ⋯ overflow menu. */}
-        <div className="stu-topbar-wide">
-          {mode === 'edit' && <LibraryButton />}
-          {onDoc && <ShareMenu />}
-          <button
-            type="button"
-            className={`stu-libbtn ${themeOpen ? 'stu-themebtn-on' : ''}`}
-            data-tour="theme"
-            title="Theme"
-            aria-expanded={themeOpen}
-            onClick={() => setThemeOpen(!themeOpen)}
-          >
-            <IconPalette size={13} />
-            Theme
-          </button>
-          {onDoc && <PresentButton />}
-        </div>
-        {onDoc && <SaveControls />}
-        <OverflowMenu onTheme={() => setThemeOpen(true)} />
-      </header>
-      {themeOpen && <ThemePanel onClose={() => setThemeOpen(false)} />}
-    </>
+    <header className="stu-topbar" data-tour="topbar">
+      <Crumb />
+      <span className="stu-spacer" />
+      {onDoc && <CheckChip />}
+      {/* All-documents view: the AGGREGATE chip (per-doc errorCounts). */}
+      {mode === 'home' && <HomeCheckChip />}
+      {/* Wide-only controls: ≤820px they fold behind the ⋯ overflow menu. */}
+      <div className="stu-topbar-wide">
+        {mode === 'edit' && <LibraryButton />}
+        {onDoc && <ShareMenu />}
+        {onDoc && <PresentButton />}
+      </div>
+      {onDoc && <SaveControls />}
+      <OverflowMenu />
+    </header>
   );
 }

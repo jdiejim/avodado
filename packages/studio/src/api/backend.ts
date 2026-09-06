@@ -3,7 +3,7 @@
  *
  * Studio does all of its own work in the browser — parse, validate, render,
  * present. The only thing it needs from the outside is somewhere to keep
- * documents, and this is that seam: five methods, one interface, two (soon
+ * documents, and this is that seam: four methods, one interface, two (soon
  * three) implementations.
  *
  *   - `fileBridge`  — `avo studio`'s local JSON API over your `docs/*.md`.
@@ -17,37 +17,10 @@
  * implementation at boot rather than rewriting the app.
  */
 
-/** What the backend says the active theme IS (identity, not resolution). */
-export interface ActiveThemeMeta {
-  /** `builtin` (a base theme), `saved` (a saved custom), `custom` (unmatched overrides), or `none`. */
-  readonly kind: 'builtin' | 'saved' | 'custom' | 'none';
-  /** Built-in name or saved slug, when known. */
-  readonly id?: string;
-  /** Display name for a saved/custom theme, when known. */
-  readonly name?: string;
-}
-
-/** One saved (installed) theme: identity + its resolved base/vars for preview. */
-export interface SavedThemeMeta {
-  readonly slug: string;
-  readonly name: string;
-  readonly scope: 'global' | 'project';
-  readonly theme?: string;
-  readonly themeVars?: Readonly<Record<string, string>>;
-}
-
-/** Studio-wide state: version, where docs live, and the active theme. */
+/** Studio-wide state: version and where docs live. */
 export interface StudioMeta {
   readonly version: string;
   readonly docsDir: string;
-  /** Resolved base theme of the ACTIVE theme (a built-in name), if configured. */
-  readonly theme?: string;
-  /** Resolved CSS-variable overrides of the active theme. */
-  readonly themeVars?: Readonly<Record<string, string>>;
-  /** Identity of the active theme. Absent on older servers. */
-  readonly active?: ActiveThemeMeta;
-  /** Every saved theme, for the picker. Absent on older servers. */
-  readonly savedThemes?: readonly SavedThemeMeta[];
 }
 
 /** One entry of the document list. */
@@ -82,17 +55,6 @@ export type SaveResult =
   | { readonly ok: true; readonly hash: string; readonly mtimeMs: number }
   | { readonly ok: false; readonly conflict: SaveConflict };
 
-/** A theme to install (the Theme Generator's output). */
-export interface ThemeInput {
-  readonly name: string;
-  /** Base built-in theme the custom colors/fonts extend. */
-  readonly base: string;
-  readonly colors: Readonly<Record<string, string>>;
-  readonly fonts: Readonly<Record<string, string>>;
-  /** `project` → `.avodado/themes`; `global` → `~/.avodado/themes`. */
-  readonly scope: 'project' | 'global';
-}
-
 /** Where documents live for this session. */
 export interface StudioBackend {
   readonly kind: 'file-bridge' | 'vault';
@@ -112,7 +74,6 @@ export interface StudioBackend {
    * create a document, and pass `force` to overwrite a stale base.
    */
   saveDoc(slug: string, source: string, baseHash?: string, force?: boolean): Promise<SaveResult>;
-  saveTheme(input: ThemeInput): Promise<{ slug: string; path: string }>;
 }
 
 /**

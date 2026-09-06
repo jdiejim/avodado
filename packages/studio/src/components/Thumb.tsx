@@ -7,7 +7,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { BlockType } from '@avodado/core';
 import { thumbnailHtml } from '../lib/thumbs.js';
-import { useStudio } from '../state/store.js';
 
 /** Native docskin content is laid out at this width, then scaled into the card. */
 export const THUMB_NATIVE_W = 760;
@@ -15,7 +14,6 @@ export const THUMB_SCALE = 0.235;
 
 /** A block card thumbnail — renders lazily (when scrolled into view) via the global memo. */
 export function Thumb({ type }: { type: BlockType }): JSX.Element {
-  const theme = useStudio((s) => s.theme);
   const [html, setHtml] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -23,13 +21,13 @@ export function Thumb({ type }: { type: BlockType }): JSX.Element {
     const el = ref.current;
     if (el === null) return;
     if (typeof IntersectionObserver === 'undefined') {
-      setHtml(thumbnailHtml(type, theme));
+      setHtml(thumbnailHtml(type));
       return;
     }
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setHtml(thumbnailHtml(type, theme));
+          setHtml(thumbnailHtml(type));
           io.disconnect();
         }
       },
@@ -37,7 +35,7 @@ export function Thumb({ type }: { type: BlockType }): JSX.Element {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [type, theme]);
+  }, [type]);
 
   return (
     <div ref={ref} className="stu-thumb" aria-hidden="true">

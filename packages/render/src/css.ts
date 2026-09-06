@@ -2,8 +2,8 @@
  * The house CSS — ported verbatim from `resources/doc-studio.jsx`.
  *
  * All output is namespaced under `.docskin` so the stylesheet can coexist with
- * a host page's own styles. Theme switching works by overriding the CSS
- * variables on the `.docskin` root (see {@link themes}).
+ * a host page's own styles. Every colour is a CSS variable on `:root`; dark
+ * mode flips them on `prefers-color-scheme` or `data-theme="dark"`.
  *
  * Exported as a single string so it can be inlined into a `<style>` tag in the
  * standalone HTML produced by {@link renderDocument} (or copied verbatim into
@@ -11,11 +11,11 @@
  */
 export const houseCss = `*{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
-/* Design tokens live on :root so a theme (applied as :root overrides) reaches
+/* Design tokens live on :root so an override (applied on :root) reaches
    the whole page — body chrome included, not just .docskin content. */
 :root{
   /* The skin's role tokens (packages/render/DESIGN.md). Renderers name the
-     role, never the value; a theme overrides these on :root. */
+     role, never the value; the dark set overrides these on :root. */
   --paper:#f7f6f2; --paper-2:#efede8; --ink:#1f2430; --muted:#4f5868; --soft:#5f6876;
   --rule:rgba(31,36,48,.14); --rule-solid:#c9c6bd;
   --accent:#b04a25; --accent-tint:rgba(176,74,37,.09); --link:#2f5c8f;

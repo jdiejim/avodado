@@ -72,20 +72,6 @@ describe('memoryVault', () => {
     await expect(memoryVault.fetchDoc('gone')).rejects.toThrow(/gone/);
   });
 
-  it('reports a saved theme back through meta', async () => {
-    await memoryVault.saveTheme({
-      name: 'House Style',
-      base: 'slate',
-      colors: { '--avo-accent': '#0f766e' },
-      fonts: {},
-      scope: 'project',
-    });
-    const meta = await memoryVault.fetchMeta();
-    expect(meta.theme).toBe('slate');
-    expect(meta.savedThemes?.[0]).toMatchObject({ slug: 'house-style', name: 'House Style' });
-    expect(meta.themeVars).toEqual({ '--avo-accent': '#0f766e' });
-  });
-
   it('says where documents live, so the UI can be honest about it', async () => {
     expect((await memoryVault.fetchMeta()).docsDir).toBe('This browser tab');
   });

@@ -102,7 +102,6 @@ const OVERLAY_GROUPS: ReadonlyArray<{ title: string; rows: readonly OverlayRow[]
       { keys: 'rail', label: 'docs by folder · New doc · All documents · Settings (autosave)' },
       { keys: '⌘K', label: 'search docs — opens the rail drawer on narrow windows' },
       { keys: 'check chip', label: 'validation results — rows jump to the block & field' },
-      { keys: 'Theme', label: 'theme panel — pick a card, or customize & save' },
       { keys: '⌘S', label: 'save now — with autosave off, review first' },
       { keys: '⇧⌘P', label: 'Present — the current doc as slides · esc returns' },
       { keys: 'Share ▾', label: 'copy link · export HTML / slides / PDF · open the site' },

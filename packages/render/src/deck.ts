@@ -343,7 +343,7 @@ const DECK_JS = `(function(){
  * Renders a {@link Document} to a self-contained slide-deck HTML string.
  *
  * @param doc - The parsed document.
- * @param opts - Optional theme + variable overrides.
+ * @param opts - Optional internal variable overrides.
  */
 export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
   const { css, themeVars, title, defs, slides } = renderSlides(doc, opts);
@@ -428,12 +428,10 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
     `<button class="deck-btn" id="deck-next" aria-label="Next">›</button>` +
     `</div>`;
 
-  // An explicitly chosen theme never mixes with the reader's system dark mode
-  // (the default theme follows the system) — same stamp as `renderDocument`.
-  const dataTheme =
-    opts.theme === 'dark' ? ' data-theme="dark"' : opts.theme !== undefined && opts.theme !== 'textbook' ? ' data-theme="light"' : '';
+  // No `data-theme` stamp: the deck follows the reader's system dark mode,
+  // same as `renderDocument`. A host page can still force `data-theme="dark"`.
   return (
-    `<!doctype html><html lang="en"${dataTheme}><head><meta charset="utf-8">` +
+    `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${esc(title)}</title>` +
     `<style>${css}</style>` +

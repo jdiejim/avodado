@@ -16,21 +16,17 @@ import type {
   SaveResult,
   StudioBackend,
   StudioMeta,
-  ThemeInput,
 } from './backend.js';
 import { memoryVault } from './memoryVault.js';
 import { fileBridge } from './fileBridge.js';
 
 export type {
-  ActiveThemeMeta,
   DocListItem,
   DocPayload,
   SaveConflict,
   SaveResult,
   StudioBackend,
   StudioMeta,
-  SavedThemeMeta,
-  ThemeInput,
 } from './backend.js';
 
 /** The active backend for this session. */
@@ -64,10 +60,6 @@ export function saveDoc(
   force = false,
 ): Promise<SaveResult> {
   return backend.saveDoc(slug, source, baseHash, force);
-}
-
-export function saveTheme(input: ThemeInput): Promise<{ slug: string; path: string }> {
-  return backend.saveTheme(input);
 }
 
 /**

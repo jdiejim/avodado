@@ -6,15 +6,13 @@
  * per-directory fallback for platforms without recursive `fs.watch` (one
  * non-recursive watcher per subdirectory, re-walked on {@link DocsWatcher.resync}
  * so new directories get picked up). {@link createConfigWatcher} watches the
- * theme/config locations (project root, `.avodado/themes`, `~/.avodado` and
- * its `themes/`) and fires only for theme/config files.
+ * project root and fires only for `avodado.config.*` files.
  *
  * Watcher errors never propagate — a vanished directory just stops being
  * watched until the next resync.
  */
 
 import { watch, readdirSync, existsSync, type FSWatcher } from 'node:fs';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 /** A running docs watcher. */
@@ -29,7 +27,7 @@ export interface DocsWatcher {
   resync(): void;
 }
 
-/** A running project-root config/theme watcher. */
+/** A running project-root config watcher. */
 export interface ConfigWatcher {
   /** Stops the watcher. Idempotent. */
   close(): void;
@@ -126,105 +124,29 @@ export function createDocsWatcher(
 }
 
 /**
- * Watches every location a theme/config change can land in (all
- * non-recursively, filtering by name so files created after startup count):
- *
- * - the project root, for `avodado.theme.*` / `avodado.config.*`;
- * - `.avodado/themes/` and `<globalRoot>/themes/`, for installed
- *   `*.theme.json` themes (they feed the studio's picker);
- * - `<globalRoot>` itself (`~/.avodado`), for the global active theme that
- *   `avo theme <name> --global` / `avo theme install --use` writes.
- *
- * Directories that appear later (e.g. the first `avo theme install --local`
- * creating `.avodado/themes/`, or the first global install creating
- * `~/.avodado` itself) are picked up two ways: parent-dir events trigger an
- * immediate resync, and a slow interval resync (a handful of `existsSync`
- * calls) covers dirs whose parents we don't watch plus fs.watch arming races.
- *
- * Inert (but valid) for any location that can't be watched.
+ * Watches the project root (non-recursively, filtering by name so a config
+ * file created after startup counts) and fires `onEvent` for every
+ * `avodado.config.*` change. Inert (but valid) when `cwd` can't be watched.
  */
-export function createConfigWatcher(
-  cwd: string,
-  onEvent: () => void,
-  globalRoot: string = join(homedir(), '.avodado'),
-): ConfigWatcher {
-  const watchers = new Map<string, FSWatcher>();
-
-  interface Target {
-    readonly dir: string;
-    /** Maps one fs event to `onEvent` and/or a resync for new child dirs. */
-    readonly handle: (filename: string | null) => void;
-  }
-  const targets: readonly Target[] = [
-    {
-      dir: cwd,
-      handle: (f) => {
-        if (f !== null && /^avodado\.(theme|config)\./.test(f)) onEvent();
-        if (f === null || f === '.avodado') resync(true);
-      },
-    },
-    {
-      // Only exists to notice `.avodado/themes/` being created later.
-      dir: join(cwd, '.avodado'),
-      handle: (f) => {
-        if (f === null || f === 'themes') resync(true);
-      },
-    },
-    {
-      dir: join(cwd, '.avodado', 'themes'),
-      handle: (f) => {
-        if (f === null || f.endsWith('.theme.json')) onEvent();
-      },
-    },
-    {
-      dir: globalRoot,
-      handle: (f) => {
-        if (f !== null && /^avodado\.theme\./.test(f)) onEvent();
-        if (f === null || f === 'themes') resync(true);
-      },
-    },
-    {
-      dir: join(globalRoot, 'themes'),
-      handle: (f) => {
-        if (f === null || f.endsWith('.theme.json')) onEvent();
-      },
-    },
-  ];
-
-  /**
-   * (Re)establishes watchers for any target directory that exists but isn't
-   * watched yet. With `fire`, a newly watchable themes dir also emits one
-   * `onEvent` — the dir appearing almost always means a theme just landed in
-   * it, and its own watcher attached too late to see that first write.
-   */
-  const resync = (fire: boolean): void => {
-    for (const t of targets) {
-      if (watchers.has(t.dir) || !existsSync(t.dir)) continue;
-      try {
-        const w = watch(t.dir, (_event, filename) => t.handle(filename));
-        w.on('error', () => {
-          w.close();
-          watchers.delete(t.dir);
-        });
-        watchers.set(t.dir, w);
-        if (fire) onEvent();
-      } catch {
-        /* vanished between existsSync and watch — a later resync catches up */
-      }
+export function createConfigWatcher(cwd: string, onEvent: () => void): ConfigWatcher {
+  let watcher: FSWatcher | undefined;
+  if (existsSync(cwd)) {
+    try {
+      watcher = watch(cwd, (_event, filename) => {
+        if (filename !== null && /^avodado\.config\./.test(filename)) onEvent();
+      });
+      watcher.on('error', () => {
+        watcher?.close();
+        watcher = undefined;
+      });
+    } catch {
+      /* vanished between existsSync and watch — stay inert */
     }
-  };
-  resync(false);
-  // Slow safety net: discover watchable dirs whose creation we missed (an
-  // unwatched parent, or an event racing the watcher getting armed). Firing
-  // on discovery is right — a themes dir appearing means a theme just landed.
-  const timer = setInterval(() => resync(true), 2_000);
-  timer.unref();
-
+  }
   return {
     close(): void {
-      clearInterval(timer);
-      for (const w of watchers.values()) w.close();
-      watchers.clear();
+      watcher?.close();
+      watcher = undefined;
     },
   };
 }

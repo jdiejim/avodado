@@ -13,7 +13,7 @@ import cfonts from 'cfonts'; // CJS module — default import, then `.render`
 const TAGLINE = 'Documentation-as-code — Markdown with typed, fenced YAML blocks.';
 
 /** Avocado green — the same flesh→skin gradient the per-command action
- *  banners (studio, theme, check, …) use, so all cfonts art matches. */
+ *  banners (studio, check, …) use, so all cfonts art matches. */
 const BRAND_GRADIENT = ['#a5d76e', '#2e7d32'];
 
 /** True when output must stay plain: piped/redirected stdout or AVO_PLAIN=1. */
@@ -96,7 +96,6 @@ const FUN_LINES: Readonly<Record<string, string>> = {
   slides: 'Slicing the avocado into slides…',
   pdf: 'Pressing one ripe PDF…',
   preview: 'Previewing the avocado…',
-  theme: 'Picking a perfectly ripe theme…',
   check: 'Checking for bad avocados…',
   new: 'Planting a fresh doc…',
   install: 'Planting the Avodado skill…',
@@ -130,7 +129,7 @@ const HELP_GROUPS: ReadonlyArray<{ readonly header: string; readonly commands: r
   { header: 'WORK', commands: ['init', 'new', 'check', 'studio'] },
   { header: 'OUTPUT', commands: ['html', 'slides', 'pdf', 'build'] },
   { header: 'DISCOVER', commands: ['explore'] },
-  { header: 'SETUP', commands: ['install', 'theme', 'mcp', 'sync'] },
+  { header: 'SETUP', commands: ['install', 'mcp', 'sync'] },
 ];
 
 /** The grouped command epilogue, shown after top-level help. Uncolored when
@@ -160,7 +159,7 @@ export function examples(): string {
 const COMMAND_EXAMPLES: Readonly<Record<string, ReadonlyArray<readonly [cmd: string, note: string]>>> = {
   init: [
     ['avo init', 'scaffold a project (interactive wizard)'],
-    ['avo init -y', 'skip the wizard — defaults: all tools, textbook theme'],
+    ['avo init -y', 'skip the wizard — defaults: all tools, full suite'],
   ],
   new: [
     ['avo new', 'pick a doc template or block scaffold interactively'],
@@ -200,11 +199,6 @@ const COMMAND_EXAMPLES: Readonly<Record<string, ReadonlyArray<readonly [cmd: str
   install: [
     ['avo install claude', 'install/refresh the skill + Claude Code adapter'],
     ['avo install cursor', 'install/refresh the skill + Cursor rule'],
-  ],
-  theme: [
-    ['avo theme', 'pick a theme interactively'],
-    ['avo theme use dark', 'set the project theme'],
-    ['avo theme new sunset', 'scaffold a custom theme to fill in'],
   ],
   mcp: [
     ['avo mcp', 'print MCP client setup snippets'],

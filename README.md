@@ -12,7 +12,7 @@
   <a href="https://pnpm.io"><img src="https://img.shields.io/badge/maintained%20with-pnpm-f69220" alt="pnpm" /></a>
 </p>
 
-<p align="center"><strong>Documentation-as-code.</strong> Write Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and every block validates like code. Your AI agent authors it, <a href="#-edit-visually--avo-studio">Studio</a> edits it, and one command turns it into a themed website, a slide deck, or a PDF.</p>
+<p align="center"><strong>Documentation-as-code.</strong> Write Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and every block validates like code. Your AI agent authors it, <a href="#-edit-visually--avo-studio">Studio</a> edits it, and one command turns it into a website, a slide deck, or a PDF.</p>
 
 ---
 
@@ -74,7 +74,7 @@ New here? `avo tour` is a guided, hands-on walkthrough in 7 short chapters.
 
 ## 🚀 Start a project — `avo init`
 
-`avo init` is an interactive wizard. It asks which AI tools you use and which theme you want, then scaffolds a ready-to-go project:
+`avo init` is an interactive wizard. It asks which AI tools you use and what kind of project this is, then scaffolds a ready-to-go project:
 
 ```bash
 avo init            # interactive
@@ -86,7 +86,6 @@ You get:
 - **`docs/getting-started.md` + `docs/tutorial.md`** — an 80/20 quick start and a deck-first tour of every block (`avo slides docs/tutorial.md`).
 - **`.avodado/skill/SKILL.md`** — the authoring skill: the full block grammar with a worked example for all 94 blocks.
 - **Editor adapters** for the tools you picked — Claude Code (`CLAUDE.md`), Cursor (`.cursor/rules/avodado.mdc`), GitHub Copilot (`.github/copilot-instructions.md`), Windsurf (`.windsurfrules`).
-- **`avodado.theme.json`** if you chose a custom theme.
 
 ## 🤖 Write docs with AI — the skill + MCP
 
@@ -128,7 +127,7 @@ Every edit writes straight back to the `.md` file (atomic, hash-guarded), so Stu
 
 | Button | Output |
 |---|---|
-| **HTML page** | A standalone, themed `.html` — inline CSS + SVG, no runtime. |
+| **HTML page** | A standalone `.html` — inline CSS + SVG, no runtime. |
 | **Slide deck (HTML)** | A self-contained `.slides.html` presentation. |
 | **PDF** | A print-ready PDF (headless Chromium; downloaded once on first use). |
 | **PowerPoint** | A real `.pptx` — every slide photographed at 2× as a full-bleed 16:9 image, titles as speaker notes. Add `--editable` for native text boxes, bullets, tables, code and charts (diagrams stay images). |
@@ -138,7 +137,7 @@ Every edit writes straight back to the `.md` file (atomic, hash-guarded), so Stu
 The same exports from the CLI, for any doc:
 
 ```bash
-avo html   docs/orders.md          # → orders.html   (standalone, themed)
+avo html   docs/orders.md          # → orders.html   (standalone)
 avo slides docs/plan.md            # → plan.slides.html  (one slide per # / ## heading)
 avo pdf    docs/plan.md            # → plan.pdf
 avo pptx   docs/plan.md            # → plan.pptx  (real PowerPoint, slides as crisp images)
@@ -156,27 +155,9 @@ avo build                # → dist/ : index, sidebar nav, cross-doc links, Doc 
 
 A static site from all your docs — deploy the folder anywhere.
 
-## 🎭 Theme it — `avo theme`
+## 🌗 One look, light and dark
 
-Six built-in themes, and any doc retints instantly (SVG diagrams included):
-
-| Theme | Look |
-|---|---|
-| `textbook` | Warm classic (default) — cream paper, academic navy + terracotta, serif |
-| `minimal` | Clean modern — white, near-black ink, single blue accent |
-| `soft` | Indigo accent, rounded surfaces, sans display |
-| `dark` | Full dark mode |
-| `teal` | Teal + amber highlight |
-| `slate` | Slate sans — Helvetica display, teal highlight |
-
-```bash
-avo theme                        # interactive picker (✓ marks the current)
-avo theme use dark               # set the project theme
-avo theme new sunset             # scaffold a custom theme to fill in
-avo theme install ./my.theme.json   # add a custom theme globally (usable in every project)
-```
-
-A custom theme picks a base and overrides any friendly color (`primary`, `accent`, `ink`, `paper`, …) or font slot (`display`, `body`, `mono`). No rebuild — just re-render.
+Every export uses the same editorial skin — warm paper, near-black ink, one rust accent — and follows the reader's OS light/dark setting. There is nothing to configure.
 
 ## ✅ Validate — `avo check`
 
@@ -238,8 +219,8 @@ CI gates on this for free.
 | Package | Purpose |
 | --- | --- |
 | [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 94 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
-| [`@avodado/render`](./packages/render) | All rendering: `renderDocument` (standalone HTML) + `renderDocumentParts` (embeddable) + `toSlides` (self-contained decks). Inline CSS + SVG, 6 themes. |
-| [`avodado`](./packages/cli) | The `avo` CLI (also runs as `avodado`) — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · theme · sync` + per-tool installers. PDF export (Playwright) lives here. |
+| [`@avodado/render`](./packages/render) | All rendering: `renderDocument` (standalone HTML) + `renderDocumentParts` (embeddable) + `toSlides` (self-contained decks). Inline CSS + SVG; one editorial look, light and dark. |
+| [`avodado`](./packages/cli) | The `avo` CLI (also runs as `avodado`) — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · sync` + per-tool installers. PDF export (Playwright) lives here. |
 | [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` — a Home page of your docs, in-place editing, Present, plus HTML / slides / PDF export. |
 | [`@avodado/mcp`](./packages/mcp) | Model Context Protocol server exposing the doc tooling to any MCP client. |
 
@@ -262,7 +243,6 @@ CI gates on this for free.
 | `avo design [slug]` | Design-pattern library (system · AI/agent · code) — grab a template; `-p`/`-s` for the gallery |
 | `avo block / template` | Scaffold a single block or a doc template |
 | `avo skill` | Print the authoring grammar as a copy-paste system prompt |
-| `avo theme [name]` | Pick / list / create / install a theme (`--global` to apply everywhere) |
 | `avo sync openapi <spec>` | Generate an API doc from an OpenAPI spec |
 | `avo sync csv <file>` | Turn a CSV into a `table`/`statustable`/`chart` block, or a whole doc with `--out` |
 | `avo sync sql\|dbml\|prisma <file>` | Turn a SQL DDL, DBML or Prisma schema into an `erd` block, or a whole doc with `--out` |

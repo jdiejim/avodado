@@ -8,7 +8,7 @@
    selection); the accent is spent on emphasis text and badges only. Dark is
    the skin's dark set: the neutrals invert, the accent lifts one step.
    The chrome follows the SYSTEM theme (prefers-color-scheme). The rendered
-   document keeps its own theme; selection/highlight colors that ride ON the
+   document follows the system too; selection/highlight colors that ride ON the
    doc surface use the fixed --stu-sel/--stu-sel-line tokens below (plus the
    [data-doc-theme='dark'] overrides), never the app-flipping chrome tokens. */
 :root {
@@ -184,7 +184,7 @@ kbd {
   z-index: 20;
 }
 
-/* Wide-only controls (Library / Share / Theme / Present) participate in the
+/* Wide-only controls (Library / Share / Present) participate in the
    bar's own flex flow; ≤820px they hide and the ⋯ overflow menu appears
    (see the narrow media block). Check chip + Save never fold. */
 .stu-topbar-wide {
@@ -3741,249 +3741,6 @@ a.stu-btn {
   color: #fff;
 }
 
-/* ── Theme panel (right-docked, below the top bar) ────────────────────────── */
-.stu-themebtn-on {
-  border-color: var(--stu-navy);
-  color: var(--stu-navy);
-}
-
-.stu-themepanel {
-  position: fixed;
-  top: 48px;
-  right: 0;
-  bottom: 0;
-  width: 320px;
-  max-width: 92vw;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  background: var(--stu-panel);
-  border-left: 1px solid var(--stu-rule);
-  box-shadow: var(--stu-shadow-lift);
-  animation: stu-themepanel-in 0.16s ease-out;
-}
-
-@keyframes stu-themepanel-in {
-  from {
-    transform: translateX(16px);
-    opacity: 0;
-  }
-}
-
-.stu-themepanel-hd {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--stu-rule-soft);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--stu-ink);
-}
-
-.stu-themepanel-x {
-  display: inline-flex;
-  border: none;
-  background: none;
-  color: var(--stu-faint);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-}
-
-.stu-themepanel-x:hover {
-  background: var(--stu-rule-soft);
-  color: var(--stu-ink);
-}
-
-.stu-themepanel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stu-themepanel-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.stu-themecard {
-  border: 1px solid var(--stu-rule);
-  border-radius: 10px;
-  padding: 8px;
-  background: var(--stu-panel);
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-}
-
-.stu-themecard:hover {
-  background: var(--stu-well);
-}
-
-.stu-themecard-on,
-.stu-themecard-on:hover {
-  border-color: var(--stu-navy);
-  box-shadow: var(--stu-ring);
-  background: var(--stu-panel);
-}
-
-.stu-themecard-strips {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.stu-themecard-strips span {
-  height: 28px;
-  border-radius: 5px;
-}
-
-.stu-themecard-strips span:nth-child(1) {
-  flex: 2;
-  border: 1px solid var(--stu-rule-soft);
-}
-
-.stu-themecard-strips span:nth-child(2) {
-  flex: 1;
-}
-
-.stu-themecard-strips span:nth-child(3) {
-  width: 14px;
-  flex: none;
-}
-
-.stu-themecard-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--stu-ink);
-}
-
-.stu-themepanel-hint {
-  margin: 0;
-  font-size: 11px;
-  color: var(--stu-faint);
-}
-
-.stu-themepanel-custom {
-  border-top: 1px solid var(--stu-rule-soft);
-  padding-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stu-themepanel-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--stu-slate);
-}
-
-.stu-themepanel-field input,
-.stu-themepanel-field select {
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 8px;
-  background: var(--stu-panel);
-  color: var(--stu-ink);
-  font: inherit;
-  font-weight: 500;
-  font-size: 12.5px;
-}
-
-.stu-themepanel-section {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--stu-faint);
-}
-
-.stu-themepanel-color {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stu-themepanel-color input[type='color'] {
-  width: 28px;
-  height: 28px;
-  flex: none;
-  padding: 0;
-  border: 1px solid var(--stu-rule);
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-}
-
-.stu-themepanel-color-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.stu-themepanel-color-label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--stu-ink);
-}
-
-.stu-themepanel-color-hint {
-  font-size: 10.5px;
-  color: var(--stu-faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stu-themepanel-hex {
-  width: 78px;
-  flex: none;
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--stu-rule);
-  border-radius: 7px;
-  background: var(--stu-panel);
-  color: var(--stu-ink);
-  font-family: var(--stu-mono);
-  font-size: 11px;
-}
-
-.stu-themepanel-scope {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--stu-slate);
-}
-
-.stu-themepanel-scope label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-}
-
-.stu-themepanel-save {
-  width: 100%;
-}
-
-.stu-themepanel-ft {
-  border-top: 1px solid var(--stu-rule-soft);
-  padding: 8px 16px;
-  font-size: 11px;
-  color: var(--stu-faint);
-}
-
 /* ---------- insert picker: browse overlay (the gallery) ---------- */
 
 .stu-picker-backdrop {
@@ -5008,7 +4765,7 @@ a.stu-export-item {
     padding: 16px;
   }
 
-  /* Top bar: Library / Share / Theme / Present fold behind ⋯; the check
+  /* Top bar: Library / Share / Present fold behind ⋯; the check
      chip and Save stay on the bar. */
   .stu-topbar-wide {
     display: none;
@@ -5414,7 +5171,7 @@ a.stu-export-item {
 
 /* ─── S5: focus contract ──────────────────────────────────────────────────── */
 /* Every interactive element of the rebuilt shell (rail, top bar, check chip,
-   theme panel, insert picker, doc list, keybar/overlay) shows the shared
+   insert picker, doc list, keybar/overlay) shows the shared
    focus ring under keyboard focus. Buttons on .stu-btn / .stu-card and the
    search wrappers (:focus-within ring) already carry their own. */
 
@@ -5431,13 +5188,6 @@ a.stu-export-item {
 .stu-rail-doc:focus-visible,
 .stu-rail-foot a:focus-visible,
 .stu-rail-foot button:focus-visible,
-.stu-themecard:focus-visible,
-.stu-themepanel-x:focus-visible,
-.stu-themepanel-field input:focus-visible,
-.stu-themepanel-field select:focus-visible,
-.stu-themepanel-color input:focus-visible,
-.stu-themepanel-hex:focus-visible,
-.stu-themepanel-scope input:focus-visible,
 .stu-picker-item:focus-visible,
 .stu-picker-import:focus-visible,
 .stu-picker-pill:focus-visible,

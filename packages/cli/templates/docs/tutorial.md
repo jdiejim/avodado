@@ -8,7 +8,7 @@ tag: TUTORIAL · FULL TOUR
 
 Every `#`/`##` heading you see is one slide. This deck tours the whole block
 vocabulary — architecture, data, process, planning, RBAC, and narrative — plus
-themes, cross-references, and how slides themselves work.
+cross-references and how slides themselves work.
 
 ```drivers
 title: The four things Avodado gives you
@@ -289,12 +289,12 @@ items:
 short procedure.
 
 ```spec
-title: The textbook theme
+title: The editorial look
 accent: amber
 rows:
-  - { label: Look, value: "Warm, classic, serif headings." }
-  - { label: Override, value: "Any color or font in avodado.theme.json." }
-  - { label: Apply, steps: [Edit JSON, "avo html", Done] }
+  - { label: Look, value: "Warm paper, near-black ink, one rust accent." }
+  - { label: Dark mode, value: "Follows the reader's OS setting." }
+  - { label: Apply, steps: [Write Markdown, "avo html", Done] }
 ```
 
 ## Numbers that matter
@@ -305,7 +305,7 @@ and a trend.
 ```stats
 stats:
   - { value: "76", label: Block types, trend: flat }
-  - { value: "6", label: Themes, delta: "+1", trend: up }
+  - { value: "12", label: Block families, trend: flat }
   - { value: "3", label: Output formats, trend: flat }
 ```
 
@@ -503,21 +503,17 @@ links:
 terms:
   - { term: Block, def: A fenced section whose info-string is a typed block name. }
   - { term: "doc#id", def: "A cross-reference to a block id, checked by avo check." }
-  - { term: Theme, def: A named set of colors and fonts applied at render time. }
+  - { term: Skin, def: "The one editorial look every export uses, in light and dark." }
 ```
 
-## Six themes, no rebuild
+## One look, light and dark
 
 ```table
-columns: [Theme, Feel]
+columns: [Mode, When]
 rows:
-  - [textbook, "Warm, classic, serif (default)"]
-  - [minimal, Clean modern white]
-  - [soft, Modern light, indigo accent]
-  - [dark, Full dark mode]
-  - [teal, Teal + amber]
-  - [slate, Slate sans]
-note: Run `avo theme` to pick one, or `avo theme new <name>` for a custom one.
+  - [Light, "The default — warm paper, near-black ink, one rust accent"]
+  - [Dark, "When your OS prefers dark; nothing to configure"]
+note: Every export — HTML, slides, PDF — uses the same editorial skin.
 ```
 
 ## How slides work {top}

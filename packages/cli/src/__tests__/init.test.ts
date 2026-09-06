@@ -110,7 +110,6 @@ describe('runInit', () => {
       // agent frontmatter
       const claudeAgent = await readFile(join(root, '.claude/agents/avodado-doc-writer.md'), 'utf8');
       expect(claudeAgent).toContain('name: avodado-doc-writer');
-      expect(existsSync(join(root, 'avodado.theme.json'))).toBe(false);
     } finally {
       await cleanup();
     }
@@ -193,32 +192,6 @@ describe('runInit', () => {
       // stampSkillVersion covers canonical + stub alike
       expect(canonical).toMatch(/^version: \d+\.\d+\.\d+$/m);
       expect(frontmatterOf(stub)).toBe(frontmatterOf(canonical));
-    } finally {
-      await cleanup();
-    }
-  });
-
-  it('scaffolds avodado.theme.json for a non-default or custom theme', async () => {
-    const { root, cleanup } = await tempDir();
-    try {
-      await runInit({ cwd: root, theme: 'dark' });
-      const theme = JSON.parse(await readFile(join(root, 'avodado.theme.json'), 'utf8')) as {
-        theme: string;
-      };
-      expect(theme.theme).toBe('dark');
-
-      const { root: root2, cleanup: cleanup2 } = await tempDir();
-      try {
-        await runInit({ cwd: root2, customTheme: true });
-        const custom = JSON.parse(await readFile(join(root2, 'avodado.theme.json'), 'utf8')) as {
-          theme: string;
-          colors: unknown;
-        };
-        expect(custom.theme).toBe('textbook');
-        expect(custom.colors).toEqual({});
-      } finally {
-        await cleanup2();
-      }
     } finally {
       await cleanup();
     }

@@ -26,7 +26,6 @@ import {
   type SaveResult,
   type StudioBackend,
   type StudioMeta,
-  type ThemeInput,
 } from './backend.js';
 
 /** A stored document. `title`/`errorCount` derive on write so listing stays cheap. */
@@ -40,7 +39,6 @@ interface VaultDoc {
 }
 
 const docs = new Map<string, VaultDoc>();
-const prefs = new Map<string, unknown>();
 
 /** Title + check error count, falling back safely — as the server does. */
 function checkOf(source: string, slug: string): { title: string; errorCount: number } {
@@ -123,17 +121,7 @@ const VERSION = (import.meta.env?.['VITE_STUDIO_VERSION'] as string | undefined)
 
 async function fetchMeta(): Promise<StudioMeta> {
   await seedIfEmpty();
-  const theme = prefs.get('theme') as string | undefined;
-  const themeVars = prefs.get('themeVars') as Record<string, string> | undefined;
-  const savedThemes = (prefs.get('savedThemes') as StudioMeta['savedThemes']) ?? [];
-  return {
-    version: VERSION,
-    docsDir: 'This browser tab',
-    ...(theme !== undefined ? { theme } : {}),
-    ...(themeVars !== undefined ? { themeVars } : {}),
-    active: theme !== undefined ? { kind: 'builtin', id: theme } : { kind: 'none' },
-    savedThemes,
-  };
+  return { version: VERSION, docsDir: 'This browser tab' };
 }
 
 async function fetchDocs(): Promise<DocListItem[]> {
@@ -172,33 +160,9 @@ async function saveDoc(
   return { ok: true, hash: written.hash, mtimeMs: written.mtimeMs };
 }
 
-/**
- * "Installs" a theme by remembering it. There is no `.avodado/themes` to write
- * to here, so the vault keeps the generated theme alongside the documents and
- * reports it through {@link fetchMeta} exactly as the file bridge reports a
- * saved one.
- */
-async function saveTheme(input: ThemeInput): Promise<{ slug: string; path: string }> {
-  const slug =
-    input.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'custom';
-  const saved = (prefs.get('savedThemes') as StudioMeta['savedThemes']) ?? [];
-  const entry = {
-    slug,
-    name: input.name,
-    scope: 'project' as const,
-    theme: input.base,
-    themeVars: { ...input.colors, ...input.fonts },
-  };
-  prefs.set('savedThemes', [...saved.filter((t) => t.slug !== slug), entry]);
-  prefs.set('theme', input.base);
-  prefs.set('themeVars', entry.themeVars);
-  return Promise.resolve({ slug, path: 'this session' });
-}
-
 /** Clears the vault — test seam. */
 export function resetVault(): void {
   docs.clear();
-  prefs.clear();
   seeding = null;
 }
 
@@ -210,5 +174,4 @@ export const memoryVault: StudioBackend = {
   fetchDocs,
   fetchDoc,
   saveDoc,
-  saveTheme,
 };

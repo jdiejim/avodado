@@ -6,7 +6,7 @@ const SAVED =
 
 describe('presentDeckHtml', () => {
   it('renders a full deck document with the doc\'s real title', () => {
-    const html = presentDeckHtml(SAVED, 'quarterly', 'textbook');
+    const html = presentDeckHtml(SAVED, 'quarterly');
     expect(html).toContain('<!doctype html>');
     expect(html).toContain('Quarterly review');
     // Deck markup, not a plain page: slides + the deck's own nav controls.
@@ -16,13 +16,8 @@ describe('presentDeckHtml', () => {
 
   it('works on a dirty/unsaved source string — no disk round-trip', () => {
     const dirty = SAVED + '\n## Brand new section\n\nTyped seconds ago, never saved.\n';
-    const html = presentDeckHtml(dirty, 'quarterly', 'textbook');
+    const html = presentDeckHtml(dirty, 'quarterly');
     expect(html).toContain('Brand new section');
     expect(html).toContain('never saved');
-  });
-
-  it('applies themeVars on top of the named theme', () => {
-    const html = presentDeckHtml(SAVED, 'quarterly', 'dark', { '--highlight': '#ff00aa' });
-    expect(html).toContain('#ff00aa');
   });
 });

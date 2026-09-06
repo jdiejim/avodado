@@ -69,8 +69,8 @@ export async function runDemo(opts: {
   let source = await readFile(join(templatesDir(), 'demo.md'), 'utf8');
   if (opts.family !== undefined) source = filterDemoSource(source, opts.family);
 
-  // Drop the demo doc in its own temp dir and render it from there, so it uses
-  // the default theme and never touches the user's project.
+  // Drop the demo doc in its own temp dir and render it from there, so it
+  // never touches the user's project.
   const dir = join(tmpdir(), 'avodado-demo');
   await mkdir(dir, { recursive: true });
   const input = join(dir, opts.family === undefined ? 'demo.md' : `demo-${opts.family}.md`);

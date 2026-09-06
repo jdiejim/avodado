@@ -9,7 +9,7 @@
  * Watching (shared helpers in `../io/watch.js`): recursive `fs.watch` on the
  * docs dir with a per-directory fallback for platforms without recursive
  * watch, plus a non-recursive watch on the project root for
- * `avodado.theme.json(.jsonc)` / `avodado.config.*`. Rebuilds are debounced
+ * `avodado.config.*`. Rebuilds are debounced
  * (150 ms) and never crash the server — a bad save shows an in-page
  * diagnostics banner instead.
  *
@@ -21,10 +21,9 @@ import { createServer, type ServerResponse } from 'node:http';
 import { resolve } from 'node:path';
 import open from 'open';
 import { parseDocument, type Diagnostic } from '@avodado/core';
-import { escapeHtml, type ThemeName } from '@avodado/render';
+import { escapeHtml } from '@avodado/render';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
-import { loadTheme } from '../io/theme.js';
 import { createDocsWatcher, createConfigWatcher } from '../io/watch.js';
 import { buildSite, type SiteDoc, type SitePage } from './site.js';
 
@@ -96,10 +95,7 @@ export async function runServe(opts: ServeOptions): Promise<void> {
         file: f.file,
         doc: parseDocument(f.source, f.slug),
       }));
-      const { theme, themeVars } = loadTheme(opts.cwd);
       const site = buildSite(docs, {
-        ...(theme !== undefined ? { theme: theme as ThemeName } : {}),
-        ...(themeVars !== undefined ? { themeVars } : {}),
         liveReload: true,
         richIndex: opts.richIndex ?? config.richIndex,
       });
@@ -178,7 +174,7 @@ export async function runServe(opts: ServeOptions): Promise<void> {
   };
 
   const docsWatcher = createDocsWatcher(docsDirAbs, onFsEvent);
-  // Theme/config files live at the project root: watch it non-recursively and
+  // Config files live at the project root: watch it non-recursively and
   // filter, so files created after startup are covered too.
   const configWatcher = createConfigWatcher(opts.cwd, onFsEvent);
 

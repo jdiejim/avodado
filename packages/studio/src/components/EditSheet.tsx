@@ -61,8 +61,6 @@ function SheetInner({ seg, revealField }: {
   /** Top-level YAML field to reveal on mount (from the check popover). */
   revealField: string | null;
 }): JSX.Element {
-  const theme = useStudio((s) => s.theme);
-  const themeVars = useStudio((s) => s.themeVars);
   const sysDark = useSystemDark();
   const closeSheet = useStudio((s) => s.closeSheet);
   const commitSheet = useStudio((s) => s.commitSheet);
@@ -114,14 +112,10 @@ function SheetInner({ seg, revealField }: {
   };
 
   // The draft parsed/validated/rendered as a one-block doc.
-  const parsed = useMemo(
-    () => previewBlock(seg.kind, draft, theme, themeVars),
-    [seg.kind, draft, theme, themeVars],
-  );
+  const parsed = useMemo(() => previewBlock(seg.kind, draft), [seg.kind, draft]);
   const preview = useMemo(
-    () =>
-      previewRaw === draft ? parsed : previewBlock(seg.kind, previewRaw, theme, themeVars),
-    [seg.kind, previewRaw, draft, parsed, theme, themeVars],
+    () => (previewRaw === draft ? parsed : previewBlock(seg.kind, previewRaw)),
+    [seg.kind, previewRaw, draft, parsed],
   );
 
   const parseError = parsed.seg?.parseError;
@@ -385,7 +379,7 @@ function SheetInner({ seg, revealField }: {
               {preview.html !== '' ? (
                 <div
                   className="stu-sheet-preview-wrap"
-                  data-doc-theme={docSurface(theme, themeVars, sysDark)}
+                  data-doc-theme={docSurface(sysDark)}
                   ref={previewWrapRef}
                 >
                   <div className="docskin stu-sheet-preview-doc" dangerouslySetInnerHTML={{ __html: preview.html }} />

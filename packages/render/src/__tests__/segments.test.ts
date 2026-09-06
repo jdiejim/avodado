@@ -28,7 +28,7 @@ function fixtureDocs(): Array<{ name: string; doc: Document }> {
 describe('renderDocumentSegments', () => {
   it('recomposes byte-identically to renderDocumentParts for every fixture', () => {
     for (const { name, doc } of fixtureDocs()) {
-      for (const opts of [{}, { theme: 'teal' as const }]) {
+      for (const opts of [{}, { themeVars: { '--accent': '#0f766e' } }]) {
         const parts = renderDocumentParts(doc, opts);
         const seg = renderDocumentSegments(doc, opts);
         const recomposed = seg.defs + seg.cover + seg.segments.map((s) => s.html).join('');

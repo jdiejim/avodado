@@ -2,9 +2,9 @@
  * `avo init` — scaffold a new Avodado project in the current directory.
  *
  * Always writes the base tree (docs sample, config, the authoring skill).
- * Editor adapters (Claude Code, Cursor, Copilot, Windsurf) and the theme file
- * are written based on the caller's selections — the interactive wizard
- * ({@link InitApp}) collects them, but they can also be passed directly.
+ * Editor adapters (Claude Code, Cursor, Copilot, Windsurf) are written based
+ * on the caller's selections — the interactive wizard ({@link InitApp})
+ * collects them, but they can also be passed directly.
  */
 
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -183,13 +183,6 @@ export interface InitOptions {
   readonly force?: boolean;
   /** Which AI-tool adapters to generate. Default: all of them. */
   readonly tools?: readonly AiTool[];
-  /** Built-in theme name to record in `avodado.theme.json`. */
-  readonly theme?: string;
-  /**
-   * Scaffold a full `avodado.theme.json` with friendly color/font slots to edit.
-   * When false, a theme file is only written if `theme` is a non-default theme.
-   */
-  readonly customTheme?: boolean;
   /**
    * Project type to tailor the installed skill to. Filters only the 12 block
    * family files; recorded in `avodado.config.json` as `skillScope` when it is
@@ -220,24 +213,6 @@ export function templatesDir(): string {
     dir = parent;
   }
   throw new Error(`Could not locate avodado/cli templates directory near ${import.meta.url}`);
-}
-
-/** Builds the `avodado.theme.json` contents for a chosen base theme. */
-export function themeFileContents(theme: string, custom: boolean, name = 'My theme'): string {
-  const base: Record<string, unknown> = {
-    name,
-    '//': '1) Pick a base theme. 2) Optionally override colors/fonts. Re-run `avo render` — no rebuild.',
-    theme,
-    '//theme-options': 'textbook (default, warm serif) | minimal (clean white) | soft (modern, white) | dark | teal | slate',
-  };
-  if (custom) {
-    base['//colors'] =
-      'Optional overrides on top of the base theme. Any of: paper, ink, muted, soft, rule, accent, link, negative, primary, secondary, positive, purple, teal. Values are any CSS color.';
-    base['colors'] = {};
-    base['//fonts'] = 'Optional. display | body | mono. Use single quotes inside font names.';
-    base['fonts'] = {};
-  }
-  return JSON.stringify(base, null, 2) + '\n';
 }
 
 /** Reads @avodado/cli's own version (stamped into installed skills). */
@@ -408,10 +383,10 @@ export async function installTool(opts: {
 }
 
 /**
- * Scaffolds an Avodado project into `cwd`. Writes the base tree, the adapters
- * for the selected `tools` (defaults to all), and — when a non-default or custom
- * theme is chosen — an `avodado.theme.json`. Existing files are skipped unless
- * `force: true`. Returns the created/skipped relative paths for reporting.
+ * Scaffolds an Avodado project into `cwd`. Writes the base tree and the
+ * adapters for the selected `tools` (defaults to all). Existing files are
+ * skipped unless `force: true`. Returns the created/skipped relative paths
+ * for reporting.
  */
 export async function runInit(opts: InitOptions): Promise<InitResult> {
   const srcRoot = templatesDir();
@@ -439,20 +414,6 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
   // Record an explicit choice (backend/frontend/product sets `skillScope`,
   // an explicit full clears one) so `avo install <tool>` reuses it.
   if (opts.scope !== undefined) await recordSkillScope(opts.cwd, opts.scope);
-
-  // Theme file: only when the user picked a non-default theme or asked for a
-  // custom scaffold (the default `textbook` needs no file).
-  const wantThemeFile = opts.customTheme === true || (opts.theme !== undefined && opts.theme !== 'textbook');
-  if (wantThemeFile) {
-    const rel = 'avodado.theme.json';
-    const dst = join(opts.cwd, rel);
-    if (existsSync(dst) && opts.force !== true) {
-      skipped.push(rel);
-    } else {
-      await writeFile(dst, themeFileContents(opts.theme ?? 'textbook', opts.customTheme === true), 'utf8');
-      created.push(rel);
-    }
-  }
 
   return { created, skipped };
 }

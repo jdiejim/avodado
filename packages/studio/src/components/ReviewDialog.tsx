@@ -31,8 +31,6 @@ export function ReviewDialog(): JSX.Element | null {
   const savedSource = useStudio((s) => s.savedSource);
   const source = useStudio((s) => s.source);
   const docs = useStudio((s) => s.docs);
-  const theme = useStudio((s) => s.theme);
-  const themeVars = useStudio((s) => s.themeVars);
   const sysDark = useSystemDark();
   const applyReview = useStudio((s) => s.applyReview);
   const cancelReview = useStudio((s) => s.cancelReview);
@@ -75,7 +73,7 @@ export function ReviewDialog(): JSX.Element | null {
   return (
     <div
       className="stu-review-backdrop"
-      data-surface={docSurface(theme, themeVars, sysDark)}
+      data-surface={docSurface(sysDark)}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) cancelReview();
       }}

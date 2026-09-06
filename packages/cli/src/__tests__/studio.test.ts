@@ -57,8 +57,6 @@ interface Studio {
 async function startStudio(opts?: {
   /** Extra scaffolding inside the tmp project before the server starts. */
   before?: (tmp: string) => void;
-  /** Isolate global theme state: HOME points at `<tmp>/home` (pre-created). */
-  isolateHome?: boolean;
 }): Promise<Studio> {
   const tmp = join(tmpdir(), `avo-studio-${randomBytes(6).toString('hex')}`);
   mkdirSync(join(tmp, 'docs'), { recursive: true });
@@ -68,10 +66,6 @@ async function startStudio(opts?: {
   const env: NodeJS.ProcessEnv = { ...process.env, AVO_PLAIN: '1' };
   delete env['CI'];
   delete env['FORCE_COLOR'];
-  if (opts?.isolateHome === true) {
-    mkdirSync(join(tmp, 'home', '.avodado'), { recursive: true });
-    env['HOME'] = join(tmp, 'home');
-  }
   const child = spawn('node', [BIN, 'studio', '--no-open', '--port', '0'], { cwd: tmp, env });
   try {
     const port = await waitForPort(child);
@@ -297,54 +291,6 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
     }
   }, 20_000);
 
-  it('POST /api/theme writes a theme file (and validates name/base/method)', async () => {
-    const s = await startStudio();
-    try {
-      const ok = await fetch(api(s.port, '/api/theme'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Sunset Vibes',
-          base: 'minimal',
-          colors: { primary: '#ff5722', accent: '#ffc107' },
-          fonts: { display: 'Georgia, serif' },
-          scope: 'project',
-        }),
-      });
-      expect(ok.status).toBe(200);
-      const body = (await ok.json()) as { slug: string; path: string };
-      expect(body.slug).toBe('sunset-vibes');
-
-      // The file lands in the project's .avodado/themes with a friendly shape.
-      const themePath = join(s.tmp, '.avodado', 'themes', 'sunset-vibes.theme.json');
-      expect(existsSync(themePath)).toBe(true);
-      const theme = JSON.parse(readFileSync(themePath, 'utf8')) as {
-        name: string;
-        theme: string;
-        colors: Record<string, string>;
-      };
-      expect(theme).toMatchObject({ name: 'Sunset Vibes', theme: 'minimal' });
-      expect(theme.colors.primary).toBe('#ff5722');
-
-      // Guards: wrong method, missing name, bad base.
-      expect((await fetch(api(s.port, '/api/theme'))).status).toBe(405);
-      const noName = await fetch(api(s.port, '/api/theme'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base: 'minimal' }),
-      });
-      expect(noName.status).toBe(400);
-      const badBase = await fetch(api(s.port, '/api/theme'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'X', base: 'not-a-theme' }),
-      });
-      expect(badBase.status).toBe(400);
-    } finally {
-      await s.stop();
-    }
-  }, 20_000);
-
   it('streams a typed fs event over /__events when a doc changes on disk', async () => {
     const s = await startStudio();
     try {
@@ -377,101 +323,40 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
     }
   }, 20_000);
 
-  const EMBER_THEME =
-    JSON.stringify({ name: 'Ember', theme: 'dark', colors: { primary: '#ff5a1f', paper: '#1a1412' } }) + '\n';
-
-  it('GET /api/meta resolves an installed theme referenced by name and lists saved themes', async () => {
-    const s = await startStudio({
-      isolateHome: true,
-      before: (tmp) => {
-        mkdirSync(join(tmp, '.avodado', 'themes'), { recursive: true });
-        writeFileSync(join(tmp, '.avodado', 'themes', 'ember.theme.json'), EMBER_THEME);
-        writeFileSync(join(tmp, 'avodado.theme.json'), '{ "theme": "ember" }\n');
-      },
-    });
+  it('streams {"type":"meta"} when avodado.config.* changes on disk', async () => {
+    const s = await startStudio();
     try {
-      const meta = (await (await fetch(api(s.port, '/api/meta'))).json()) as {
-        theme?: string;
-        themeVars?: Record<string, string>;
-        active?: { kind: string; id?: string; name?: string };
-        savedThemes?: Array<{ slug: string; name: string; scope: string; theme?: string; themeVars?: Record<string, string> }>;
-      };
-      // The reference resolves to the saved theme's base + vars…
-      expect(meta.theme).toBe('dark');
-      expect(meta.themeVars?.['--ink']).toBe('#ff5a1f');
-      expect(meta.themeVars?.['--paper']).toBe('#1a1412');
-      // …meta says WHICH theme is active…
-      expect(meta.active).toMatchObject({ kind: 'saved', id: 'ember', name: 'Ember' });
-      // …and lists it (resolved) for the studio picker.
-      const ember = meta.savedThemes?.find((t) => t.slug === 'ember');
-      expect(ember).toMatchObject({ name: 'Ember', scope: 'project', theme: 'dark' });
-      expect(ember?.themeVars?.['--ink']).toBe('#ff5a1f');
-    } finally {
-      await s.stop();
-    }
-  }, 20_000);
-
-  it('streams {"type":"meta"} for project, installed, and global theme changes', async () => {
-    const s = await startStudio({ isolateHome: true });
-    try {
-      // A tiny SSE meta-event counter: waitFor(n) resolves once ≥ n arrived.
       let count = 0;
-      const listeners = new Set<() => void>();
       let onConnected!: () => void;
       const ready = new Promise<void>((r) => (onConnected = r));
       const req = get(api(s.port, '/__events'), (stream) => {
         stream.on('data', (b: Buffer) => {
           const text = b.toString('utf8');
           if (text.includes(':connected')) onConnected();
-          const n = text.split('"type":"meta"').length - 1;
-          if (n > 0) {
-            count += n;
-            for (const l of [...listeners]) l();
-          }
+          count += text.split('"type":"meta"').length - 1;
         });
       });
       req.on('error', () => {
         /* destroyed on purpose at the end */
       });
-      const waitFor = (target: number, label: string): Promise<void> =>
-        new Promise((res, rej) => {
-          const timer = setTimeout(
-            () => rej(new Error(`${label}: got ${count} meta events, wanted ${target}`)),
-            8_000,
-          );
-          const check = (): void => {
-            if (count >= target) {
-              clearTimeout(timer);
-              listeners.delete(check);
-              res();
-            }
-          };
-          listeners.add(check);
-          check();
-        });
       await ready;
 
-      // 1. `avo theme <name>` writes the project's avodado.theme.json.
-      writeFileSync(join(s.tmp, 'avodado.theme.json'), '{ "theme": "dark" }\n');
-      await waitFor(1, 'project theme change');
-
-      // 2. `avo theme install --local` creates .avodado/themes/ + a file —
-      // the dir did not exist when the watcher started.
-      const after = count;
-      mkdirSync(join(s.tmp, '.avodado', 'themes'), { recursive: true });
-      writeFileSync(join(s.tmp, '.avodado', 'themes', 'ember.theme.json'), EMBER_THEME);
-      await waitFor(after + 1, 'local theme install');
-
-      // 3. `avo theme <name> --global` writes ~/.avodado/avodado.theme.json.
-      const after2 = count;
-      writeFileSync(join(s.tmp, 'home', '.avodado', 'avodado.theme.json'), '{ "theme": "soft" }\n');
-      await waitFor(after2 + 1, 'global theme change');
-
+      // Re-fire every ~400ms: a write racing the watcher's arming can be missed.
+      const deadline = Date.now() + 8_000;
+      let lastFire = 0;
+      while (count === 0 && Date.now() < deadline) {
+        if (Date.now() - lastFire > 400) {
+          lastFire = Date.now();
+          writeFileSync(join(s.tmp, 'avodado.config.json'), '{ "docsDir": "docs", "richIndex": false }\n');
+        }
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      expect(count).toBeGreaterThan(0);
       req.destroy();
     } finally {
       await s.stop();
     }
-  }, 30_000);
+  }, 20_000);
 
   it('mounts the built site under /site/ — index, doc page, and deck, with live reload', async () => {
     const s = await startStudio();

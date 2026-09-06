@@ -1,7 +1,7 @@
 /**
- * Interactive family picker for bare `avo demo` in a TTY (Ink) — mirrors the
- * `avo theme` picker. "Everything" (the full showcase) comes first, then the
- * 12 block families; `q`/escape cancels without rendering.
+ * Interactive family picker for bare `avo demo` in a TTY (Ink). "Everything"
+ * (the full showcase) comes first, then the 12 block families; `q`/escape
+ * cancels without rendering.
  */
 
 import React from 'react';

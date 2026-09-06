@@ -1,15 +1,14 @@
 /**
  * Renders a parsed {@link Document} into its composable PARTS — the CSS, the
- * theme-variable string, the inner body HTML (for a `<div class="docskin">`),
+ * variable-override string, the inner body HTML (for a `<div class="docskin">`),
  * the title, and a section index for navigation.
  *
  * {@link renderDocument} (in `document.ts`) wraps these parts into a standalone
  * `<!doctype html>` page. Embedding consumers (e.g. a React app) inject the
  * parts directly: one `<style>` with `css`, a scoped `<style>` that sets the
- * theme vars, and the `body` inside their own `.docskin` host. This avoids
- * nesting a full HTML document inside the page and enables live theme switching
- * (swap only the theme-vars style) and section-level navigation (each section
- * carries an `id`).
+ * variable overrides, and the `body` inside their own `.docskin` host. This
+ * avoids nesting a full HTML document inside the page and enables
+ * section-level navigation (each section carries an `id`).
  */
 
 import type { BlockDataMap, BlockType, Document, Segment, TypedSegment } from '@avodado/core';
@@ -32,11 +31,11 @@ import { DEFAULT_THEME, themeStyle, type ThemeName } from './themes.js';
 
 /** Options shared by {@link renderDocumentParts} and the page renderer. */
 export interface RenderPartsOptions {
-  /** Theme name. Defaults to `textbook`. */
+  /** The look. Only `textbook` (the editorial skin) exists; defaults to it. */
   readonly theme?: ThemeName;
   /**
-   * Custom CSS-variable overrides applied after the named theme (they win),
-   * e.g. `{ '--navy': '#123456' }`.
+   * Internal escape hatch: CSS-variable overrides emitted on `:root`, e.g.
+   * `{ '--accent': '#123456' }`. No user-facing surface sets this.
    */
   readonly themeVars?: Readonly<Record<string, string>>;
 }
@@ -207,7 +206,7 @@ function renderSegment(seg: Segment, ctx: RenderCtx): string {
   return renderTypedSegment(seg, ctx);
 }
 
-/** Builds the theme-variable declaration string (named theme + overrides). */
+/** Builds the `:root` variable declaration string (look + internal overrides). */
 export function buildThemeVars(
   theme: ThemeName,
   vars?: Readonly<Record<string, string>>,

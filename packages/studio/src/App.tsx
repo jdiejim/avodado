@@ -111,7 +111,7 @@ export function App(): JSX.Element {
         return;
       }
       const sel = s.selection;
-      const { doc } = derive(s.source, s.currentSlug ?? 'untitled', s.theme, s.themeVars);
+      const { doc } = derive(s.source, s.currentSlug ?? 'untitled');
       const count = doc.segments.length;
       // ⌘↑ / ⌘↓ — move the selected block (meta lock enforced by moveBlock).
       if (mod && sel !== null && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {

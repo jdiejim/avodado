@@ -12,18 +12,11 @@
  */
 
 import type { Document } from '@avodado/core';
-import { renderDocument, toSlides, type ThemeName } from '@avodado/render';
-
-type ThemeVars = Readonly<Record<string, string>> | undefined;
+import { renderDocument, toSlides } from '@avodado/render';
 
 /** `docs/api/orders` → `orders`; the export lands as `orders.<ext>`. */
 function baseName(slug: string): string {
   return slug.split('/').pop() ?? slug;
-}
-
-/** Renders the doc to standalone HTML with the studio's active theme. */
-function docHtml(doc: Document, theme: ThemeName, themeVars: ThemeVars): string {
-  return renderDocument(doc, { theme, ...(themeVars !== undefined ? { themeVars } : {}) });
 }
 
 /** Triggers a browser download of `data` as `filename`. */
@@ -38,40 +31,24 @@ function download(filename: string, data: BlobPart, mime: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** Downloads the current doc as a standalone, themed HTML page. */
-export function exportDocHtml(
-  doc: Document,
-  slug: string,
-  theme: ThemeName,
-  themeVars: ThemeVars,
-): void {
-  download(`${baseName(slug)}.html`, docHtml(doc, theme, themeVars), 'text/html;charset=utf-8');
+/** Downloads the current doc as a standalone HTML page. */
+export function exportDocHtml(doc: Document, slug: string): void {
+  download(`${baseName(slug)}.html`, renderDocument(doc), 'text/html;charset=utf-8');
 }
 
 /** Downloads the current doc as a self-contained slide deck (HTML). */
-export function exportDeckHtml(
-  doc: Document,
-  slug: string,
-  theme: ThemeName,
-  themeVars: ThemeVars,
-): void {
-  const html = toSlides(doc, { theme, ...(themeVars !== undefined ? { themeVars } : {}) });
-  download(`${baseName(slug)}.slides.html`, html, 'text/html;charset=utf-8');
+export function exportDeckHtml(doc: Document, slug: string): void {
+  download(`${baseName(slug)}.slides.html`, toSlides(doc), 'text/html;charset=utf-8');
 }
 
 /**
- * Downloads the current doc as a PDF. Renders the themed HTML here, then asks
- * the file bridge to run it through Chromium. Chromium is downloaded on the
+ * Downloads the current doc as a PDF. Renders the HTML here, then asks the
+ * file bridge to run it through Chromium. Chromium is downloaded on the
  * server's first PDF export (~100 MB, one time), so this can take a while then;
  * the caller should show progress. Throws with the server's message on failure.
  */
-export async function exportPdf(
-  doc: Document,
-  slug: string,
-  theme: ThemeName,
-  themeVars: ThemeVars,
-): Promise<void> {
-  await bridgeExport('pdf', docHtml(doc, theme, themeVars), `${baseName(slug)}.pdf`, 'PDF');
+export async function exportPdf(doc: Document, slug: string): Promise<void> {
+  await bridgeExport('pdf', renderDocument(doc), `${baseName(slug)}.pdf`, 'PDF');
 }
 
 /**
@@ -81,14 +58,8 @@ export async function exportPdf(
  * looks exactly like Present mode. Same first-export Chromium download and
  * error behavior as {@link exportPdf}.
  */
-export async function exportPptx(
-  doc: Document,
-  slug: string,
-  theme: ThemeName,
-  themeVars: ThemeVars,
-): Promise<void> {
-  const html = toSlides(doc, { theme, ...(themeVars !== undefined ? { themeVars } : {}) });
-  await bridgeExport('pptx', html, `${baseName(slug)}.pptx`, 'PowerPoint');
+export async function exportPptx(doc: Document, slug: string): Promise<void> {
+  await bridgeExport('pptx', toSlides(doc), `${baseName(slug)}.pptx`, 'PowerPoint');
 }
 
 /** POSTs HTML to the file bridge's Chromium exporter and downloads the bytes. */

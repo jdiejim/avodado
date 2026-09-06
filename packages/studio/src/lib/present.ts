@@ -5,18 +5,12 @@
  */
 
 import { parseDocument } from '@avodado/core';
-import { toSlides, type ThemeName } from '@avodado/render';
+import { toSlides } from '@avodado/render';
 
 /**
  * Renders `source` (any string, saved or not) to the full deck HTML that
- * `avo slides` would produce for it, with the studio's active theme applied.
+ * `avo slides` would produce for it.
  */
-export function presentDeckHtml(
-  source: string,
-  slug: string,
-  theme: ThemeName,
-  themeVars?: Readonly<Record<string, string>>,
-): string {
-  const doc = parseDocument(source, slug);
-  return toSlides(doc, { theme, ...(themeVars !== undefined ? { themeVars } : {}) });
+export function presentDeckHtml(source: string, slug: string): string {
+  return toSlides(parseDocument(source, slug));
 }

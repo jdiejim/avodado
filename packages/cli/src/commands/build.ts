@@ -1,8 +1,8 @@
 /**
  * `avo build` — render every doc into a static HTML site on disk.
  *
- * Loads config (docsDir/outDir), docs, and the project theme, builds the site
- * via {@link buildSite}, and writes `index.html` plus one page and one slide
+ * Loads config (docsDir/outDir) and docs, builds the site via
+ * {@link buildSite}, and writes `index.html` plus one page and one slide
  * deck (`<slug>.slides.html`) per doc under the out directory (nested slugs
  * keep their directories).
  *
@@ -13,10 +13,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseDocument, type Diagnostic } from '@avodado/core';
-import type { ThemeName } from '@avodado/render';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
-import { loadTheme } from '../io/theme.js';
 import { buildSite, type SiteDoc } from './site.js';
 
 /** Inputs to {@link runBuild}. */
@@ -56,12 +54,7 @@ export async function runBuild(opts: BuildOptions): Promise<BuildResult> {
     doc: parseDocument(f.source, f.slug),
   }));
 
-  const { theme, themeVars } = loadTheme(opts.cwd);
-  const site = buildSite(docs, {
-    ...(theme !== undefined ? { theme: theme as ThemeName } : {}),
-    ...(themeVars !== undefined ? { themeVars } : {}),
-    richIndex: opts.richIndex ?? config.richIndex,
-  });
+  const site = buildSite(docs, { richIndex: opts.richIndex ?? config.richIndex });
 
   const pages: { path: string; bytes: number }[] = [];
   for (const page of site.pages) {

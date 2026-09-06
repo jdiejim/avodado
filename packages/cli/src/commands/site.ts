@@ -29,7 +29,6 @@ import {
   htmlRenderers,
   renderDocumentParts,
   type DocumentSection,
-  type ThemeName,
   toSlides,
 } from '@avodado/render';
 
@@ -56,9 +55,7 @@ export interface SitePage {
 
 /** Options for {@link buildSite}. */
 export interface SiteOptions {
-  /** Base theme name. */
-  readonly theme?: ThemeName;
-  /** CSS-variable overrides applied after the named theme. */
+  /** Internal escape hatch: CSS-variable overrides emitted on `:root`. */
   readonly themeVars?: Readonly<Record<string, string>>;
   /** Inject the live-reload `EventSource` script (serve only, never build). */
   readonly liveReload?: boolean;
@@ -138,17 +135,6 @@ const DECK_BACK_CSS = `
 .deck-doc-link:hover{background:var(--paper-2);border-color:var(--ink);}
 @media print{.deck-doc-link{display:none;}}
 `;
-
-/**
- * The `data-theme` stamp for `<html>`: an explicitly chosen theme never mixes
- * with the reader's system dark mode (the default theme follows the system).
- * Same rule as `renderDocument` in `@avodado/render`.
- */
-function dataThemeAttr(theme: ThemeName | undefined): string {
-  if (theme === 'dark') return ' data-theme="dark"';
-  if (theme !== undefined && theme !== DEFAULT_THEME) return ' data-theme="light"';
-  return '';
-}
 
 /** `../` prefix that climbs from a page at `slug` back to the site root. */
 function rootPrefix(slug: string): string {
@@ -264,14 +250,14 @@ function pageShell(args: {
   readonly liveReload: boolean;
   /** Doc pages only: the Doc | Slides control, pinned to the main column. */
   readonly toggle?: string;
-  /** The explicitly chosen base theme, if any — stamped as `data-theme`. */
-  readonly theme?: ThemeName;
 }): string {
   const themeBlock = args.themeVars.length > 0 ? `<style>:root{${args.themeVars}}</style>` : '';
   const reload = args.liveReload ? LIVE_RELOAD_SCRIPT : '';
+  // No `data-theme` stamp: pages follow the reader's system dark mode, same
+  // as `renderDocument` in `@avodado/render`.
   return (
     `<!doctype html>\n` +
-    `<html lang="en"${dataThemeAttr(args.theme)}>\n` +
+    `<html lang="en">\n` +
     `<head>\n` +
     `<meta charset="utf-8">\n` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">\n` +
@@ -544,10 +530,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
   const resolved = resolveRefs(docs.map((d) => ({ doc: d.doc, file: d.file })));
   diagnostics.push(...resolved.diagnostics);
 
-  const themeOpts = {
-    ...(opts.theme !== undefined ? { theme: opts.theme } : {}),
-    ...(opts.themeVars !== undefined ? { themeVars: opts.themeVars } : {}),
-  };
+  const themeOpts = opts.themeVars !== undefined ? { themeVars: opts.themeVars } : {};
   const liveReload = opts.liveReload === true;
 
   const rendered = docs.map((d) => ({ doc: d, parts: renderDocumentParts(d.doc, themeOpts) }));
@@ -556,11 +539,10 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
     title: r.doc.doc.meta?.title ?? r.doc.slug,
   }));
   // The index reuses the first doc's css/themeVars (identical for every doc);
-  // an empty doc set still gets a styled index from the theme directly.
+  // an empty doc set still gets a styled index from the skin directly.
   const first = rendered[0];
   const css = first?.parts.css ?? houseCss;
-  const themeVars =
-    first?.parts.themeVars ?? buildThemeVars(opts.theme ?? DEFAULT_THEME, opts.themeVars);
+  const themeVars = first?.parts.themeVars ?? buildThemeVars(DEFAULT_THEME, opts.themeVars);
 
   const pages: SitePage[] = [];
   pages.push({
@@ -576,7 +558,6 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
           ? richIndexMain(docs, resolved.graph.edges)
           : indexCards(docs),
       liveReload,
-      ...(opts.theme !== undefined ? { theme: opts.theme } : {}),
     }),
   });
 
@@ -589,7 +570,6 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
       main: parts.body,
       liveReload,
       toggle: viewToggle(doc.slug),
-      ...(opts.theme !== undefined ? { theme: opts.theme } : {}),
     });
     pages.push({
       path: `${doc.slug}.html`,

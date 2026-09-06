@@ -45,19 +45,24 @@ describe('renderDocument', () => {
     expect(root.querySelector('.diagram-tag-method.post')?.text).toBe('POST');
   });
 
-  it('applies a theme via :root CSS variable overrides', () => {
+  it('renders the single editorial look with no data-theme stamp (the OS decides)', () => {
     const doc = parseDocument(roadmap(), 'avodado-roadmap');
-    const html = renderDocument(doc, { theme: 'teal' });
-    // Theme vars are emitted as a :root style block so they reach the whole page.
-    expect(html).toContain(':root{');
-    expect(html).toContain('--accent:#0f766e');
+    const html = renderDocument(doc);
+    // The <html> tag carries no stamp — the reader's OS setting picks light or dark.
+    expect(html).toContain('<html lang="en">\n');
+    expect(html).not.toMatch(/<html[^>]*data-theme/);
+    // No override block: the editorial skin is the stylesheet's own :root.
+    expect(html).not.toContain('<style>:root{');
+    // The stylesheet still carries both dark paths — OS preference and a host stamp.
+    expect(html).toContain('@media (prefers-color-scheme: dark)');
+    expect(html).toContain(':root[data-theme="dark"]');
   });
 
-  it('merges custom themeVars after the named theme', () => {
+  it('emits internal themeVars overrides as a :root style block', () => {
     const doc = parseDocument(roadmap(), 'avodado-roadmap');
-    const html = renderDocument(doc, { theme: 'dark', themeVars: { '--navy': '#abcdef' } });
-    expect(html).toContain('--paper:#161b26'); // from dark theme
-    expect(html).toContain('--navy:#abcdef'); // override wins (emitted last)
+    const html = renderDocument(doc, { themeVars: { '--accent': '#abcdef' } });
+    expect(html).toContain('<style>:root{--accent:#abcdef;}</style>');
+    expect(html).not.toMatch(/<html[^>]*data-theme/);
   });
 
   it('falls back to "Untitled" when there is no meta block', () => {

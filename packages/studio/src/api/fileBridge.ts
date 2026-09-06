@@ -14,7 +14,6 @@ import type {
   SaveResult,
   StudioBackend,
   StudioMeta,
-  ThemeInput,
 } from './backend.js';
 
 async function getJson<T>(url: string): Promise<T> {
@@ -23,7 +22,7 @@ async function getJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Fetches server meta (version, docs dir, configured theme + overrides). */
+/** Fetches server meta (version, docs dir). */
 export function fetchMeta(): Promise<StudioMeta> {
   return getJson<StudioMeta>('/api/meta');
 }
@@ -65,30 +64,6 @@ export async function saveDoc(
   return { ok: true, hash: body.hash, mtimeMs: body.mtimeMs };
 }
 
-/**
- * Writes a generated theme file to disk via the file bridge and returns its
- * slug. The server watcher then broadcasts a meta change, so the picker picks
- * it up. Throws with the server's message on failure.
- */
-export async function saveTheme(input: ThemeInput): Promise<{ slug: string; path: string }> {
-  const res = await fetch('/api/theme', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    let message = `theme install failed (${res.status})`;
-    try {
-      const body = (await res.json()) as { error?: unknown };
-      if (typeof body.error === 'string') message = body.error;
-    } catch {
-      /* non-JSON error */
-    }
-    throw new Error(message);
-  }
-  return (await res.json()) as { slug: string; path: string };
-}
-
 /** The local-files backend, as used by `avo studio`. */
 export const fileBridge: StudioBackend = {
   kind: 'file-bridge',
@@ -97,5 +72,4 @@ export const fileBridge: StudioBackend = {
   fetchDocs,
   fetchDoc,
   saveDoc,
-  saveTheme,
 };

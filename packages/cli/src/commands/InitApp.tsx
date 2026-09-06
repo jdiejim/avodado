@@ -1,12 +1,11 @@
 /**
  * Interactive `avo init` wizard (Ink).
  *
- * Three steps: a multi-select for AI-tool adapters (space toggles, enter
- * confirms), a single-select project-type picker (tailors which block-family
- * references install), and a single-select theme picker (with a "Custom…"
- * option that scaffolds `avodado.theme.json`). It then runs {@link runInit}
- * and hands the result back via `onComplete` so the CLI can print the summary
- * after Ink unmounts.
+ * Two steps: a multi-select for AI-tool adapters (space toggles, enter
+ * confirms) and a single-select project-type picker (tailors which
+ * block-family references install). It then runs {@link runInit} and hands
+ * the result back via `onComplete` so the CLI can print the summary after
+ * Ink unmounts.
  */
 
 import React, { useState } from 'react';
@@ -21,33 +20,32 @@ import {
   type SkillScope,
 } from './init.js';
 
-const CUSTOM = '__custom__';
-
-const THEME_ITEMS: ReadonlyArray<{ label: string; value: string }> = [
-  { label: 'Textbook — warm, classic, serif (default)', value: 'textbook' },
-  { label: 'Minimal — clean modern white, sans', value: 'minimal' },
-  { label: 'Soft — modern light, indigo accent', value: 'soft' },
-  { label: 'Dark — full dark mode', value: 'dark' },
-  { label: 'Teal — teal + amber', value: 'teal' },
-  { label: 'Slate — slate sans', value: 'slate' },
-  { label: 'Custom… — scaffold avodado.theme.json to edit', value: CUSTOM },
-];
-
 interface InitAppProps {
   readonly cwd: string;
   readonly force?: boolean;
   /** Pre-picked project type (from `--scope`) — skips the wizard's scope step. */
   readonly scope?: SkillScope;
-  readonly onComplete: (result: InitResult, theme: string) => void;
+  readonly onComplete: (result: InitResult) => void;
 }
 
 export function InitApp({ cwd, force, scope: presetScope, onComplete }: InitAppProps): React.JSX.Element {
   const { exit } = useApp();
-  const [step, setStep] = useState<'tools' | 'scope' | 'theme' | 'working'>('tools');
+  const [step, setStep] = useState<'tools' | 'scope' | 'working'>('tools');
   const [cursor, setCursor] = useState(0);
   // Start with nothing selected — the user toggles on only the tools they use.
   const [selected, setSelected] = useState<Set<AiTool>>(new Set());
-  const [scope, setScope] = useState<SkillScope>(presetScope ?? 'full');
+
+  async function finish(tools: ReadonlySet<AiTool>, scope: SkillScope): Promise<void> {
+    setStep('working');
+    const result = await runInit({
+      cwd,
+      ...(force === true ? { force: true } : {}),
+      tools: AI_TOOLS.map((t) => t.id).filter((id) => tools.has(id)),
+      scope,
+    });
+    onComplete(result);
+    exit();
+  }
 
   useInput((input, key) => {
     if (step !== 'tools') return;
@@ -68,29 +66,16 @@ export function InitApp({ cwd, force, scope: presetScope, onComplete }: InitAppP
       // toggling it with space (an easy mistake), treat the highlighted tool as
       // selected so it actually gets installed instead of silently scaffolding
       // nothing. With at least one already toggled, Enter just confirms.
+      let tools: Set<AiTool> = selected;
       if (selected.size === 0) {
         const tool = AI_TOOLS[cursor];
-        if (tool !== undefined) setSelected(new Set([tool.id]));
+        if (tool !== undefined) tools = new Set([tool.id]);
+        setSelected(tools);
       }
-      setStep(presetScope === undefined ? 'scope' : 'theme');
+      if (presetScope === undefined) setStep('scope');
+      else void finish(tools, presetScope);
     }
   });
-
-  async function finish(themeValue: string): Promise<void> {
-    setStep('working');
-    const custom = themeValue === CUSTOM;
-    const theme = custom ? 'textbook' : themeValue;
-    const result = await runInit({
-      cwd,
-      ...(force === true ? { force: true } : {}),
-      tools: AI_TOOLS.map((t) => t.id).filter((id) => selected.has(id)),
-      theme,
-      scope,
-      ...(custom ? { customTheme: true } : {}),
-    });
-    onComplete(result, theme);
-    exit();
-  }
 
   if (step === 'tools') {
     return (
@@ -128,20 +113,8 @@ export function InitApp({ cwd, force, scope: presetScope, onComplete }: InitAppP
         </Text>
         <SelectInput
           items={SCOPE_CHOICES.map((c) => ({ label: c.label, value: c.id }))}
-          onSelect={(item) => {
-            setScope(item.value);
-            setStep('theme');
-          }}
+          onSelect={(item) => void finish(selected, item.value)}
         />
-      </Box>
-    );
-  }
-
-  if (step === 'theme') {
-    return (
-      <Box flexDirection="column">
-        <Text bold>Pick a theme:</Text>
-        <SelectInput items={[...THEME_ITEMS]} onSelect={(item) => void finish(item.value)} />
       </Box>
     );
   }

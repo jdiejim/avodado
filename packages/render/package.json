@@ -1,7 +1,7 @@
 {
   "name": "@avodado/render",
   "version": "0.30.0",
-  "description": "Render Avodado documentation-as-code (Markdown + typed YAML blocks) to standalone, themeable HTML, slide decks, and PDF — architecture & system-design diagrams, C4, ERDs, API references, tables, and charts as self-contained SVG. No runtime, no CDN, no client JS.",
+  "description": "Render Avodado documentation-as-code (Markdown + typed YAML blocks) to standalone HTML, slide decks, and PDF — architecture & system-design diagrams, C4, ERDs, API references, tables, and charts as self-contained SVG. No runtime, no CDN, no client JS.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -54,7 +54,6 @@
     "mermaid-alternative",
     "slides",
     "pdf",
-    "themes",
     "render",
     "static-site-generator",
     "api-documentation",

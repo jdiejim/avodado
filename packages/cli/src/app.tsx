@@ -8,8 +8,6 @@ import { Command } from 'commander';
 import pc from 'picocolors';
 import React from 'react';
 import { render as inkRender } from 'ink';
-import { existsSync } from 'node:fs';
-import { dirname } from 'node:path';
 import { findConfig, loadConfig } from './io/config.js';
 import { cliVersion } from './io/version.js';
 import { runCheck } from './commands/check.js';
@@ -40,7 +38,6 @@ import { runStudio } from './commands/studio.js';
 import {
   runInit,
   installTool,
-  themeFileContents,
   AI_TOOLS,
   SKILL_SCOPES,
   type InitResult,
@@ -48,23 +45,11 @@ import {
   type SkillScope,
 } from './commands/init.js';
 import { InitApp } from './commands/InitApp.js';
-import { ThemeApp } from './commands/ThemeApp.js';
 import { copyToClipboard } from './io/clipboard.js';
-import {
-  listSavedThemes,
-  savedThemePath,
-  globalThemePath,
-  validateThemeFile,
-  activeTheme,
-  THEMES_DIR,
-  GLOBAL_THEMES_DIR,
-  GLOBAL_ACTIVE,
-} from './io/theme.js';
 import { systemPrompt } from './commands/skill.js';
 import { mcpInstructions, runMcpStdio } from './commands/mcp.js';
-import { confirm } from './io/prompt.js';
-import { writeFile, readFile, mkdir } from 'node:fs/promises';
-import { basename, resolve as resolvePath } from 'node:path';
+import { writeFile } from 'node:fs/promises';
+import { resolve as resolvePath } from 'node:path';
 import { runSyncCsv, runSyncOpenApi, runSyncSchema, type CsvBlockKind, type SchemaDialect } from './commands/sync.js';
 import {
   templateFor,
@@ -90,13 +75,10 @@ import type { BlockType } from '@avodado/core';
 import { BLOCK_TYPES, BLOCK_ALIASES } from '@avodado/core';
 
 /** Prints the created/skipped files and next-step hints after `avo init`. */
-function printInitSummary(result: InitResult, theme: string): void {
+function printInitSummary(result: InitResult): void {
   for (const f of result.created) console.log(pc.green('+ ') + f);
   for (const f of result.skipped) console.log(pc.dim('  skip ') + f + pc.dim(' (exists)'));
-  console.log(
-    pc.bold(`\nCreated ${result.created.length} file(s), skipped ${result.skipped.length}.`) +
-      pc.dim(` (theme: ${theme})`),
-  );
+  console.log(pc.bold(`\nCreated ${result.created.length} file(s), skipped ${result.skipped.length}.`));
   console.log(
     pc.dim('Layout: docs/<area>/<doc>.md, kebab-case names · output goes to dist/ — do not commit it.'),
   );
@@ -176,7 +158,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('init')
     .description('Scaffold a new Avodado project in the current directory')
     .option('--force', 'overwrite existing files')
-    .option('-y, --yes', 'skip the wizard — scaffold with defaults (all tools, full suite, textbook theme)')
+    .option('-y, --yes', 'skip the wizard — scaffold with defaults (all tools, full suite)')
     .option(
       '--scope <type>',
       `tailor the installed skill to a project type (${SKILL_SCOPES.join(' | ')})`,
@@ -195,22 +177,22 @@ export async function main(argv: readonly string[]): Promise<number> {
         scope = opts.scope as SkillScope;
       }
 
-      // Interactive wizard: pick AI-tool adapters, a project type, + a theme.
+      // Interactive wizard: pick AI-tool adapters + a project type.
       if (isInteractive && opts.yes !== true) {
         console.log(wordmark(version));
-        let captured: { result: InitResult; theme: string } | undefined;
+        let captured: InitResult | undefined;
         const { waitUntilExit } = inkRender(
           <InitApp
             cwd={cwd}
             {...(force ? { force: true } : {})}
             {...(scope !== undefined ? { scope } : {})}
-            onComplete={(result, theme) => {
-              captured = { result, theme };
+            onComplete={(result) => {
+              captured = result;
             }}
           />,
         );
         await waitUntilExit();
-        if (captured !== undefined) printInitSummary(captured.result, captured.theme);
+        if (captured !== undefined) printInitSummary(captured);
         return;
       }
 
@@ -221,7 +203,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         ...(force ? { force: true } : {}),
         ...(scope !== undefined ? { scope } : {}),
       });
-      printInitSummary(result, 'textbook');
+      printInitSummary(result);
     });
 
 
@@ -968,211 +950,6 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
       console.log(mcpInstructions());
-    });
-
-  // `avo theme` — noun-scoped: list / new <name> / use <name> / <name> / picker.
-  const BUILTIN_THEMES = ['textbook', 'minimal', 'soft', 'dark', 'teal', 'slate'];
-  const ok = (msg: string): void => console.log(`${pc.green('✓')} ${msg}`);
-  program
-    .command('theme [name] [value]')
-    .description(
-      `Pick/list/create/install the document theme — avo theme [list | use <name> | new <name> | install <path>] (${BUILTIN_THEMES.join(' | ')} | custom | <saved>)`,
-    )
-    .option('--force', 'overwrite an existing saved theme (install)')
-    .option('--use', 'activate the theme right after install')
-    .option('--local', 'install into this project (.avodado/themes) instead of globally')
-    .option('--global', 'set the active theme globally (~/.avodado), for every project')
-    .action(
-      async (
-        nameArg: string | undefined,
-        valueArg: string | undefined,
-        opts: { force?: boolean; use?: boolean; local?: boolean; global?: boolean },
-      ) => {
-      const cwd = process.cwd();
-      // Where activating a theme writes: globally (every project) with --global,
-      // else the project's own avodado.theme.json.
-      const active = opts.global === true ? GLOBAL_ACTIVE : `${cwd}/avodado.theme.json`;
-      const activeLabel = opts.global === true ? '~/.avodado/avodado.theme.json (global)' : 'avodado.theme.json';
-      const scopeWord = opts.global === true ? 'global default' : 'project default';
-
-      // `avo theme new <name>` — scaffold a new saved custom theme to fill in.
-      if (nameArg === 'new') {
-        const slug = (valueArg ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        if (slug === '') {
-          console.error(pc.red('Give the new theme a name: avo theme new <name>'));
-          exitCode = 2;
-          return;
-        }
-        const toGlobal = opts.global === true;
-        const path = toGlobal ? globalThemePath(slug) : savedThemePath(cwd, slug);
-        const dir = toGlobal ? GLOBAL_THEMES_DIR : `${cwd}/${THEMES_DIR}`;
-        const where = toGlobal ? `~/.avodado/themes/${slug}.theme.json (global)` : `${THEMES_DIR}/${slug}.theme.json`;
-        if (existsSync(path)) {
-          console.error(pc.red(`A theme named "${slug}" already exists at ${where}`));
-          exitCode = 2;
-          return;
-        }
-        await mkdir(dir, { recursive: true });
-        await writeFile(path, themeFileContents('textbook', true, valueArg ?? slug), 'utf8');
-        ok(`created ${pc.bold(slug)} ${pc.dim(`· ${where}`)}`);
-        console.log(pc.dim('  Fill in its colors/fonts, then run `avo theme use ' + slug + '` (or `avo theme`).'));
-        return;
-      }
-
-      // `avo theme install <path>` — validate any theme file and copy it into
-      // .avodado/themes/ so it shows up in the picker and `avo theme use`.
-      if (nameArg === 'install') {
-        if (valueArg === undefined) {
-          console.error(pc.red('Give a path: avo theme install <path-to.theme.json>'));
-          exitCode = 2;
-          return;
-        }
-        const srcAbs = resolvePath(cwd, valueArg);
-        if (!existsSync(srcAbs)) {
-          console.error(pc.red(`No file at ${valueArg}`));
-          exitCode = 2;
-          return;
-        }
-        let text: string;
-        try {
-          text = await readFile(srcAbs, 'utf8');
-        } catch (err) {
-          console.error(pc.red(`Could not read ${valueArg}: ${(err as Error).message}`));
-          exitCode = 2;
-          return;
-        }
-        const stem = basename(srcAbs).replace(/\.theme\.json$/i, '').replace(/\.jsonc?$/i, '');
-        const slug = stem.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'theme';
-        // `theme` may name a built-in, an already-installed theme, or this
-        // very file (by its filename slug or its `name`) — a self-titled
-        // custom theme is the common way theme files are authored.
-        const known = [...listSavedThemes(cwd).map((s) => s.slug), slug];
-        const check = validateThemeFile(text, known);
-        if (!check.ok) {
-          console.error(pc.red(`Invalid theme file ${valueArg}:`));
-          for (const e of check.errors) console.error(pc.red(`  - ${e}`));
-          exitCode = 2;
-          return;
-        }
-        for (const w of check.warnings) console.log(pc.yellow(`  ! ${w}`));
-        // Default: install globally (~/.avodado/themes) so it's usable in every
-        // project. `--local` installs into just this project (.avodado/themes).
-        const toGlobal = opts.local !== true;
-        const dest = toGlobal ? globalThemePath(slug) : savedThemePath(cwd, slug);
-        const destDir = toGlobal ? GLOBAL_THEMES_DIR : `${cwd}/${THEMES_DIR}`;
-        const where = toGlobal ? `~/.avodado/themes/${slug}.theme.json (global)` : `${THEMES_DIR}/${slug}.theme.json`;
-        if (existsSync(dest) && opts.force !== true) {
-          console.error(
-            pc.red(`A theme "${slug}" already exists (${where}). Re-run with --force to overwrite.`),
-          );
-          exitCode = 2;
-          return;
-        }
-        await mkdir(destDir, { recursive: true });
-        await writeFile(dest, text, 'utf8');
-        ok(`installed ${pc.bold(slug)} ${pc.dim(`· ${where}`)}`);
-        // Activate it if `--use` was passed, or — in an interactive terminal — if
-        // the user says yes. A global install offers a global default so it shows
-        // up everywhere; a local install sets only this project.
-        const target = toGlobal ? GLOBAL_ACTIVE : `${cwd}/avodado.theme.json`;
-        const targetLabel = toGlobal ? 'every project (global default)' : 'the project default';
-        const setDefault =
-          opts.use === true ||
-          (isInteractive && (await confirm(`Set ${pc.bold(slug)} as the default for ${targetLabel}?`)));
-        if (setDefault) {
-          await mkdir(dirname(target), { recursive: true });
-          await writeFile(target, text, 'utf8');
-          ok(`activated ${pc.bold(slug)} — default for ${targetLabel}`);
-        } else {
-          console.log(pc.dim(`  Run \`avo theme use ${slug}\`${toGlobal ? ' --global' : ''} to make it the default.`));
-        }
-        return;
-      }
-
-      const saved = listSavedThemes(cwd);
-
-      // `avo theme list` — show built-ins and saved customs, marking the current.
-      if (nameArg === 'list') {
-        const cur = activeTheme(cwd, saved);
-        const mark = (isCur: boolean): string => (isCur ? pc.green(' ✓') : '');
-        console.log(pc.bold('Built-in themes:'));
-        console.log(
-          '  ' + BUILTIN_THEMES.map((t) => t + mark(cur.kind === 'builtin' && cur.id === t)).join('   '),
-        );
-        console.log(pc.bold('\nSaved custom themes:') + pc.dim(' (global: ~/.avodado/themes · project: .avodado/themes)'));
-        if (saved.length === 0) {
-          console.log(pc.dim('  none yet — `avo theme install <path>` (global) or `avo theme new <name>`'));
-        } else {
-          for (const s of saved) {
-            const here = cur.kind === 'saved' && cur.id === s.slug;
-            const scope = s.scope === 'global' ? pc.dim(' (global)') : pc.dim(' (project)');
-            console.log(`  ${pc.cyan(s.slug.padEnd(16))}${pc.dim(s.name === s.slug ? '' : s.name)}${scope}${mark(here)}`);
-          }
-        }
-        const label =
-          cur.kind === 'builtin' || cur.kind === 'saved' ? (cur.id ?? '?') : cur.kind === 'custom' ? 'custom' : 'none (default textbook)';
-        console.log(pc.dim('\nCurrent default: ') + pc.bold(label));
-        return;
-      }
-
-      // Activate a theme by name (built-in, blank `custom`, or a saved slug).
-      // Writes the project's avodado.theme.json, or the global default with --global.
-      const setTheme = async (target: string): Promise<boolean> => {
-        await mkdir(dirname(active), { recursive: true });
-        if (BUILTIN_THEMES.includes(target)) {
-          await writeFile(active, themeFileContents(target, false), 'utf8');
-          ok(`theme set to ${pc.bold(target)} — now the ${scopeWord} ${pc.dim(`· ${activeLabel}`)}`);
-          return true;
-        }
-        if (target === 'custom') {
-          await writeFile(active, themeFileContents('textbook', true), 'utf8');
-          ok(`scaffolded a blank ${pc.bold('custom')} theme ${pc.dim(`· ${activeLabel}`)}`);
-          console.log(pc.dim(`  Edit ${activeLabel} to tweak colors/fonts.`));
-          return true;
-        }
-        const hit = saved.find((s) => s.slug === target);
-        if (hit !== undefined) {
-          await writeFile(active, await readFile(hit.file, 'utf8'), 'utf8');
-          ok(`theme set to ${pc.bold(hit.name)} — now the ${scopeWord} ${pc.dim(`· ${activeLabel}`)}`);
-          return true;
-        }
-        const choices = [...BUILTIN_THEMES, 'custom', ...saved.map((s) => s.slug)].join(', ');
-        console.error(pc.red(`Unknown theme: ${target}. Try one of: ${choices}`));
-        exitCode = 2;
-        return false;
-      };
-
-      // `avo theme use <name>` (explicit) and `avo theme <name>` (shorthand).
-      if (nameArg === 'use') {
-        if (valueArg === undefined) {
-          console.error(pc.red('Name the theme to use: avo theme use <name>'));
-          exitCode = 2;
-          return;
-        }
-        await setTheme(valueArg);
-        return;
-      }
-      if (nameArg !== undefined) {
-        await setTheme(nameArg);
-        return;
-      }
-
-      if (!isInteractive) {
-        console.error(pc.red('In non-interactive mode: avo theme use <name> (or avo theme list)'));
-        exitCode = 2;
-        return;
-      }
-      console.log(actionBanner('theme'));
-      console.log(funLine('theme') + '\n');
-      let picked: { label: string; kind: 'builtin' | 'saved' | 'custom' } | undefined;
-      const { waitUntilExit } = inkRender(
-        <ThemeApp cwd={cwd} saved={saved} onComplete={(p) => { picked = p; }} />,
-      );
-      await waitUntilExit();
-      if (picked !== undefined) {
-        ok(`theme set to ${pc.bold(picked.label)} ${pc.dim('· avodado.theme.json')}`);
-        if (picked.kind === 'custom') console.log(pc.dim('  Edit avodado.theme.json to tweak colors/fonts.'));
-      }
     });
 
   // Hidden compat: `avo block` / `avo template` — both fronted by `avo new`.

@@ -136,12 +136,12 @@ export const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: 'finish',
-    target: '[data-tour="theme"]',
-    title: 'Make it yours',
+    target: '[data-tour="topbar"]',
+    title: "That's the tour",
     body:
-      'The Theme button opens the theme panel — click any theme card to restyle the whole ' +
-      'document live. Press ? anytime for every keyboard shortcut, and the README covers the ' +
-      "full block catalog. That's the tour!",
+      'Share ▾ copies a link or exports the document as HTML, slides, PDF or PowerPoint; ' +
+      'Present shows it as a deck. Press ? anytime for every keyboard shortcut, and the ' +
+      'README covers the full block catalog.',
     keys: ['?'],
     advance: null,
   },

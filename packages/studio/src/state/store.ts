@@ -19,7 +19,6 @@ import {
   replaceBlockBody,
   type Document,
 } from '@avodado/core';
-import { DEFAULT_THEME, type ThemeName } from '@avodado/render';
 import {
   fetchDoc,
   fetchDocs,
@@ -33,7 +32,7 @@ import { importDoc } from '../api/client.js';
 import { readShareUrl } from '../lib/shareLink.js';
 import type { ServerEvent } from '../api/events.js';
 import { firstContentIndex } from '../lib/docTemplates.js';
-import { derive, diskChoice, resolveChoice, sameDiskTheme } from './derive.js';
+import { derive } from './derive.js';
 import { canMoveSegment, decideFsEvent, versionChanged } from './sync.js';
 
 /** An edit operation: pure `(source, doc) → newSource`. May throw Range/TypeError. */
@@ -126,16 +125,6 @@ export interface StudioState {
    * selection changes, a doc opens, the sheet opens, or history moves.
    */
   partSel: { readonly seg: number; readonly path: string } | null;
-  /**
-   * The theme PICKER's value: a built-in name, `saved:<slug>` (an installed
-   * theme), or `custom` (the project's avodado.theme.json). Session-local
-   * preview only — a disk change always resyncs it (disk is truth).
-   */
-  themeChoice: string;
-  /** Resolved base theme of {@link themeChoice} — what rendering consumes. */
-  theme: ThemeName;
-  /** Resolved CSS-variable overrides of {@link themeChoice}. */
-  themeVars: Readonly<Record<string, string>> | undefined;
   conflict: SaveConflict | null;
   undoStack: readonly string[];
   redoStack: readonly string[];
@@ -219,20 +208,6 @@ export interface StudioState {
   undo: () => void;
   redo: () => void;
   resolveConflict: (choice: 'theirs' | 'mine') => void;
-  /**
-   * Picks a theme in the UI — a session-local preview ({@link themeChoice}).
-   * It never writes avodado.theme.json, and any disk change resyncs over it.
-   * (A possible follow-up: write the choice back through the file bridge so
-   * the picker and `avo theme` are the same control.)
-   */
-  setTheme: (choice: string) => void;
-  /**
-   * Live-preview arbitrary theme vars over a base (the Theme Generator), without
-   * touching {@link themeChoice} — so cancelling can restore it via `setTheme`.
-   */
-  previewTheme: (theme: ThemeName, themeVars: Readonly<Record<string, string>> | undefined) => void;
-  /** After a theme file is written on disk, refetch meta and activate it. */
-  applySavedTheme: (slug: string) => Promise<void>;
   setAutosave: (on: boolean) => void;
   /**
    * Opens the sheet; `fresh` marks a just-inserted block (arrays pre-open);
@@ -343,9 +318,6 @@ export const useStudio = create<StudioState>()((set, get) => {
     mode: 'home',
     selection: null,
     partSel: null,
-    themeChoice: DEFAULT_THEME,
-    theme: DEFAULT_THEME,
-    themeVars: undefined,
     conflict: null,
     undoStack: [],
     redoStack: [],
@@ -406,17 +378,7 @@ export const useStudio = create<StudioState>()((set, get) => {
         }
 
         const [meta, docs] = await Promise.all([fetchMeta(), fetchDocs()]);
-        const choice = diskChoice(meta);
-        const resolved = resolveChoice(choice, meta);
-        set({
-          meta,
-          docs,
-          themeChoice: choice,
-          theme: resolved.theme,
-          themeVars: resolved.themeVars,
-          loaded: true,
-          initialVersion: meta.version,
-        });
+        set({ meta, docs, loaded: true, initialVersion: meta.version });
         const first = docs[0];
         const open = shared ?? (get().currentSlug === null ? first?.slug : undefined);
         if (open !== undefined) await get().openDoc(open);
@@ -501,7 +463,7 @@ export const useStudio = create<StudioState>()((set, get) => {
       const s = get();
       if (s.currentSlug === null) return false;
       try {
-        const { doc } = derive(s.source, s.currentSlug, s.theme, s.themeVars);
+        const { doc } = derive(s.source, s.currentSlug);
         const next = op(s.source, doc);
         setSourceEdited(next, select);
         return true;
@@ -514,7 +476,7 @@ export const useStudio = create<StudioState>()((set, get) => {
     moveBlock: (from, to) => {
       const s = get();
       if (s.currentSlug === null) return false;
-      const { doc } = derive(s.source, s.currentSlug, s.theme, s.themeVars);
+      const { doc } = derive(s.source, s.currentSlug);
       if (!canMoveSegment(doc.segments.map((seg) => seg.kind), from, to)) return false;
       return s.applyOp((src, d) => moveSegment(src, d, from, to), to <= from ? to : to - 1);
     },
@@ -654,18 +616,6 @@ export const useStudio = create<StudioState>()((set, get) => {
       }
     },
 
-    setTheme: (choice) => {
-      const resolved = resolveChoice(choice, get().meta);
-      set({ themeChoice: choice, theme: resolved.theme, themeVars: resolved.themeVars });
-    },
-
-    previewTheme: (theme, themeVars) => set({ theme, themeVars }),
-
-    applySavedTheme: async (slug) => {
-      const meta = await fetchMeta();
-      set({ meta });
-      get().setTheme(`saved:${slug}`);
-    },
     setAutosave: (on) => {
       // Flipping autosave back ON while dirty would immediately (and
       // silently) write the pending edits — route that through the review
@@ -744,27 +694,14 @@ export const useStudio = create<StudioState>()((set, get) => {
 
     handleServerEvent: (ev) => {
       if (ev.type === 'meta') {
+        // A config change on disk: refetch meta (version, docs dir) and flag
+        // a stale tab if the server moved on.
         void fetchMeta().then((meta) => {
           const s = get();
-          // Disk is truth: when the CONFIGURED theme changed on disk, the
-          // picker resyncs to it, overriding any session-local preview. A
-          // meta event that didn't change the disk theme (e.g. a config
-          // tweak) keeps the user's choice, re-resolved against fresh meta
-          // (an installed theme's vars may have been edited).
-          const diskMoved = !sameDiskTheme(s.meta, meta);
-          const choice = diskMoved ? diskChoice(meta) : s.themeChoice;
-          const resolved = resolveChoice(choice, meta);
-          const repainted =
-            resolved.theme !== s.theme ||
-            JSON.stringify(resolved.themeVars ?? null) !== JSON.stringify(s.themeVars ?? null);
           set({
             meta,
-            themeChoice: choice,
-            theme: resolved.theme,
-            themeVars: resolved.themeVars,
             ...(versionChanged(s.initialVersion, meta.version) ? { updateAvailable: true } : {}),
           });
-          if (diskMoved && repainted) s.toast('Theme changed on disk — applied');
         });
         return;
       }
@@ -825,7 +762,5 @@ export const useStudio = create<StudioState>()((set, get) => {
 export function useDerived(): ReturnType<typeof derive> {
   const source = useStudio((s) => s.source);
   const slug = useStudio((s) => s.currentSlug) ?? 'untitled';
-  const theme = useStudio((s) => s.theme);
-  const themeVars = useStudio((s) => s.themeVars);
-  return derive(source, slug, theme, themeVars);
+  return derive(source, slug);
 }
