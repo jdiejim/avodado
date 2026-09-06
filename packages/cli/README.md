@@ -73,6 +73,7 @@ avo new <template|block>          # scaffold a doc (adr, runbook…) or a single
 avo theme                         # pick a theme (textbook · minimal · soft · dark · teal · slate)
 avo sync openapi <spec>           # generate an API doc from an OpenAPI spec
 avo sync csv <file>               # turn a CSV into a table / chart block
+avo sync sql|dbml|prisma <file>   # turn a database schema into an erd block
 ```
 
 Run `avo --help` (or `avo <command> --help`) for everything.

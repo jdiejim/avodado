@@ -14,11 +14,13 @@ import { BLOCK_TYPES, describeBlockSchema, type FieldNode } from '@avodado/core'
  * arrays spelled `[]`), each with its justification:
  *
  * - `gallery:items[].block` — a NESTED BLOCK body (`{ type: c4, …c4 data }`).
+ * - `spans:spans[].attrs` — a free key/value map (`{ http.status: 502 }`); the
+ *   YAML editor is the right control for arbitrary keys.
  *   The schema is a passthrough object because the real shape depends on the
  *   `type` value; the YAML-tab fallback is the correct editor for an
  *   arbitrary nested block.
  */
-const OPAQUE_ALLOW_LIST: readonly string[] = ['gallery:items[].block'];
+const OPAQUE_ALLOW_LIST: readonly string[] = ['gallery:items[].block', 'spans:spans[].attrs'];
 
 function collectOpaquePaths(node: FieldNode, prefix: string, out: string[]): void {
   switch (node.kind) {
@@ -43,7 +45,7 @@ function collectOpaquePaths(node: FieldNode, prefix: string, out: string[]): voi
 
 describe('opaque audit across all block types', () => {
   it(`covers ${BLOCK_TYPES.length} block types`, () => {
-    expect(BLOCK_TYPES.length).toBe(90);
+    expect(BLOCK_TYPES.length).toBe(94);
   });
 
   it('every root schema introspects as an object (the form always renders)', () => {

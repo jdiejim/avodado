@@ -98,7 +98,11 @@ import { renderScqa } from './blocks/scqa.js';
 import { renderScenarios } from './blocks/scenarios.js';
 import { renderFishbone } from './blocks/fishbone.js';
 import { renderStorymap } from './blocks/storymap.js';
+import { renderEventcontract } from './blocks/eventcontract.js';
+import { renderSaga } from './blocks/saga.js';
 import { renderSlopegraph } from './blocks/slopegraph.js';
+import { renderSpans } from './blocks/spans.js';
+import { renderRollout } from './blocks/rollout.js';
 
 /** Per-block HTML renderer signature. */
 export type HtmlRenderer<K extends BlockType> = (data: BlockDataMap[K]) => string;
@@ -197,5 +201,9 @@ export const htmlRenderers: HtmlRendererRegistry = {
   scenarios: renderScenarios,
   fishbone: renderFishbone,
   storymap: renderStorymap,
+  eventcontract: renderEventcontract,
+  saga: renderSaga,
   slopegraph: renderSlopegraph,
+  spans: renderSpans,
+  rollout: renderRollout,
 };

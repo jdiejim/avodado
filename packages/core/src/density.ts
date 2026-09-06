@@ -28,6 +28,19 @@ export interface DensityBudget {
   readonly split: string;
   /** Which items count. Absent → every item. Sequence frame markers do not count. */
   readonly counts?: (item: unknown) => boolean;
+  /** A custom total over the array (e.g. columns across every erd entity). Wins over `counts`. */
+  readonly measure?: (items: readonly unknown[]) => number;
+}
+
+/** Columns across every erd entity. */
+function erdColumns(items: readonly unknown[]): number {
+  let n = 0;
+  for (const e of items) {
+    if (typeof e !== 'object' || e === null) continue;
+    const cols = (e as { columns?: unknown }).columns;
+    if (Array.isArray(cols)) n += cols.length;
+  }
+  return n;
 }
 
 /** True for a real message; false for a frame marker (`frame` / `else` / `end`). */
@@ -60,7 +73,10 @@ export const DENSITY_BUDGETS: Partial<Record<BlockType, readonly DensityBudget[]
   block: [{ field: 'nodes', cap: 20, unit: 'nodes', split: 'Split the diagram by layer or by domain.' }],
   felogic: [{ field: 'nodes', cap: 20, unit: 'nodes', split: 'Split the logic into one diagram per feature.' }],
   frontend: [{ field: 'nodes', cap: 20, unit: 'nodes', split: 'Split the tree into one diagram per page.' }],
-  erd: [{ field: 'entities', cap: 12, unit: 'entities', split: 'Split the model by domain.' }],
+  erd: [
+    { field: 'entities', cap: 20, unit: 'entities', split: 'Split the model by domain.' },
+    { field: 'entities', cap: 60, unit: 'columns', split: 'Split the model by domain, or give wide tables their own erd.', measure: erdColumns },
+  ],
   tree: [{ field: 'nodes', cap: 40, unit: 'nodes', split: 'Split the tree into one block per top branch.' }],
   graph: [{ field: 'nodes', cap: 30, unit: 'nodes', split: 'Split the graph into one block per cluster.' }],
   cluster: [{ field: 'services', cap: 16, unit: 'services', split: 'Draw one diagram per cluster.' }],
@@ -69,14 +85,22 @@ export const DENSITY_BUDGETS: Partial<Record<BlockType, readonly DensityBudget[]
   timeline: [{ field: 'items', cap: 20, unit: 'items', split: 'Split the timeline into one block per phase.' }],
   journey: [{ field: 'stages', cap: 10, unit: 'stages', split: 'Split the journey into one block per persona.' }],
   storymap: [{ field: 'backbone', cap: 10, unit: 'steps', split: 'Split the map into one storymap per journey phase.' }],
+  saga: [{ field: 'steps', cap: 12, unit: 'steps', split: 'Split the saga into one diagram per phase.' }],
   slopegraph: [{ field: 'items', cap: 20, unit: 'items', split: 'Keep the items that move, or split the list into one slopegraph per group.' }],
+  spans: [{ field: 'spans', cap: 40, unit: 'spans', split: 'Collapse leaf spans into their parent, or draw one spans block per service hop.' }],
 };
 
 /** Length of `data[field]` when it is an array; 0 for anything else. */
-function countArray(data: unknown, field: string, counts?: (item: unknown) => boolean): number {
+function countArray(
+  data: unknown,
+  field: string,
+  counts?: (item: unknown) => boolean,
+  measure?: (items: readonly unknown[]) => number,
+): number {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) return 0;
   const value = (data as Record<string, unknown>)[field];
   if (!Array.isArray(value)) return 0;
+  if (measure !== undefined) return measure(value);
   return counts === undefined ? value.length : value.filter(counts).length;
 }
 
@@ -97,7 +121,7 @@ export function lintDensity(doc: Document, file: string): Diagnostic[] {
     if (budgets === undefined) continue;
 
     for (const budget of budgets) {
-      const count = countArray(seg.data, budget.field, budget.counts);
+      const count = countArray(seg.data, budget.field, budget.counts, budget.measure);
       if (count <= budget.cap) continue;
 
       const loc = locateYamlPath(seg.raw, [budget.field]);

@@ -15,6 +15,10 @@ export type DiagnosticCode =
   // A ```mermaid body holds a line the Mermaid dialect subset cannot read
   // (see `mermaid/`). Same severity and shape as E_PARSE_YAML.
   | 'E_PARSE_MERMAID'
+  // A ```dbml / ```prisma body holds a line the schema dialect cannot read
+  // (see `import/dbml.ts`, `import/prisma.ts`). Same shape as E_PARSE_YAML.
+  | 'E_PARSE_DBML'
+  | 'E_PARSE_PRISMA'
   | 'E_SCHEMA'
   | 'E_DUP_ID'
   | 'E_DANGLING_REF'
@@ -30,6 +34,10 @@ export type DiagnosticCode =
   // or a frame never closed (see `validate.ts`). A warning — the renderer
   // draws what it can; the author fixes the marker.
   | 'W_SEQ_FRAME'
+  // A grid group's `parent` does not resolve, or the child's cell range is
+  // not inside its parent's (see `validate.ts`). A warning — the renderer
+  // still draws both panels; the author moves the cells.
+  | 'W_GROUP_NESTING'
   // On-disk convention (checked by the CLI — it is path-based, not
   // content-based): kebab-case filenames, at most `docs/<area>/<doc>.md`
   // under the docs root. Always a warning; no flag escalates it.

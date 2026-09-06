@@ -19,6 +19,8 @@ const SKINNED = [
   'blocks/blockGraph.ts', // the `block` renderer (+ infra / event / ddd / network presets)
   'blocks/erd.ts',
   'blocks/frame.ts',
+  'blocks/eventcontract.ts',
+  'blocks/saga.ts',
   'blocks/autoLayout.ts',
   'svg/blockStyle.ts',
   'svg/defs.ts',

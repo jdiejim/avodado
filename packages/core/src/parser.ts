@@ -10,7 +10,7 @@ import { splitMarkdown, detectSuspectFences } from './splitter.js';
 import { parseBlockBody, type YamlParseResult } from './yaml.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
 import { normalizeBlockData, textBodyData } from './blocks/normalize.js';
-import { MERMAID_SOURCE, convertMermaid } from './mermaid/index.js';
+import { convertDialect, isDialectSource } from './dialects.js';
 import type { BlockType, Document, MetaData, Segment, TypedSegment } from './types.js';
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -29,13 +29,13 @@ function applyAliasPatch(data: unknown, patch: Readonly<Record<string, unknown>>
 }
 
 /**
- * Parses a block body into data. Three body dialects share one result shape:
- * a Mermaid body (`sourceType: 'mermaid'`) converts through `convertMermaid`;
- * a text-first block (callout, pullquote) takes its bare text; everything
- * else parses as YAML.
+ * Parses a block body into data. Three body kinds share one result shape:
+ * a dialect body (`sourceType` `mermaid` / `dbml` / `prisma`) converts
+ * through `convertDialect`; a text-first block (callout, pullquote) takes
+ * its bare text; everything else parses as YAML.
  */
 function parseBody(kind: BlockType, sourceType: string | undefined, raw: string): YamlParseResult {
-  if (sourceType === MERMAID_SOURCE) return convertMermaid(kind, raw);
+  if (isDialectSource(sourceType)) return convertDialect(sourceType, kind, raw);
   const textData = textBodyData(kind, raw);
   return textData !== undefined ? { ok: true, data: textData } : parseBlockBody(raw);
 }

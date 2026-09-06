@@ -1,4 +1,4 @@
-# The 90 block types — by family
+# The 94 block types — by family
 
 Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 The map from block type → the family file beside this one that holds its full
@@ -13,7 +13,7 @@ permanent aliases — see the alias table at the bottom.
 | `callout` | `narrative.md` | A single aside: note / tip / warn / danger. |
 | `table` | `tables-data.md` | Genuinely tabular data (rows × columns of values); cells can carry tone. |
 | `sequence` | `flows.md` | Messages between actors **over time** (lifelines, returns); optional step list + endpoint pill. |
-| `erd` | `data-model.md` | Entity-relationship diagram — tables, columns, PK/FK, crow's-foot cardinality. |
+| `erd` | `data-model.md` | Entity-relationship diagram — tables, views, enums, columns with key markers, schema groups, crow's-foot cardinality; also written as ```dbml / ```prisma. |
 | `userstory` | `planning.md` | An agile story: role / want / soThat + acceptance criteria + links. |
 | `timeline` | `planning.md` | Phases in order with status dots (done / current / next / future). |
 | `kanban` | `planning.md` | Flexible named columns (e.g. Now / Next / Later) of cards. |
@@ -38,7 +38,7 @@ permanent aliases — see the alias table at the bottom.
 | `uml` | `architecture.md` | A class diagram — attributes, methods, UML relationships. |
 | `frontend` | `architecture.md` | A top-down component tree — root / layout / page / component / provider / hook / store. |
 | `cluster` | `architecture.md` | Kubernetes-style namespaces holding services, with replica counts. |
-| `block` | `architecture.md` | Generic boxes-and-arrows architecture — grid **or** horizontal `layers`, dashed `groups` zones; `preset: infra \| event \| ddd \| network` re-frames it for cloud, pub/sub, DDD, or security-zone maps. |
+| `block` | `architecture.md` | Generic boxes-and-arrows architecture — grid **or** horizontal `layers`, `groups` zones that nest by `parent`, node `replicas`; `preset: infra \| event \| ddd \| network \| k8s` re-frames it for cloud, pub/sub, DDD, security-zone, or Kubernetes maps. |
 | `felogic` | `architecture.md` | Frontend module/logic graph — components, hooks, interfaces, strategies; group zones + egress edges; `variant: be` re-frames it for the backend (controller / service / repository / adapter). |
 | `wireframe` | `design-system.md` | Low-fi UI mockups inside device frames — desktop / browser / phone screens. |
 | `endpoint` | `api.md` | A Swagger-style API endpoint card — method, path, params, request body, responses, examples. |
@@ -98,7 +98,11 @@ permanent aliases — see the alias table at the bottom.
 | `statustable` | `planning.md` | A task table — free columns (task / update) plus a colored status pill per row, from a user-defined label → color vocabulary; rows can nest one level of subtasks. |
 | `fishbone` | `charts-overviews.md` | Cause & effect (Ishikawa) — one effect at the head, cause categories as bones off the spine, specific causes along each bone. |
 | `storymap` | `planning.md` | User story map — the ordered backbone of activities across the top, release slices as rows of cards under each step. |
+| `eventcontract` | `api.md` | An async event contract card — name, version, channel, producers → consumers, delivery / ordering / retention, payload fields with the partition key marked; the twin of `endpoint`. |
+| `saga` | `flows.md` | A distributed transaction — forward steps left to right, the compensation under each, and the compensating flow drawn back from the step that fails (`failAt`). |
 | `slopegraph` | `charts-overviews.md` | Ranked before / after — one line per item between two labeled columns; the slopes show what rose, fell, or held. |
+| `spans` | `flows.md` | A distributed-trace waterfall — one lane per service, each span a bar on a shared time axis, nested by parent; the critical path is marked. |
+| `rollout` | `planning.md` | A progressive-delivery plan — stages left to right with their traffic share, hold time, and the gate each must pass; the rollback move as the footer. |
 
 ## Old names → canonical — the permanent aliases
 

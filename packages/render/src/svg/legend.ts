@@ -26,6 +26,8 @@ export type LegendSwatch =
   | 'edge-link'
   /** The accent spent on a dashed response: accent, dashed, open head. */
   | 'edge-accent-dashed'
+  /** A compensating / rollback flow: negative, dashed, filled head. */
+  | 'edge-negative-dashed'
   /** UML realisation: dashed with a hollow triangle head. */
   | 'edge-implements'
   /** A plain line with a dot — a branch lane (gitgraph), no arrowhead. */
@@ -46,7 +48,9 @@ export type LegendSwatch =
   /** A dot node (wardley / quadrant): `fill` / `stroke` / `dash` override paper / ink / solid. */
   | 'node-dot'
   /** A plain line with no head — a dependency, a baseline. */
-  | 'line';
+  | 'line'
+  /** A dashed line with no head — a non-identifying relation. */
+  | 'line-dashed';
 
 /** One legend entry: a swatch (or a text chip) and the label beside it. */
 export interface LegendItem {
@@ -99,6 +103,9 @@ function swatchSvg(kind: LegendSwatch, fill?: string, stroke?: string, dash?: st
     case 'line':
       inner = `<line x1="1" y1="${SW_H / 2}" x2="${SW_W - 1}" y2="${SW_H / 2}" stroke="${stroke ?? 'var(--muted)'}" stroke-width="1.25"/>`;
       break;
+    case 'line-dashed':
+      inner = `<line x1="1" y1="${SW_H / 2}" x2="${SW_W - 1}" y2="${SW_H / 2}" stroke="${stroke ?? 'var(--muted)'}" stroke-width="1.25" stroke-dasharray="5 4"/>`;
+      break;
     case 'node-accent-outline':
       inner = nodeSwatch('var(--accent)', 1.5, 'var(--paper)', '');
       break;
@@ -137,6 +144,9 @@ function swatchSvg(kind: LegendSwatch, fill?: string, stroke?: string, dash?: st
       break;
     case 'edge-accent-dashed':
       inner = edgeSwatch('var(--accent)', 1.75, '5 4', false);
+      break;
+    case 'edge-negative-dashed':
+      inner = edgeSwatch('var(--negative)', 1.5, '5 4', true);
       break;
     case 'edge-implements': {
       const y = SW_H / 2;

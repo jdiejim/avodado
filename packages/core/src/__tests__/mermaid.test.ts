@@ -230,7 +230,7 @@ describe('erDiagram → erd', () => {
           name: 'CUSTOMER',
           columns: [
             { name: 'id', type: 'uuid', pk: true },
-            { name: 'email', type: 'string' },
+            { name: 'email', type: 'string', unique: true, note: 'unique' },
             { name: 'name', type: 'string' },
           ],
         },
@@ -249,7 +249,7 @@ describe('erDiagram → erd', () => {
       relations: [
         { from: 'CUSTOMER', to: 'ORDER', label: 'places', card: '1:N' },
         { from: 'ORDER', to: 'ORDER LINE', label: 'contains', card: '1:N' },
-        { from: 'PRODUCT', to: 'ORDER LINE', label: 'appears in', card: 'N:M' },
+        { from: 'PRODUCT', to: 'ORDER LINE', label: 'appears in', card: 'N:M', identifying: false },
         { from: 'ORDER', to: 'INVOICE', card: 'N:1' },
       ],
     });

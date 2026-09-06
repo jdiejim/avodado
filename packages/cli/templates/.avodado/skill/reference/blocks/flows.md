@@ -6,7 +6,8 @@ map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 **Shape**:
 
-- Exchange — actors trading messages over time (`sequence`)
+- Exchange — actors trading messages over time (`sequence`); one request's
+  time split across services (`spans`)
 - Flow — steps and branches through a graph (`flow`, `dfd`, `swimlane`,
   `cycle`, `gitgraph`)
 - Modes — one object, discrete states (`state`)
@@ -111,6 +112,37 @@ messages:
   closes at the reply back to the caller.
 - The step list mirrors the frames (`ALT · guard`, `else · guard` dividers);
   frame markers never get a step number.
+
+#### `spans` — distributed-trace waterfall (where did the time go?)
+
+A `sequence` shows *who called whom*; `spans` shows *how long each call
+took* and which one the response waited on. One lane per service, one bar
+per span on a shared time axis. The terse form is
+`service/id: name · start · duration [· parent]`; use the object form for
+`kind`, `error`, `attrs`, or `note`:
+```spans
+title: GET /orders/{id}
+unit: ms
+spans:
+  - api/get: GET /orders/{id} · 0 · 120
+  - api/auth: verify token · 4 · 10 · get
+  - db/q1: SELECT orders · 18 · 40 · get
+  - { id: cache, service: cache, name: "GET order:42", start: 62, duration: 3, parent: get, kind: cache }
+  - { id: pay, service: payments, name: GET /payments/42, start: 68, duration: 46, parent: get, kind: client, error: true, attrs: { http.status: 502 }, note: Retried once. }
+```
+- `start` and `duration` are numbers in `unit` (`ms` default, `s`, `us`),
+  measured from the trace start. A bar is drawn exactly where the span ran —
+  the renderer never nudges time.
+- `parent` names the calling span's `id`. Nested bars lighten by depth
+  (ink → muted → paper-2) and a thin connector joins each child to its
+  parent at the child's start.
+- The **critical path** — the root, then the longest child at every hop —
+  takes the accent. `error: true` draws a negative outline and an `ERR`
+  chip. `kind` (server · client · db · queue · cache · internal) sets the
+  lane's chip (its most common kind) and the legend.
+- The duration sits at the bar end; a name that does not fit inside its bar
+  follows the duration. `attrs` (a map) and `note` list under the drawing.
+- Keep one request per block; the density check warns past 40 spans.
 
 #### `state` — state machine (+ transition table)
 ```state
@@ -240,6 +272,33 @@ links:
   - { from: triage, to: esc, label: "no" }
 ```
 Step `kind` is `action | decision | start | end | wait`.
+
+#### `saga` — a distributed transaction and what runs backwards
+
+The reader's question is "what happens when step 3 fails?". Forward steps
+run left to right; the compensation that undoes each one sits under it; the
+compensating flow is drawn from the failing step back to step 1.
+```saga
+title: Place order
+mode: orchestration           # orchestration (coordinator band) | choreography (default)
+coordinator: Order service
+steps:                        # id: Name · service · compensate
+  - reserve: Reserve stock · inventory · release stock
+  - charge: Charge card · payments · refund card
+  - ship: Book shipment · shipping · cancel shipment
+  - notify: Send confirmation · notifications
+failAt: ship                  # the step id that fails
+```
+A step is a terse string (`id: Name · service · compensate`; two parts give
+name and service only; four give `name · service · action · compensate`) or
+the object form `{ id, name, service, action, compensate, status }`. `failAt`
+names the step that fails: it takes the diagram's one accent and a `FAILED`
+chip, the steps before it read `COMPENSATED`, the steps after it `SKIPPED`,
+and the forward arrows past it turn dashed. Set `status` on a step
+(`ok | failed | skipped | compensated`) only to override that derivation.
+Without `failAt` the saga draws the happy path: no accent, no compensating
+flow. Use `sequence` for the messages of one step; use `saga` for the
+transaction as a whole. Keep it to 12 steps.
 
 #### `steps` — a numbered how-to / runbook stepper
 ```steps

@@ -24,7 +24,7 @@ import {
   editableBodyYaml,
   setYamlPath,
   BLOCK_FAMILIES,
-  MERMAID_SOURCE,
+  isDialectSource,
   BLOCK_FAMILY,
   BLOCK_LABELS,
   type Diagnostic,
@@ -72,7 +72,7 @@ function SheetInner({ seg, revealField }: {
   // A Mermaid body edits as its canonical YAML: the form and the path ops
   // need YAML, and Done writes it under the canonical fence tag. Any other
   // body (YAML, or callout/pullquote bare text) edits as written.
-  const initial = seg.sourceType === MERMAID_SOURCE ? editableBodyYaml(seg) : seg.raw;
+  const initial = isDialectSource(seg.sourceType) ? editableBodyYaml(seg) : seg.raw;
   const [draft, setDraft] = useState(initial);
   /** What the preview renders — trails `draft` by a debounce on keystrokes. */
   const [previewRaw, setPreviewRaw] = useState(initial);

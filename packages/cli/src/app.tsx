@@ -65,7 +65,7 @@ import { mcpInstructions, runMcpStdio } from './commands/mcp.js';
 import { confirm } from './io/prompt.js';
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { basename, resolve as resolvePath } from 'node:path';
-import { runSyncCsv, runSyncOpenApi, type CsvBlockKind } from './commands/sync.js';
+import { runSyncCsv, runSyncOpenApi, runSyncSchema, type CsvBlockKind, type SchemaDialect } from './commands/sync.js';
 import {
   templateFor,
   writeNewDoc,
@@ -454,7 +454,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       });
     });
 
-  const syncCmd = program.command('sync').description('Generate Avodado docs from external sources (OpenAPI, CSV)');
+  const syncCmd = program.command('sync').description('Generate Avodado docs from external sources (OpenAPI, CSV, SQL / DBML / Prisma schemas)');
   syncCmd
     .command('openapi <spec>')
     .description('Generate (or drift-check) a doc from an OpenAPI 3.x spec')
@@ -545,6 +545,56 @@ export async function main(argv: readonly string[]): Promise<number> {
         exitCode = result.exitCode;
       },
     );
+  // `avo sync sql | dbml | prisma <file>` — a database schema → an `erd` fence (stdout) or a doc (--out).
+  const schemaSync = (dialect: SchemaDialect, what: string): void => {
+    syncCmd
+      .command(`${dialect} <file>`)
+      .description(`Turn ${what} into an erd block (stdout), or a whole doc (--out)`)
+      .option('-o, --out <path>', 'write a minimal doc (meta + erd) to this path and validate it')
+      .option('--title <title>', 'doc title with --out (default: prettified file name)')
+      .option('--id <id>', 'block id (default: the file stem as a slug)')
+      .action(async (file: string, opts: { out?: string; title?: string; id?: string }) => {
+        const result = await runSyncSchema({
+          cwd: process.cwd(),
+          file,
+          dialect,
+          ...(opts.out !== undefined ? { out: opts.out } : {}),
+          ...(opts.title !== undefined ? { title: opts.title } : {}),
+          ...(opts.id !== undefined ? { id: opts.id } : {}),
+        });
+        if (result.message !== undefined) {
+          console.error(pc.red(result.message));
+          exitCode = result.exitCode;
+          return;
+        }
+        if (result.fence !== undefined) {
+          process.stdout.write(result.fence);
+          if (isInteractive && copyToClipboard(result.fence)) {
+            console.log(pc.green('\n✓ copied to clipboard'));
+          }
+        }
+        if (result.outPath !== undefined) {
+          console.log(
+            `${pc.green('✓')} Wrote ${result.outPath} ${pc.dim(`(erd · ${result.entities} entities · ${result.relations} relations)`)}`,
+          );
+          const diags = result.check?.diagnostics ?? [];
+          if (diags.length === 0) {
+            console.log(`${pc.green('✓')} avo check: clean`);
+          } else {
+            for (const d of diags) {
+              const loc = d.line !== undefined ? `${d.file}:${d.line}` : d.file;
+              const paint = d.level === 'error' ? pc.red : pc.yellow;
+              console.error(paint(`${d.level}  ${loc}  ${d.code}  ${d.message}`));
+            }
+            console.error(pc.dim(`avo check: ${diags.length} diagnostic(s)`));
+          }
+        }
+        exitCode = result.exitCode;
+      });
+  };
+  schemaSync('sql', 'SQL DDL (CREATE TABLE …)');
+  schemaSync('dbml', 'a DBML schema');
+  schemaSync('prisma', 'a Prisma schema');
 
   // Single-document shortcuts: `avo html|slides|pdf <input> [-o out] [-p]`.
   const single = (name: SingleFormat, desc: string): void => {

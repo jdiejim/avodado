@@ -16,7 +16,7 @@ In short:
 - Prose is plain Markdown; structure goes in typed blocks (e.g. `sequence`, `erd`,
   `table`, `callout`, `c4`, `flow`, `timeline`, `userstory`). Never paste raw HTML
   or inline SVG.
-- Use only the documented block types (90 of them, plus 12 permanent aliases for
+- Use only the documented block types (94 of them, plus 12 permanent aliases for
   merged old names) and their documented fields —
   the schemas are strict. Bodies are YAML.
 - Give a block an `id:` when it needs to be referenced; reference it as `doc#id`.
@@ -40,7 +40,7 @@ In short:
 ## Avodado — what this repo is
 
 Documentation-as-code. A doc is plain Markdown; every visual thing is a **typed
-block** — a fenced section with a type and a YAML body. 90 block types across 12
+block** — a fenced section with a type and a YAML body. 94 block types across 12
 families (narrative, tables/code, API, architecture, flows/state, data model,
 charts, planning, business/decisions, design system, algorithms, AI/agents).
 `.md` files on disk are the only source of truth. Nothing else holds state.

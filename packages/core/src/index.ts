@@ -39,6 +39,22 @@ export {
 } from './mermaid/index.js';
 
 export {
+  DIALECT_SOURCES,
+  DIALECT_PARSE_CODE,
+  DIALECT_PARSE_HINT,
+  isDialectSource,
+  detectDialectKind,
+  convertDialect,
+  dialectBodyYaml,
+  type DialectSource,
+} from './dialects.js';
+
+export { convertDbml } from './import/dbml.js';
+export { convertPrisma } from './import/prisma.js';
+export { convertSqlDdl } from './import/sqlddl.js';
+export { erdFence, serializeErdBody, type DialectResult } from './import/schemaModel.js';
+
+export {
   type Diagnostic,
   type DiagnosticCode,
   type DiagnosticLevel,
@@ -92,6 +108,8 @@ export {
   tableSchema,
   sequenceSchema,
   erdSchema,
+  ERD_CARDS,
+  ERD_ENTITY_KINDS,
   userstorySchema,
   timelineSchema,
   kanbanSchema,

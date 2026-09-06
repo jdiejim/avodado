@@ -4,10 +4,11 @@
  * Supported: relations `A ||--o{ B : label` with every crow's-foot end
  * (`||` `|o` `}o` `}|` on the left; `||` `o|` `o{` `|{` on the right) and
  * both `--` (identifying) and `..` (non-identifying) bodies, mapped to `card`
- * by which side is "many"; entity blocks `A { type name PK "comment" }` with
- * `PK` / `FK` flags (`UK` and the comment are dropped); quoted entity names.
- * Entities named only in relations are added with no columns. `direction`
- * lines and `%%` comments are ignored.
+ * by which side is "many" (a `..` body sets `identifying: false`); entity
+ * blocks `A { type name PK "comment" }` with `PK` / `FK` / `UK` flags (`UK` →
+ * `unique`, the comment → `note`); quoted entity names. Entities named only
+ * in relations are added with no columns. `direction` lines and `%%`
+ * comments are ignored.
  */
 
 import { bodyLines, fail, startsWithWord, unquote, type MermaidResult } from './lines.js';
@@ -24,6 +25,8 @@ interface Column {
   readonly type: string;
   readonly pk?: true;
   readonly fk?: true;
+  readonly unique?: true;
+  readonly note?: string;
 }
 
 interface Entity {
@@ -58,11 +61,14 @@ export function convertErd(text: string): MermaidResult {
         return fail(`cannot read column in ${open.name}: "${t}" (expected \`type name [PK|FK]\`)`, line);
       }
       const keys = (c[3] ?? '').split(/[\s,]+/).filter((k) => k.length > 0);
+      const note = c[4] !== undefined ? unquote(c[4]) : '';
       const col: Column = {
         name: c[2] ?? '',
         type: c[1] ?? '',
         ...(keys.includes('PK') ? { pk: true as const } : {}),
         ...(keys.includes('FK') ? { fk: true as const } : {}),
+        ...(keys.includes('UK') ? { unique: true as const } : {}),
+        ...(note.length > 0 ? { note } : {}),
       };
       open.columns = [...(open.columns ?? []), col];
       continue;
@@ -84,10 +90,17 @@ export function convertErd(text: string): MermaidResult {
       const leftMany = (r[2] ?? '').startsWith('}');
       const rightMany = (r[4] ?? '').endsWith('{');
       const card = leftMany ? (rightMany ? 'N:M' : 'N:1') : rightMany ? '1:N' : '1:1';
+      const nonIdentifying = r[3] === '..';
       const label = r[6] !== undefined ? unquote(r[6]) : '';
       touch(from);
       touch(to);
-      relations.push({ from, to, ...(label.length > 0 ? { label } : {}), card });
+      relations.push({
+        from,
+        to,
+        ...(label.length > 0 ? { label } : {}),
+        card,
+        ...(nonIdentifying ? { identifying: false } : {}),
+      });
       continue;
     }
 

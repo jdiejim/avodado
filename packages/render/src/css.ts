@@ -192,6 +192,10 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .er-key{font-family:var(--font-mono);font-size:10px;font-weight:600;fill:var(--muted);}
 .docskin .er-rowline{stroke:var(--rule);stroke-width:1;}
 .docskin .er-headline{stroke:var(--rule-solid);stroke-width:1;}
+.docskin .er-panel{fill:var(--paper-2);stroke:var(--rule-solid);stroke-width:1;}
+.docskin .er-panel-tab{fill:var(--soft);}
+.docskin .er-card{fill:var(--muted);}
+.docskin .er-rel{fill:var(--muted);}
 /* block / state / flow shared text */
 .docskin .blk-name{font-family:var(--font-display);font-size:13px;font-weight:700;}
 .docskin .blk-tech{font-family:var(--font-mono);font-size:9.5px;}
@@ -843,6 +847,40 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .pl-meta{padding:9px 11px 11px;border-top:1px solid var(--rule);}
 .docskin .pl-name{font-weight:700;font-size:13px;color:var(--charcoal);line-height:1.3;}
 .docskin .pl-usage{font-size:11.5px;color:var(--slate);margin-top:2px;line-height:1.45;}
+/* eventcontract (async event contract card — the twin of endpoint). Chips carry words; the partition-key row is the one accent. */
+.docskin .eventcontract{border:1px solid var(--rule-solid);border-radius:6px;margin:18px 0;overflow:hidden;background:var(--paper);}
+.docskin .evc-head{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--paper-2);border-bottom:1px solid var(--rule-solid);flex-wrap:wrap;}
+.docskin .evc-eyebrow{color:var(--muted);} .docskin .evc-sep{margin:0 5px;}
+.docskin .evc-name{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--ink);}
+.docskin .evc-channel{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink);background:var(--paper);border:1px solid var(--rule-solid);padding:3px 8px;border-radius:3px;}
+.docskin .evc-channel .t-eyebrow{color:var(--muted);}
+.docskin .evc-body{padding:6px 16px 14px;}
+.docskin .evc-title{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);margin:10px 0 2px;}
+.docskin .evc-summary,.docskin .evc-desc-p{font-size:13.5px;color:var(--muted);margin:10px 0 0;line-height:1.55;}
+/* Producers → consumers: two columns of mono chips on the paper-2 ground, the arrow between them. */
+.docskin .evc-strip{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start;margin:14px 0 0;padding:10px 12px;background:var(--paper-2);border:1px solid var(--rule-solid);border-radius:4px;}
+.docskin .evc-party-label{display:block;margin-bottom:7px;color:var(--muted);}
+.docskin .evc-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.docskin .evc-chip{display:inline-block;font-family:var(--font-mono);font-size:10.5px;color:var(--ink);background:var(--paper);border:1px solid var(--rule-solid);border-radius:3px;padding:2px 7px;line-height:1.5;}
+.docskin .evc-none{color:var(--muted);}
+.docskin .evc-arrow{align-self:center;font-size:15px;color:var(--muted);padding:14px 2px 0;}
+/* Delivery facts: outlined word chips — the label word in the eyebrow role, then the value. */
+.docskin .evc-facts{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;}
+.docskin .evc-fact{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink);background:var(--paper);border:1px solid var(--ink);border-radius:3px;padding:2px 8px;line-height:1.5;}
+.docskin .evc-fact-k{color:var(--muted);}
+.docskin .evc-section{font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:500;margin:16px 0 6px;}
+.docskin .evc-table{width:100%;border-collapse:collapse;font-size:13px;}
+.docskin .evc-table th{text-align:left;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:500;padding:4px 8px;border-bottom:1px solid var(--rule);}
+.docskin .evc-table td{padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink);}
+.docskin .evc-mark{width:14px;padding-left:6px;padding-right:2px;font-family:var(--font-mono);font-weight:600;color:var(--muted);text-align:center;}
+.docskin .evc-fname{font-family:var(--font-mono);font-weight:600;color:var(--ink);white-space:nowrap;}
+.docskin .evc-type{font-family:var(--font-mono);color:var(--muted);font-size:12px;}
+.docskin .evc-eg{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+/* The partition key is the one accent: its marker and name in accent (on paper — the tint would drop it under 4.5:1), a rule down the row's left edge. */
+.docskin .evc-key td:first-child{border-left:2px solid var(--accent);padding-left:4px;}
+.docskin .evc-key .evc-mark,.docskin .evc-key .evc-fname{color:var(--accent);}
+.docskin .evc-keyline{margin:6px 0 0;color:var(--muted);} .docskin .evc-mark-k{font-weight:600;color:var(--ink);}
+.docskin .evc-note{font-size:12.5px;color:var(--muted);margin:14px 0 0;padding-top:10px;border-top:1px solid var(--rule);line-height:1.5;}
 /* typescale (live type specimen) */
 .docskin .typescale{margin:22px 0;}
 .docskin .ts-head{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--charcoal);margin-bottom:2px;}
@@ -1000,6 +1038,58 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .dvd-title{font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1.15;letter-spacing:-.01em;color:var(--charcoal);max-width:820px;}
 .docskin .dvd-subtitle{font-size:15px;color:var(--slate);line-height:1.55;max-width:680px;margin:0;}
 /* Band accents are ignored by the skin. */
+/* spans (distributed-trace waterfall) — lanes per service; bars lighten by depth (ink → muted → paper-2);
+   the critical path is the one accent; errors are a negative outline + ERR chip. */
+.docskin .sp-axis{stroke:var(--rule-solid);stroke-width:1;}
+.docskin .sp-grid{stroke:var(--rule);stroke-width:1;}
+.docskin .sp-lane-rule{stroke:var(--rule);stroke-width:1;}
+.docskin .sp-bar.d0{fill:var(--ink);stroke:none;}
+.docskin .sp-bar.d1{fill:var(--muted);stroke:none;}
+.docskin .sp-bar.d2{fill:var(--paper-2);stroke:var(--rule-solid);stroke-width:1;}
+.docskin .sp-bar.crit{fill:var(--accent-tint);stroke:var(--accent);stroke-width:1.5;}
+.docskin .sp-bar.err{fill:var(--negative-tint);stroke:var(--negative);stroke-width:1.5;}
+/* Paper text on a dark bar drops the paper halo (it would blot the glyphs). */
+.docskin svg text.sp-on-dark{fill:var(--paper);stroke:none;}
+.docskin .sp-link{stroke:var(--rule-solid);stroke-width:1;fill:none;}
+.docskin .sp-chip{fill:var(--paper);stroke:var(--rule-solid);stroke-width:1;}
+.docskin .sp-chip.err{stroke:var(--negative);}
+.docskin svg text.sp-chip-text.err{fill:var(--negative);}
+.docskin .sp-details{margin-top:12px;padding-top:10px;border-top:1px solid var(--rule);font-size:12px;color:var(--ink);}
+.docskin .sp-details-title{display:block;margin-bottom:6px;}
+.docskin .sp-details ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;}
+.docskin .sp-details li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;}
+.docskin .sp-d-span{font-weight:600;color:var(--ink);}
+.docskin .sp-d-service{font-family:var(--font-mono);font-weight:400;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-right:4px;}
+.docskin .sp-d-attrs{display:inline-flex;flex-wrap:wrap;gap:4px 8px;}
+.docskin .sp-d-attr{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);}
+.docskin .sp-d-note{color:var(--muted);font-style:italic;}
+/* rollout (progressive-delivery stage strip) — paper cards on the frame ground, an ink traffic bar,
+   the gate as a chip on the connector; status by the shared chip encoding, current = the one accent. */
+.docskin .ro-strip{display:flex;align-items:stretch;overflow-x:auto;padding:4px 0 6px;}
+.docskin .ro-stage{flex:1 1 160px;min-width:150px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:10px 12px 12px;border-radius:4px;background:var(--paper);border:1px solid var(--ink);}
+.docskin .ro-stage.ro-s-done{background:var(--paper-2);border-color:var(--rule-solid);}
+.docskin .ro-stage.ro-s-current{border:1.5px solid var(--accent);}
+.docskin .ro-stage.ro-s-next{border-style:dashed;border-color:var(--muted);}
+.docskin .ro-stage.ro-s-blocked{border-color:var(--negative);background:var(--negative-tint);}
+.docskin .ro-n{display:block;}
+.docskin .ro-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.docskin .ro-status{display:inline-block;font-family:var(--font-mono);font-size:8.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:1px 6px;border-radius:2px;line-height:1.5;color:var(--ink);background:var(--paper);border:1px solid var(--ink);}
+.docskin .ro-status.ro-st-done{background:var(--paper);border-color:var(--rule-solid);color:var(--muted);}
+.docskin .ro-status.ro-st-current{color:var(--accent);border-color:var(--accent);}
+.docskin .ro-status.ro-st-next{border-style:dashed;border-color:var(--muted);color:var(--muted);}
+.docskin .ro-status.ro-st-blocked{color:var(--negative);border-color:var(--negative);}
+.docskin .ro-traffic{display:flex;align-items:center;gap:8px;}
+.docskin .ro-track{flex:1;height:6px;border-radius:3px;background:var(--paper-2);border:1px solid var(--rule-solid);overflow:hidden;}
+.docskin .ro-s-done .ro-track{background:var(--paper);}
+.docskin .ro-fill{height:100%;background:var(--ink);}
+.docskin .ro-pct{flex:none;color:var(--ink);}
+.docskin .ro-note{font-size:12px;color:var(--muted);line-height:1.45;}
+.docskin .ro-link{flex:0 0 auto;position:relative;display:flex;align-items:center;justify-content:center;min-width:34px;max-width:150px;padding:0 8px;}
+.docskin .ro-link::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--muted);}
+.docskin .ro-link::after{content:"";position:absolute;right:0;top:50%;margin-top:-4px;border:4px solid transparent;border-left:6px solid var(--muted);border-right:0;}
+.docskin .ro-link-end::after{display:none;}
+.docskin .ro-gate{position:relative;max-width:134px;padding:2px 7px;border-radius:2px;background:var(--paper);border:1px solid var(--rule-solid);color:var(--ink);text-align:center;line-height:1.35;}
+.docskin .ro-rollback{display:flex;align-items:baseline;gap:10px;margin-top:12px;font-size:12.5px;color:var(--ink);}
 /* bignumber (one hero metric at presentation scale) — ink, never a coloured fill */
 .docskin .bn{margin:22px 0;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px 24px;text-align:center;}
 .docskin .bn-value-row{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;}

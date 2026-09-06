@@ -19,7 +19,7 @@ type Resp = NonNullable<EndpointData['responses']>[number];
  * them, so the result is safe to drop into a `<pre>`. Non-JSON text (e.g. a
  * curl line) passes through escaped, just without colour.
  */
-function highlightJson(src: string): string {
+export function highlightJson(src: string): string {
   const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const re = /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g;
   let out = '';

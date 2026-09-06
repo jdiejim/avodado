@@ -218,7 +218,11 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   scenarios: 'Scenarios',
   fishbone: 'Cause & effect',
   storymap: 'Story map',
+  eventcontract: 'Event contract',
+  saga: 'Saga',
   slopegraph: 'Before / after',
+  spans: 'Trace',
+  rollout: 'Rollout',
 };
 
 /**

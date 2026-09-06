@@ -142,5 +142,9 @@ export const blockRegistry: BlockRegistry = {
   scenarios: { type: 'scenarios', schema: blockSchemas.scenarios },
   fishbone: { type: 'fishbone', schema: blockSchemas.fishbone },
   storymap: { type: 'storymap', schema: blockSchemas.storymap },
+  eventcontract: { type: 'eventcontract', schema: blockSchemas.eventcontract },
+  saga: { type: 'saga', schema: blockSchemas.saga },
   slopegraph: { type: 'slopegraph', schema: blockSchemas.slopegraph },
+  spans: { type: 'spans', schema: blockSchemas.spans },
+  rollout: { type: 'rollout', schema: blockSchemas.rollout },
 };

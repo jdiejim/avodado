@@ -10,8 +10,8 @@
  * Replica marks are `muted` bars with a `×N` count. Edges follow the shared
  * stroke table (`solid` / `dashed` / `forbidden` / `error`).
  *
- * Accent rule: none. The schema marks no entry service, so the cluster
- * spends no colour.
+ * Accent rule: the one `gateway`-kind service, when exactly one exists — the
+ * cluster's entry. Otherwise the cluster spends no colour.
  */
 
 import type { BlockDataMap } from '@avodado/core';
@@ -134,6 +134,10 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
   });
   s += `</g>`; // close the edges list container
 
+  // The single accent: the one gateway-kind service, if exactly one.
+  const gateways = services.filter((sv) => (sv.kind ?? '').toLowerCase() === 'gateway');
+  const accentId = gateways.length === 1 ? gateways[0]?.id : undefined;
+
   // services — the block family's shaped nodes, plus the replica marks.
   s += `<g${bl('services')}>`;
   services.forEach((sv, si) => {
@@ -158,6 +162,8 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
     const node = renderShapedNode(
       { kind: sv.kind, name: sv.label, ...(sv.tech !== undefined ? { tech: sv.tech } : {}) },
       r,
+      undefined,
+      sv.id === accentId,
     );
     s += `<g${bp(`services.${si}`)}>${node}${repIndicator}</g>`;
   });
@@ -167,7 +173,7 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
 
-  const legend = blockLegend(services, edgeKinds, false);
+  const legend = blockLegend(services, edgeKinds, accentId !== undefined);
   return diagramFrame(
     {
       tag: 'CLUSTER',

@@ -29,7 +29,7 @@ import {
   type NodeSkin,
 } from '../svg/blockStyle.js';
 import type { NodeColors } from '../svg/blockStyle.js';
-import { gridGroupsSvg } from '../svg/gridGroups.js';
+import { gridGroupsSvg, nestingPads } from '../svg/gridGroups.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { wrapText } from '../svg/wrapText.js';
@@ -93,6 +93,12 @@ const CHIP_LABEL: Record<string, string> = {
   SECRETS: 'secrets',
   WEBHOOK: 'webhook',
   REGION: 'region',
+  DEPLOY: 'deployment',
+  POD: 'pod',
+  INGRESS: 'ingress',
+  NS: 'namespace',
+  NODE: 'node',
+  CLUSTER: 'cluster',
 };
 
 /** The single accent node id: the one node whose kind is an entry kind, else none. */
@@ -109,6 +115,8 @@ export function blockLegend(
   nodes: readonly { readonly kind?: string | undefined }[],
   edgeKinds: ReadonlySet<string>,
   accent: boolean,
+  /** A node carries `replicas` ≥ 2 (the stacked card + `×N` chip). */
+  replicas = false,
 ): string {
   const items: LegendItem[] = [];
   const seen = new Set<string>();
@@ -118,6 +126,7 @@ export function blockLegend(
     seen.add(sk.chip);
     items.push({ swatch: 'chip', chip: sk.chip, label: CHIP_LABEL[sk.chip] ?? sk.chip.toLowerCase() });
   }
+  if (replicas) items.push({ swatch: 'chip', chip: '×N', label: 'replicas' });
   if (edgeKinds.has('solid')) items.push({ swatch: 'edge', label: 'calls' });
   if (edgeKinds.has('dashed')) items.push({ swatch: 'edge-dashed', label: 'async / optional' });
   if (edgeKinds.has('forbidden')) items.push({ swatch: 'edge-error', label: 'forbidden' });
@@ -180,20 +189,87 @@ type Rect = { readonly x: number; readonly y: number; readonly w: number; readon
  * the instance stack's back cards overhang the cell top-right (they'd be drawn
  * over incoming arrowheads). Boxless shapes anchor to their visible core.
  */
-export function edgeAnchorRect(kind: string | undefined, r: Rect): Rect {
-  switch (shapeFor(kind)) {
-    case 'cloud':
-      return { x: r.x + r.w * 0.07, y: r.y + r.h * 0.3, w: r.w * 0.86, h: r.h * 0.7 - 4 };
-    case 'stack':
-      return { x: r.x, y: r.y - 12, w: r.w + 12, h: r.h + 12 };
-    case 'figure':
-    case 'crowd':
-      return { x: r.x + r.w * 0.28, y: r.y, w: r.w * 0.44, h: r.h };
-    case 'globe':
-      return { x: r.x + r.w * 0.3, y: r.y, w: r.w * 0.4, h: r.h };
+export function edgeAnchorRect(kind: string | undefined, r: Rect, replicas?: number): Rect {
+  const shape = shapeFor(kind);
+  const base = ((): Rect => {
+    switch (shape) {
+      case 'cloud':
+        return { x: r.x + r.w * 0.07, y: r.y + r.h * 0.3, w: r.w * 0.86, h: r.h * 0.7 - 4 };
+      case 'stack':
+        return { x: r.x, y: r.y - 12, w: r.w + 12, h: r.h + 12 };
+      case 'figure':
+      case 'crowd':
+        return { x: r.x + r.w * 0.28, y: r.y, w: r.w * 0.44, h: r.h };
+      case 'globe':
+        return { x: r.x + r.w * 0.3, y: r.y, w: r.w * 0.4, h: r.h };
+      default:
+        return r;
+    }
+  })();
+  // A replica pile recedes INSIDE the cell (see `pileRect`), so it needs no overhang.
+  void replicas;
+  return base;
+}
+
+/** The stack offset between one replica card and the next. */
+const PILE_OFF = 6;
+
+/**
+ * With `replicas ≥ 2` the front card gives up the pile's footprint (two
+ * offsets) so the back cards recede down-right inside the cell — a group
+ * panel that encloses the cell encloses the whole pile.
+ */
+function pileRect(replicas: number | undefined, shape: Shape, r: Rect): Rect {
+  return hasReplicaStack(replicas, shape) ? { x: r.x, y: r.y, w: r.w - PILE_OFF * 2, h: r.h - PILE_OFF * 2 } : r;
+}
+
+/** Shapes that already read as a stack — `replicas` adds only the `×N` chip there. */
+const STACKED_SHAPES: ReadonlySet<string> = new Set(['stack', 'replica', 'shards', 'crowd']);
+/** Shapes whose kind chip sits top-right; the `×N` chip moves to the top-left. */
+const CHIP_RIGHT_SHAPES: ReadonlySet<string> = new Set(['cloud', 'shield', 'figure', 'crowd', 'globe', 'shards', 'replica']);
+
+function hasReplicaStack(replicas: number | undefined, shape: Shape): boolean {
+  return replicas !== undefined && replicas >= 2 && !STACKED_SHAPES.has(shape);
+}
+
+/** Where the `×N` chip sits: top-right, pulled in from a shape's slanted or rounded corner. */
+function replicaChipPos(shape: Shape, r: Rect): { x: number; y: number; end: boolean } {
+  switch (shape) {
+    case 'hex':
+      return { x: r.x + r.w - Math.min(26, r.w * 0.16) - 4, y: r.y + 13, end: true };
+    case 'octagon':
+      return { x: r.x + r.w - Math.min(24, r.w * 0.15) - 4, y: r.y + 13, end: true };
+    case 'pipe':
+      return { x: r.x + r.w - Math.min(15, r.w * 0.11) * 2 - 4, y: r.y + 13, end: true };
+    case 'cylinder':
+    case 'tiered':
+    case 'pail':
+      return { x: r.x + r.w - 14, y: r.y + Math.min(13, r.h * 0.16) * 2 + 8, end: true };
     default:
-      return r;
+      return CHIP_RIGHT_SHAPES.has(shape) ? { x: r.x + 8, y: r.y + 13, end: false } : { x: r.x + r.w - 8, y: r.y + 13, end: true };
   }
+}
+
+/**
+ * `replicas ≥ 2`: two paper cards receding down-right behind the node (the
+ * stacked-card idiom) and a `×N` mono chip at the top-right. Returns the
+ * back cards (drawn first, under the body) and the chip (drawn last, over it).
+ */
+function replicaMarks(replicas: number | undefined, shape: Shape, r: Rect, st: Paint): { back: string; chip: string } {
+  if (replicas === undefined || replicas < 2) return { back: '', chip: '' };
+  const off = PILE_OFF;
+  const card = (i: number, op: number): string =>
+    `<rect x="${r.x + off * i}" y="${r.y + off * i}" width="${r.w}" height="${r.h}" rx="6" fill="${st.fill}" stroke="${st.accent}" stroke-width="1" opacity="${op}"/>`;
+  const back = hasReplicaStack(replicas, shape) ? card(2, 0.45) + card(1, 0.7) : '';
+  const at = replicaChipPos(shape, r);
+  const chip = `<text x="${at.x.toFixed(1)}" y="${at.y.toFixed(1)}" class="blk-rep t-sub"${at.end ? ' text-anchor="end"' : ''}>×${replicas}</text>`;
+  return { back, chip };
+}
+
+/** Puts `back` right after the body's opening `<g>` and `tail` before its closing tag. */
+function wrapBody(body: string, back: string, tail: string): string {
+  const withBack = back.length > 0 ? body.replace(/^<g[^>]*>/, (m) => m + back) : body;
+  return tail.length > 0 ? withBack.replace(/<\/g>$/, `${tail}</g>`) : withBack;
 }
 
 /**
@@ -253,11 +329,14 @@ function shapeFor(kind: string | undefined): Shape {
     case 'kafka':
     case 'kinesis':
       return 'pipe';
+    case 'sns':
+      return 'pipe';
     case 'cdn':
     case 'external':
       return 'cloud';
     case 'gateway':
     case 'proxy':
+    case 'ingress':
       return 'hex';
     case 'lb':
       return 'octagon';
@@ -270,6 +349,7 @@ function shapeFor(kind: string | undefined): Shape {
     case 'vm':
     case 'server':
     case 'host':
+    case 'node':
       return 'rack';
     case 'waf':
     case 'firewall':
@@ -293,10 +373,12 @@ function shapeFor(kind: string | undefined): Shape {
     case 'scheduler':
     case 'cron':
     case 'job':
+    case 'cronjob':
       return 'clock';
     case 'secrets':
     case 'vault':
     case 'kms':
+    case 'secret':
       return 'vault';
     case 'shard':
     case 'shards':
@@ -408,6 +490,7 @@ export function renderShapedNode(
     readonly kind?: string | undefined;
     readonly name: string;
     readonly tech?: string | undefined;
+    readonly replicas?: number | undefined;
   },
   r: Rect,
   legacy?: NodeColors,
@@ -419,10 +502,11 @@ export function renderShapedNode(
       ? { ...legacy, legacy: true, sw: 1.2, dashed: false, focal: false }
       : skinPaint(sk, accent);
   const shape = shapeFor(n.kind);
-  const body = shapedBody(n, r, st, shape);
+  const rr = st.legacy ? r : pileRect(n.replicas, shape, r);
+  const body = shapedBody(n, rr, st, shape);
   if (st.legacy) return body;
-  const chip = chipFor(shape, sk, r);
-  return chip.length > 0 ? body.replace(/<\/g>$/, `${chip}</g>`) : body;
+  const rep = replicaMarks(n.replicas, shape, rr, st);
+  return wrapBody(body, rep.back, chipFor(shape, sk, rr) + rep.chip);
 }
 
 function shapedBody(
@@ -990,14 +1074,17 @@ function renderCardNode(
     readonly kind?: string | undefined;
     readonly name: string;
     readonly tech?: string | undefined;
+    readonly replicas?: number | undefined;
   },
   r: Rect,
   accent = false,
 ): string {
   const sk = nodeSkin(n.kind);
-  const body = cardBody(n, r, skinPaint(sk, accent));
-  const chip = chipFor('card', sk, r);
-  return chip.length > 0 ? body.replace(/<\/g>$/, `${chip}</g>`) : body;
+  const st = skinPaint(sk, accent);
+  const rr = pileRect(n.replicas, 'card', r);
+  const body = cardBody(n, rr, st);
+  const rep = replicaMarks(n.replicas, 'card', rr, st);
+  return wrapBody(body, rep.back, chipFor('card', sk, rr) + rep.chip);
 }
 
 function cardBody(
@@ -1055,9 +1142,11 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
   const cellH = 88;
   const gapX = 64;
   const gapY = 64;
-  const padX = 38;
-  const padTop = 52;
-  const padBot = 36;
+  // Declared group nesting grows the outermost panels; the pads grow with them.
+  const nestPad = nestingPads(groups);
+  const padX = 38 + nestPad.padX;
+  const padTop = 52 + nestPad.padTop;
+  const padBot = 36 + nestPad.padBot;
   const cols = Math.max(
     1,
     ...nodes.map((n) => (n.col ?? 1) + ((n.w ?? 1) - 1)),
@@ -1098,13 +1187,13 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
   const lanes = edgeLanes(edges);
   const entries = entryPortOffsets(edges, (id) => {
     const n = byId.get(id);
-    return n !== undefined ? edgeAnchorRect(n.kind, rectFor(n)) : undefined;
+    return n !== undefined ? edgeAnchorRect(n.kind, rectFor(n), n.replicas) : undefined;
   });
   edges.forEach((e, ei) => {
     const A = byId.get(e.from);
     const B = byId.get(e.to);
     if (!A || !B) return;
-    const p = ortho(edgeAnchorRect(A.kind, rectFor(A)), edgeAnchorRect(B.kind, rectFor(B)), lanes[ei] ?? 0, entries[ei] ?? 0);
+    const p = ortho(edgeAnchorRect(A.kind, rectFor(A), A.replicas), edgeAnchorRect(B.kind, rectFor(B), B.replicas), lanes[ei] ?? 0, entries[ei] ?? 0);
     const kind = e.kind ?? 'solid';
     edgeKinds.add(kind in SKIN_EDGE ? kind : 'solid');
     const st = SKIN_EDGE[kind] ?? FALLBACK_EDGE;
@@ -1123,7 +1212,12 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
   const { overlay, legend } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)), { skin: true });
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
-  return { svg: s + legend, legend: blockLegend(nodes, edgeKinds, accentId !== undefined) };
+  return { svg: s + legend, legend: blockLegend(nodes, edgeKinds, accentId !== undefined, hasReplicas(nodes)) };
+}
+
+/** True when any node draws the replica stack. */
+function hasReplicas(nodes: readonly { readonly replicas?: number | undefined }[]): boolean {
+  return nodes.some((n) => n.replicas !== undefined && n.replicas >= 2);
 }
 
 function renderLayered(data: Data, entry: readonly string[]): { svg: string; legend: string } {
@@ -1231,7 +1325,7 @@ function renderLayered(data: Data, entry: readonly string[]): { svg: string; leg
   const { overlay, legend } = edgeLabelLayer(pending, [...rects.values()], { skin: true });
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
-  return { svg: s + legend, legend: blockLegend(nodes, edgeKinds, accentId !== undefined) };
+  return { svg: s + legend, legend: blockLegend(nodes, edgeKinds, accentId !== undefined, hasReplicas(nodes)) };
 }
 
 function renderBlockGraph(data: Data, frame: FrameOpts): string {
@@ -1258,6 +1352,8 @@ const PRESET_FRAME: Record<'arch' | NonNullable<Data['preset']>, FrameOpts> = {
   event: { tag: 'EVENT', entry: ['producer'] },
   ddd: { tag: 'DDD', entry: [] },
   network: { tag: 'ZONES', entry: ['gateway', 'firewall', 'waf', 'shield'] },
+  // Kubernetes: namespaces are groups; the ingress is the entry.
+  k8s: { tag: 'K8S', entry: ['ingress', 'gateway'] },
 };
 
 /** `block` block — generic architecture (grid or layered); `preset` picks the eyebrow + entry kind. */

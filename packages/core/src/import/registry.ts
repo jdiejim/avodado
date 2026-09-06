@@ -2,13 +2,14 @@
  * Importer registry — the honest, data-only catalog of what Avodado can
  * import. Each importer maps file extensions to what it produces: a `block`
  * importer yields ready-to-insert fenced blocks (CSV → `table` /
- * `statustable` / `chart`), a `document` importer yields a whole Markdown
- * document (OpenAPI → API doc). No framework: an array plus one lookup.
+ * `statustable` / `chart`; DBML / Prisma / SQL DDL → `erd`), a `document`
+ * importer yields a whole Markdown document (OpenAPI → API doc). No
+ * framework: an array plus one lookup.
  */
 
 /** One import source Avodado understands. */
 export interface Importer {
-  readonly id: 'csv' | 'openapi';
+  readonly id: 'csv' | 'openapi' | 'dbml' | 'prisma' | 'sql';
   /** Lowercase file extensions (with the dot) this importer claims. */
   readonly extensions: readonly string[];
   /** What the importer produces: a fenced block or a whole document. */
@@ -18,6 +19,9 @@ export interface Importer {
 /** Every importer, in preference order. */
 export const IMPORTERS: readonly Importer[] = [
   { id: 'csv', extensions: ['.csv'], kind: 'block' },
+  { id: 'dbml', extensions: ['.dbml'], kind: 'block' },
+  { id: 'prisma', extensions: ['.prisma'], kind: 'block' },
+  { id: 'sql', extensions: ['.sql', '.ddl'], kind: 'block' },
   { id: 'openapi', extensions: ['.yaml', '.yml', '.json'], kind: 'document' },
 ];
 

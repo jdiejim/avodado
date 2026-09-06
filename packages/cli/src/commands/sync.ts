@@ -3,17 +3,23 @@
  *
  * `avo sync openapi` generates a doc from an OpenAPI spec (or drift-checks an
  * existing one); `avo sync csv` turns a CSV into a ready-to-insert block
- * fence, or a minimal doc with `--out`. Both build on the pure importers in
- * `@avodado/core` (`core/src/import/`); this module only does the I/O.
+ * fence, or a minimal doc with `--out`; `avo sync sql | dbml | prisma` turn
+ * a database schema into an `erd` fence the same way. All build on the pure
+ * importers in `@avodado/core` (`core/src/import/`); this module only does
+ * the I/O.
  */
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { basename, dirname, resolve, extname, relative } from 'node:path';
 import {
+  convertDbml,
+  convertPrisma,
+  convertSqlDdl,
   csvToChart,
   csvToStatustable,
   csvToTable,
+  erdFence,
   openapiToMarkdown,
   parseOpenApi,
   suggestCsvImport,
@@ -174,6 +180,88 @@ export interface SyncCsvResult {
   readonly check?: CheckResult;
 }
 
+// ─── avo sync sql | dbml | prisma ────────────────────────────────────────────
+
+/** The schema dialects `avo sync` reads into an `erd` block. */
+export type SchemaDialect = 'sql' | 'dbml' | 'prisma';
+
+/** Inputs for {@link runSyncSchema}. */
+export interface SyncSchemaOptions {
+  readonly cwd: string;
+  /** Path to the schema file (relative or absolute). */
+  readonly file: string;
+  readonly dialect: SchemaDialect;
+  /** Output doc path. Omitted → the caller prints the fence to stdout. */
+  readonly out?: string;
+  /** Doc title (with `--out`); defaults to a prettified file name. */
+  readonly title?: string;
+  /** Block id; defaults to the file stem as a slug. */
+  readonly id?: string;
+}
+
+/** Result of `avo sync sql | dbml | prisma`. */
+export interface SyncSchemaResult {
+  readonly exitCode: 0 | 1 | 2;
+  /** The ready-to-paste ` ```erd ` fence (stdout mode) — trailing newline included. */
+  readonly fence?: string;
+  /** Absolute output path (write mode). */
+  readonly outPath?: string;
+  /** Entity / relation counts, for the log line. */
+  readonly entities: number;
+  readonly relations: number;
+  /** Fatal message when `exitCode` ≠ 0. */
+  readonly message?: string;
+  /** `avo check` result for the written doc (write mode only). */
+  readonly check?: CheckResult;
+}
+
+/** `schema.sql` → `schema`; `my Schema.dbml` → `my-schema`. */
+function idFromFile(file: string): string {
+  const slug = basename(file, extname(file))
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug === '' ? 'schema' : slug;
+}
+
+/**
+ * Converts a SQL DDL, DBML or Prisma schema file to an `erd` fence (stdout
+ * mode) or a minimal doc (`--out` mode, validated with `avo check` after
+ * writing). A line the dialect subset cannot read is exit 1 with the line.
+ */
+export async function runSyncSchema(opts: SyncSchemaOptions): Promise<SyncSchemaResult> {
+  const fileAbs = resolve(opts.cwd, opts.file);
+  if (!existsSync(fileAbs)) {
+    return { exitCode: 2, entities: 0, relations: 0, message: `Schema not found: ${fileAbs}` };
+  }
+  const source = await readFile(fileAbs, 'utf8');
+  const result =
+    opts.dialect === 'sql' ? convertSqlDdl(source) : opts.dialect === 'dbml' ? convertDbml(source) : convertPrisma(source);
+  if (!result.ok) {
+    const where = result.line !== undefined ? `${opts.file}:${result.line}` : opts.file;
+    return { exitCode: 1, entities: 0, relations: 0, message: `Could not read ${where}: ${result.message}` };
+  }
+  const data = result.data;
+  const entities = Array.isArray(data['entities']) ? data['entities'].length : 0;
+  const relations = Array.isArray(data['relations']) ? data['relations'].length : 0;
+  const fence = erdFence(data, opts.id ?? idFromFile(opts.file));
+
+  if (opts.out === undefined) {
+    return { exitCode: 0, fence, entities, relations };
+  }
+  const title = opts.title ?? titleFromFile(opts.file);
+  const doc = '```meta\ntitle: ' + JSON.stringify(title) + '\n```\n\n' + fence;
+  const outAbs = resolve(opts.cwd, opts.out);
+  await mkdir(dirname(outAbs), { recursive: true });
+  await writeFile(outAbs, doc, 'utf8');
+  const check = await runCheck({
+    patterns: [relative(opts.cwd, outAbs) || opts.out],
+    cwd: opts.cwd,
+    docsRoot: dirname(relative(opts.cwd, outAbs)) || '.',
+  });
+  return { exitCode: check.exitCode, outPath: outAbs, entities, relations, check };
+}
+
 /** Parses the `--delimiter` flag; `undefined` input → auto-detect. */
 function parseDelimiter(raw: string | undefined): CsvDelimiter | undefined | null {
   if (raw === undefined) return undefined;
@@ -186,7 +274,7 @@ function parseDelimiter(raw: string | undefined): CsvDelimiter | undefined | nul
 function titleFromFile(file: string): string {
   const stem = basename(file, extname(file));
   const spaced = stem.replace(/[-_]+/g, ' ').trim();
-  return spaced === '' ? 'Imported CSV' : spaced.replace(/^\w/, (c) => c.toUpperCase());
+  return spaced === '' ? 'Imported schema' : spaced.replace(/^\w/, (c) => c.toUpperCase());
 }
 
 const warnMessages = (diags: readonly ImportDiagnostic[]): string[] =>

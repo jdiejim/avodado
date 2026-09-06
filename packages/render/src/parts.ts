@@ -480,6 +480,10 @@ const ITEM_WEIGHT: Partial<Record<BlockType, number>> = {
   cycle: 1.2,
   fishbone: 1.4, // each bone carries a label plus its item ticks
   slopegraph: 0.9, // each item is one thin line plus two short labels
+  eventcontract: 1.4, // a card of tables, like endpoint
+  saga: 1.6, // each step is a card with a compensation card under it
+  spans: 0.7, // one thin bar row per span; lanes add nothing on their own
+  rollout: 1.6, // each stage is a card in one horizontal strip
 };
 
 /**

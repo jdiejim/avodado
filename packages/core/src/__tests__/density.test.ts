@@ -55,13 +55,13 @@ describe('lintDensity budgets', () => {
     expect(diags[0]?.message).toContain('8');
   });
 
-  it('erd at 12 entities is clean; 13 warns', () => {
-    expect(lint(erdDoc(12))).toEqual([]);
-    const diags = lint(erdDoc(13));
+  it('erd at 20 entities is clean; 21 warns', () => {
+    expect(lint(erdDoc(20))).toEqual([]);
+    const diags = lint(erdDoc(21));
     expect(diags).toHaveLength(1);
     expect(diags[0]?.code).toBe('W_DENSE_BLOCK');
-    expect(diags[0]?.message).toContain('13 entities');
-    expect(diags[0]?.message).toContain('12');
+    expect(diags[0]?.message).toContain('21 entities');
+    expect(diags[0]?.message).toContain('20');
     expect(diags[0]?.hint).toContain('Split the model by domain.');
   });
 
@@ -126,7 +126,7 @@ describe('DENSITY_BUDGETS map', () => {
     expect(cap('block', 'nodes')).toBe(20);
     expect(cap('felogic', 'nodes')).toBe(20);
     expect(cap('frontend', 'nodes')).toBe(20);
-    expect(cap('erd', 'entities')).toBe(12);
+    expect(cap('erd', 'entities')).toBe(20);
     expect(cap('tree', 'nodes')).toBe(40);
     expect(cap('graph', 'nodes')).toBe(30);
     expect(cap('cluster', 'services')).toBe(16);
@@ -135,6 +135,7 @@ describe('DENSITY_BUDGETS map', () => {
     expect(cap('timeline', 'items')).toBe(20);
     expect(cap('journey', 'stages')).toBe(10);
     expect(cap('storymap', 'backbone')).toBe(10);
+    expect(cap('saga', 'steps')).toBe(12);
     expect(cap('slopegraph', 'items')).toBe(20);
   });
 });

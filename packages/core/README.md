@@ -32,7 +32,7 @@ const { graph, diagnostics } = resolveRefs([{ doc, file: 'docs/orders.md' }]);
 
 ## Diagnostic codes
 
-`E_PARSE_YAML`, `E_PARSE_MERMAID`, `E_SCHEMA`, `E_DUP_ID`, `E_DANGLING_REF`, `E_BAD_REF_FORMAT`, `E_UNKNOWN_BLOCK`, `W_EMPTY_BLOCK`. Uniform shape: `{ file, line?, level, code, message, value? }`.
+`E_PARSE_YAML`, `E_PARSE_MERMAID`, `E_PARSE_DBML`, `E_PARSE_PRISMA`, `E_SCHEMA`, `E_DUP_ID`, `E_DANGLING_REF`, `E_BAD_REF_FORMAT`, `E_UNKNOWN_BLOCK`, `W_EMPTY_BLOCK`. Uniform shape: `{ file, line?, level, code, message, value? }`.
 
 ## Mermaid input dialect
 

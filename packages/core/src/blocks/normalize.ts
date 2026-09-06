@@ -24,8 +24,12 @@
  *   `alt: label` / `opt` / `loop` / `par` / `break` / `critical` / `else:
  *   label` / `end`.
  * - erd.relations: `user ||--o{ order: places` — crow's-foot cardinality
- *   (`||--||` 1:1 · `||--o{` 1:N · `}o--||` N:1 · `}o--o{` N:M); plain `->`
- *   is accepted with no cardinality.
+ *   (`||--||` 1:1 · `||--o{` 1:N · `}o--||` N:1 · `}o--o{` N:M · `||--o|`
+ *   0..1); a `..` body (`||..o{`) is non-identifying; plain `->` is accepted
+ *   with no cardinality.
+ * - erd.entities[].columns: `email text unique !null default=now()`,
+ *   `user_id uuid fk -> users.id`, `status enum(open,closed)` — see
+ *   `erdColumnGrammar`.
  * - timeline.items: `[done] 2026-07 · label · desc` — optional leading
  *   status bracket, then 1 (label) / 2 (date · label) / 3 (date · label ·
  *   desc) `·`-separated parts.
@@ -55,16 +59,31 @@ const SEQ_ARROW_RE = /^(\S+?)\s*(-x->|-->|->)\s*([+-]?)([^\s+-]\S*)$/;
 /** Frame markers: the six combined-fragment kinds, plus `else` and `end`. */
 const FRAME_HEAD_RE = /^(alt|opt|loop|par|break|critical|else|end)$/;
 
-/** ERD head: `from <card> to`, crow's-foot operators or a plain `->`. */
-const ERD_RE = /^(\S+?)\s*(\|\|--\|\||\|\|--o\{|\}o--o\{|\}o--\|\||->)\s*(\S+)$/;
+/**
+ * ERD head: `from <op> to` — a crow's-foot operator (every Mermaid end:
+ * `||` `|o` `}o` `}|` on the left, `||` `o|` `o{` `|{` on the right, with a
+ * `--` identifying or `..` non-identifying body) or a plain `->`.
+ */
+const ERD_RE = /^(\S+?)\s*((?:\|\||\|o|\}o|\}\|)(?:--|\.\.)(?:\|\||o\||o\{|\|\{)|->)\s*(\S+)$/;
 
-/** Crow's-foot operator → cardinality. */
-const CARD_MAP: Readonly<Record<string, '1:1' | '1:N' | 'N:1' | 'N:M'>> = {
-  '||--||': '1:1',
-  '||--o{': '1:N',
-  '}o--||': 'N:1',
-  '}o--o{': 'N:M',
-};
+/**
+ * Crow's-foot operator → `{ card, identifying }`. The left end says whether
+ * `from` is one or many; the right end says the same for `to`, and an `o`
+ * on the right (`o|`, `o{`) makes `to` optional (`0..1` / `0..N`) when `from`
+ * is one. A `..` body is a non-identifying relation (dashed).
+ */
+function cardOf(op: string): { card?: string; identifying?: false } {
+  if (op === '->') return {};
+  const body = op.includes('..') ? '..' : '--';
+  const [left, right] = op.split(body) as [string, string];
+  const fromMany = left.startsWith('}');
+  const toMany = right.endsWith('{');
+  const toOptional = right.startsWith('o');
+  // `||--o{` stays `1:N` (the documented spelling of one-to-many); only a
+  // one-to-one with an optional `to` (`||--o|`) reads as `0..1`.
+  const card = fromMany ? (toMany ? 'N:M' : 'N:1') : toMany ? '1:N' : toOptional ? '0..1' : '1:1';
+  return { card, ...(body === '..' ? { identifying: false as const } : {}) };
+}
 
 /** Optional leading `[status]` bracket of a timeline item string. */
 const STATUS_BRACKET_RE = /^\[([^\]]*)\]\s*/;
@@ -132,12 +151,11 @@ function relationFromString(s: string): unknown {
   const m = ERD_RE.exec(head);
   if (m === null) return s;
   const [, from, op, to] = m as unknown as [string, string, string, string];
-  const card = CARD_MAP[op];
   return {
     from,
     to,
     ...(label !== undefined ? { label } : {}),
-    ...(card !== undefined ? { card } : {}),
+    ...cardOf(op),
   };
 }
 
@@ -191,6 +209,97 @@ const relationGrammar: Grammar = {
 };
 const timelineGrammar: Grammar = {
   expand: timelineItemFromString,
+  signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
+};
+
+/** Span head: `service/id` — the first `/` splits the lane from the id. */
+const SPAN_HEAD_RE = /^([^/\s:]+)\/(\S+)$/;
+
+/** A finite number written as a plain token (`0`, `12.5`). */
+function numberToken(s: string | undefined): number | undefined {
+  if (s === undefined || s.length === 0) return undefined;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * `service/id: name · start · duration [· parent]` → a span. The head names
+ * the lane and the id; the body is the span name, its offset, its length, and
+ * an optional parent id. Anything the grammar can't read stays a string and
+ * surfaces as a schema error.
+ */
+function spanFromString(s: string): unknown {
+  const { head, label } = splitLabel(s);
+  const m = SPAN_HEAD_RE.exec(head);
+  if (m === null || label === undefined) return s;
+  const parts = label
+    .split('·')
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+  if (parts.length < 3 || parts.length > 4) return s;
+  const start = numberToken(parts[1]);
+  const duration = numberToken(parts[2]);
+  if (start === undefined || duration === undefined) return s;
+  const parent = parts[3];
+  return {
+    id: m[2],
+    service: m[1],
+    name: parts[0],
+    start,
+    duration,
+    ...(parent !== undefined ? { parent } : {}),
+  };
+}
+const spanGrammar: Grammar = {
+  expand: spanFromString,
+  signature: (key) => SPAN_HEAD_RE.test(key),
+};
+
+/** A traffic share token: `10%`, `2.5%`. */
+const TRAFFIC_RE = /^(\d+(?:\.\d+)?)\s*%$/;
+
+/**
+ * `[status] traffic% · name · duration — gate` → a rollout stage. The bracket,
+ * the traffic share, the duration, and the gate are all optional; the name is
+ * the first part that is not a percentage.
+ */
+function rolloutStageFromString(s: string): unknown {
+  let rest = s.trim();
+  let status: string | undefined;
+  const b = STATUS_BRACKET_RE.exec(rest);
+  if (b !== null) {
+    status = (b[1] ?? '').trim();
+    rest = rest.slice(b[0].length);
+  }
+  let gate: string | undefined;
+  const dash = rest.indexOf(' — ');
+  if (dash !== -1) {
+    gate = rest.slice(dash + 3).trim();
+    rest = rest.slice(0, dash);
+  }
+  const parts = rest
+    .split('·')
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+  let traffic: number | undefined;
+  const t = parts.length > 0 ? TRAFFIC_RE.exec(parts[0] ?? '') : null;
+  if (t !== null) {
+    traffic = Number(t[1]);
+    parts.shift();
+  }
+  const name = parts.shift();
+  if (name === undefined) return s; // nothing usable — schema error explains
+  const duration = parts.length > 0 ? parts.join(' · ') : undefined;
+  return {
+    name,
+    ...(traffic !== undefined ? { traffic } : {}),
+    ...(duration !== undefined ? { duration } : {}),
+    ...(gate !== undefined && gate.length > 0 ? { gate } : {}),
+    ...(status !== undefined && status.length > 0 ? { status } : {}),
+  };
+}
+const rolloutGrammar: Grammar = {
+  expand: rolloutStageFromString,
   signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
 };
 
@@ -331,7 +440,20 @@ const transitionGrammar: Grammar = {
   signature: (key) => ARROW_RE.test(key),
 };
 
-/** ERD column: `'id uuid pk'` — name, optional flags `pk`/`fk`, rest is the type. */
+/** The erd column fields — a single-pair map whose key is one of these is a real object form. */
+const ERD_COLUMN_FIELDS = ['name', 'type', 'pk', 'fk', 'unique', 'nullable', 'default', 'index', 'enum', 'ref', 'note'];
+
+/**
+ * ERD column: `'name type flags…'` — the name, then any of, in any order:
+ *
+ *   pk · fk · unique (uk) · !null (notnull) · null (?) · index (idx)
+ *   default=<value> · -> table.column (an FK with its target)
+ *   enum(a,b,c) (an inline value list; the type becomes `enum`)
+ *
+ * Every other token joins the type (`double precision`, `numeric(10,2)`).
+ * `'email text unique !null default=now()'` and `'user_id uuid fk -> users.id'`
+ * are the documented shapes.
+ */
 const erdColumnGrammar: Grammar = {
   expand: (s: string): unknown => {
     // The single-pair rescue reconstructs `'id: uuid pk'` — treat ':' as space.
@@ -339,13 +461,37 @@ const erdColumnGrammar: Grammar = {
     const name = tokens.shift();
     if (name === undefined) return s;
     const out: Record<string, unknown> = { name };
-    const type = tokens.filter((t) => !/^(pk|fk)$/i.test(t)).join(' ');
-    if (type.length > 0) out['type'] = type;
-    if (tokens.some((t) => /^pk$/i.test(t))) out['pk'] = true;
-    if (tokens.some((t) => /^fk$/i.test(t))) out['fk'] = true;
+    const typeParts: string[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i] ?? '';
+      const lower = t.toLowerCase();
+      if (lower === 'pk') out['pk'] = true;
+      else if (lower === 'fk') out['fk'] = true;
+      else if (lower === 'unique' || lower === 'uk') out['unique'] = true;
+      else if (lower === '!null' || lower === 'notnull' || lower === 'not-null') out['nullable'] = false;
+      else if (lower === 'null' || lower === '?') out['nullable'] = true;
+      else if (lower === 'index' || lower === 'idx') out['index'] = true;
+      else if (lower.startsWith('default=')) out['default'] = t.slice('default='.length);
+      else if (t === '->') {
+        const target = tokens[i + 1];
+        if (target !== undefined) {
+          out['fk'] = true;
+          out['ref'] = target;
+          i += 1;
+        }
+      } else if (/^enum\(.*\)$/i.test(t)) {
+        out['enum'] = t
+          .slice(5, -1)
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
+        typeParts.push('enum');
+      } else typeParts.push(t);
+    }
+    if (typeParts.length > 0) out['type'] = typeParts.join(' ');
     return out;
   },
-  signature: (key) => !/\s/.test(key) && !['name', 'type', 'pk', 'fk'].includes(key),
+  signature: (key) => !/\s/.test(key) && !ERD_COLUMN_FIELDS.includes(key),
 };
 
 /** Stat: `'label · value · delta'` — trend inferred from the delta's sign. */
@@ -427,6 +573,75 @@ const krGrammar: Grammar = {
     };
   },
   signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
+};
+
+/**
+ * Event payload / header field: `name type [required] — desc`. The name is
+ * the first token, `required` is an optional last token before the dash,
+ * and everything between is the type (so `Item[]` and `string (ISO 8601)`
+ * both work). The description follows ` — `.
+ */
+const EVENT_FIELD_KEYS = ['name', 'type', 'required', 'desc', 'example'];
+const eventFieldGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    let head = s.trim();
+    let desc: string | undefined;
+    const dash = head.indexOf(' — ');
+    if (dash !== -1) {
+      desc = head.slice(dash + 3).trim();
+      head = head.slice(0, dash);
+    }
+    // The single-pair rescue reconstructs `'order_id: uuid required'` — treat
+    // the first ':' of the head as a space (the desc keeps its colons).
+    const tokens = head.replace(':', ' ').split(/\s+/).filter((t) => t.length > 0);
+    const name = tokens.shift();
+    if (name === undefined) return s;
+    let required = false;
+    if (tokens.length > 1 && /^required$/i.test(tokens[tokens.length - 1] ?? '')) {
+      tokens.pop();
+      required = true;
+    }
+    const type = tokens.join(' ');
+    if (type.length === 0) return s; // type is required — schema error explains
+    return {
+      name,
+      type,
+      ...(required ? { required: true } : {}),
+      ...(desc !== undefined && desc.length > 0 ? { desc } : {}),
+    };
+  },
+  signature: (key) => !/\s/.test(key) && !EVENT_FIELD_KEYS.includes(key),
+};
+
+/** Event error: `Name — when the consumer sees it`. */
+const eventErrorGrammar = textPairGrammar('name', 'when', false, ['name', 'when', 'id']);
+
+/**
+ * Saga step: `id: Name · service · compensate` — three parts after the id
+ * give name, service, and the compensating action; four give name, service,
+ * action, compensate; two give name and service only.
+ */
+const SAGA_STEP_KEYS = ['id', 'name', 'service', 'action', 'compensate', 'status'];
+const sagaStepGrammar: Grammar = {
+  expand: (s: string): unknown => {
+    const t = s.trim();
+    const i = t.indexOf(': ');
+    if (i === -1) return s;
+    const id = t.slice(0, i).trim();
+    if (id.length === 0 || /\s/.test(id)) return s;
+    const parts = dotParts(t.slice(i + 2));
+    const name = parts[0];
+    const service = parts[1];
+    if (name === undefined || service === undefined) return s; // both required — schema explains
+    const out: Record<string, unknown> = { id, name, service };
+    if (parts.length === 3) out['compensate'] = parts[2];
+    else if (parts.length >= 4) {
+      out['action'] = parts[2];
+      out['compensate'] = parts.slice(3).join(' · ');
+    }
+    return out;
+  },
+  signature: (key) => !/\s/.test(key) && !SAGA_STEP_KEYS.includes(key),
 };
 
 /**
@@ -538,6 +753,15 @@ const SUGAR: Partial<
     return changed ? { ...d, items: next } : d;
   },
   timeline: (d) => mapArrayField(d, 'items', timelineGrammar),
+  eventcontract: (d) =>
+    mapArrayField(
+      mapArrayField(mapArrayField(d, 'schema', eventFieldGrammar), 'headers', eventFieldGrammar),
+      'errors',
+      eventErrorGrammar,
+    ),
+  saga: (d) => mapArrayField(d, 'steps', sagaStepGrammar),
+  spans: (d) => mapArrayField(d, 'spans', spanGrammar),
+  rollout: (d) => mapArrayField(d, 'stages', rolloutGrammar),
   glossary: (d) => mapArrayField(d, 'terms', glossaryGrammar),
   faq: (d) => mapArrayField(d, 'items', faqGrammar),
   takeaways: (d) => mapArrayField(d, 'items', takeawaysGrammar),

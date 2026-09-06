@@ -152,20 +152,47 @@ export const sequenceSchema = z
   .strict();
 
 // ─── erd ────────────────────────────────────────────────────────────────────
-// doc-studio: entities `{name, columns: [{name, type?, pk?: boolean, fk?: boolean}]}`,
-// relations `{from, to, label?, card?: '1:1'|'1:N'|'N:M'}`.
+// Entities `{name, kind?, schema?, note?, columns?, indexes?}`; a column
+// carries the key markers (`pk` `fk` `unique` `nullable` `index`), a
+// `default`, an inline `enum` value list, a `ref` (`table.column`, the FK
+// target) and a `note`. Relations `{from, to, label?, card?, identifying?,
+// fromCol?, toCol?}`; `card` reads from → to (`1:N`: one `from`, many `to`;
+// `0..1` / `0..N`: one `from`, an optional `to`). `groups` draw schema panels,
+// `enums` draw small value cards, `dir` picks columns (`LR`) or rows (`TB`).
+// Every field past `name` / `from` / `to` is optional, so the pre-overhaul
+// shape (`{name, type?, pk?, fk?}` + `{from, to, label?, card?}`) still passes.
+export const ERD_ENTITY_KINDS = ['table', 'view', 'enum', 'external'] as const;
+export const ERD_CARDS = ['1:1', '1:N', 'N:1', 'N:M', '0..1', '0..N'] as const;
 const erdColumnSchema = z
   .object({
     name: z.string(),
     type: z.string().optional(),
     pk: z.boolean().optional(),
     fk: z.boolean().optional(),
+    unique: z.boolean().optional(),
+    nullable: z.boolean().optional(),
+    default: z.string().optional(),
+    index: z.boolean().optional(),
+    enum: z.array(z.string()).optional(),
+    ref: z.string().optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+const erdIndexSchema = z
+  .object({
+    columns: z.array(z.string()),
+    unique: z.boolean().optional(),
+    name: z.string().optional(),
   })
   .strict();
 const erdEntitySchema = z
   .object({
     name: z.string(),
+    kind: z.enum(ERD_ENTITY_KINDS).optional(),
+    schema: z.string().optional(),
+    note: z.string().optional(),
     columns: z.array(erdColumnSchema).optional(),
+    indexes: z.array(erdIndexSchema).optional(),
   })
   .strict();
 const erdRelationSchema = z
@@ -173,15 +200,33 @@ const erdRelationSchema = z
     from: z.string(),
     to: z.string(),
     label: z.string().optional(),
-    card: z.enum(['1:1', '1:N', 'N:1', 'N:M']).optional(),
+    card: z.enum(ERD_CARDS).optional(),
+    identifying: z.boolean().optional(),
+    fromCol: z.string().optional(),
+    toCol: z.string().optional(),
+  })
+  .strict();
+const erdGroupSchema = z
+  .object({
+    name: z.string(),
+    entities: z.array(z.string()).optional(),
+  })
+  .strict();
+const erdEnumSchema = z
+  .object({
+    name: z.string(),
+    values: z.array(z.string()),
   })
   .strict();
 export const erdSchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
+    dir: z.enum(['LR', 'TB']).optional(),
     entities: z.array(erdEntitySchema).optional(),
     relations: z.array(erdRelationSchema).optional(),
+    groups: z.array(erdGroupSchema).optional(),
+    enums: z.array(erdEnumSchema).optional(),
   })
   .strict();
 
@@ -438,9 +483,12 @@ export const pyramidSchema = z
 // One shape across every grid diagram (flow / dfd / state / c4 / block /
 // felogic): a dashed outline spanning a cell range, with a corner label.
 // Groups anchor by explicit grid coordinates, so `col`/`row` are required.
+// `parent` nests one group inside another by `id` (region → zone → subnet);
+// the child's cells must lie inside the parent's range (`W_GROUP_NESTING`).
 const gridGroupSchema = z
   .object({
     id: z.string().optional(),
+    parent: z.string().optional(),
     col: z.number(),
     row: z.number(),
     cols: z.number().optional(),
@@ -858,6 +906,8 @@ const blockGraphNodeSchema = z
     kind: z.string().optional(),
     name: z.string(),
     tech: z.string().optional(),
+    // Instance count. From 2 up the node draws as a stacked card with a `×N` chip.
+    replicas: z.number().int().min(1).optional(),
   })
   .strict();
 const blockGraphEdgeSchema = z
@@ -873,7 +923,9 @@ export const blockGraphSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
-    preset: z.enum(['infra', 'event', 'ddd', 'network']).optional(),
+    // `k8s`: namespaces are groups; kinds ingress / service / deployment /
+    // pod / configmap / secret / job / cronjob / node get chips + glyphs.
+    preset: z.enum(['infra', 'event', 'ddd', 'network', 'k8s']).optional(),
     systemLabel: z.string().optional(),
     dir: gridDirSchema,
     layers: z.array(blockGraphLayerSchema).optional(),
@@ -2598,6 +2650,208 @@ export const slopegraphSchema = z
   })
   .strict();
 
+// ─── spans (distributed trace waterfall) ────────────────────────────────────
+// One request, many services: every span is a bar in its service's lane,
+// placed by `start` and sized by `duration` on a shared time axis. `parent`
+// nests a span under its caller; the renderer derives the critical path.
+const spanKindEnum = z.enum(['server', 'client', 'db', 'queue', 'cache', 'internal']);
+const spanSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    /** The service that executed the span — one lane per service. */
+    service: z.string(),
+    /** Offset from the trace start, in `unit`. */
+    start: z.number().min(0),
+    /** Length of the span, in `unit`. */
+    duration: z.number().min(0),
+    /** The calling span's `id`. */
+    parent: z.string().optional(),
+    kind: spanKindEnum.optional(),
+    error: z.boolean().optional(),
+    attrs: z.record(z.union([z.string(), z.number()])).optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+export const spansSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** Time unit of `start` / `duration` (default `ms`). */
+    unit: z.enum(['ms', 's', 'us']).optional(),
+    spans: z.array(spanSchema).min(1),
+  })
+  .strict()
+  .superRefine((val, ctx) => {
+    const ids = new Set<string>();
+    val.spans.forEach((s, i) => {
+      if (ids.has(s.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['spans', i, 'id'],
+          message: `duplicate span id "${s.id}" — every span needs its own id`,
+        });
+      }
+      ids.add(s.id);
+    });
+    val.spans.forEach((s, i) => {
+      if (s.parent === undefined) return;
+      if (s.parent === s.id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['spans', i, 'parent'],
+          message: `span "${s.id}" names itself as parent`,
+        });
+      } else if (!ids.has(s.parent)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['spans', i, 'parent'],
+          message: `span "${s.id}" has parent "${s.parent}", which is not a span id`,
+        });
+      }
+    });
+  });
+
+// ─── rollout (progressive delivery stages) ──────────────────────────────────
+// How a change ships and what stops it: an ordered strip of stages, each with
+// the traffic share it takes, how long it holds, and the gate that must pass
+// before the next stage starts. `rollback` names the way back.
+const rolloutStageSchema = z
+  .object({
+    name: z.string(),
+    /** Share of traffic on the new version at this stage, 0–100. */
+    traffic: z.number().min(0).max(100).optional(),
+    /** How long the stage holds before the gate is judged (e.g. `30m`). */
+    duration: z.string().optional(),
+    /** The condition that must pass to advance (e.g. `error rate < 0.5%`). */
+    gate: z.string().optional(),
+    status: z.enum(['done', 'current', 'next', 'blocked']).optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+export const rolloutSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    strategy: z.enum(['canary', 'blue-green', 'rolling', 'feature-flag']).optional(),
+    stages: z.array(rolloutStageSchema).min(1),
+    /** The rollback move, shown as the footer line. */
+    rollback: z.string().optional(),
+  })
+  .strict();
+
+// ─── eventcontract (async event contract — the twin of endpoint) ────────────
+// One card per event, the way `endpoint` is one card per operation: who
+// produces it, who consumes it, the delivery guarantee, and the payload
+// fields. `key` names the partition key — the field the renderer marks `#`.
+const eventFieldSchema = z
+  .object({
+    name: z.string(),
+    type: z.string(),
+    required: z.boolean().optional(),
+    desc: z.string().optional(),
+    /** A sample value, shown after the description. */
+    example: z.string().optional(),
+  })
+  .strict();
+const eventErrorSchema = z
+  .object({
+    name: z.string(),
+    /** When the consumer sees this error. */
+    when: z.string().optional(),
+  })
+  .strict();
+export const eventcontractSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    /** The event name (e.g. `order.placed`). */
+    name: z.string(),
+    /** Contract version, shown in the eyebrow (`EVENT · v2`). */
+    version: z.string().optional(),
+    /** The topic or queue the event travels on. */
+    channel: z.string().optional(),
+    summary: z.string().optional(),
+    producers: z.array(z.string()).optional(),
+    consumers: z.array(z.string()).optional(),
+    delivery: z.enum(['at-least-once', 'at-most-once', 'exactly-once']).optional(),
+    ordering: z.enum(['none', 'per-key', 'global']).optional(),
+    /** The partition key — the payload field ordering is kept for. */
+    key: z.string().optional(),
+    /** How long the channel keeps the event (e.g. `7d`). */
+    retention: z.string().optional(),
+    /** Payload fields. Terse: `name type [required] — desc`. */
+    schema: z.array(eventFieldSchema).optional(),
+    /** Envelope headers, same shape as `schema`. */
+    headers: z.array(eventFieldSchema).optional(),
+    /** An example payload, verbatim (JSON is highlighted). */
+    example: z.string().optional(),
+    /** Failure modes a consumer must handle. Terse: `Name — when`. */
+    errors: z.array(eventErrorSchema).optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+
+// ─── saga (distributed transaction — steps and their compensations) ─────────
+// The reader's question is "what happens when step 3 fails?": forward steps
+// left to right, each with the compensation that undoes it, and `failAt`
+// marking the step that fails so the renderer draws the compensating flow
+// back to step 1. Statuses derive from `failAt` when not given explicitly.
+const sagaStepSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    /** The service that owns the step — shown as its chip. */
+    service: z.string(),
+    /** What the step does, as a mono sublabel. */
+    action: z.string().optional(),
+    /** The compensating action that undoes this step. */
+    compensate: z.string().optional(),
+    status: z.enum(['ok', 'failed', 'skipped', 'compensated']).optional(),
+  })
+  .strict();
+export const sagaSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    mode: z.enum(['orchestration', 'choreography']).optional(),
+    /** The orchestrator's name (`mode: orchestration` only). */
+    coordinator: z.string().optional(),
+    /** Terse: `id: Name · service · compensate` (or `· service · action · compensate`). */
+    steps: z.array(sagaStepSchema).min(1),
+    /** The `id` of the step that fails. */
+    failAt: z.string().optional(),
+  })
+  .strict()
+  .superRefine((val, ctx) => {
+    const ids = new Set<string>();
+    val.steps.forEach((s, i) => {
+      if (ids.has(s.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['steps', i, 'id'],
+          message: `duplicate step id "${s.id}" — every step needs its own id`,
+        });
+      }
+      ids.add(s.id);
+    });
+    if (val.failAt !== undefined && !ids.has(val.failAt)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['failAt'],
+        message: `failAt "${val.failAt}" is not a step id — use one of: ${[...ids].join(', ')}`,
+      });
+    }
+  });
+
 // ─── registry source-of-truth ───────────────────────────────────────────────
 /**
  * The schema map. `as const satisfies Record<BlockType, ...>` enforces that
@@ -2693,7 +2947,11 @@ export const blockSchemas = {
   scenarios: scenariosSchema,
   fishbone: fishboneSchema,
   storymap: storymapSchema,
+  eventcontract: eventcontractSchema,
+  saga: sagaSchema,
   slopegraph: slopegraphSchema,
+  spans: spansSchema,
+  rollout: rolloutSchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

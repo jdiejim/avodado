@@ -176,7 +176,7 @@ describe('describeBlockSchema', () => {
     expect(preset).toEqual({
       kind: 'enum',
       optional: true,
-      options: ['infra', 'event', 'ddd', 'network'],
+      options: ['infra', 'event', 'ddd', 'network', 'k8s'],
     });
     const codeKind = field(describeBlockSchema('code'), 'kind');
     expect(codeKind).toEqual({ kind: 'enum', optional: true, options: ['diff', 'terminal'] });

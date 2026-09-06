@@ -136,7 +136,15 @@ export const BLOCK_TYPES = [
   // Phase 29 — two planning/overview shapes prose kept faking: a user-story
   // map (backbone + release slices) and a ranked before/after slopegraph.
   'storymap',
+  // Phase 30 (G) — async contracts: the event an endpoint card cannot
+  // describe, and the saga that says what runs backwards when a step fails.
+  'eventcontract',
+  'saga',
   'slopegraph',
+  // Phase 30 (E) — cloud & microservices: a distributed-trace waterfall and
+  // a progressive-delivery rollout strip.
+  'spans',
+  'rollout',
 ] as const;
 
 /** A block type literal. Adding a new type here is a one-place change. */

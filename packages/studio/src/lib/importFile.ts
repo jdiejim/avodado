@@ -9,9 +9,13 @@
  */
 
 import {
+  convertDbml,
+  convertPrisma,
+  convertSqlDdl,
   csvToChart,
   csvToStatustable,
   csvToTable,
+  erdFence,
   importerForFile,
   parseOpenApi,
   suggestCsvImport,
@@ -81,7 +85,7 @@ export type ImportPlan =
   | {
       /** Insert a ready-filled block at the drop gap. */
       readonly kind: 'block';
-      readonly type: 'table' | 'statustable' | 'chart';
+      readonly type: 'table' | 'statustable' | 'chart' | 'erd';
       /** Fence-stripped YAML body for `insertBlock`. */
       readonly body: string;
       /** The suggestion one-liner (UI-ready copy from `suggestCsvImport`). */
@@ -151,18 +155,38 @@ function planOpenApi(name: string, text: string): ImportPlan {
   }
 }
 
+/** `.sql` / `.dbml` / `.prisma` → an `erd` block. */
+function planSchema(name: string, text: string, dialect: 'sql' | 'dbml' | 'prisma'): ImportPlan {
+  const result = dialect === 'sql' ? convertSqlDdl(text) : dialect === 'dbml' ? convertDbml(text) : convertPrisma(text);
+  if (!result.ok) {
+    const where = result.line !== undefined ? `${name}:${result.line}` : name;
+    return { kind: 'error', message: `Could not import ${where}: ${result.message}` };
+  }
+  const entities = Array.isArray(result.data['entities']) ? result.data['entities'].length : 0;
+  return {
+    kind: 'block',
+    type: 'erd',
+    body: fenceBody(erdFence(result.data)),
+    reason: `${entities} ${entities === 1 ? 'entity' : 'entities'} read from ${dialect === 'sql' ? 'SQL DDL' : dialect}`,
+    warnings: [],
+  };
+}
+
 /**
  * Plans an import for a file's name + contents: `.csv` → a ready-filled
- * block (per `suggestCsvImport`), `.yaml`/`.yml`/`.json` that sniffs as
- * OpenAPI → a new-doc plan, anything else → unrecognized. Never throws.
+ * block (per `suggestCsvImport`), `.sql` / `.dbml` / `.prisma` → an `erd`
+ * block, `.yaml`/`.yml`/`.json` that sniffs as OpenAPI → a new-doc plan,
+ * anything else → unrecognized. Never throws.
  */
 export function planImport(name: string, text: string): ImportPlan {
   const importer = importerForFile(name);
   if (importer === null) {
     return {
       kind: 'unrecognized',
-      message: `${name} is not a recognized import format — drop a .csv or an OpenAPI .yaml/.json.`,
+      message: `${name} is not a recognized import format — drop a .csv, a .sql / .dbml / .prisma schema, or an OpenAPI .yaml/.json.`,
     };
   }
-  return importer.id === 'csv' ? planCsv(name, text) : planOpenApi(name, text);
+  if (importer.id === 'csv') return planCsv(name, text);
+  if (importer.id === 'sql' || importer.id === 'dbml' || importer.id === 'prisma') return planSchema(name, text, importer.id);
+  return planOpenApi(name, text);
 }

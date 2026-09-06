@@ -19,7 +19,7 @@ import { parseDocument as yamlParseDocument, stringify as yamlStringify } from '
 import type { BlockType, Document, Segment, TypedSegment } from './types.js';
 import { parseDocument } from './parser.js';
 import { textBodyYaml } from './blocks/normalize.js';
-import { MERMAID_SOURCE, mermaidBodyYaml } from './mermaid/index.js';
+import { dialectBodyYaml, isDialectSource } from './dialects.js';
 
 /** Matches a closing fence line — kept in sync with `splitter.ts`. */
 const CLOSE_FENCE_RE = /^```\s*$/;
@@ -132,7 +132,7 @@ export function replaceBlockBody(
   // Body sits strictly between the fences (or runs to EOF when unclosed).
   const bodyEnd = closed ? lastIdx : lastIdx + 1;
   const bodyLines = newRaw === '' ? [] : newRaw.split('\n');
-  const openFence = seg.sourceType === MERMAID_SOURCE ? '```' + seg.kind : (lines[openIdx] ?? '');
+  const openFence = isDialectSource(seg.sourceType) ? '```' + seg.kind : (lines[openIdx] ?? '');
   const out = [...lines.slice(0, openIdx), openFence, ...bodyLines, ...lines.slice(bodyEnd)];
   return out.join('\n');
 }
@@ -147,7 +147,7 @@ export function replaceBlockBody(
  * @param seg - A typed segment of `parseDocument(source, …)`.
  */
 export function editableBodyYaml(seg: Pick<TypedSegment, 'kind' | 'sourceType' | 'raw'>): string {
-  if (seg.sourceType === MERMAID_SOURCE) return mermaidBodyYaml(seg.kind, seg.raw) ?? seg.raw;
+  if (isDialectSource(seg.sourceType)) return dialectBodyYaml(seg.sourceType, seg.kind, seg.raw) ?? seg.raw;
   return textBodyYaml(seg.kind, seg.raw) ?? seg.raw;
 }
 

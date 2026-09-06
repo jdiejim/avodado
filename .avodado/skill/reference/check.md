@@ -30,6 +30,7 @@ Every diagnostic carries a stable code. Apply the matching fix:
 |---|---|---|
 | `E_PARSE_YAML` | YAML body failed to parse. | Re-read *YAML pitfalls* in `writing.md`. Unquoted `,`/`:`/`#` in a `desc` is the usual cause. |
 | `E_PARSE_MERMAID` | A ` ```mermaid ` body has a line outside the supported subset; the message names the line. | Compare against `mermaid.md`. Fix the line, or write the block as typed YAML. |
+| `E_PARSE_DBML` / `E_PARSE_PRISMA` | A ` ```dbml ` / ` ```prisma ` body has a line outside the supported subset; the message names the line. | Compare against `mermaid.md` (Input dialects). Fix the line, or write the block as an `erd` in YAML. |
 | `E_SCHEMA` | A field is missing, wrong-typed, or unknown; the message contains the path. | Compare against `blocks/contract.md` and the family file. Do not add undocumented fields — the schema is strict. |
 | `E_DANGLING_REF` | A `ref` points at an id that exists nowhere. | Fix the ref string, or add the missing `id:` to the target block. |
 | `E_DUP_ID` | The same `id:` in two blocks; the message names both. | Ids are repo-global. Rename one. |

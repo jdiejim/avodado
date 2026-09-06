@@ -7,7 +7,7 @@ description: >-
   data model · charts & overviews · planning & backlogs · business & decisions ·
   design system · algorithms · AI & agents. High-signal types: sequence · erd ·
   c4 · table · callout · timeline · userstory · flow · chart · agentloop ·
-  archmap · block · endpoint · kanban · stats · divider — and 74 more, mapped in
+  archmap · block · endpoint · kanban · stats · divider — and 78 more, mapped in
   reference/blocks/INDEX.md.
   Trigger on any of: docs/**/*.md in an Avodado repo, the `avo` CLI, any block
   type above, `doc#id` cross-references, presence of `avodado.config.*` or
@@ -16,10 +16,11 @@ description: >-
   YAML pitfalls, and the validate workflow.
   This file is the decision path. The mechanics live beside it — read them at
   the step that needs them: reference/blocks/INDEX.md (block → family file),
-  reference/blocks/contract.md (field contract for all 90 blocks),
+  reference/blocks/contract.md (field contract for all 94 blocks),
   reference/blocks/<family>.md (fields + examples), reference/recipes.md
   (composition), reference/writing.md (grammar, terse items, YAML traps,
-  doc#id), reference/mermaid.md (Mermaid input), reference/check.md (avo
+  doc#id), reference/mermaid.md (input dialects: Mermaid, DBML, Prisma),
+  reference/check.md (avo
   check + error codes), reference/style-ste.md (prose style),
   reference/intake.md, reference/system-design.md, reference/decks.md,
   reference/organizing.md.
@@ -33,7 +34,7 @@ description: >-
 
 An Avodado document is **plain Markdown with typed, fenced YAML blocks**.
 Prose is ordinary Markdown. Anything structured — a diagram, a table, a chart
-— is a fenced block whose info-string is one of the **90 block types**, with
+— is a fenced block whose info-string is one of the **94 block types**, with
 a YAML body.
 The `.md` file is the only source of truth. Edit it directly. Never paste raw
 HTML or inline SVG.
@@ -133,8 +134,9 @@ value that contains `,` `:` `#` `{` `}` or starts with a special character**
 keys, and `{id}` opens a nested map. Prefer block style over inline maps for
 anything with prose in it. For `sequence`,
 `flow`, `erd`, `state`, and pie charts you may write a ```mermaid fence
-instead of YAML when you already know that grammar — `reference/mermaid.md`
-lists the exact subset.
+instead of YAML when you already know that grammar; an `erd` also accepts a
+```dbml or ```prisma fence, and `avo sync sql|dbml|prisma <file>` turns a
+schema file into one — `reference/mermaid.md` lists every dialect's subset.
 
 ### 7 · Check — read `reference/check.md` when it fails
 
@@ -180,7 +182,11 @@ live in `reference/blocks/INDEX.md`.
 |---|---|---|
 | What calls what? | Exchange: `sequence` · Network: `graph`, `c4` | ordered messages → sequence; topology at rest → graph/c4 |
 | What path does a request take through the infrastructure? | Containment: `block`, `c4`, `cluster` · Exchange: `sequence` | tiers and hops (CDN → LB → app → DB) → block, edges as the path; sequence only when the reader needs the order of the replies |
-| What happens when this fails? | Flow: `flow` · Modes: `state` · Exchange: `sequence` (alt path) | branching decisions → flow; lifecycle of one object → state; actor interplay → sequence |
+| What happens when this fails? | Flow: `flow`, `saga` · Modes: `state` · Exchange: `sequence` (alt path) | branching decisions → flow; multi-service steps that must be undone → saga; lifecycle of one object → state; actor interplay → sequence |
+| Where did the time go in this request? | Exchange: `spans` · `sequence` | measured durations per service, critical path → spans; the order of calls without timings → sequence |
+| What does the event carry, who emits and consumes it? | Structure: `eventcontract` · Grid: `table` | one event's contract (payload, key, delivery) → eventcontract; a catalog of many → table |
+| How does this ship, and what stops it? | Structure: `rollout`, `steps` · Time: `timeline` | staged traffic with gates → rollout; a manual procedure → steps; dated milestones → timeline |
+| Where does each replica run? | Containment: `block` (nested groups, `replicas`, `preset: k8s`) · `c4` | region → zone → subnet, pod counts → block; system context for a stakeholder → c4 |
 | What lives inside what? | Containment: `c4`, `cluster`, `block`, `layers`, `archmap` · Structure: `tree`, `composition`, `treemap` | runtime boundaries → c4/cluster/block; conceptual tiers → layers; part-of → composition/tree; area budget → treemap |
 | What changes over time? | Time: `timeline`, `gantt`, `changelog`, `chart` (line), `slopegraph` · Modes: `state` | events → timeline; scheduled work → gantt; released work → changelog; a measured quantity → chart; two snapshots, every item named → slopegraph; legal transitions → state |
 | How do these options compare? | Grid: `options`, `proscons`, `matrix`, `scorecard`, `benchmark`, `quadrant`, `harvey` | criteria × candidates → options; one option's trade-offs → proscons; measured numbers → benchmark; position on two axes → quadrant; qualitative fill → harvey |
@@ -289,14 +295,14 @@ The hard rules for Markdown prose:
 | File | Step | Read it when |
 |---|---|---|
 | `reference/intake.md` | 1 | Every new document — the ask-back protocol and per-document-type checklists. |
-| `reference/blocks/INDEX.md` | 2 | To find which family file documents a block — all 90 types, one line each, plus the alias table. |
+| `reference/blocks/INDEX.md` | 2 | To find which family file documents a block — all 94 types, one line each, plus the alias table. |
 | `reference/recipes.md` | 3–4 | When composing a document — 8 worked composition recipes. |
 | `reference/system-design.md` | 3–4 | Any architecture / design ask — the 8-step design method, which architecture block when. |
 | `reference/decks.md` | 3–4 | Any slides / deck ask. |
 | `reference/organizing.md` | 4 | Multi-doc work — when to split, file and slug naming, index docs, cross-doc refs. |
 | `reference/writing.md` | 6 | Before you write YAML — block anatomy, terse items, YAML traps, `doc#id`, naming. |
 | `reference/blocks/<family>.md` | 6 | Before you write any block you have not used this session — examples + field semantics. |
-| `reference/blocks/contract.md` | 6–7 | Only when the family file leaves a field question open, or `E_SCHEMA` names a field — the strict contract for all 90 blocks. |
+| `reference/blocks/contract.md` | 6–7 | Only when the family file leaves a field question open, or `E_SCHEMA` names a field — the strict contract for all 94 blocks. |
 | `reference/mermaid.md` | 6 | When you write a ```mermaid fence — the accepted subset per grammar. |
 | `reference/style-ste.md` | 6 | Before you write any prose or instruction text. |
 | `reference/check.md` | 7 | When `avo check` reports anything — every code, its cause, its fix. |

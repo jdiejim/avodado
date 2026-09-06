@@ -136,10 +136,11 @@ vault · kms · monitor · metrics · logs · tracing · scheduler · cron · jo
 warehouse · lake · analytics · bi · search · index · ml · model · llm · agent ·
 vm · server · host · user · person · browser · mobile · device · iot ·
 notification · webhook · email · sms · ci · cicd · pipeline · git · repo ·
-registry · config · external · producer · topic · consumer · context` — plus
-vendor aliases (`postgres`/`mysql`/`mongo` → db, `s3` → bucket,
-`sqs`/`rabbitmq` → queue, `kafka`/`kinesis` → stream, `redis`/`memcached` →
-cache, `elasticsearch` → search). Known kinds get coloured + glyphed
+registry · config · external · producer · topic · consumer · context ·
+deployment · pod · ingress · configmap · secret · cronjob · node · namespace ·
+cluster` — plus vendor aliases (`postgres`/`mysql`/`mongo` → db, `s3` → bucket,
+`sqs`/`rabbitmq` → queue, `sns` → topic, `kafka`/`kinesis` → stream,
+`redis`/`memcached` → cache, `elasticsearch` → search). Known kinds get coloured + glyphed
 automatically and pick the canonical **shape**. The db kinds draw as
 cylinders, queue/stream kinds as horizontal-cylinder pipes, cdn/external as
 clouds, gateway/lb/proxy as hexagons, cache/redis as an instance stack. Unknown kinds
@@ -182,6 +183,35 @@ edges:
   - alb -> svc
 ```
 
+**Declared nesting (`parent`).** For a real hierarchy — region → zone →
+subnet — give each group an `id` and name its container with `parent`. The
+renderer draws parents first and steps each child in 8px with its own eyebrow
+tab, so three levels read. A child's cells must lie inside its parent's cell
+range; `avo check` warns (`W_GROUP_NESTING`) when they do not, or when the
+`parent` id matches no group.
+```block
+preset: infra
+title: Orders · eu-west-1
+groups:
+  - { id: region, col: 1, row: 1, cols: 2, rows: 2, label: "Region · eu-west-1" }
+  - { id: zone-a, parent: region, col: 1, row: 1, cols: 2, rows: 2, label: Zone A }
+  - { id: pub, parent: zone-a, col: 1, row: 1, cols: 2, rows: 1, label: Public subnet }
+  - { id: priv, parent: zone-a, col: 1, row: 2, cols: 2, rows: 1, label: Private subnet }
+nodes:
+  - { id: gw, col: 1, row: 1, kind: gateway, name: Gateway, replicas: 2 }
+  - { id: api, col: 1, row: 2, kind: service, name: orders-api, replicas: 3 }
+  - { id: pg, col: 2, row: 2, kind: postgres, name: orders-db }
+edges:
+  - gw -> api
+  - api -> pg
+```
+
+**Replicas.** `replicas: N` on a node (integer ≥ 1). From 2 up the node
+draws as a stacked card — two offset paper cards behind it — with a `×N`
+chip at the top-right, and the legend names the encoding. Use it for
+horizontally scaled services and pods; for a database replica set use
+`kind: replica` (its own shape) or two nodes with a dashed `replicates` edge.
+
 **Layered layout.** Presence of `layers` switches `block` to horizontal-band
 layout — nodes use `layer: <index>` instead of `col`/`row`. A layer may carry
 `color:` (hex) to tint its band + kicker, e.g.
@@ -200,15 +230,17 @@ nodes:
   - { id: pg, layer: 2, kind: store, name: orders-db }
 ```
 
-**Presets.** `preset: infra | event | ddd | network` keeps the exact same YAML
-and only changes the domain framing — the colored frame tag and the section
-eyebrow. Pick the preset that signals intent to a reader:
+**Presets.** `preset: infra | event | ddd | network | k8s` keeps the exact
+same YAML and only changes the domain framing — the frame tag, the section
+eyebrow, and which kind is the entry (the one accent). Pick the preset that
+signals intent to a reader:
 
 - `infra` — cloud topology (CDN / gateway / compute / DB, as above)
 - `event` — pub/sub choreography
 - `ddd` — a bounded-context map
 - `network` — security zones (the `firewall` glyph, a red zone tag, and
   `kind: forbidden` red edges)
+- `k8s` — a Kubernetes namespace map (below)
 
 The old block types `infra` / `event` / `ddd` / `network` live on as permanent
 aliases that parse to `block` with the matching preset.
@@ -237,6 +269,35 @@ edges:
   - sup --> bill: reads invoices
 ```
 
+**`preset: k8s`.** A namespace is a group; the workload kinds are nodes.
+`ingress` is the entry (accent, hexagon), `service` the ClusterIP card,
+`deployment` the controller, `pod` the replicas (`replicas: N` draws the
+stack), `configmap` / `secret` the mounted config, `job` / `cronjob` the
+scheduled work (clock card), `node` a worker machine (rack). Each kind gets
+its chip (`INGRESS · SVC · DEPLOY · POD · CONFIG · SECRETS · CRON · NODE · NS`)
+and a muted glyph. Ingress → service → deployment ×3 pods → configmap:
+```block
+preset: k8s
+title: Namespace orders
+groups:
+  - { id: ns, col: 1, row: 1, cols: 4, rows: 2, label: "namespace · orders" }
+nodes:
+  - { id: ingress, col: 1, row: 1, kind: ingress, name: Ingress, tech: nginx }
+  - { id: svc, col: 2, row: 1, kind: service, name: orders-svc, tech: "ClusterIP :80" }
+  - { id: dep, col: 3, row: 1, kind: deployment, name: orders, tech: v2.4.1 }
+  - { id: pod, col: 4, row: 1, kind: pod, name: orders pod, tech: "go · 512Mi", replicas: 3 }
+  - { id: cm, col: 3, row: 2, kind: configmap, name: orders-config }
+  - { id: sec, col: 4, row: 2, kind: secret, name: orders-secrets }
+edges:
+  - ingress -> svc
+  - svc -> pod
+  - dep -> pod: manages
+  - cm --> pod: mounts
+  - sec --> pod: env
+```
+Nest namespaces inside a cluster with `parent` (cluster → namespace) when the
+map spans more than one.
+
 #### `cluster` — k8s-style nested boxes with services
 ```cluster
 title: Production cluster
@@ -248,7 +309,10 @@ services:
 edges:
   - { from: web, to: orders }
 ```
-`replicas` renders as small bars (capped at 5 + `×N` label).
+`replicas` renders as small bars (capped at 5 + `×N` label). The one
+`gateway`-kind service, when exactly one exists, takes the accent as the
+cluster's entry. For nested namespaces or a mixed cloud + cluster map, prefer
+`block` with `preset: k8s`.
 
 #### `archmap` — target-architecture capability map
 ```archmap

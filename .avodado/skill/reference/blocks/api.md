@@ -5,8 +5,10 @@ Exact fields for every block: `contract.md` beside this file; block → family
 map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
 **Shape**: Structure & emphasis — one contract card per operation
-(`endpoint`) — plus Exchange at the byte level (`packet`).
-**Answers**: What can I call, with what, and what comes back? What does the
+(`endpoint`) or per event (`eventcontract`) — plus Exchange at the byte
+level (`packet`).
+**Answers**: What can I call, with what, and what comes back? Who emits this
+event, who consumes it, and what does the payload guarantee? What does the
 wire carry, bit by bit?
 **Not this family**: how calls compose over time → `sequence` (flows.md);
 an error-code listing → `table` (tables-data.md); the API already has an
@@ -35,6 +37,42 @@ response: |            # optional example response body
   { "id": "ord_123", "status": "pending" }
 ```
 Only `method` and `path` are required. `params[].in` is `path | query | header | cookie`. For a whole spec, generate docs with `avo sync openapi`.
+
+#### `eventcontract` — an async event contract, the twin of endpoint
+
+One card per event: who produces it, who consumes it, what the channel
+guarantees, and the payload. Use it where `endpoint` would be wrong — the
+caller never waits for a reply.
+```eventcontract
+name: order.placed
+version: v2
+channel: orders               # the topic or queue
+summary: A customer completed checkout and the order is accepted.
+producers: [checkout]
+consumers: [billing, fulfilment, analytics]
+delivery: at-least-once       # at-least-once | at-most-once | exactly-once
+ordering: per-key             # none | per-key | global
+key: order_id                 # the partition key — marked # in the payload
+retention: 7d
+schema:                       # payload fields: name type [required] — desc
+  - order_id uuid required — The order this event is about
+  - customer_id uuid required — The buyer
+  - total money required — Grand total after discounts
+  - coupon string — Discount code applied, if any
+headers:                      # same shape as schema
+  - trace_id string required — W3C trace id
+example: |
+  { "order_id": "ord_123", "customer_id": "cus_9", "total": "42.00 EUR" }
+errors:                       # Name — when the consumer sees it
+  - DuplicateOrder — the same order_id was already processed
+note: Consumers must be idempotent on order_id.
+```
+Only `name` is required. The renderer draws a PRODUCERS → CONSUMERS strip of
+chips, the delivery facts as word chips, and the payload table: the `key`
+field's row is marked `#` and takes the card's one accent; optional fields are
+marked `?`. A field is a terse string (`name type [required] — desc`) or the
+object form `{ name, type, required, desc, example }`. JSON in `example` is
+highlighted. The card renders on its own, like `endpoint` — no title needed.
 
 #### `packet` — a wire format, bit by bit
 

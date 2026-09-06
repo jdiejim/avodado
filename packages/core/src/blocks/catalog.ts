@@ -185,8 +185,16 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```fishbone\ntitle: Why checkout latency rose\neffect: p95 checkout over 2s\ncauses:\n  - { label: Code, items: [Sync capture call, N+1 cart query] }\n  - { label: Infrastructure, items: [Undersized DB pool] }\n  - { label: Traffic, items: [Flash-sale spikes] }\n```\n',
   storymap:
     '```storymap\ntitle: Checkout story map\nbackbone:\n  - { label: Browse, note: Find the product }\n  - { label: Pay }\nslices:\n  - { label: MVP, cells: [[Search box], ["Card payment"]] }\n  - { label: Later, cells: [["Filters", "Saved carts"], []] }\n```\n',
+  eventcontract:
+    '```eventcontract\nname: order.placed\nversion: v2\nchannel: orders\nsummary: A customer completed checkout and the order is accepted.\nproducers: [checkout]\nconsumers: [billing, fulfilment, analytics]\ndelivery: at-least-once\nordering: per-key\nkey: order_id\nretention: 7d\nschema:\n  - order_id uuid required — The order this event is about\n  - customer_id uuid required — The buyer\n  - total money required — Grand total after discounts\n  - coupon string — Discount code applied, if any\nheaders:\n  - trace_id string required — W3C trace id\nexample: |\n  { "order_id": "ord_123", "customer_id": "cus_9", "total": "42.00 EUR" }\nerrors:\n  - DuplicateOrder — the same order_id was already processed\nnote: Consumers must be idempotent on order_id.\n```\n',
+  saga:
+    '```saga\ntitle: Place order\nmode: orchestration\ncoordinator: Order service\nsteps:\n  - reserve: Reserve stock · inventory · release stock\n  - charge: Charge card · payments · refund card\n  - ship: Book shipment · shipping · cancel shipment\n  - notify: Send confirmation · notifications\nfailAt: ship\n```\n',
   slopegraph:
     '```slopegraph\ntitle: Support volume by channel\nleft: "2023"\nright: "2025"\nunit: "%"\nitems:\n  - { label: Email, from: 48, to: 22 }\n  - { label: Chat, from: 20, to: 45, accent: teal }\n  - { label: Phone, from: 32, to: 33 }\n```\n',
+  spans:
+    '```spans\ntitle: GET /orders/{id}\nunit: ms\nspans:\n  - api/get: GET /orders/{id} · 0 · 120\n  - api/auth: verify token · 4 · 10 · get\n  - db/q1: SELECT orders · 18 · 40 · get\n  - { id: cache, service: cache, name: "GET order:42", start: 62, duration: 3, parent: get, kind: cache }\n  - { id: pay, service: payments, name: GET /payments/42, start: 68, duration: 46, parent: get, kind: client, error: true }\n```\n',
+  rollout:
+    '```rollout\ntitle: Checkout v2\nstrategy: canary\nstages:\n  - "[done] 1% · Smoke · 15m — no 5xx"\n  - "[current] 10% · Canary · 30m — error rate < 0.5%"\n  - "[next] 50% · Half · 1h — p95 < 300ms"\n  - "[next] 100% · Full"\nrollback: Flip the flag off; the old version keeps serving.\n```\n',
 };
 
 /**
@@ -339,7 +347,11 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   takeaways: 'narrative',
   fishbone: 'charts',
   storymap: 'planning',
+  eventcontract: 'api',
+  saga: 'flows',
   slopegraph: 'charts',
+  spans: 'flows',
+  rollout: 'planning',
 };
 
 /** The block types of one family, in {@link BLOCK_TYPES} (registry) order. */
@@ -442,7 +454,11 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   scenarios: 'Scenario table',
   fishbone: 'Fishbone diagram',
   storymap: 'Story map',
+  eventcontract: 'Event contract',
+  saga: 'Saga',
   slopegraph: 'Slopegraph',
+  spans: 'Trace waterfall',
+  rollout: 'Rollout plan',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -565,6 +581,14 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'Cause & effect (Ishikawa) — one effect at the head, cause categories as bones off the spine, specific causes as items along each bone.',
   storymap:
     'User story map — the ordered backbone of activities across the top, release slices as rows of cards under each step.',
+  eventcontract:
+    'An async event contract card — name, channel, producers → consumers, delivery guarantees, and the payload fields with the partition key marked; the twin of endpoint.',
+  saga:
+    'A distributed transaction — forward steps left to right with the compensation under each, and the compensating flow drawn back from the step that fails.',
   slopegraph:
     'Ranked before / after — one line per item between two labeled columns; the slopes show what rose, fell, or held.',
+  spans:
+    'A distributed-trace waterfall — one lane per service, each span a bar on a shared time axis, nested by parent; the critical path is marked.',
+  rollout:
+    'A progressive-delivery plan — stages left to right with their traffic share, hold time, and the gate each must pass; the rollback move as the footer.',
 };

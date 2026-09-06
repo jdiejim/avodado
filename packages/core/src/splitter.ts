@@ -13,7 +13,7 @@
 
 import { BLOCK_TYPES, BLOCK_TYPE_SET, type BlockType, type SuspectFence } from './types.js';
 import { BLOCK_ALIASES, ALIAS_TYPE_SET } from './blocks/aliases.js';
-import { MERMAID_SOURCE, detectMermaidKind } from './mermaid/index.js';
+import { detectDialectKind, isDialectSource } from './dialects.js';
 import { closest } from './suggest.js';
 
 const OPEN_FENCE_RE = /^```([A-Za-z][\w-]*)\s*$/;
@@ -88,7 +88,7 @@ export function splitMarkdown(md: string): RawSegment[] {
     const openMatch = OPEN_FENCE_RE.exec(line);
     const tag = openMatch?.[1];
 
-    if (tag !== undefined && (isBlockTag(tag) || tag === MERMAID_SOURCE)) {
+    if (tag !== undefined && (isBlockTag(tag) || isDialectSource(tag))) {
       const blockStart = i + 1;
       const bodyLines: string[] = [];
       let j = i + 1;
@@ -97,10 +97,10 @@ export function splitMarkdown(md: string): RawSegment[] {
         j++;
       }
       const raw = bodyLines.join('\n');
-      // A Mermaid fence is typed only when its grammar is one we convert;
-      // any other Mermaid diagram stays prose exactly like a ```ts fence.
-      const mermaidKind = tag === MERMAID_SOURCE ? detectMermaidKind(raw) : undefined;
-      if (tag === MERMAID_SOURCE && mermaidKind === undefined) {
+      // A dialect fence is typed only when its grammar is one we convert (a
+      // Mermaid `gantt` is not); anything else stays prose like a ```ts fence.
+      const dialectKind = isDialectSource(tag) ? detectDialectKind(tag, raw) : undefined;
+      if (isDialectSource(tag) && dialectKind === undefined) {
         if (proseBuf.length === 0) proseStart = i + 1;
         proseBuf.push(line);
         i++;
@@ -110,8 +110,8 @@ export function splitMarkdown(md: string): RawSegment[] {
       i = j;
       const alias = BLOCK_ALIASES[tag];
       segments.push({
-        kind: mermaidKind ?? (alias !== undefined ? alias.type : (tag as BlockType)),
-        ...(alias !== undefined || mermaidKind !== undefined ? { sourceType: tag } : {}),
+        kind: dialectKind ?? (alias !== undefined ? alias.type : (tag as BlockType)),
+        ...(alias !== undefined || dialectKind !== undefined ? { sourceType: tag } : {}),
         raw,
         line: blockStart,
       });
@@ -153,8 +153,9 @@ export function detectSuspectFences(md: string): SuspectFence[] {
       if (i < lines.length) i++;
       continue;
     }
-    // A Mermaid fence is a dialect, never a typo — whichever grammar it holds.
-    if (tag !== undefined && tag !== MERMAID_SOURCE) {
+    // A dialect fence (mermaid / dbml / prisma) is never a typo — whichever
+    // grammar it holds.
+    if (tag !== undefined && !isDialectSource(tag)) {
       // Suggestions come from every valid fence tag — canonical or alias.
       const [suggestion] = closest(tag, FENCE_TAGS, 2);
       if (suggestion !== undefined) {

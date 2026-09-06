@@ -4,8 +4,8 @@ Part of the **avodado-docs** skill (the hub is `SKILL.md`, two folders up).
 Exact fields for every block: `contract.md` beside this file; block → family
 map: `INDEX.md`. Schemas reject unknown fields — use exactly these.
 
-**Shape**: Time — what happened or is planned (`timeline`, `changelog`);
-Grid — one option weighed (`proscons`); Structure & emphasis — work items
+**Shape**: Time — what happened or is planned (`timeline`, `changelog`,
+`rollout`); Grid — one option weighed (`proscons`); Structure & emphasis — work items
 and reference cards (`userstory`, `stories`, `kanban`, `storymap`,
 `statustable`, `risk`, `list`, `cvt`, `agenda`, `pattern`, `gallery`).
 **Answers**: What work exists, in what state, owned by whom? What shipped
@@ -114,6 +114,34 @@ order** — write `[]` for a step with nothing in that slice. A cell holds up
 to 6 cards; a card is a plain string or `{ title, tag }` (the tag renders as
 a small pill). Columns have a fixed width and the map scrolls horizontally
 past ~5 steps, so keep step labels short.
+
+#### `rollout` — how a change ships, and what stops it
+
+A progressive-delivery plan: stages left to right, each with the share of
+traffic on the new version, how long it holds, and the **gate** that must
+pass before the next stage starts. A `timeline` says *when*; a `rollout`
+says *under what condition*. Stages default to the terse
+`"[status] traffic% · name · duration — gate"` form (quote it when it starts
+with a bracket); every part but the name is optional:
+```rollout
+title: Checkout v2
+strategy: canary
+stages:
+  - "[done] 1% · Smoke · 15m — no 5xx"
+  - "[current] 10% · Canary · 30m — error rate < 0.5%"
+  - "[next] 50% · Half · 1h — p95 < 300ms"
+  - { name: Full, traffic: 100, status: next, note: Remove the old deployment after 24 h. }
+rollback: Flip the flag off; the old version keeps serving.
+```
+- `strategy` is `canary | blue-green | rolling | feature-flag` and shows in
+  the eyebrow. `status` is `done | current | next | blocked` (done = filled,
+  current = the one accent, next = dashed, blocked = negative); omit it for
+  a plain card.
+- `traffic` (0–100) draws the bar; `duration` is free text (`30m`, `1h`,
+  `2 days`). The gate belongs to the stage it *closes* — it is drawn on the
+  connector to the next card.
+- `rollback` is the footer line. Write the move, not the wish: "flip the
+  flag", "point the LB back at blue".
 
 #### `statustable` — task table with an update column + colored status pills
 ```statustable

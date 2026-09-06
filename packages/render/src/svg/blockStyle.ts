@@ -8,6 +8,8 @@
  * every colour is a role token.
  */
 
+import { cloudGlyph, hasGlyph } from './glyphs.js';
+
 /**
  * Every node `kind` {@link blockStyle} styles specially — the case labels of
  * its switch, in switch order. Editors use this as the canonical dropdown of
@@ -52,6 +54,9 @@ export const KNOWN_NODE_KINDS: readonly string[] = [
   'shard', 'shards', 'sharded', 'replica', 'replicas', 'replicaset',
   'users', 'crowd',
   'region', 'geo', 'globe',
+  // `preset: k8s` vocabulary (namespaces are groups; these are the node kinds).
+  'deployment', 'pod', 'ingress', 'configmap', 'secret', 'cronjob', 'node', 'namespace', 'cluster',
+  'sns',
 ];
 
 /**
@@ -121,6 +126,17 @@ def(['vm', 'server', 'host'], primary('HOST'));
 def(['secrets', 'vault', 'kms'], secondary('SECRETS'));
 def(['notification', 'webhook'], external('WEBHOOK'));
 def(['region', 'geo', 'globe'], external('REGION'));
+// Kubernetes kinds (`preset: k8s`). `service` / `job` keep their generic skins.
+def(['deployment'], primary('DEPLOY'));
+def(['pod'], primary('POD'));
+def(['ingress'], primary('INGRESS'));
+def(['configmap'], secondary('CONFIG'));
+def(['secret'], secondary('SECRETS'));
+def(['cronjob'], primary('CRON'));
+def(['node'], primary('NODE'));
+def(['namespace'], secondary('NS'));
+def(['cluster'], primary('CLUSTER'));
+def(['sns'], secondary('TOPIC'));
 
 /**
  * Maps a node `kind` to its skin. Unknown kinds are primary paper nodes whose
@@ -370,7 +386,9 @@ export function nodeGlyph(kind: string | undefined, x: number, y: number, c: str
       `</g>`
     );
   }
-  return '';
+  // Kinds the legacy switch never drew (pod, deployment, ingress, …) take the
+  // single-stroke cloud glyph set. Kinds neither knows keep drawing nothing.
+  return hasGlyph(k) ? cloudGlyph(k, x, y, c) : '';
 }
 
 /** Edge-style preset: per-kind stroke, dash, marker, error flag. */

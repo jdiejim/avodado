@@ -14,7 +14,7 @@ import type { Diagnostic } from './diagnostics.js';
 import type { Document } from './types.js';
 import { blockRegistry } from './blocks/registry.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
-import { MERMAID_SOURCE } from './mermaid/index.js';
+import { DIALECT_PARSE_CODE, DIALECT_PARSE_HINT, isDialectSource } from './dialects.js';
 import { fieldNamesAt } from './blocks/schema-walk.js';
 import { locateYamlPath } from './yaml.js';
 import { closest } from './suggest.js';
@@ -178,6 +178,84 @@ function lintSequenceFrames(
   return out;
 }
 
+/** A grid group as the nesting lint reads it (the shared `gridGroupSchema` shape). */
+interface GroupCells {
+  readonly id?: string;
+  readonly parent?: string;
+  readonly col: number;
+  readonly row: number;
+  readonly cols?: number;
+  readonly rows?: number;
+}
+
+/**
+ * Nested grid groups (`groups[].parent`) must resolve to a sibling `id`, and
+ * a child's cell range must sit inside its parent's. Warnings only — the
+ * renderer still draws both panels; the author moves the cells.
+ */
+function lintGroupNesting(
+  seg: { readonly data: unknown; readonly raw: string; readonly line: number },
+  file: string,
+  positioned: boolean,
+): Diagnostic[] {
+  const data = seg.data;
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return [];
+  const groups = (data as Record<string, unknown>)['groups'];
+  if (!Array.isArray(groups)) return [];
+  const list = groups.filter(
+    (g): g is GroupCells => typeof g === 'object' && g !== null && !Array.isArray(g),
+  );
+  if (!list.some((g) => g.parent !== undefined)) return [];
+
+  const byId = new Map<string, GroupCells>();
+  for (const g of list) if (g.id !== undefined) byId.set(g.id, g);
+  const warn = (i: number, message: string, hint: string, value: string): Diagnostic => {
+    const loc = positioned ? locateYamlPath(seg.raw, ['groups', i, 'parent']) : undefined;
+    return {
+      file,
+      ...(loc !== undefined ? { line: seg.line + loc.line, column: loc.column } : { line: seg.line }),
+      level: 'warn',
+      code: 'W_GROUP_NESTING',
+      message,
+      hint,
+      value,
+    };
+  };
+
+  const out: Diagnostic[] = [];
+  list.forEach((g, i) => {
+    if (g.parent === undefined) return;
+    const p = byId.get(g.parent);
+    if (p === undefined || p === g) {
+      out.push(
+        warn(
+          i,
+          `groups[${i}] names parent \`${g.parent}\`, which is not another group's id`,
+          'Give the parent group an `id` and reference it, or remove `parent`.',
+          g.parent,
+        ),
+      );
+      return;
+    }
+    const inside =
+      g.col >= p.col &&
+      g.row >= p.row &&
+      g.col + (g.cols ?? 1) <= p.col + (p.cols ?? 1) &&
+      g.row + (g.rows ?? 1) <= p.row + (p.rows ?? 1);
+    if (!inside) {
+      out.push(
+        warn(
+          i,
+          `groups[${i}] is not inside its parent \`${g.parent}\` (cells ${g.col},${g.row} +${g.cols ?? 1}×${g.rows ?? 1} vs ${p.col},${p.row} +${p.cols ?? 1}×${p.rows ?? 1})`,
+          'Move the child inside the parent cell range, or grow the parent `cols` / `rows`.',
+          g.parent,
+        ),
+      );
+    }
+  });
+  return out;
+}
+
 /**
  * The trailing ATX heading of a prose run, if the run ends with one (ignoring
  * trailing blank lines). Returns the heading text and its 0-based line offset
@@ -287,11 +365,13 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
     if (seg.kind === 'markdown') continue;
 
     // Alias fences: informational nudge toward the canonical spelling.
-    // A warning only — warnings never fail `avo check`. A Mermaid fence is a
-    // dialect, not an alias (`BLOCK_ALIASES['mermaid']` is undefined by
-    // design) — it never warns.
-    const isMermaid = seg.sourceType === MERMAID_SOURCE;
-    if (seg.sourceType !== undefined && !isMermaid) {
+    // A warning only — warnings never fail `avo check`. A dialect fence
+    // (mermaid / dbml / prisma) is not an alias (`BLOCK_ALIASES` has no entry
+    // for it by design) — it never warns.
+    const dialect = isDialectSource(seg.sourceType) ? seg.sourceType : undefined;
+    // A dialect body has no YAML positions — its diagnostics sit on the fence.
+    const isMermaid = dialect !== undefined;
+    if (seg.sourceType !== undefined && dialect === undefined) {
       const alias = BLOCK_ALIASES[seg.sourceType];
       if (alias !== undefined) {
         const patch = Object.entries(alias.patch ?? {})
@@ -320,11 +400,12 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
         line,
         ...(seg.parseErrorColumn !== undefined ? { column: seg.parseErrorColumn } : {}),
         level: 'error',
-        code: isMermaid ? 'E_PARSE_MERMAID' : 'E_PARSE_YAML',
+        code: dialect !== undefined ? DIALECT_PARSE_CODE[dialect] : 'E_PARSE_YAML',
         message: `${seg.kind}: ${seg.parseError}`,
-        hint: isMermaid
-          ? 'The Mermaid subset is in reference/mermaid.md. Fix the line, or write the block as YAML.'
-          : 'Often an unquoted special character (, : # | & *). Wrap the value in quotes.',
+        hint:
+          dialect !== undefined
+            ? DIALECT_PARSE_HINT[dialect]
+            : 'Often an unquoted special character (, : # | & *). Wrap the value in quotes.',
       });
       continue;
     }
@@ -353,6 +434,9 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
     const result = def.schema.safeParse(dataForSchema);
     if (result.success && seg.kind === 'sequence') {
       diagnostics.push(...lintSequenceFrames(seg, file, !isMermaid));
+    }
+    if (result.success) {
+      diagnostics.push(...lintGroupNesting(seg, file, !isMermaid));
     }
     if (!result.success) {
       for (const issue of flattenIssues(result.error.issues)) {
