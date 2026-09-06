@@ -31,6 +31,7 @@ import {
   IconDuplicate,
   IconEdit,
   IconGrip,
+  IconPen,
   IconPlus,
   IconTrash,
 } from './Icons.js';
@@ -248,6 +249,28 @@ function ProseEditor({ index, text, onDone }: {
   );
 }
 
+/**
+ * Pen mode's toggle. It only exists while the DirectLayer says this block can
+ * be drawn on (a diagram with a grid and a shape→kind mapping), so the
+ * toolbar never offers Draw on a table.
+ */
+function DrawToggle(): JSX.Element | null {
+  const pen = useStudio((s) => s.penMode);
+  if (pen === null) return null;
+  return (
+    <button
+      type="button"
+      className={`stu-tool ${pen.on ? 'stu-tool-on' : ''}`}
+      title="Draw a node — sketch a shape on the diagram (D)"
+      aria-label="Draw a node"
+      aria-pressed={pen.on}
+      onClick={() => useStudio.getState().setPenMode({ seg: pen.seg, on: !pen.on })}
+    >
+      <IconPen size={13} />
+    </button>
+  );
+}
+
 /** The floating mini-toolbar pinned to a hovered/selected block. */
 function BlockToolbar({ index, count, isMeta, metaFirst, onEdit, onDelete }: {
   index: number;
@@ -290,6 +313,7 @@ function BlockToolbar({ index, count, isMeta, metaFirst, onEdit, onDelete }: {
       <button type="button" className="stu-tool" title="Edit" aria-label="Edit" onClick={onEdit}>
         <IconEdit size={13} />
       </button>
+      <DrawToggle />
       <button
         type="button"
         className="stu-tool"

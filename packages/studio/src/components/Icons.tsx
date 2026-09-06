@@ -64,6 +64,17 @@ export function IconEdit({ size = 14 }: IconProps): JSX.Element {
   );
 }
 
+/** Pen mode: draw a shape on the diagram and get the node it means. */
+export function IconPen({ size = 14 }: IconProps): JSX.Element {
+  return (
+    <svg {...svgProps(size)}>
+      <path d="M11.6 1.9a1.6 1.6 0 0 1 2.3 2.3L5.6 12.5l-3 .7.7-3Z" />
+      <path d="M10.2 3.3 12.5 5.6" />
+      <path d="M2 14.4h12" />
+    </svg>
+  );
+}
+
 export function IconDuplicate({ size = 14 }: IconProps): JSX.Element {
   return (
     <svg {...svgProps(size)}>

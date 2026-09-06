@@ -71,6 +71,7 @@ const OVERLAY_GROUPS: ReadonlyArray<{ title: string; rows: readonly OverlayRow[]
       { keys: 'esc', label: 'back to the block' },
       { keys: 'drag', label: 'move with the pointer' },
       { keys: 'drag a dot', label: 'connect nodes — drop on empty space to add one' },
+      { keys: 'D', label: 'pen mode — draw a shape to add the node it means' },
       { keys: 'right-click · ⇧F10', label: 'menu — add / kind / group / wrap / delete' },
       { keys: 'n', label: 'sequence message: add / edit its numbered step note' },
       { keys: '⌥←↑↓→', label: 'nudge the hovered part' },

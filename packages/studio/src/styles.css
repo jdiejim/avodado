@@ -439,6 +439,13 @@ kbd {
   cursor: grabbing;
 }
 
+/* A toggled-on tool (pen mode) keeps the accent while it is armed. */
+.stu-tool-on,
+.stu-tool-on:hover:not(:disabled) {
+  background: var(--stu-terra-soft);
+  color: var(--stu-terra);
+}
+
 .stu-tool-danger:hover:not(:disabled) {
   background: var(--stu-red-soft);
   color: var(--stu-red);
@@ -2048,6 +2055,71 @@ kbd {
   background: var(--stu-navy-soft);
 }
 
+/* ── Pen mode (v11): draw a shape, get the node ─────────────────────────── */
+
+/* While armed the whole block is a drawing surface: crosshair, and
+   `touch-action: none` so a finger or a stylus draws instead of scrolling. */
+.stu-dx-penning,
+.stu-dx-penning svg[data-grid] {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* The live ink trail — the skin's accent, round caps, no fill. */
+.stu-dx-ink {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 46;
+  overflow: visible;
+}
+
+.stu-dx-ink polyline {
+  fill: none;
+  stroke: var(--stu-terra);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* After the commit the trail dims and fades out (160ms). */
+.stu-dx-ink-out polyline {
+  animation: stu-dx-ink-fade 0.16s ease-out forwards;
+}
+
+@keyframes stu-dx-ink-fade {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.25;
+  }
+}
+
+/* The snapped cell the stroke committed to — flashes, then goes. */
+.stu-dx-sketch-flash {
+  position: absolute;
+  pointer-events: none;
+  z-index: 45;
+  border: 2px solid var(--stu-terra);
+  border-radius: 10px;
+  background: var(--stu-terra-soft);
+  animation: stu-dx-flash 0.16s ease-out;
+}
+
+@keyframes stu-dx-flash {
+  from {
+    opacity: 0.2;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 /* Marquee on empty diagram canvas — releases into a dashed group wrapper. */
 .stu-dx-marquee {
   position: absolute;
@@ -2723,12 +2795,15 @@ kbd {
   .stu-menu,
   .stu-dx-pop,
   .stu-dx-connect-picker,
+  .stu-dx-sketch-picker,
   .stu-dx-sel,
   .stu-dx-hl,
   .stu-dx-link,
   .stu-dx-chip,
   .stu-dx-addbar,
   .stu-dx-connect-target,
+  .stu-dx-sketch-flash,
+  .stu-dx-ink-out polyline,
   .stu-dx-wire line {
     animation: none;
   }

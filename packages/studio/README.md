@@ -32,6 +32,12 @@ Authoring is keyboard-first, directly on the rendered doc:
   hovered part, ⌫ deletes an item, Tab cycles parts, Esc pops back out.
 - **Drag** moves parts on the diagram itself — block-graph nodes snap to
   grid cells, order-based lists reorder with a live insertion indicator.
+- **Draw a node** — press <kbd>D</kbd> on a selected diagram block (or the
+  pen in its toolbar) and sketch: a rectangle becomes a process or a service,
+  a diamond a decision or a gateway, a cylinder a database, a pill or an
+  ellipse a start/end. A line between two nodes becomes an edge in the
+  direction you drew it; from a node into empty space it adds a node there and
+  connects it. An unclear stroke asks instead of guessing. Esc leaves pen mode.
 - **Insert** via the `+` menu (a searchable gallery of every insertable
   block with live-rendered thumbnails) or the `/` slash command; `?` shows
   the full shortcut list.

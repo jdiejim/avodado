@@ -125,6 +125,12 @@ export interface StudioState {
    * selection changes, a doc opens, the sheet opens, or history moves.
    */
   partSel: { readonly seg: number; readonly path: string } | null;
+  /**
+   * PEN MODE on the selected diagram block: which segment offers it and
+   * whether it is armed. The DirectLayer owns the behaviour and publishes
+   * the state here so the block toolbar (in Canvas) can render the toggle.
+   */
+  penMode: { readonly seg: number; readonly on: boolean } | null;
   conflict: SaveConflict | null;
   undoStack: readonly string[];
   redoStack: readonly string[];
@@ -183,6 +189,7 @@ export interface StudioState {
   setMode: (mode: StudioMode) => void;
   select: (i: number | null) => void;
   setPartSel: (sel: StudioState['partSel']) => void;
+  setPenMode: (pen: StudioState['penMode']) => void;
   /**
    * Saves the doc. With autosave ON (or `force`) this writes immediately —
    * today's behaviour. With autosave OFF and a dirty doc it opens the review
@@ -318,6 +325,7 @@ export const useStudio = create<StudioState>()((set, get) => {
     mode: 'home',
     selection: null,
     partSel: null,
+    penMode: null,
     conflict: null,
     undoStack: [],
     redoStack: [],
@@ -518,6 +526,8 @@ export const useStudio = create<StudioState>()((set, get) => {
       }),
 
     setPartSel: (sel) => set({ partSel: sel }),
+
+    setPenMode: (pen) => set({ penMode: pen }),
 
     save: async (force = false) => {
       const s = get();

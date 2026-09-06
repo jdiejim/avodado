@@ -60,6 +60,7 @@ import { MicroEditor, type Rect } from './MicroEditor.js';
 import { groupIndexFromPath, supportsGroups, type GroupCorner } from './groupMarquee.js';
 import { capturesArrows, classifyPart, deletablePathFor, type ArrowKey } from './partSelect.js';
 import { useConnect } from './useConnect.js';
+import { useSketch } from './useSketch.js';
 import { useGroupMarquee } from './useGroupMarquee.js';
 import { cornerCursor, useGroupResize } from './useGroupResize.js';
 import { draggableTarget, moveSelectedPart, nudgePart, readGeom, readPlacements, useDiagramDrag } from './useDrag.js';
@@ -230,6 +231,19 @@ export function DirectLayer({ host: rawHost, data, html, wrapperRef, segIndex, l
     playFlip(wrap, p.before, isEdgeKey, { moves: p.moves });
   }, [html, wrapperRef, isEdgeKey]);
 
+  /* ---- pen mode dresses the whole block: crosshair cursor, and
+          `touch-action: none` so a finger or stylus DRAWS instead of
+          scrolling the page (the class carries both) ---- */
+  const penOn = useStudio(
+    (st) => segIndex !== undefined && st.penMode?.seg === segIndex && st.penMode.on,
+  );
+  useEffect(() => {
+    const wrap = wrapperRef.current;
+    if (wrap === null) return;
+    wrap.classList.toggle('stu-dx-penning', penOn);
+    return () => wrap.classList.remove('stu-dx-penning');
+  }, [penOn, wrapperRef]);
+
   /* ---- context menu ---- */
   const [menu, setMenu] = useState<{ at: MenuAnchor; items: MenuItem[] } | null>(null);
   const menuOpenRef = useRef(false);
@@ -332,6 +346,47 @@ export function DirectLayer({ host: rawHost, data, html, wrapperRef, segIndex, l
   });
   const connectRef = useRef(connect);
   connectRef.current = connect;
+
+  /* ---- pen mode: draw a shape on the diagram, get the node it means ---- */
+  const sketch = useSketch({
+    host,
+    data,
+    html,
+    wrapperRef,
+    segIndex,
+    suppressClickRef,
+    dragActiveRef,
+    // A drawn node is selected and named immediately, like a connect drop.
+    onNodeCreated: (nodePath, focusField) => {
+      setPart(nodePath);
+      pendingOpen.current = { path: nodePath, focusField };
+    },
+    // A scribble over a node routes through the layer's own delete flow
+    // (fade-out, and the confirm popover for content the user has touched).
+    onDelete: (path) => {
+      const victim = deletablePathFor(host.kind, path) ?? path;
+      const run = (): void => {
+        deleteItemRef.current(victim);
+        useStudio.getState().setPartSel(null);
+      };
+      if (!needsPartDeleteConfirm(host.kind, data, victim)) {
+        run();
+        return;
+      }
+      const wrap = wrapperRef.current;
+      const r = wrap?.querySelector(`[data-bp="${CSS.escape(victim)}"]`)?.getBoundingClientRect();
+      useStudio.getState().requestDelete({
+        label: humanizePath(parseBlockPath(victim)),
+        anchor:
+          r !== undefined
+            ? { x: r.left + r.width / 2, y: r.bottom }
+            : { x: window.innerWidth / 2, y: window.innerHeight / 3 },
+        run,
+      });
+    },
+  });
+  const sketchRef = useRef(sketch);
+  sketchRef.current = sketch;
 
   /**
    * The field ⏎ / double-click should land on for a part: a sequence step
@@ -530,6 +585,16 @@ export function DirectLayer({ host: rawHost, data, html, wrapperRef, segIndex, l
         connectRef.current.cancelPicker();
         return;
       }
+      // Pen mode owns Esc while armed — but only once the micro-editor is
+      // closed. A drawn node opens its editor immediately, and there Esc
+      // means "done naming", not "stop drawing": the ladder is
+      // editor → pen mode → selection, one level per press.
+      if (e.key === 'Escape' && sketchRef.current.on && !editorOpenRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        sketchRef.current.leave();
+        return;
+      }
       const isArrow =
         e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown';
       // ⌥ + arrows: nudge the selected / edited / hovered part.
@@ -549,6 +614,21 @@ export function DirectLayer({ host: rawHost, data, html, wrapperRef, segIndex, l
       if (editorOpenRef.current) return; // the micro-editor owns its keys
       if (isEditableTarget(e.target)) return;
       if (menuOpenRef.current) return; // the menu owns its keys
+      // `d` toggles pen mode on a drawable diagram — block level or part
+      // level alike, so it works the moment the block is selected.
+      if (
+        e.key.toLowerCase() === 'd' &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.shiftKey &&
+        sketchRef.current.available
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        sketchRef.current.toggle();
+        return;
+      }
       // ⇧F10 / the Menu key: the context menu at the selected part (or the block).
       if ((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') {
         e.preventDefault();
@@ -1222,6 +1302,49 @@ export function DirectLayer({ host: rawHost, data, html, wrapperRef, segIndex, l
                 />
               ))}
           </>
+        )}
+        {sketch.visuals.flash !== null && (
+          <div
+            className="stu-dx-sketch-flash"
+            style={{
+              left: sketch.visuals.flash.left,
+              top: sketch.visuals.flash.top,
+              width: sketch.visuals.flash.width,
+              height: sketch.visuals.flash.height,
+            }}
+          />
+        )}
+        {sketch.visuals.trail.length > 1 && (
+          <svg
+            className={`stu-dx-ink ${sketch.visuals.fading ? 'stu-dx-ink-out' : ''}`}
+            aria-hidden="true"
+          >
+            <polyline points={sketch.visuals.trail.map((p) => `${p.x},${p.y}`).join(' ')} />
+          </svg>
+        )}
+        {sketch.visuals.picker !== null && (
+          <div
+            className="stu-dx-connect-picker stu-dx-sketch-picker"
+            role="menu"
+            aria-label="What did you draw?"
+            style={{ left: sketch.visuals.picker.left + 6, top: sketch.visuals.picker.top + 6 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="stu-dx-connect-picker-title">What did you draw?</div>
+            {sketch.visuals.picker.items.map((it) => (
+              <button
+                key={it.value}
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  sketch.choose(it.value);
+                }}
+              >
+                {it.label}
+              </button>
+            ))}
+          </div>
         )}
         {connect.visuals.wire !== null && (
           <svg className="stu-dx-wire" aria-hidden="true">
