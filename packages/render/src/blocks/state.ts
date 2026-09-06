@@ -22,6 +22,7 @@ import { edgeStep } from '../svg/edgeSteps.js';
 import { GROUP_PADS, gridGroupsSvg, groupExtent } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { revealAttr } from '../svg/reveal.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
@@ -133,12 +134,14 @@ export function renderState(data: BlockDataMap['state']): string {
     if (isErr) used.error = true;
     else if (isAccent) used.accent = true;
     else used.plain = true;
+    // Deck builds: transitions reveal in document order, the label with its arrow.
+    const tAttrs = bp(`transitions.${ti}`) + revealAttr(ti);
     if (t.from === t.to) {
       const r = rectFor(A, cellW, cellH, gapX, gapY, padX, padTop);
-      s += `<path d="M ${r.cx - 12} ${r.y} C ${r.cx - 30} ${r.y - 32}, ${r.cx + 30} ${r.y - 32}, ${r.cx + 12} ${r.y}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${bp(`transitions.${ti}`)}/>`;
+      s += `<path d="M ${r.cx - 12} ${r.y} C ${r.cx - 30} ${r.y - 32}, ${r.cx + 30} ${r.y - 32}, ${r.cx + 12} ${r.y}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${tAttrs}/>`;
       const at = { lx: r.cx, ly: r.y - 28 };
       const mark = numbered ? edgeStep(at, ti + 1, isErr, true) : edgeMask(at, label, tone);
-      labels.push(`<g${bp(`transitions.${ti}`)}>${mark}</g>`);
+      labels.push(`<g${tAttrs}>${mark}</g>`);
       return;
     }
     const p = ortho(
@@ -147,9 +150,9 @@ export function renderState(data: BlockDataMap['state']): string {
       lanes[ti] ?? 0,
       entries[ti] ?? 0,
     );
-    s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${bp(`transitions.${ti}`)}/>`;
+    s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${tAttrs}/>`;
     const mark = numbered ? edgeStep(p, ti + 1, isErr, true) : edgeMask(p, label, tone);
-    labels.push(`<g${bp(`transitions.${ti}`)}>${mark}</g>`);
+    labels.push(`<g${tAttrs}>${mark}</g>`);
   });
 
   // states
@@ -212,7 +215,7 @@ export function renderState(data: BlockDataMap['state']): string {
   const rows2 = trans
     .map(
       (t, ti) =>
-        `<tr${bp(`transitions.${ti}`)}>` +
+        `<tr${bp(`transitions.${ti}`)}${revealAttr(ti)}>` +
         numCell(ti) +
         `<td><span class="${pillCls(byId.get(t.from)?.kind)}">${escapeHtml(name(t.from))}</span></td>` +
         `<td style="font-family:var(--font-mono);font-size:11px"${bp(`transitions.${ti}.event`)}>${escapeHtml(t.event)}</td>` +

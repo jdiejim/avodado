@@ -23,13 +23,20 @@
  *   block for index-free lists, plus in-place chips for nested HTML lists
  *   like a kanban column's cards) — plus a "＋ Add step descriptions" chip on
  *   sequences with messages but no summaries yet;
- * - form↔diagram linkage highlights (`linkPath`, sheet only).
+ * - form↔diagram linkage highlights (`linkPath`, sheet only);
+ * - a CONTEXT MENU (right-click, ⇧F10, the Menu key) whose content comes from
+ *   the pure `menu.ts` rules and whose ops are the same writes the drag /
+ *   connect layers emit — see `ContextMenu.tsx`;
+ * - MOTION: every commit goes through a host wrapper that snapshots the
+ *   parts' boxes first and plays a FLIP once the new HTML is measured
+ *   (`flip.ts`); deletions fade their victims out before the op.
  *
  * Everything positions itself from getBoundingClientRect deltas against the
  * wrapper, so SVG `<g>` elements work the same as HTML nodes.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { describeBlockSchema } from '@avodado/core';
 import { needsPartDeleteConfirm } from '../lib/confirmDelete.js';
 import { isEditableTarget } from '../lib/dom.js';
@@ -41,17 +48,21 @@ import {
   columnSpecFor,
   deleteColumnSets,
 } from './columnOps.js';
-import { edgeIndexFromPath, nodeIndexFromPath } from './connect.js';
+import { edgeIndexFromPath, nodeIndexFromPath, specFor } from './connect.js';
+import { ContextMenu, type MenuAnchor } from './ContextMenu.js';
+import { cellAtPoint, type Box, type PathSet, type Placement } from './drag.js';
 import { isSequenceMessage, needsStepPrompt, sequenceStepNumber, twinIndices } from './duals.js';
+import { fadeOut, playFlip, snapshotBoxes } from './flip.js';
 import { fixupNewItem } from './seedItem.js';
 import type { DirectHost } from './host.js';
+import { isRemoveOp, menuFor, targetFor, type MenuItem } from './menu.js';
 import { MicroEditor, type Rect } from './MicroEditor.js';
 import { groupIndexFromPath, supportsGroups, type GroupCorner } from './groupMarquee.js';
 import { capturesArrows, classifyPart, deletablePathFor, type ArrowKey } from './partSelect.js';
 import { useConnect } from './useConnect.js';
 import { useGroupMarquee } from './useGroupMarquee.js';
 import { cornerCursor, useGroupResize } from './useGroupResize.js';
-import { draggableTarget, moveSelectedPart, nudgePart, useDiagramDrag } from './useDrag.js';
+import { draggableTarget, moveSelectedPart, nudgePart, readGeom, readPlacements, useDiagramDrag } from './useDrag.js';
 import {
   humanizeFieldName,
   humanizePath,
@@ -141,7 +152,7 @@ function uniquePartPaths(wrap: HTMLElement): string[] {
   return out;
 }
 
-export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, onElementClick }: {
+export function DirectLayer({ host: rawHost, data, html, wrapperRef, segIndex, linkPath, onElementClick, pendingMenu, onPendingMenuConsumed }: {
   host: DirectHost;
   /** The block's parsed data (paths are read against it). */
   data: unknown;
@@ -159,8 +170,70 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
   linkPath?: string | null | undefined;
   /** Sheet only: a click on a tagged element goes here first; `true` = handled. */
   onElementClick?: ((path: string) => boolean) | undefined;
+  /**
+   * Canvas: a right-click that selected the block BEFORE this layer mounted
+   * (viewport point) — open the menu for whatever is under it on mount.
+   */
+  pendingMenu?: MenuAnchor | null | undefined;
+  onPendingMenuConsumed?: (() => void) | undefined;
 }): JSX.Element {
-  const root = useMemo(() => describeBlockSchema(host.kind), [host.kind]);
+  const root = useMemo(() => describeBlockSchema(rawHost.kind), [rawHost.kind]);
+
+  /* ---- motion: every commit snapshots the parts first; the FLIP plays once
+          the new HTML is measured (layout effect on `html` below) ---- */
+  const flipPending = useRef<{ before: Map<string, Box>; moves: boolean } | null>(null);
+  const armFlip = useCallback(
+    (moves: boolean): void => {
+      const wrap = wrapperRef.current;
+      if (wrap === null) return;
+      flipPending.current = { before: snapshotBoxes(wrap), moves };
+    },
+    [wrapperRef],
+  );
+  const host = useMemo<DirectHost>(
+    () => ({
+      kind: rawHost.kind,
+      commitPath: (path, value) => {
+        armFlip(true);
+        rawHost.commitPath(path, value);
+      },
+      commitPaths: (sets) => {
+        armFlip(true);
+        rawHost.commitPaths(sets);
+      },
+      deletePath: (path) => {
+        const wrap = wrapperRef.current;
+        const run = (): void => {
+          armFlip(false); // indices shift after a delete — no "moves"
+          rawHost.deletePath(path);
+        };
+        if (wrap === null) run();
+        else fadeOut(wrap, [joinBlockPath(path)], run);
+      },
+      openFull: () => rawHost.openFull(),
+      ...(rawHost.notify !== undefined ? { notify: (m: string) => rawHost.notify?.(m) } : {}),
+    }),
+    [rawHost, armFlip, wrapperRef],
+  );
+  const isEdgeKey = useCallback(
+    (key: string): boolean => {
+      const spec = specFor(host.kind);
+      return (spec !== null && key.startsWith(`${spec.edgesField}.`)) || key.startsWith('relations.');
+    },
+    [host.kind],
+  );
+  useLayoutEffect(() => {
+    const p = flipPending.current;
+    const wrap = wrapperRef.current;
+    if (p === null || wrap === null) return;
+    flipPending.current = null;
+    playFlip(wrap, p.before, isEdgeKey, { moves: p.moves });
+  }, [html, wrapperRef, isEdgeKey]);
+
+  /* ---- context menu ---- */
+  const [menu, setMenu] = useState<{ at: MenuAnchor; items: MenuItem[] } | null>(null);
+  const menuOpenRef = useRef(false);
+  menuOpenRef.current = menu !== null;
   const [hover, setHover] = useState<Hover | null>(null);
   const [editor, setEditor] = useState<{ path: string; anchor: Rect; focusField?: string } | null>(
     null,
@@ -357,6 +430,7 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
     const onMove = (e: PointerEvent): void => {
       if (dragActiveRef.current) return; // the drag layer owns the pointer
       if (editorOpenRef.current) return;
+      if (menuOpenRef.current) return; // the menu freezes the hover state
       // Moving over our own overlay controls (the ×, chips…) keeps the hover.
       if (e.target instanceof Element && e.target.closest('.stu-dx-overlay') !== null) return;
       const el = findTagged(e.target);
@@ -474,6 +548,16 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
       if (segIndex === undefined) return; // part-land is canvas-only
       if (editorOpenRef.current) return; // the micro-editor owns its keys
       if (isEditableTarget(e.target)) return;
+      if (menuOpenRef.current) return; // the menu owns its keys
+      // ⇧F10 / the Menu key: the context menu at the selected part (or the block).
+      if ((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') {
+        e.preventDefault();
+        e.stopPropagation();
+        const el = partPath !== null ? wrap.querySelector(`[data-bp="${CSS.escape(partPath)}"]`) : null;
+        const r = (el ?? wrap).getBoundingClientRect();
+        openMenuRef.current?.(el, { x: r.left + 8, y: el !== null ? r.bottom + 4 : r.top + 40 });
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       // ⇥ / ⇧⇥ — enter part-land on the first press, then cycle in DOM order.
       if (e.key === 'Tab') {
@@ -750,6 +834,134 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
     }
     setLinkRects(hits.map((el) => relRect(el, wrap)));
   }, [linkPath, html, wrapperRef]);
+
+  /* ---- context menu: build from the DOM under the pointer, run picks ---- */
+  const buildMenu = (el: Element | null, at: MenuAnchor): MenuItem[] => {
+    const wrap = wrapperRef.current;
+    if (wrap === null) return [];
+    const path = el?.getAttribute('data-bp') ?? null;
+    const spec = specFor(host.kind);
+    const under = el ?? document.elementFromPoint(at.x, at.y);
+    const svg = under?.closest<SVGSVGElement>('svg') ?? wrap.querySelector<SVGSVGElement>('svg[data-grid]');
+    let placements: Placement[] | null = null;
+    let grid: { cols: number; rows: number } | null = null;
+    let quick = false;
+    let cell: Placement | null = null;
+    if (svg !== null && svg !== undefined && svg.hasAttribute('data-grid') && spec !== null) {
+      const geom = readGeom(svg);
+      if (geom !== null) {
+        grid = { cols: geom.cols, rows: geom.rows };
+        quick = svg.hasAttribute('data-grid-auto');
+        const nodes = valueAt(data, [spec.nodesField]);
+        placements = readPlacements(wrap, spec.nodesField, Array.isArray(nodes) ? nodes.length : 0);
+        if (path === null) {
+          const sr = svg.getBoundingClientRect();
+          const raw = cellAtPoint(geom, at.x - sr.left, at.y - sr.top);
+          cell = spec.growRows === false ? { col: raw.col, row: Math.min(raw.row, geom.rows) } : raw;
+        }
+      }
+    }
+    const target = targetFor(host.kind, path, cell);
+    return menuFor(target, {
+      kind: host.kind,
+      data,
+      placements,
+      grid,
+      quick,
+      selected: partPathRef.current,
+    });
+  };
+
+  const openMenu = (el: Element | null, at: MenuAnchor): void => {
+    if (segIndex === undefined) return;
+    const items = buildMenu(el, at);
+    // Selecting the clicked part first shows what the menu is about (the
+    // range for a sequence wrap was read from the PREVIOUS selection above).
+    const path = el?.getAttribute('data-bp') ?? null;
+    if (path !== null && path !== partPathRef.current) setPart(path);
+    setHover(null);
+    clearCursor();
+    if (items.length > 0) setMenu({ at, items });
+  };
+  const openMenuRef = useRef<typeof openMenu | null>(null);
+  openMenuRef.current = openMenu;
+
+  useEffect(() => {
+    const wrap = wrapperRef.current;
+    if (wrap === null || segIndex === undefined) return;
+    const onContext = (e: MouseEvent): void => {
+      if (editorOpenRef.current || dragActiveRef.current) return;
+      if (e.target instanceof Element && e.target.closest('.stu-dx-overlay') !== null) return;
+      const el = e.target instanceof Element ? e.target.closest('[data-bp]') : null;
+      e.preventDefault();
+      e.stopPropagation();
+      openMenuRef.current?.(el !== null && wrap.contains(el) ? el : null, { x: e.clientX, y: e.clientY });
+    };
+    wrap.addEventListener('contextmenu', onContext);
+    return () => wrap.removeEventListener('contextmenu', onContext);
+  }, [wrapperRef, segIndex]);
+
+  // A right-click that selected the block before this layer existed.
+  useLayoutEffect(() => {
+    if (pendingMenu === null || pendingMenu === undefined) return;
+    const wrap = wrapperRef.current;
+    onPendingMenuConsumed?.();
+    if (wrap === null) return;
+    const under = document.elementFromPoint(pendingMenu.x, pendingMenu.y);
+    const el = under?.closest('[data-bp]') ?? null;
+    openMenuRef.current?.(el !== null && wrap.contains(el) ? el : null, pendingMenu);
+  }, [pendingMenu, onPendingMenuConsumed, wrapperRef]);
+
+  const closeMenu = useCallback((): void => setMenu(null), []);
+
+  const runMenuItem = (item: MenuItem): void => {
+    setMenu(null);
+    const wrap = wrapperRef.current;
+    if (wrap === null) return;
+    if (item.action !== undefined) {
+      const a = item.action;
+      if (a.type === 'openYaml') {
+        host.openFull();
+      } else if (a.type === 'connect') {
+        const spec = specFor(host.kind);
+        if (spec !== null) {
+          setPart(`${spec.nodesField}.${a.fromIndex}`);
+          connect.armFrom(a.fromIndex);
+        }
+      } else {
+        const el = wrap.querySelector(`[data-bp="${CSS.escape(a.path)}"]`);
+        if (el !== null) {
+          setPart(a.path);
+          openEditorAt(a.path, el, wrap, a.field);
+        } else {
+          host.openFull();
+        }
+      }
+      return;
+    }
+    if (item.op === undefined) return;
+    const ops = item.op();
+    if (ops.length === 0) return;
+    const commit = (): void => {
+      const first = ops[0];
+      if (ops.length === 1 && first !== undefined && isRemoveOp(first)) {
+        armFlip(false);
+        rawHost.deletePath(first.path);
+        useStudio.getState().setPartSel(null);
+      } else {
+        armFlip(item.fades === undefined);
+        rawHost.commitPaths(ops.filter((o) => !isRemoveOp(o)) as PathSet[]);
+      }
+      if (item.then !== undefined) {
+        setPart(item.then.select);
+        if (item.then.edit !== undefined) {
+          pendingOpen.current = { path: item.then.select, focusField: item.then.edit };
+        }
+      }
+    };
+    if (item.fades !== undefined && item.fades.length > 0) fadeOut(wrap, item.fades, commit);
+    else commit();
+  };
 
   const addItem = (listPath: string): void => {
     // Column-family kinds: adding a column appends the header AND one cell
@@ -1187,6 +1399,11 @@ export function DirectLayer({ host, data, html, wrapperRef, segIndex, linkPath, 
             {c.label}
           </button>
         ))}
+        {menu !== null &&
+          createPortal(
+            <ContextMenu items={menu.items} at={menu.at} onPick={runMenuItem} onClose={closeMenu} />,
+            document.body,
+          )}
         {editor !== null && (
           <MicroEditor
             host={host}

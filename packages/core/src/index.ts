@@ -73,6 +73,7 @@ export {
   stripHeadingMarkers,
   readSourceMarker,
   readAlignMarker,
+  readBuildMarker,
 } from './validate.js';
 export {
   segmentSpan,
@@ -107,6 +108,7 @@ export {
   calloutSchema,
   tableSchema,
   sequenceSchema,
+  SEQUENCE_FRAME_KINDS,
   erdSchema,
   ERD_CARDS,
   ERD_ENTITY_KINDS,

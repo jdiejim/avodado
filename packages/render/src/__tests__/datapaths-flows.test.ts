@@ -38,7 +38,7 @@ describe('data-path tagging (direct edit, second wave)', () => {
     expect(html).toContain('data-bp="transitions.0"');
     // The transition table reuses the same transitions.N paths (dual representation).
     expect(html).toContain('<tbody data-bl="transitions">');
-    expect(html).toContain('<tr data-bp="transitions.0">');
+    expect(html).toContain('<tr data-bp="transitions.0" data-reveal="0">');
     expect(html).toContain('data-bp="transitions.0.event"');
     expect(html).toContain('data-bp="transitions.0.guard"');
   });

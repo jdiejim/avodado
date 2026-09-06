@@ -275,16 +275,30 @@ function lintGroupNesting(
  */
 const ALIGN_MARKER = /\s*\{(top|center|middle|bottom|split)\}\s*$/i;
 const SOURCE_MARKER = /\s*\{source:\s*([^}]+)\}\s*$/i;
+/** `{nobuild}` — the deck shows this slide's diagrams whole, with no step-through reveal. */
+const BUILD_MARKER = /\s*\{nobuild\}\s*$/i;
 
 /** The heading text with any trailing markers removed. */
 export function stripHeadingMarkers(text: string): string {
   let out = text;
-  for (let pass = 0; pass < 3; pass++) {
-    const next = out.replace(SOURCE_MARKER, '').replace(ALIGN_MARKER, '');
+  for (let pass = 0; pass < 4; pass++) {
+    const next = out.replace(SOURCE_MARKER, '').replace(ALIGN_MARKER, '').replace(BUILD_MARKER, '');
     if (next === out) break;
     out = next;
   }
   return out.replace(/\s+$/, '');
+}
+
+/** True when the heading carries the `{nobuild}` marker (in any position among the trailing markers). */
+export function readBuildMarker(text: string): boolean {
+  let out = text;
+  for (let pass = 0; pass < 4; pass++) {
+    if (BUILD_MARKER.test(out)) return true;
+    const next = out.replace(SOURCE_MARKER, '').replace(ALIGN_MARKER, '');
+    if (next === out) break;
+    out = next;
+  }
+  return false;
 }
 
 /** The `{source: …}` marker's text, if the heading carries one. */
@@ -295,8 +309,8 @@ export function readSourceMarker(text: string): string | undefined {
 
 /** The `{top|center|bottom|split}` marker, if the heading carries one. */
 export function readAlignMarker(text: string): string | undefined {
-  // The source marker may sit outside it: `## T {top} {source: x}`.
-  const m = ALIGN_MARKER.exec(text.replace(SOURCE_MARKER, ''));
+  // The source and build markers may sit outside it: `## T {top} {source: x}`.
+  const m = ALIGN_MARKER.exec(text.replace(SOURCE_MARKER, '').replace(BUILD_MARKER, '').replace(SOURCE_MARKER, ''));
   return m === null ? undefined : (m[1] ?? '').toLowerCase();
 }
 

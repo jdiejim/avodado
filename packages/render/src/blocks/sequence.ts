@@ -35,6 +35,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { revealAttr } from '../svg/reveal.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -152,6 +153,8 @@ interface Bar {
   /** Auto mode: who called, and the actor's last outgoing row so far. */
   readonly caller: number;
   last: number;
+  /** The reveal step of the message that opened the bar (deck builds). */
+  readonly step: number;
 }
 
 type SeqItem = NonNullable<BlockDataMap['sequence']['messages']>[number];
@@ -162,11 +165,32 @@ function isMsgRow(r: Row): r is MsgRow {
 
 /* ── step list ─────────────────────────────────────────────────────────── */
 
+/**
+ * Deck build order: every message and every frame `open` / `else` marker is
+ * one step, in document order (an `end` marker draws nothing of its own — the
+ * frame body appears whole at its `open`). Keyed by the item's `messages` index.
+ */
+function revealSteps(rows: readonly Row[]): Map<number, number> {
+  const steps = new Map<number, number>();
+  let n = 0;
+  for (const r of rows) {
+    if (r.kind === 'end') continue;
+    steps.set(r.idx, n);
+    n += 1;
+  }
+  return steps;
+}
+
 function renderStepList(
   rows: readonly Row[],
   frames: readonly Frame[],
   actorById: Map<string, { name: string }>,
+  steps: ReadonlyMap<number, number>,
 ): string {
+  const rv = (idx: number): string => {
+    const n = steps.get(idx);
+    return n === undefined ? '' : revealAttr(n);
+  };
   const msgs = rows.filter(isMsgRow);
   if (!msgs.some((r) => r.summary !== undefined && r.summary.length > 0)) return '';
 
@@ -190,14 +214,14 @@ function renderStepList(
     if (r.kind === 'open' && dividers.has(r.idx)) {
       const label = r.label.length > 0 ? `<span class="step-frame-label">${escapeHtml(r.label)}</span>` : '';
       lis.push(
-        `<li class="step-frame"${bp(`messages.${r.idx}`)}>` +
+        `<li class="step-frame"${bp(`messages.${r.idx}`)}${rv(r.idx)}>` +
           `<span class="step-frame-tag">${escapeHtml(r.frame.toUpperCase())}</span>${label}</li>`,
       );
       continue;
     }
     if (r.kind === 'else' && dividers.has(r.idx)) {
       lis.push(
-        `<li class="step-frame else"${bp(`messages.${r.idx}`)}>` +
+        `<li class="step-frame else"${bp(`messages.${r.idx}`)}${rv(r.idx)}>` +
           `<span class="step-frame-tag">else</span><span class="step-frame-label">${escapeHtml(r.label)}</span></li>`,
       );
       continue;
@@ -216,7 +240,7 @@ function renderStepList(
     const note =
       r.note !== undefined && r.note.length > 0 ? `<span class="step-note">${escapeHtml(r.note)}</span>` : '';
     lis.push(
-      `<li${errCls}${bp(`messages.${r.idx}`)}>` +
+      `<li${errCls}${bp(`messages.${r.idx}`)}${rv(r.idx)}>` +
         `<span class="step-n">${r.n}</span>` +
         `<span class="step-actor${actorErrCls}">${actorLabel}</span>` +
         `<span class="step-summary">${escapeHtml(r.summary)}</span>` +
@@ -362,6 +386,8 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
 
   const { rows, cursor } = layoutRows(messages, idx, msgStartY);
   const msgRows = rows.filter(isMsgRow);
+  const steps = revealSteps(rows);
+  const rv = (i: number): string => revealAttr(steps.get(i) ?? 0);
   // One trailing message row of air under the last item.
   const bottom = cursor + ROW_MSG + 12;
   const height = bottom + 6;
@@ -439,15 +465,15 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     }
     return list;
   };
-  const openBar = (i: number, y: number, caller: number): void => {
+  const openBar = (i: number, y: number, caller: number, step: number): void => {
     const list = openOn(i);
-    const bar: Bar = { i, y1: y, y2: Number.NaN, depth: list.length, caller, last: y };
+    const bar: Bar = { i, y1: y, y2: Number.NaN, depth: list.length, caller, last: y, step };
     list.push(bar);
     bars.push(bar);
   };
   for (const r of msgRows) {
     if (explicit) {
-      if (r.activate && r.toI >= 0) openBar(r.toI, r.y, r.fromI);
+      if (r.activate && r.toI >= 0) openBar(r.toI, r.y, r.fromI, steps.get(r.idx) ?? 0);
       if (r.deactivate && r.fromI >= 0) {
         const bar = openOn(r.fromI).pop();
         if (bar !== undefined) bar.y2 = r.y;
@@ -459,7 +485,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     for (const b of openOn(r.fromI)) b.last = r.y;
     if (r.toI < 0 || r.toI === r.fromI) continue;
     if (r.msgKind === 'sync' || r.msgKind === 'async') {
-      openBar(r.toI, r.y, r.fromI);
+      openBar(r.toI, r.y, r.fromI, steps.get(r.idx) ?? 0);
     } else {
       // response / error back to the caller closes that caller's bar.
       const list = openOn(r.fromI);
@@ -507,7 +533,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   const drawFrame = (f: Frame): void => {
     const y1 = f.open.y;
     const y2 = frameBottom(f);
-    const path = bp(`messages.${f.open.idx}`);
+    const path = bp(`messages.${f.open.idx}`) + rv(f.open.idx);
     frameBodies +=
       `<g${path}><rect x="${f.x1}" y="${y1}" width="${f.x2 - f.x1}" height="${Math.max(0, y2 - y1)}" rx="4" class="seq-frame"/></g>`;
     const tag = f.open.frame.toUpperCase();
@@ -523,7 +549,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
       guard +
       `</g>`;
     for (const e of f.elses) {
-      const ep = bp(`messages.${e.idx}`);
+      const ep = bp(`messages.${e.idx}`) + rv(e.idx);
       frameBodies += `<g${ep}><line x1="${f.x1}" y1="${e.y}" x2="${f.x2}" y2="${e.y}" class="seq-frame-else"/></g>`;
       frameLabels += `<g${ep}><text x="${guardX(f.x1 + 8, e.label)}" y="${e.y + 14}" class="seq-frame-guard t-arrow c-soft">[${escapeHtml(e.label)}]</text></g>`;
     }
@@ -540,7 +566,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   for (const b of bars) {
     const y1 = b.y1 - BAR_PAD;
     const y2 = b.y2 + BAR_PAD;
-    s += `<rect x="${cx(b.i) - 3 + b.depth * 4}" y="${y1}" width="6" height="${Math.max(0, y2 - y1)}" class="activation"/>`;
+    s += `<rect x="${cx(b.i) - 3 + b.depth * 4}" y="${y1}" width="6" height="${Math.max(0, y2 - y1)}" class="activation"${revealAttr(b.step)}/>`;
   }
 
   s += `<g${bl('actors')}>`;
@@ -587,7 +613,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
       ? { cls: `${base.cls} accent`, marker: 'sqAccent' as unknown as 'sqArrow', txt: `${base.txt} accent` }
       : base;
     used[r.msgKind] = true;
-    const rowBp = bp(`messages.${r.idx}`);
+    const rowBp = bp(`messages.${r.idx}`) + rv(r.idx);
     const errCls = r.msgKind === 'error' ? ' err' : '';
     const badge = (x: number, y: number): string =>
       `<circle cx="${x}" cy="${y}" r="8" class="step-badge${errCls}"/>` +
@@ -659,7 +685,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
 
   const actorById = new Map<string, { name: string }>();
   for (const a of actors) actorById.set(a.id, { name: a.name });
-  const stepList = renderStepList(rows, frames, actorById);
+  const stepList = renderStepList(rows, frames, actorById, steps);
   const footHtml = data.foot !== undefined ? renderFoot(data.foot) : '';
 
   // Legend: one item per encoding the diagram used.

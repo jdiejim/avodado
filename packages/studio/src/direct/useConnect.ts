@@ -19,7 +19,10 @@
  *   choosing one commits `newNodeOps` (node + edge, one undo step) and hands
  *   the new node's path back so the caller can select it and open the
  *   micro-editor on its label. A spec with exactly ONE node kind (graph)
- *   skips the picker and creates directly; one with none (sequence) cancels.
+ *   skips the picker and creates directly; one with none (sequence) cancels;
+ * - {@link useConnect}'s `armFrom` is the CLICK twin (the context menu's "Add
+ *   message from here…" / "Add relation to…"): the wire is live at once from
+ *   the node's center and the next pointer release completes the connection.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -153,6 +156,8 @@ export function useConnect(args: {
   spec: ConnectSpec | null;
   /** Arms a connect gesture from a dot on node `fromIndex`. */
   start: (e: React.PointerEvent, fromIndex: number, anchor: { x: number; y: number }) => void;
+  /** Click-to-connect from node `fromIndex`: the next pointer release completes. */
+  armFrom: (fromIndex: number) => void;
   pickerOpenRef: React.RefObject<boolean>;
   cancelPicker: () => void;
   /** Commits the open picker's choice — a node kind or an edge cardinality. */
@@ -176,6 +181,8 @@ export function useConnect(args: {
   const startRef = useRef<
     ((e: PointerEvent, fromIndex: number, anchor: { x: number; y: number }) => void) | null
   >(null);
+  /** The per-render `armFrom` binding (click-to-connect). */
+  const armRef = useRef<((fromIndex: number) => void) | null>(null);
 
   useEffect(() => {
     const wrap = wrapperRef.current;
@@ -225,6 +232,29 @@ export function useConnect(args: {
         return el === null ? null : relRect(el, wrap);
       });
 
+    /** A click-armed session (pointerId −1) follows whatever pointer moves. */
+    const ownsPointer = (s: Session, e: PointerEvent): boolean =>
+      s.pointerId === -1 || e.pointerId === s.pointerId;
+
+    /** Turns a pending gesture into the live wire: measure, lock the pointer. */
+    const activate = (s: Session): void => {
+      s.active = true;
+      s.boxes = measureBoxes(nodeIds(spec, live.current.data).length);
+      const svg = bpEl(wrap, `${spec.nodesField}.${s.fromIndex}`)?.closest('svg') ?? null;
+      s.geom = svg !== null ? readGeom(svg) : null;
+      s.svgBox = svg !== null ? relRect(svg, wrap) : null;
+      if (spec.columnTargets === true && s.svgBox !== null) {
+        // Sequence: an actor's whole column (header + lifeline) targets.
+        const bottom = s.svgBox.top + s.svgBox.height;
+        s.boxes = s.boxes.map((b) => (b === null ? null : { ...b, height: bottom - b.top }));
+      }
+      dragActiveRef.current = true;
+      suppressClickRef.current = true;
+      document.body.style.userSelect = 'none';
+      wrap.style.cursor = 'crosshair';
+      live.current.onConnectStart();
+    };
+
     /** Swap the live drag listeners for the picker's outside-click lifecycle. */
     const enterPickerMode = (): void => {
       pickerOpenRef.current = true;
@@ -261,24 +291,10 @@ export function useConnect(args: {
 
     const onMove = (e: PointerEvent): void => {
       const s = session.current;
-      if (s === null || e.pointerId !== s.pointerId || picker.current !== null) return;
+      if (s === null || !ownsPointer(s, e) || picker.current !== null) return;
       if (!s.active) {
         if (!isDragGesture(e.clientX - s.startX, e.clientY - s.startY)) return;
-        s.active = true;
-        s.boxes = measureBoxes(nodeIds(spec, live.current.data).length);
-        const svg = bpEl(wrap, `${spec.nodesField}.${s.fromIndex}`)?.closest('svg') ?? null;
-        s.geom = svg !== null ? readGeom(svg) : null;
-        s.svgBox = svg !== null ? relRect(svg, wrap) : null;
-        if (spec.columnTargets === true && s.svgBox !== null) {
-          // Sequence: an actor's whole column (header + lifeline) targets.
-          const bottom = s.svgBox.top + s.svgBox.height;
-          s.boxes = s.boxes.map((b) => (b === null ? null : { ...b, height: bottom - b.top }));
-        }
-        dragActiveRef.current = true;
-        suppressClickRef.current = true;
-        document.body.style.userSelect = 'none';
-        wrap.style.cursor = 'crosshair';
-        live.current.onConnectStart();
+        activate(s);
       }
       const wrapRect = wrap.getBoundingClientRect();
       const px = e.clientX - wrapRect.left;
@@ -317,7 +333,7 @@ export function useConnect(args: {
 
     const onUp = (e: PointerEvent): void => {
       const s = session.current;
-      if (s === null || e.pointerId !== s.pointerId || picker.current !== null) return;
+      if (s === null || !ownsPointer(s, e) || picker.current !== null) return;
       if (!s.active) {
         cleanup(); // tiny travel — stays a click (dot swallows it)
         return;
@@ -432,9 +448,42 @@ export function useConnect(args: {
     };
     startRef.current = onStart;
 
+    /** Click-to-connect: the wire is live from node `fromIndex`'s center. */
+    const onArm = (fromIndex: number): void => {
+      if (session.current !== null || picker.current !== null) return;
+      const fromId = nodeIds(spec, live.current.data)[fromIndex] ?? '';
+      const el = bpEl(wrap, `${spec.nodesField}.${fromIndex}`);
+      if (fromId === '' || el === null) return;
+      const r = relRect(el, wrap);
+      const anchor = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      suppressClickRef.current = false;
+      const s: Session = {
+        pointerId: -1,
+        startX: 0,
+        startY: 0,
+        fromIndex,
+        fromId,
+        anchor,
+        active: false,
+        boxes: [],
+        targetIndex: null,
+        geom: null,
+        svgBox: null,
+      };
+      session.current = s;
+      activate(s);
+      setVisuals({ wire: { x1: anchor.x, y1: anchor.y, x2: anchor.x, y2: anchor.y }, target: null, snap: null, picker: null });
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onCancel);
+      window.addEventListener('keydown', onKey, true);
+    };
+    armRef.current = onArm;
+
     return () => {
       cleanup();
       startRef.current = null;
+      armRef.current = null;
     };
     // `html` re-binds after each render so a stale wrap never keeps listeners.
   }, [wrapperRef, host.kind, spec, html, dragActiveRef, suppressClickRef]);
@@ -494,6 +543,7 @@ export function useConnect(args: {
     visuals,
     spec,
     start: (e, fromIndex, anchor) => startRef.current?.(e.nativeEvent, fromIndex, anchor),
+    armFrom: (fromIndex) => armRef.current?.(fromIndex),
     pickerOpenRef,
     cancelPicker: () => reset.current(),
     choose,

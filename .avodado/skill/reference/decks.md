@@ -45,6 +45,11 @@ body: Both blocks land on "The fix" slide.
   `## Title {bottom}` (the marker is stripped from the displayed title). A fourth
   marker, `## Title {split}`, switches the slide to the consulting layout —
   prose left, exhibit right (see *Consulting-style decks* below).
+- **Builds are automatic.** A diagram with a natural order — `sequence`,
+  `flow`, `state`, `saga`, `spans`, `steps`, `timeline` — reveals one item per
+  → press before the deck moves on; earlier items stay, the newest takes the
+  accent, and ← walks back. Add `## Title {nobuild}` to show that slide whole.
+  The page and print always show everything.
 - Every non-cover slide automatically gets a footer (deck title · page number).
 - **`avo build` — and the studio's Site link — emit both views of every
   doc**: the page plus a companion deck at `<slug>.slides.html`. A Doc | Slides

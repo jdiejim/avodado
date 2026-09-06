@@ -20,6 +20,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { revealAttr } from '../svg/reveal.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -136,6 +137,22 @@ export function renderSaga(data: SagaData): string {
   const width = PAD_X * 2 + n * W + (n - 1) * GAP;
   const height = (hasComp ? compY + compH : stepY + cardH) + PAD_BOT;
 
+  // The compensating flow's stops: every earlier step with a compensation,
+  // from the failure point back to the first.
+  const targets: number[] = [];
+  if (failIdx > 0 && hasComp) {
+    for (let j = failIdx - 1; j >= 0; j--) if ((compLines[j] ?? []).length > 0) targets.push(j);
+  }
+  // Deck build order (`data-reveal`): the steps left to right (a forward
+  // arrow arrives with the step it enters), then the compensating flow — one
+  // step per stop, from the failure point back. A compensation the flow never
+  // reaches appears with its own step.
+  const stepReveal = (i: number): number => i;
+  const compReveal = (j: number): number => {
+    const k = targets.indexOf(j);
+    return k < 0 ? j : n + k;
+  };
+
   let s = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Saga</title>`;
 
   // Coordinator band (orchestration only) with a fan-out arrow into every step.
@@ -150,7 +167,7 @@ export function renderSaga(data: SagaData): string {
       `</g>`;
     s += `<g class="sg-fanout">`;
     for (let i = 0; i < n; i++) {
-      s += `<line x1="${cxOf(i)}" y1="${coordY + COORD_H}" x2="${cxOf(i)}" y2="${stepY}" stroke="var(--muted)" stroke-width="1.25" marker-end="url(#skArrow)"/>`;
+      s += `<line x1="${cxOf(i)}" y1="${coordY + COORD_H}" x2="${cxOf(i)}" y2="${stepY}" stroke="var(--muted)" stroke-width="1.25" marker-end="url(#skArrow)"${revealAttr(stepReveal(i))}/>`;
     }
     s += `</g>`;
   }
@@ -166,7 +183,7 @@ export function renderSaga(data: SagaData): string {
     else usedNext = true;
     const dash = unreached ? ' stroke-dasharray="5 4"' : '';
     const marker = unreached ? 'skOpen' : 'skArrow';
-    s += `<line x1="${xOf(i) + W}" y1="${stepCy}" x2="${xOf(i + 1)}" y2="${stepCy}" stroke="var(--muted)" stroke-width="1.5"${dash} marker-end="url(#${marker})"/>`;
+    s += `<line x1="${xOf(i) + W}" y1="${stepCy}" x2="${xOf(i + 1)}" y2="${stepCy}" stroke="var(--muted)" stroke-width="1.5"${dash} marker-end="url(#${marker})"${revealAttr(stepReveal(i + 1))}/>`;
   }
   s += `</g>`;
 
@@ -217,9 +234,10 @@ export function renderSaga(data: SagaData): string {
     // The compensation card, joined to its step by a short dotted connector.
     const cLines = compLines[i] ?? [];
     if (cLines.length > 0) {
+      const cr = revealAttr(compReveal(i));
       card +=
-        `<line x1="${cxOf(i)}" y1="${stepY + cardH}" x2="${cxOf(i)}" y2="${compY}" stroke="var(--rule-solid)" stroke-width="1" stroke-dasharray="2 3"/>` +
-        `<g${bp(`steps.${i}.compensate`)}>` +
+        `<line x1="${cxOf(i)}" y1="${stepY + cardH}" x2="${cxOf(i)}" y2="${compY}" stroke="var(--rule-solid)" stroke-width="1" stroke-dasharray="2 3"${cr}/>` +
+        `<g${bp(`steps.${i}.compensate`)}${cr}>` +
         `<rect x="${x}" y="${compY}" width="${W}" height="${compH}" rx="4" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.25" stroke-dasharray="4 3"/>` +
         `<text x="${x + 12}" y="${compY + 14}" class="t-eyebrow">${COMP_CHIP}</text>`;
       cLines.forEach((ln, j) => {
@@ -227,33 +245,29 @@ export function renderSaga(data: SagaData): string {
       });
       card += `</g>`;
     }
-    s += `<g${bp(`steps.${i}`)}>${card}</g>`;
+    s += `<g${bp(`steps.${i}`)}${revealAttr(stepReveal(i))}>${card}</g>`;
   });
   s += `</g>`;
 
   // The compensating flow: from the failed step, down into the compensation
   // row, then right to left through every earlier compensation.
   let usedFlow = false;
-  if (failIdx > 0 && hasComp) {
-    const targets: number[] = [];
-    for (let j = failIdx - 1; j >= 0; j--) if ((compLines[j] ?? []).length > 0) targets.push(j);
-    if (targets.length > 0) {
-      usedFlow = true;
-      const attrs = `fill="none" stroke="var(--negative)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#skErr)"`;
-      s += `<g class="sg-compflow">`;
-      const first = targets[0] ?? 0;
-      const dropX = xOf(failIdx) - GAP / 2;
-      // Leave the failed card low on its left edge — below the forward arrow
-      // that enters it — so the drop never crosses that arrow.
-      const leaveY = stepY + cardH - 12;
-      s += `<path d="M${xOf(failIdx)},${leaveY} H${dropX} V${compCy} H${xOf(first) + W}" ${attrs}/>`;
-      for (let k = 1; k < targets.length; k++) {
-        const from = targets[k - 1] ?? 0;
-        const to = targets[k] ?? 0;
-        s += `<path d="M${xOf(from)},${compCy} H${xOf(to) + W}" ${attrs}/>`;
-      }
-      s += `</g>`;
+  if (targets.length > 0) {
+    usedFlow = true;
+    const attrs = `fill="none" stroke="var(--negative)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#skErr)"`;
+    s += `<g class="sg-compflow">`;
+    const first = targets[0] ?? 0;
+    const dropX = xOf(failIdx) - GAP / 2;
+    // Leave the failed card low on its left edge — below the forward arrow
+    // that enters it — so the drop never crosses that arrow.
+    const leaveY = stepY + cardH - 12;
+    s += `<path d="M${xOf(failIdx)},${leaveY} H${dropX} V${compCy} H${xOf(first) + W}" ${attrs}${revealAttr(compReveal(first))}/>`;
+    for (let k = 1; k < targets.length; k++) {
+      const from = targets[k - 1] ?? 0;
+      const to = targets[k] ?? 0;
+      s += `<path d="M${xOf(from)},${compCy} H${xOf(to) + W}" ${attrs}${revealAttr(compReveal(to))}/>`;
     }
+    s += `</g>`;
   }
 
   s += `</svg>`;

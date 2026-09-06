@@ -12,6 +12,7 @@
 import { escapeHtml } from '../escape.js';
 import { bp } from '../paths.js';
 import { edgeMask, edgePill, type PillPoint } from './edgePill.js';
+import { revealAttr } from './reveal.js';
 
 /**
  * A circled step numeral at an edge midpoint. `skin` draws the hollow badge of
@@ -43,13 +44,13 @@ export function edgeStep(p: PillPoint, n: number, err = false, skin = false): st
  * twin-highlight the legend entry with its arrow.
  */
 export function stepsLegend(
-  steps: ReadonlyArray<{ label: string; err?: boolean; path?: string }>,
+  steps: ReadonlyArray<{ label: string; err?: boolean; path?: string; reveal?: number }>,
 ): string {
   if (steps.length === 0) return '';
   const items = steps
     .map(
       (s, i) =>
-        `<span class="edge-step${s.err === true ? ' err' : ''}"${s.path !== undefined ? bp(s.path) : ''}><b>${i + 1}</b>${escapeHtml(s.label)}</span>`,
+        `<span class="edge-step${s.err === true ? ' err' : ''}"${s.path !== undefined ? bp(s.path) : ''}${s.reveal !== undefined ? revealAttr(s.reveal) : ''}><b>${i + 1}</b>${escapeHtml(s.label)}</span>`,
     )
     .join('');
   return `<div class="edge-steps">${items}</div>`;
@@ -65,6 +66,8 @@ export interface EdgeLabelPoint {
   readonly accent?: boolean;
   /** Data path of the edge in the block's YAML, e.g. `edges.3` / `links.0`. */
   readonly path: string;
+  /** The edge's deck build step (`data-reveal`), when the renderer orders its edges. */
+  readonly reveal?: number;
 }
 
 /** A node box the badge layer must keep clear of. */
@@ -138,7 +141,7 @@ export function edgeLabelLayer(
   const labelled = pending.filter((l) => l.label !== undefined && l.label !== '');
   const numbered = labelled.length >= 4;
   const overlay: string[] = [];
-  const steps: Array<{ label: string; err?: boolean; path?: string }> = [];
+  const steps: Array<{ label: string; err?: boolean; path?: string; reveal?: number }> = [];
   // Badges also keep clear of each other: each placed numeral joins the avoid
   // list (as a small box), so two edges whose midpoints coincide — or whose
   // dodges land in the same spot — stack apart instead of overlapping.
@@ -147,15 +150,22 @@ export function edgeLabelLayer(
     if (l.label === undefined || l.label === '') continue;
     const err = l.err === true;
     const at = dodge(l.lx, l.ly, numbered ? placed : avoid);
+    // The label reveals with its edge (deck builds).
+    const attrs = bp(l.path) + (l.reveal !== undefined ? revealAttr(l.reveal) : '');
     if (numbered) {
       placed.push({ x: at.lx - 6, y: at.ly - 6, w: 12, h: 12 });
-      steps.push({ label: l.label, path: l.path, ...(err ? { err: true } : {}) });
-      overlay.push(`<g${bp(l.path)}>${edgeStep(at, steps.length, err, opts.skin === true)}</g>`);
+      steps.push({
+        label: l.label,
+        path: l.path,
+        ...(err ? { err: true } : {}),
+        ...(l.reveal !== undefined ? { reveal: l.reveal } : {}),
+      });
+      overlay.push(`<g${attrs}>${edgeStep(at, steps.length, err, opts.skin === true)}</g>`);
     } else if (opts.skin === true) {
       const tone = err ? 'error' : l.accent === true ? 'accent' : 'muted';
-      overlay.push(`<g${bp(l.path)}>${edgeMask(at, l.label, tone)}</g>`);
+      overlay.push(`<g${attrs}>${edgeMask(at, l.label, tone)}</g>`);
     } else {
-      overlay.push(`<g${bp(l.path)}>${edgePill(at, l.label, err)}</g>`);
+      overlay.push(`<g${attrs}>${edgePill(at, l.label, err)}</g>`);
     }
   }
   return { overlay: overlay.join(''), legend: stepsLegend(steps) };

@@ -1892,7 +1892,8 @@ kbd {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.65);
 }
 
-/* Snap-target grid cell for block-graph node drags. */
+/* Snap-target grid cell for block-graph node drags / empty-canvas drops —
+   the cell highlights (ring) before the drop lands. */
 .stu-dx-snap {
   position: absolute;
   pointer-events: none;
@@ -1900,6 +1901,8 @@ kbd {
   border: 2px dashed var(--stu-sel-line);
   border-radius: 10px;
   background: rgba(47, 111, 106, 0.1);
+  box-shadow: 0 0 0 4px rgba(47, 111, 106, 0.1);
+  transition: left 0.12s ease-out, top 0.12s ease-out, width 0.12s ease-out, height 0.12s ease-out;
 }
 
 /* ── Drag-to-connect on diagram nodes (v10) ─────────────────────────────── */
@@ -1961,7 +1964,8 @@ kbd {
   background: var(--stu-sel);
 }
 
-/* Rubber-band wire following the pointer during a connect drag. */
+/* Ghost edge following the pointer during a connect drag — the skin's one
+   accent moment on the canvas (terra), dashed so it never reads as committed. */
 .stu-dx-wire {
   position: absolute;
   inset: 0;
@@ -1973,24 +1977,33 @@ kbd {
 }
 
 .stu-dx-wire line {
-  stroke: var(--stu-sel-line);
+  stroke: var(--stu-terra);
   stroke-width: 2;
   stroke-dasharray: 6 4;
   stroke-linecap: round;
+  animation: stu-dx-dash 0.6s linear infinite;
 }
 
 .stu-dx-wire circle {
-  fill: var(--stu-sel-line);
+  fill: var(--stu-terra);
 }
 
-/* The hovered drop-target node during a connect drag. */
+@keyframes stu-dx-dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* The snap target of a connect drag (a node) — a highlight RING. */
 .stu-dx-connect-target {
   position: absolute;
   pointer-events: none;
   z-index: 45;
-  border: 2px solid var(--stu-sel-line);
+  border: 2px solid var(--stu-terra);
   border-radius: 8px;
-  background: rgba(47, 111, 106, 0.12);
+  background: var(--stu-terra-soft);
+  box-shadow: 0 0 0 4px var(--stu-terra-soft);
+  animation: stu-fade-in 0.1s ease-out;
 }
 
 /* Empty-canvas drop: the anchored shape picker (choose a node kind). */
@@ -2594,19 +2607,6 @@ kbd {
   background: #7ab5ff;
 }
 
-[data-doc-theme='dark'] .stu-dx-wire line {
-  stroke: #45c7b8;
-}
-
-[data-doc-theme='dark'] .stu-dx-wire circle {
-  fill: #45c7b8;
-}
-
-[data-doc-theme='dark'] .stu-dx-connect-target {
-  border-color: #45c7b8;
-  background: rgba(69, 199, 184, 0.14);
-}
-
 [data-doc-theme='dark'] .stu-dx-marquee {
   border-color: #7ab5ff;
   background: rgba(122, 181, 255, 0.08);
@@ -2627,6 +2627,116 @@ kbd {
 
 [data-doc-theme='dark'] .stu-dx-flash {
   animation-name: stu-dx-flash-dark-kf;
+}
+
+/* ---------- context menu (right-click · ⇧F10 · Menu key) ---------- */
+
+/* Fixed to the viewport (portaled to body), on the 4/8 grid, the popover
+   shadow the sheet/micro-editor already use — no heavier. */
+.stu-menu {
+  position: fixed;
+  z-index: 80;
+  min-width: 184px;
+  max-width: 280px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--stu-panel);
+  border: 1px solid var(--stu-rule);
+  border-radius: 8px;
+  box-shadow: var(--stu-shadow-lift);
+  font-family: var(--stu-font);
+  outline: none;
+  animation: stu-pop-in 0.12s ease-out;
+}
+
+.stu-menu-item {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  background: none;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--stu-ink);
+  text-align: left;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.stu-menu-item-active,
+.stu-menu-item:hover {
+  background: var(--stu-navy-soft);
+}
+
+.stu-menu-item-danger {
+  color: var(--stu-red);
+}
+
+.stu-menu-item-danger.stu-menu-item-active,
+.stu-menu-item-danger:hover {
+  background: var(--stu-red-soft);
+}
+
+.stu-menu-item-disabled,
+.stu-menu-item-disabled:hover {
+  color: var(--stu-faint);
+  background: none;
+}
+
+.stu-menu-check {
+  font-size: 11px;
+  text-align: center;
+  color: var(--stu-navy);
+}
+
+.stu-menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stu-menu-key {
+  font-family: var(--stu-mono);
+  font-size: 10.5px;
+  color: var(--stu-faint);
+}
+
+.stu-menu-chev {
+  font-size: 10px;
+  color: var(--stu-gray);
+}
+
+.stu-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--stu-rule-soft);
+}
+
+/* Reduced motion: every entrance/marching animation off, FLIP skipped in JS. */
+@media (prefers-reduced-motion: reduce) {
+  .stu-menu,
+  .stu-dx-pop,
+  .stu-dx-connect-picker,
+  .stu-dx-sel,
+  .stu-dx-hl,
+  .stu-dx-link,
+  .stu-dx-chip,
+  .stu-dx-addbar,
+  .stu-dx-connect-target,
+  .stu-dx-wire line {
+    animation: none;
+  }
+
+  .stu-dx-snap,
+  .stu-dx-add {
+    transition: none;
+  }
 }
 
 /* ---------- review-before-write dialog ---------- */

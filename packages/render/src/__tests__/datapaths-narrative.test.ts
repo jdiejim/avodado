@@ -117,7 +117,7 @@ describe('data-path tagging (direct edit, narrative blocks)', () => {
       ],
     });
     expect(html).toContain('<ol class="stp-list" data-bl="items">');
-    expect(html).toContain('<li class="stp-item" data-bp="items.0">');
+    expect(html).toContain('<li class="stp-item" data-bp="items.0" data-reveal="0">');
     expect(html).toContain('data-bp="items.0.title"');
     expect(html).toContain('data-bp="items.0.body"');
     expect(html).toContain('data-bp="items.1.note"');

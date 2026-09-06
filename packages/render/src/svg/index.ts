@@ -12,3 +12,4 @@ export { wrapText } from './wrapText.js';
 export { edgePill, type PillPoint } from './edgePill.js';
 export { nodeGlyph, nodeSkin, GEDGE, SKIN_EDGE, type NodeSkin, type NodeColors, type EdgeStyle } from './blockStyle.js';
 export { renderLegend, type LegendItem, type LegendSwatch } from './legend.js';
+export { revealAttr } from './reveal.js';

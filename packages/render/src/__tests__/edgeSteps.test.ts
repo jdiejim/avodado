@@ -68,9 +68,9 @@ describe('numbered edge steps + legend (labelled edges >= 4)', () => {
     const html = renderFlow({ nodes, edges });
     expect(html).toContain('class="edge-steps"');
     // numbering runs over labelled edges in order; the unlabelled edge is skipped
-    expect(html).toContain('<span class="edge-step" data-bp="edges.0"><b>1</b>one</span>');
-    expect(html).toContain('<span class="edge-step" data-bp="edges.2"><b>2</b>two</span>');
-    expect(html).toContain('<span class="edge-step err" data-bp="edges.4"><b>4</b>no</span>');
+    expect(html).toContain('<span class="edge-step" data-bp="edges.0" data-reveal="1"><b>1</b>one</span>');
+    expect(html).toContain('<span class="edge-step" data-bp="edges.2" data-reveal="3"><b>2</b>two</span>');
+    expect(html).toContain('<span class="edge-step err" data-bp="edges.4" data-reveal="5"><b>4</b>no</span>');
   });
 
   it('graph legend shows the weighted "label · w" text', () => {
@@ -159,7 +159,7 @@ describe('numbered edge steps + legend (labelled edges >= 4)', () => {
     expect(html).toContain('<th>№</th>');
     // table row № matches the transition index; the row already carries transitions.N
     expect(html).toContain(
-      '<tr data-bp="transitions.2"><td class="t-num"><span class="edge-step"><b>3</b></span></td>',
+      '<tr data-bp="transitions.2" data-reveal="2"><td class="t-num"><span class="edge-step"><b>3</b></span></td>',
     );
   });
 

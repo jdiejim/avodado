@@ -94,6 +94,55 @@ describe('toSlides', () => {
     expect(html).toContain('>INFRA</span>');
   });
 
+  it('steps through data-reveal builds before advancing, and {nobuild} opts a slide out', () => {
+    const doc = [
+      '```meta',
+      'title: Build deck',
+      '```',
+      '',
+      '## Runbook {nobuild}',
+      '',
+      '```steps',
+      'items:',
+      '  - { title: One }',
+      '  - { title: Two }',
+      '```',
+      '',
+      '## Timeline {top}',
+      '',
+      '```timeline',
+      'items:',
+      '  - { label: a }',
+      '  - { label: b }',
+      '```',
+    ].join('\n');
+    const html = toSlides(parseDocument(doc, 'build-deck'));
+    // The marker is stripped from the title and stamped on the slide.
+    expect(html).toContain('<div class="docskin slide" data-nobuild="">');
+    expect(html).toContain('<div class="slide-hd-l">Runbook</div>');
+    expect(html).not.toContain('Runbook {nobuild}');
+    // The other slide keeps its own marker's effect and has no opt-out.
+    expect(html).toContain('slide-content sl-top');
+    expect((html.match(/data-nobuild=""/g) ?? []).length).toBe(1);
+    // The reveal attributes are in the markup; the controller reads them.
+    expect(html).toContain('data-reveal="1"');
+    expect(html).toContain("querySelectorAll('[data-reveal]')");
+    expect(html).toContain("hasAttribute('data-nobuild')");
+    // Builds are announced; the hash carries the slide index only.
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain("'Step '+(bat+1)+' of '+bsteps.length");
+    expect(html).toContain("history.replaceState(null,'','#'+(i+1))");
+    // Backspace / ← walk back; → only advances past the last step.
+    expect(html).toContain("e.key==='Backspace'");
+    expect(html).toContain("if(bat<bsteps.length-1){bat+=1;paintBuild(true);}");
+    // Nothing is hidden without JS; print shows everything; motion respects the preference.
+    expect(html).toContain('.docskin.slide .rv-hide{visibility:hidden;opacity:0;}');
+    expect(html).toContain('.docskin.slide .rv-hide{visibility:visible!important;opacity:1!important;}');
+    expect(html).toContain('@media (prefers-reduced-motion: reduce){.docskin.slide [data-reveal]{transition:none;}}');
+    // The current step maps to the accent through tokens, never a hex value.
+    expect(html).toContain('.is-current *):is(line,path,polyline){stroke:var(--accent)!important;}');
+  });
+
   it('is exported from the package index and yields a standalone document', () => {
     const html = toSlidesFromIndex(parseDocument(SPLIT_DOC, 'split-test'));
     expect(html).toBe(toSlides(parseDocument(SPLIT_DOC, 'split-test')));

@@ -111,12 +111,16 @@ describe('data-path tagging (architecture family)', () => {
     expect(html).toContain('<g data-bp="groups.0">');
     expect(html).toContain('<g data-bl="nodes">');
     expect(html).toContain('data-bp="nodes.0"'); // card node
-    expect(html).toContain('<g data-bp="nodes.1">'); // shaped (cylinder) node
+    expect(html).toContain('<g data-bp="nodes.1" data-col="2" data-row="1" data-w="1">'); // shaped (cylinder) node
     expect(html).toContain('data-bp="edges.0"');
+    // Grid metadata for editors (drag-to-move / connect / context menus),
+    // like the rest of the grid family.
+    expect(html).toContain('data-grid="1" data-cols="2" data-rows="1"');
+    expect(html).not.toContain('data-grid-auto');
 
     const be = renderFelogic({ ...data, variant: 'be' as const });
     expect(be).toContain('<g data-bp="groups.0">');
-    expect(be).toContain('<g data-bp="nodes.1">');
+    expect(be).toContain('<g data-bp="nodes.1" data-col="2" data-row="1" data-w="1">');
     expect(be).toContain('data-bp="edges.0"');
   });
 

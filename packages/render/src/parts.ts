@@ -15,6 +15,7 @@ import type { BlockDataMap, BlockType, Document, Segment, TypedSegment } from '@
 import {
   isNearDuplicateTitle,
   readAlignMarker,
+  readBuildMarker,
   readSourceMarker,
   stripHeadingMarkers,
   trailingHeading,
@@ -351,6 +352,9 @@ export interface Slide {
   /** `split` = consulting layout: prose (message) left, blocks (exhibit) right.
    *  Forced via a `{split}` heading marker. */
   readonly layout?: 'split';
+  /** `{nobuild}` heading marker: the deck shows this slide whole instead of
+   *  stepping through its diagrams' `data-reveal` order. */
+  readonly nobuild?: true;
   /** The slide's content as structured parts (empty for the cover — exporters
    *  read `doc.meta` for it). Concatenating part HTML yields `html`, modulo
    *  the split-layout column wrappers. */
@@ -592,6 +596,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
     let forced: 'top' | 'center' | 'bottom' | undefined;
     let forcedLayout: 'split' | undefined;
     let sourceNote: string | undefined;
+    let noBuild = false;
     // A `divider` block opens a part of the deck; every slide after it belongs
     // to that part until the next one, which is what the tracker walks.
     let part: string | undefined;
@@ -638,6 +643,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
           html,
           align,
           ...(forcedLayout !== undefined ? { layout: forcedLayout } : {}),
+          ...(noBuild ? { nobuild: true as const } : {}),
           parts: parts.map((p) => p.part),
         });
       }
@@ -648,6 +654,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
         forced = undefined;
         forcedLayout = undefined;
         sourceNote = undefined;
+        noBuild = false;
       }
     };
     const pendingWeight = (): number => parts.reduce((a, p) => a + p.w, 0);
@@ -723,6 +730,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
             else if (a !== undefined) {
               forced = a === 'middle' || a === 'center' ? 'center' : a === 'bottom' ? 'bottom' : 'top';
             }
+            if (readBuildMarker(raw)) noBuild = true;
             heading = stripHeadingMarkers(raw);
           } else {
             buf.push(line);

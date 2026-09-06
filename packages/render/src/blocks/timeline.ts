@@ -8,6 +8,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { renderLegend, type LegendItem, type LegendSwatch } from '../svg/legend.js';
+import { revealAttr } from '../svg/reveal.js';
 
 /** The dot encoding per status, mirrored by the legend swatch (DESIGN.md chips). */
 const STATUS_SWATCH: Record<string, LegendSwatch> = {
@@ -31,7 +32,7 @@ export function renderTimeline(data: BlockDataMap['timeline']): string {
     // The status as a word chip beside the dot, so meaning is never colour alone.
     const chip = `<span class="tl-status tl-s-${st}"${it.status !== undefined ? bp(`items.${i}.status`) : ''}>${escapeHtml(st)}</span>`;
     h +=
-      `<div class="tl-item"${bp(`items.${i}`)}>` +
+      `<div class="tl-item"${bp(`items.${i}`)}${revealAttr(i)}>` +
       `<span class="tl-dot ${st}"></span>` +
       `<div class="tl-head">${date}${chip}</div>` +
       `<div class="tl-label"${bp(`items.${i}.label`)}>${escapeHtml(it.label)}</div>` +

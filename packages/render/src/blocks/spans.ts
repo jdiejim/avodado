@@ -18,6 +18,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { revealAttr } from '../svg/reveal.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -155,7 +156,7 @@ function dominantKind(spans: readonly Span[]): string | undefined {
 
 /* ── details list ───────────────────────────────────────────────────────── */
 
-function renderDetails(spans: readonly Span[]): string {
+function renderDetails(spans: readonly Span[], reveal: ReadonlyMap<number, number>): string {
   const rows = spans
     .map((s, i) => ({ s, i }))
     .filter(({ s }) => (s.attrs !== undefined && Object.keys(s.attrs).length > 0) || s.note !== undefined);
@@ -173,7 +174,7 @@ function renderDetails(spans: readonly Span[]): string {
       const note =
         s.note !== undefined ? `<span class="sp-d-note"${bp(`spans.${i}.note`)}>${escapeHtml(s.note)}</span>` : '';
       return (
-        `<li${bp(`spans.${i}`)}>` +
+        `<li${bp(`spans.${i}`)}${revealAttr(reveal.get(i) ?? 0)}>` +
         `<span class="sp-d-span"><span class="sp-d-service">${escapeHtml(s.service)}</span> ${escapeHtml(s.name)}</span>` +
         attrs +
         note +
@@ -233,6 +234,15 @@ export function renderSpans(data: BlockDataMap['spans']): string {
   const width = Math.ceil(right + PAD_R);
   const height = bottom + 8;
 
+  // Deck build order (`data-reveal`): bars by `start` across every lane
+  // (ties in data order), so the trace plays out in time; a connector
+  // arrives with the child it joins.
+  const reveal = new Map<number, number>();
+  [...rows]
+    .sort((a, b) => a.span.start - b.span.start || a.idx - b.idx)
+    .forEach((r, n) => reveal.set(r.idx, n));
+  const rv = (idx: number): string => revealAttr(reveal.get(idx) ?? 0);
+
   let s = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Trace waterfall</title>`;
 
   // Time axis: nice ticks in `unit`, gridlines down through the lanes.
@@ -277,7 +287,7 @@ export function renderSpans(data: BlockDataMap['spans']): string {
     const down = r.y > p.y;
     const y1 = down ? p.y + BAR_H : p.y;
     const y2 = down ? r.y : r.y + BAR_H;
-    s += `<line x1="${cx}" y1="${y1}" x2="${cx}" y2="${y2}" class="sp-link"/>`;
+    s += `<line x1="${cx}" y1="${y1}" x2="${cx}" y2="${y2}" class="sp-link"${revealAttr(Math.max(reveal.get(r.idx) ?? 0, reveal.get(p.idx) ?? 0))}/>`;
   }
   s += `</g>`;
 
@@ -289,7 +299,7 @@ export function renderSpans(data: BlockDataMap['spans']): string {
     const onDark = !r.crit && !r.err && r.depth < 2;
     const textCls = onDark ? 't-sub sp-on-dark' : 't-sub c-ink';
     const midY = r.y + BAR_H / 2 + 3.5;
-    let g = `<g${bp(`spans.${r.idx}`)}>`;
+    let g = `<g${bp(`spans.${r.idx}`)}${rv(r.idx)}>`;
     g += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${BAR_H}" rx="2" class="${cls}"/>`;
     if (r.nameInside) {
       g += `<text x="${r.x + 5}" y="${midY}" class="${textCls}"${bp(`spans.${r.idx}.name`)}>${escapeHtml(r.span.name)}</text>`;
@@ -338,6 +348,6 @@ export function renderSpans(data: BlockDataMap['spans']): string {
       ...(data.description !== undefined ? { desc: data.description } : {}),
       ...(legend.length > 0 ? { legendHtml: legend } : {}),
     },
-    s + renderDetails(spans),
+    s + renderDetails(spans, reveal),
   );
 }

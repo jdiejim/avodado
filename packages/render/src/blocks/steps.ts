@@ -9,6 +9,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { highlightCode } from '../highlight.js';
 import { bl, bp } from '../paths.js';
+import { revealAttr } from '../svg/reveal.js';
 
 type StepsData = BlockDataMap['steps'];
 type Step = StepsData['items'][number];
@@ -29,7 +30,7 @@ function renderStep(step: Step, index: number): string {
       ? `<p class="stp-note"${bp(`items.${index}.note`)}>${escapeHtml(step.note)}</p>`
       : '';
   return (
-    `<li class="stp-item"${bp(`items.${index}`)}>` +
+    `<li class="stp-item"${bp(`items.${index}`)}${revealAttr(index)}>` +
     `<span class="stp-num" aria-hidden="true">${index + 1}</span>` +
     `<div class="stp-body">` +
     `<div class="stp-title"${bp(`items.${index}.title`)}>${escapeHtml(step.title)}</div>` +

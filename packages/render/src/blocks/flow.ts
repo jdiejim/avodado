@@ -16,11 +16,55 @@ import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { GROUP_PADS, gridGroupsSvg, groupExtent } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { revealAttr } from '../svg/reveal.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
 
 type Kind = 'start' | 'end' | 'decision' | 'process';
+
+/**
+ * Deck build order (`data-reveal`): a topological walk from the `start`
+ * node(s) — else from the nodes nothing points at, else the first node —
+ * breadth-first along the edges, so a node appears only after everything that
+ * leads to it. Nodes a cycle keeps unreachable follow in document order. An
+ * edge takes the step of the later of its two ends: it appears together with
+ * the node it leads to (or, for a back edge, with the node it leaves).
+ */
+export function flowRevealOrder(
+  nodes: ReadonlyArray<{ readonly id: string; readonly kind?: Kind | undefined }>,
+  edges: ReadonlyArray<{ readonly from: string; readonly to: string }>,
+): Map<string, number> {
+  const ids = new Set(nodes.map((n) => n.id));
+  const indeg = new Map<string, number>();
+  const outs = new Map<string, string[]>();
+  for (const n of nodes) {
+    indeg.set(n.id, 0);
+    outs.set(n.id, []);
+  }
+  for (const e of edges) {
+    if (!ids.has(e.from) || !ids.has(e.to) || e.from === e.to) continue;
+    indeg.set(e.to, (indeg.get(e.to) ?? 0) + 1);
+    outs.get(e.from)?.push(e.to);
+  }
+  let roots = nodes.filter((n) => n.kind === 'start').map((n) => n.id);
+  if (roots.length === 0) roots = nodes.filter((n) => (indeg.get(n.id) ?? 0) === 0).map((n) => n.id);
+  if (roots.length === 0 && nodes[0] !== undefined) roots = [nodes[0].id];
+  const order = new Map<string, number>();
+  const queue = [...roots];
+  while (queue.length > 0) {
+    const id = queue.shift() as string;
+    if (order.has(id)) continue;
+    order.set(id, order.size);
+    for (const to of outs.get(id) ?? []) {
+      const d = (indeg.get(to) ?? 0) - 1;
+      indeg.set(to, d);
+      if (d <= 0 && !order.has(to)) queue.push(to);
+    }
+  }
+  for (const n of nodes) if (!order.has(n.id)) order.set(n.id, order.size);
+  return order;
+}
 
 const ERR_LABEL_RE = /^(no|fail|failed|error|reject|rejected)\b/i;
 
@@ -99,6 +143,8 @@ export function renderFlowSvg(data: BlockDataMap['flow']): { svg: string; legend
   const used = { plain: false, dashed: false, error: false, accent: false };
   const pending: EdgeLabelPoint[] = [];
   const lanes = edgeLanes(edges);
+  const order = flowRevealOrder(nodes, edges);
+  const stepOf = (id: string): number => order.get(id) ?? 0;
   const entries = entryPortOffsets(edges, (id) => {
     const n = byId.get(id);
     return n !== undefined ? boxFor(n) : undefined;
@@ -120,7 +166,8 @@ export function renderFlowSvg(data: BlockDataMap['flow']): { svg: string; legend
     else if (isAccent) used.accent = true;
     else if (isDashed) used.dashed = true;
     else used.plain = true;
-    s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}"${dash} marker-end="url(#${marker})"${bp(`edges.${ei}`)}/>`;
+    const reveal = Math.max(stepOf(e.from), stepOf(e.to));
+    s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}"${dash} marker-end="url(#${marker})"${bp(`edges.${ei}`)}${revealAttr(reveal)}/>`;
     pending.push({
       lx: p.lx,
       ly: p.ly,
@@ -128,6 +175,7 @@ export function renderFlowSvg(data: BlockDataMap['flow']): { svg: string; legend
       err: isErr,
       accent: isAccent,
       path: `edges.${ei}`,
+      reveal,
     });
   });
   s += `</g>`; // close the edges list container (editors add via its chip)
@@ -173,7 +221,7 @@ export function renderFlowSvg(data: BlockDataMap['flow']): { svg: string; legend
         )
         .join('');
     }
-    s += `<g${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row, n.w ?? 1)}>${shape}${texts}</g>`;
+    s += `<g${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row, n.w ?? 1)}${revealAttr(stepOf(n.id))}>${shape}${texts}</g>`;
   });
   s += `</g>`; // close the nodes list container
 

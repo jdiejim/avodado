@@ -136,7 +136,7 @@ export function readGeom(svg: SVGSVGElement): GridGeom | null {
 }
 
 /** Effective placements of `list.0 … list.(count-1)` from their data attrs. */
-function readPlacements(wrap: HTMLElement, listPath: string, count: number): Placement[] | null {
+export function readPlacements(wrap: HTMLElement, listPath: string, count: number): Placement[] | null {
   const out: Placement[] = [];
   for (let i = 0; i < count; i++) {
     const el = bpEl(wrap, `${listPath}.${i}`);

@@ -101,6 +101,8 @@ nodes:
   - { id: render, layer: 1, kind: service, name: render }
   - { id: html, layer: 2, kind: cdn, name: HTML }
   - { id: pdf, layer: 2, kind: store, name: PDF }
+  - id: node6
+    name: New node
 edges:
   - md -> core
   - core -> render

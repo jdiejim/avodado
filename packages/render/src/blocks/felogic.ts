@@ -30,6 +30,7 @@ import { wrapText } from '../svg/wrapText.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
+import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 
 type Data = BlockDataMap['felogic'];
 type Group = NonNullable<Data['groups']>[number];
@@ -163,10 +164,12 @@ function renderFelogicGraph(data: Data, tag: string): string {
   const edges = data.edges ?? [];
   // Quick mode: with no coordinate-anchored groups, nodes missing `col`/`row`
   // trigger auto-layout of the whole graph from the edges (left-to-right).
+  const rawNodes = data.nodes ?? [];
+  const quick = !(rawNodes.length > 0 && rawNodes.every((n) => n.col !== undefined && n.row !== undefined));
   const nodes =
     groups.length === 0
-      ? ensureGrid(data.nodes ?? [], edges, data.dir ?? 'LR')
-      : (data.nodes ?? []).map((n) => ({ ...n, col: n.col ?? 1, row: n.row ?? 1 }));
+      ? ensureGrid(rawNodes, edges, data.dir ?? 'LR')
+      : rawNodes.map((n) => ({ ...n, col: n.col ?? 1, row: n.row ?? 1 }));
   const cellW = 178;
   const cellH = 80;
   const gapX = 54;
@@ -218,8 +221,11 @@ function renderFelogicGraph(data: Data, tag: string): string {
   const entries0 = nodes.filter((n) => entryKinds.includes((n.kind ?? '').toLowerCase()));
   const accentId = entries0.length === 1 ? entries0[0]?.id : undefined;
 
+  // Grid metadata for editors (Avodado Studio drag/connect/context menus):
+  // inert attrs mirroring the layout constants plus each node's effective cell.
+  const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
   let s =
-    `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Module graph</title>` +
+    `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>Module graph</title>` +
     // The network-call head in `link` — local, since the shared defs carry
     // only the muted / accent / negative heads.
     `<defs><marker id="feLink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
@@ -286,7 +292,7 @@ function renderFelogicGraph(data: Data, tag: string): string {
       if (sk.chip !== '' && !chipsUsed.has(sk.chip)) chipsUsed.set(sk.chip, 'shape');
       if (sk.dashed) dashedUsed = true;
       if (sk.fill === 'paper-2') inactiveUsed = true;
-      s += `<g${bp(`nodes.${ni}`)}>${renderShapedNode(
+      s += `<g${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row, n.w ?? 1)}>${renderShapedNode(
         { kind: shapeKind, name: n.name, ...(n.note !== undefined ? { tech: n.note } : {}) },
         r,
         undefined,
@@ -332,7 +338,7 @@ function renderFelogicGraph(data: Data, tag: string): string {
         ty += noteLineH;
       }
     }
-    s += `<g${bp(`nodes.${ni}`)}>` + cardSvg + chip + labelSvg + `</g>`;
+    s += `<g${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row, n.w ?? 1)}>` + cardSvg + chip + labelSvg + `</g>`;
   });
   s += `</g>`; // close the nodes list container
 

@@ -5,7 +5,7 @@
  *    of spilling or shrinking — the `{split}` layout, chosen automatically;
  *  - the HERO rule still wins for full-stage exhibits (they never share);
  *  - light sections keep the plain stacked layout;
- *  - the deck ships the progressive step-reveal (build) machinery.
+ *  - the deck ships the step-through build machinery, and hides nothing itself.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -55,11 +55,14 @@ describe('auto-split slide layout', () => {
   });
 });
 
-describe('deck shows diagrams complete (no step builds)', () => {
-  it('ships no reveal machinery — the full diagram is visible on entry', () => {
+describe('deck builds diagrams step by step', () => {
+  it('ships the build controller, and the markup itself hides nothing (no JS → the full diagram)', () => {
     const html = toSlides(parseDocument(`## The flow\n\n${SEQ_MED}`, 't'));
-    expect(html).not.toContain('rv-hide');
-    expect(html).not.toContain('revealGroups');
+    // The renderer marks the order; the controller reads it at runtime.
+    expect(html).toContain('data-reveal="0"');
+    expect(html).toContain('function prepBuild(');
+    // No element is emitted hidden — `rv-hide` is a runtime class only.
+    expect(html).not.toMatch(/class="[^"]*\brv-hide\b/);
   });
 });
 

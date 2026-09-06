@@ -5,7 +5,7 @@
  * gap; prose edits in place; typed blocks open the Edit Sheet.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { replaceProse, BLOCK_LABELS, type Segment } from '@avodado/core';
 import {
   deleteSegment,
@@ -353,6 +353,9 @@ function SegmentShell({ index, count, seg, html, metaFirst, levels }: {
   const openSheet = useStudio((s) => s.openSheet);
   const sheetOpen = useStudio((s) => s.sheet !== null);
   const [editing, setEditing] = useState(false);
+  /** A right-click on an UNSELECTED typed block: select it, then let the
+   *  DirectLayer (which mounts on selection) open the menu at this point. */
+  const [pendingMenu, setPendingMenu] = useState<{ x: number; y: number } | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const isProse = seg.kind === 'markdown';
   const isTyped = !isProse && seg.kind !== 'meta';
@@ -407,6 +410,15 @@ function SegmentShell({ index, count, seg, html, metaFirst, levels }: {
     if (isProse) setEditing(true);
   };
 
+  const onContextMenu = (e: React.MouseEvent): void => {
+    if (!isTyped || editing || sheetOpen || html === '') return;
+    if (direct) return; // the mounted DirectLayer owns it
+    e.preventDefault();
+    select(index);
+    setPendingMenu({ x: e.clientX, y: e.clientY });
+  };
+  const consumePendingMenu = useCallback((): void => setPendingMenu(null), []);
+
   const onDoubleClick = (e: React.MouseEvent): void => {
     if (editing) return;
     // A tagged element already opened its micro-editor on the second click —
@@ -444,6 +456,7 @@ function SegmentShell({ index, count, seg, html, metaFirst, levels }: {
       data-seg={index}
       onClickCapture={onClickCapture}
       onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
     >
       {!editing && (
         <BlockToolbar
@@ -467,7 +480,15 @@ function SegmentShell({ index, count, seg, html, metaFirst, levels }: {
       )}
       {body}
       {direct && host !== null && (
-        <DirectLayer host={host} data={seg.data} html={html} wrapperRef={shellRef} segIndex={index} />
+        <DirectLayer
+          host={host}
+          data={seg.data}
+          html={html}
+          wrapperRef={shellRef}
+          segIndex={index}
+          pendingMenu={pendingMenu}
+          onPendingMenuConsumed={consumePendingMenu}
+        />
       )}
     </div>
   );

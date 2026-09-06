@@ -36,9 +36,9 @@ describe('data-path tagging (direct edit)', () => {
     expect(html).toContain('<g data-bp="actors.0">');
     expect(html).toContain('<g data-bp="actors.1">');
     expect(html).toContain('<g data-bl="messages">');
-    expect(html).toContain('<g data-bp="messages.0">');
-    expect(html).toContain('<g data-bp="messages.2">'); // the note row
-    expect(html).toContain('<li data-bp="messages.0">'); // step list reuses message paths
+    expect(html).toContain('<g data-bp="messages.0" data-reveal="0">');
+    expect(html).toContain('<g data-bp="messages.2" data-reveal="2">'); // the note row
+    expect(html).toContain('<li data-bp="messages.0" data-reveal="0">'); // step list reuses message paths
     expect(html).toContain('data-bl="foot"');
     expect(html).toContain('<span data-bp="foot.0">');
   });

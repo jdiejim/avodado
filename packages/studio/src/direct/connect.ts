@@ -1,6 +1,7 @@
 /**
  * Pure rules for drag-to-connect on diagram blocks (flow, dfd, state, c4,
- * block, graph, swimlane — and sequence messages): selecting a node shows
+ * block, felogic, graph, swimlane, cluster — and sequence messages, ERD
+ * relations): selecting a node shows
  * connector dots on its edges; dragging from a dot to another node appends an
  * edge/transition/link/message to the YAML, and dragging to empty canvas
  * creates a new node at the drop cell plus the connecting edge.
@@ -89,6 +90,16 @@ export interface ConnectSpec {
   readonly edgeChoices?: readonly ConnectChoice[];
   /** The edge field an {@link edgeChoices} value is written to (`card`). */
   readonly edgeChoiceField?: string;
+  /**
+   * The values the edge's `kind` enum allows (schema order) — the context
+   * menu's `Kind ▸` submenu. Absent when the kind's edges carry no `kind`.
+   */
+  readonly edgeKinds?: readonly string[];
+  /**
+   * The node field naming the container a node belongs to (cluster: services
+   * sit inside a named `cluster`). A new node copies the origin's value.
+   */
+  readonly memberField?: string;
   /** Builds the edge object appended for a from → to connection. */
   readonly newEdge: (from: string, to: string) => Record<string, unknown>;
   /** Builds the node an empty-canvas drop creates (absent → drops cancel). */
@@ -127,6 +138,7 @@ const SPECS: Readonly<Record<string, ConnectSpec>> = {
     labelField: 'label',
     edgesField: 'edges',
     edgeTextField: 'label',
+    edgeKinds: ['error', 'dashed'],
     nodeKinds: [
       { kind: 'process', label: 'Process' },
       { kind: 'decision', label: 'Decision' },
@@ -181,10 +193,14 @@ const SPECS: Readonly<Record<string, ConnectSpec>> = {
     labelField: 'name',
     edgesField: 'edges',
     edgeTextField: 'label',
+    edgeKinds: ['solid', 'dashed', 'forbidden', 'error'],
     nodeKinds: [
       { kind: 'person', label: 'Person' },
       { kind: 'system', label: 'System' },
       { kind: 'external', label: 'External' },
+      { kind: 'store', label: 'Store' },
+      { kind: 'container', label: 'Container' },
+      { kind: 'component', label: 'Component' },
     ],
     allowSelfLoop: false,
     gridNodes: true,
@@ -199,6 +215,7 @@ const SPECS: Readonly<Record<string, ConnectSpec>> = {
     labelField: 'name',
     edgesField: 'edges',
     edgeTextField: 'label',
+    edgeKinds: ['solid', 'dashed', 'forbidden', 'error'],
     nodeKinds: [
       { kind: 'service', label: 'Service' },
       { kind: 'client', label: 'Client' },
@@ -257,6 +274,7 @@ const SPECS: Readonly<Record<string, ConnectSpec>> = {
     labelField: 'name',
     edgesField: 'messages',
     edgeTextField: 'label',
+    edgeKinds: ['sync', 'response', 'async', 'error', 'note'],
     nodeKinds: [], // no grid, no empty-canvas creation
     allowSelfLoop: true, // a drop on the origin actor becomes a note
     gridNodes: false,
@@ -266,6 +284,59 @@ const SPECS: Readonly<Record<string, ConnectSpec>> = {
     editEdgeOnConnect: true, // name the new message immediately
     newEdge: (from, to) =>
       from === to ? { from, to, kind: 'note', label: 'note' } : { from, to, label: 'message' },
+  },
+  felogic: {
+    // Module graphs share the grid family's shape: `nodes` with `name`, a
+    // free-form `kind` (the renderer's KNOWN_LOGIC_KINDS — the picker offers
+    // the common subset), and `edges` with an 8-value relation `kind`.
+    nodesField: 'nodes',
+    idField: 'id',
+    labelField: 'name',
+    edgesField: 'edges',
+    edgeTextField: 'label',
+    edgeKinds: ['uses', 'implements', 'reads', 'egress', 'https', 'api', 'dashed', 'async'],
+    nodeKinds: [
+      { kind: 'component', label: 'Component' },
+      { kind: 'service', label: 'Service' },
+      { kind: 'controller', label: 'Controller' },
+      { kind: 'repository', label: 'Repository' },
+      { kind: 'adapter', label: 'Adapter' },
+      { kind: 'model', label: 'Model' },
+      { kind: 'db', label: 'Database' },
+      { kind: 'queue', label: 'Queue' },
+      { kind: 'external', label: 'External' },
+    ],
+    allowSelfLoop: false,
+    gridNodes: true,
+    groups: true,
+    newEdge: simpleEdge,
+    newNode: ({ id, kind, label, cell }) => ({ id, name: label, kind, col: cell.col, row: cell.row }),
+  },
+  cluster: {
+    // Services live INSIDE a named cluster (`cluster: <id>`), laid out by the
+    // renderer — no grid, so a new service is appended to the origin's
+    // cluster rather than placed at a cell (`memberField`).
+    nodesField: 'services',
+    idField: 'id',
+    labelField: 'label',
+    edgesField: 'edges',
+    edgeTextField: 'label',
+    edgeKinds: ['solid', 'dashed', 'forbidden', 'error'],
+    memberField: 'cluster',
+    nodeKinds: [
+      { kind: 'service', label: 'Service' },
+      { kind: 'db', label: 'Database' },
+      { kind: 'queue', label: 'Queue' },
+      { kind: 'cache', label: 'Cache' },
+      { kind: 'gateway', label: 'Gateway' },
+      { kind: 'external', label: 'External' },
+    ],
+    allowSelfLoop: false,
+    gridNodes: false,
+    groups: false,
+    newEdge: simpleEdge,
+    // No grid: the cell is ignored; the caller seats the service in a cluster.
+    newNode: ({ id, kind, label }) => ({ id, label, kind }),
   },
   erd: {
     // Entities are keyed by `name` (no `id`) and laid out by dagre — there is
@@ -384,30 +455,29 @@ export function uniqueNodeId(spec: ConnectSpec, data: unknown): string {
 }
 
 /**
- * The writes an empty-canvas drop commits (one applyOp → one undo step): the
- * new node at the drop cell, the edge connecting `fromId` to it, and — when
- * the diagram was auto-laid-out (some existing node lacks `col`/`row` in the
- * YAML) and the caller supplies the renderer's effective `placements` — a
- * materialization of every node's current cell first, so pinning the new node
- * doesn't reflow the rest of the diagram out from under it.
+ * The writes that APPEND a new node at `cell` (no edge): the node itself,
+ * preceded — when the diagram was auto-laid-out (some existing node lacks
+ * `col`/`row`) and the caller supplies the renderer's effective `placements`
+ * — by a materialization of every node's current cell, so pinning the new
+ * node doesn't reflow the rest of the diagram out from under it. `extra`
+ * rides along on the node (cluster: the origin's `cluster` membership).
  *
  * Returns the sets plus the new node's `data-bp` path and auto id, or null
- * when `fromId` doesn't resolve or `kindChoice` isn't in the spec.
+ * when the spec can't create nodes or `kindChoice` isn't in it.
  */
-export function newNodeOps(
+export function newNodeAtOps(
   spec: ConnectSpec,
   data: unknown,
-  fromId: string,
   cell: Placement,
   kindChoice: string,
   placements?: readonly Placement[],
+  extra?: Readonly<Record<string, unknown>>,
 ): { sets: PathSet[]; nodePath: string; id: string; materialized: boolean } | null {
   const newNode = spec.newNode;
   if (newNode === undefined) return null;
   const choice = spec.nodeKinds.find((k) => k.kind === kindChoice);
   if (choice === undefined) return null;
   const nodes = nodeRecords(spec, data);
-  if (!nodes.some((n) => idOf(spec, n) === fromId)) return null;
 
   const sets: PathSet[] = [];
   const placeFields = spec.placeFields ?? ['col', 'row'];
@@ -428,9 +498,38 @@ export function newNodeOps(
   const label = `New ${choice.label.toLowerCase()}`;
   sets.push({
     path: [spec.nodesField, nodes.length],
-    value: newNode({ id, kind: kindChoice, label, cell }),
+    value: { ...newNode({ id, kind: kindChoice, label, cell }), ...(extra ?? {}) },
   });
-  const edges = listOf(data, spec.edgesField);
-  sets.push({ path: [spec.edgesField, edges.length], value: spec.newEdge(fromId, id) });
   return { sets, nodePath: `${spec.nodesField}.${nodes.length}`, id, materialized };
+}
+
+/**
+ * The writes an empty-canvas drop commits (one applyOp → one undo step): the
+ * new node at the drop cell ({@link newNodeAtOps}, materialization included)
+ * plus the edge connecting `fromId` to it.
+ *
+ * Returns the sets plus the new node's `data-bp` path and auto id, or null
+ * when `fromId` doesn't resolve or `kindChoice` isn't in the spec.
+ */
+export function newNodeOps(
+  spec: ConnectSpec,
+  data: unknown,
+  fromId: string,
+  cell: Placement,
+  kindChoice: string,
+  placements?: readonly Placement[],
+): { sets: PathSet[]; nodePath: string; id: string; materialized: boolean } | null {
+  const nodes = nodeRecords(spec, data);
+  const origin = nodes.find((n) => idOf(spec, n) === fromId);
+  if (origin === undefined) return null;
+  // A member kind (cluster) seats the new node beside its origin.
+  const extra =
+    spec.memberField !== undefined && origin[spec.memberField] !== undefined
+      ? { [spec.memberField]: origin[spec.memberField] }
+      : undefined;
+  const r = newNodeAtOps(spec, data, cell, kindChoice, placements, extra);
+  if (r === null) return null;
+  const edges = listOf(data, spec.edgesField);
+  r.sets.push({ path: [spec.edgesField, edges.length], value: spec.newEdge(fromId, r.id) });
+  return r;
 }

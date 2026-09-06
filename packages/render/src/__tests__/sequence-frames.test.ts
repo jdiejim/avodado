@@ -115,8 +115,8 @@ describe('sequence frames', () => {
       messages: messages.map((m) => ('from' in m ? { ...m, summary: `step ${m.label}` } : m)),
     });
     const root = parse(withSummaries);
-    expect(withSummaries).toContain('<g data-bp="messages.1">');
-    expect(withSummaries).toContain('<g data-bp="messages.4">');
+    expect(withSummaries).toContain('<g data-bp="messages.1" data-reveal="1">');
+    expect(withSummaries).toContain('<g data-bp="messages.4" data-reveal="4">');
     const lis = root.querySelectorAll('.seq-steps li');
     expect(lis.map((li) => li.classNames)).toEqual(['', 'step-frame', '', '', 'step-frame else', 'err']);
     expect(lis[1]?.text).toBe('ALTok');
@@ -206,8 +206,8 @@ describe('auto activation', () => {
     // 84 + 2 × 36 + 36 + 12 = 204 bottom, + 6; short labels keep the 46px gaps.
     expect(laneGaps(ACTORS, messages)).toEqual([46, 46]);
     expect(html).toContain(`viewBox="0 0 ${svgWidth(messages)} 210"`);
-    expect(html).toContain('<g data-bp="messages.0">');
-    expect(html).toContain('<g data-bp="messages.2">');
+    expect(html).toContain('<g data-bp="messages.0" data-reveal="0">');
+    expect(html).toContain('<g data-bp="messages.2" data-reveal="2">');
   });
 });
 

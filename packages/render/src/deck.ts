@@ -238,8 +238,32 @@ body{background:var(--paper-2);font-family:var(--font-body);color:var(--ink);}
 .deck-counter{font-variant-numeric:tabular-nums;color:var(--muted);min-width:54px;text-align:center;}
 .deck-sel{max-width:340px;font-family:var(--font-body);font-size:13px;padding:6px 10px;border:1px solid var(--rule-solid);
   border-radius:6px;background:var(--paper);color:var(--ink);}
+/* ── Builds ─────────────────────────────────────────────────────────────────
+   A diagram with a natural order marks it: data-reveal="n" on the group that
+   appears at step n (render: svg/reveal.ts). The controller hides those groups
+   (.rv-hide) and reveals one step per press before the deck advances; the step
+   just revealed is .is-current and takes the accent for that moment — the
+   presentation-time exception to the one-accent rule. Nothing is hidden by
+   the markup itself: without JS, in print, and on a {nobuild} slide the
+   diagram is whole. Hiding is visibility, not display, so nothing reflows. */
+.docskin.slide [data-reveal]{transition:opacity .18s ease-out;}
+.docskin.slide .rv-hide{visibility:hidden;opacity:0;}
+.docskin.slide :is(.is-current,.is-current *):is(line,path,polyline){stroke:var(--accent)!important;}
+.docskin.slide :is(.is-current,.is-current *)[marker-end]{marker-end:url(#skAccent);}
+.docskin.slide :is(.is-current,.is-current *):is(rect,circle,polygon,ellipse){stroke:var(--accent)!important;fill:var(--accent-tint)!important;}
+.docskin.slide :is(.is-current,.is-current *):is(text){fill:var(--accent)!important;}
+/* HTML items: the number badge and the title take the accent. */
+.docskin.slide .is-current :is(.stp-num,.step-n){border-color:var(--accent);color:var(--accent);}
+.docskin.slide .is-current :is(.stp-title,.step-summary,.tl-label,.sp-d-span,.step-frame-label,.step-actor){color:var(--accent);}
+.docskin.slide .is-current .tl-dot{border-color:var(--accent);background:var(--accent-tint);}
+.docskin.slide tr.is-current td{color:var(--accent);}
+.docskin.slide .edge-step.is-current{color:var(--accent);}
+@media (prefers-reduced-motion: reduce){.docskin.slide [data-reveal]{transition:none;}}
+/* Visually hidden live region: the build's progress for assistive tech. */
+.deck-live{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
 @media print{@page{size:landscape;}.deck-nav{display:none;}.deck{display:block;padding:0;}
-  .docskin.slide{display:flex!important;width:100%;aspect-ratio:auto;min-height:96vh;border-radius:0;box-shadow:none;page-break-after:always;}}
+  .docskin.slide{display:flex!important;width:100%;aspect-ratio:auto;min-height:96vh;border-radius:0;box-shadow:none;page-break-after:always;}
+  .docskin.slide .rv-hide{visibility:visible!important;opacity:1!important;}}
 `;
 
 const DECK_JS = `(function(){
@@ -298,8 +322,47 @@ const DECK_JS = `(function(){
     var text=(inner.textContent||'').trim();
     if(!hasBlock&&text.length>0&&text.length<520)inner.classList.add('sl-statement');
   });
-  var jump=document.getElementById('deck-jump'),cur=document.getElementById('deck-cur');
+  var jump=document.getElementById('deck-jump'),cur=document.getElementById('deck-cur'),live=document.getElementById('deck-live');
   var i=0;
+  // The build phase. bsteps[n] = the elements that appear at step n of the
+  // current slide (from data-reveal); bat = the last step revealed so far (-1:
+  // none). A press reveals the next step and marks it current; only past the
+  // last step does the deck advance. Walking back un-reveals one step at a
+  // time. A slide reached backwards, by the jump menu or by URL hash shows
+  // its build complete, in its normal rendering — no step is current.
+  var bsteps=[],bat=-1;
+  function prepBuild(slide,complete){
+    var byStep={},max=-1;
+    if(!slide.hasAttribute('data-nobuild')){
+      [].slice.call(slide.querySelectorAll('[data-reveal]')).forEach(function(el){
+        var n=parseInt(el.getAttribute('data-reveal'),10);
+        if(isNaN(n)||n<0)return;
+        (byStep[n]=byStep[n]||[]).push(el);
+        if(n>max)max=n;
+      });
+    }
+    bsteps=[];
+    for(var k=0;k<=max;k++)bsteps.push(byStep[k]||[]);
+    bat=complete?bsteps.length-1:-1;
+    paintBuild(false);
+  }
+  function paintBuild(stepped){
+    bsteps.forEach(function(group,n){
+      group.forEach(function(el){
+        el.classList.toggle('rv-hide',n>bat);
+        el.classList.toggle('is-current',stepped&&n===bat);
+      });
+    });
+    if(live)live.textContent=stepped&&bat>=0?'Step '+(bat+1)+' of '+bsteps.length:'';
+  }
+  function next(){
+    if(bat<bsteps.length-1){bat+=1;paintBuild(true);}
+    else show(i+1,'fwd');
+  }
+  function prev(){
+    if(bat>=0){bat-=1;paintBuild(true);}
+    else show(i-1,'back');
+  }
   function fit(slide){
     var inner=slide.querySelector('.slide-inner'),content=slide.querySelector('.slide-content');
     if(!inner||!content)return;
@@ -316,27 +379,31 @@ const DECK_JS = `(function(){
     var s=Math.min(cap, content.clientWidth/r.width, content.clientHeight/r.height)*0.98;
     inner.style.transform='scale('+s+')';
   }
-  function show(n){
+  // mode: 'fwd' arrives with the build not started; anything else, complete.
+  function show(n,mode){
     i=Math.max(0,Math.min(slides.length-1,n));
     for(var k=0;k<slides.length;k++)slides[k].classList.toggle('active',k===i);
     cur.textContent=i+1; jump.value=String(i);
     fit(slides[i]);
+    prepBuild(slides[i],mode!=='fwd');
     // A deck embedded with <iframe srcdoc> has an opaque origin, where
     // replaceState throws a SecurityError. The hash is a convenience, not the
-    // navigation itself, so an embedded deck simply goes without it.
+    // navigation itself, so an embedded deck simply goes without it. It keeps
+    // the slide index only — never the build step.
     try{history.replaceState(null,'','#'+(i+1));}catch(e){}
   }
-  document.getElementById('deck-prev').onclick=function(){show(i-1);};
-  document.getElementById('deck-next').onclick=function(){show(i+1);};
-  jump.onchange=function(){show(parseInt(jump.value,10)||0);};
+  document.getElementById('deck-prev').onclick=function(){prev();};
+  document.getElementById('deck-next').onclick=function(){next();};
+  jump.onchange=function(){show(parseInt(jump.value,10)||0,'jump');};
   document.addEventListener('keydown',function(e){
-    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')show(i+1);
-    else if(e.key==='ArrowLeft'||e.key==='PageUp')show(i-1);
-    else if(e.key==='Home')show(0); else if(e.key==='End')show(slides.length-1);
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')next();
+    else if(e.key==='ArrowLeft'||e.key==='PageUp')prev();
+    else if(e.key==='Backspace'){e.preventDefault();prev();}
+    else if(e.key==='Home')show(0,'jump'); else if(e.key==='End')show(slides.length-1,'jump');
   });
   window.addEventListener('resize',function(){fit(slides[i]);});
   var h=parseInt((location.hash||'').replace('#',''),10);
-  show(isNaN(h)?0:h-1);
+  show(isNaN(h)?0:h-1,'jump');
 })();`;
 
 /**
@@ -405,7 +472,9 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
         ? ''
         : `<div class="slide-ft"><span>${esc(title)}</span>${source}` +
           `<span>${i + 1} / ${slides.length}</span></div>`;
-      return `<div class="docskin slide${isCover ? ' slide-cover' : ''}">${header}<div class="slide-content${alignCls}${layoutCls}"><div class="slide-inner">${sl.html}</div></div>${footer}</div>`;
+      // `{nobuild}`: the controller shows this slide whole, no step-through.
+      const nobuild = sl.nobuild === true ? ' data-nobuild=""' : '';
+      return `<div class="docskin slide${isCover ? ' slide-cover' : ''}"${nobuild}>${header}<div class="slide-content${alignCls}${layoutCls}"><div class="slide-inner">${sl.html}</div></div>${footer}</div>`;
     })
     .join('');
 
@@ -426,6 +495,7 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
     `<select class="deck-sel" id="deck-jump">${options}</select>` +
     `<span class="deck-counter"><b id="deck-cur">1</b> / ${slides.length}</span>` +
     `<button class="deck-btn" id="deck-next" aria-label="Next">›</button>` +
+    `<span class="deck-live" id="deck-live" aria-live="polite" aria-atomic="true"></span>` +
     `</div>`;
 
   // No `data-theme` stamp: the deck follows the reader's system dark mode,
