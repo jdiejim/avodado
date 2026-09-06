@@ -17,6 +17,7 @@ import { escapeHtml } from '../escape.js';
 import { nodeGlyph } from '../svg/blockStyle.js';
 import { wrapText } from '../svg/wrapText.js';
 import { bl, bp } from '../paths.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { diagramFrame } from './frame.js';
 
 type AgentloopData = BlockDataMap['agentloop'];
@@ -39,11 +40,11 @@ const AGENT = { fill: 'var(--accent-tint)', stroke: 'var(--accent)' };
 const TOOL = { fill: 'var(--paper-2)', stroke: 'var(--rule-solid)' };
 const MEM = { fill: 'var(--paper-2)', stroke: 'var(--ink)' };
 
-/** A circled step numeral + its mono label, positioned above an arrow. */
+/** The shared hollow step badge (r=8, muted stroke, `.t-badge` numeral) + its mono label, above an arrow. */
 function loopBadge(n: number, x: number, y: number, label: string): string {
   return (
     `<circle cx="${x}" cy="${y}" r="8" class="step-badge"/>` +
-    `<text x="${x}" y="${y + 3.5}" class="step-badge-text">${n}</text>` +
+    `<text x="${x}" y="${y + 3}" text-anchor="middle" class="t-badge">${n}</text>` +
     `<text x="${x + 13}" y="${y + 3.5}" class="al-lbl">${escapeHtml(label)}</text>`
   );
 }
@@ -148,7 +149,8 @@ export function renderAgentloop(data: AgentloopData): string {
   const yOut = centerY + 13;
   s += `<line x1="${ENV_X + ENV_W}" y1="${yIn}" x2="${AGENT_X - 4}" y2="${yIn}" class="al-edge" marker-end="url(#gArrow)"/>`;
   s += loopBadge(1, ENV_X + ENV_W + 18, yIn - 13, 'prompt');
-  s += `<line x1="${AGENT_X}" y1="${yOut}" x2="${ENV_X + ENV_W + 4}" y2="${yOut}" class="al-edge" marker-end="url(#gArrow)"/>`;
+  // ④ is a response: dashed, open head (DESIGN.md › Strokes and arrows).
+  s += `<line x1="${AGENT_X}" y1="${yOut}" x2="${ENV_X + ENV_W + 4}" y2="${yOut}" class="al-edge dashed" marker-end="url(#gSoft)"/>`;
   s += loopBadge(4, ENV_X + ENV_W + 18, yOut + 17, 'response');
 
   // ② tool call (agent → tools), ③ result (dashed return).
@@ -184,11 +186,23 @@ export function renderAgentloop(data: AgentloopData): string {
       ? `<div class="al-foot"><span class="al-foot-label">stops when:</span> <span${bp('stop')}>${escapeHtml(data.stop)}</span></div>`
       : '';
 
+  // Legend: the node kinds and edge styles this loop actually draws.
+  const secondary = [hasTools ? 'tool' : '', hasMemory ? 'memory' : ''].filter((k) => k.length > 0);
+  const legendItems: LegendItem[] = [
+    { swatch: 'node', label: 'environment' },
+    { swatch: 'node-accent', label: 'agent' },
+    ...(secondary.length > 0 ? [{ swatch: 'node-fill2', label: secondary.join(' · ') } as LegendItem] : []),
+    { swatch: 'edge', label: hasTools ? 'prompt · tool call' : 'prompt' },
+    { swatch: 'edge-dashed', label: hasTools ? 'response · result' : 'response' },
+  ];
+  const legend = renderLegend(legendItems);
+
   return diagramFrame(
     {
       tag: 'AGENT',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legend.length > 0 ? { legendHtml: legend } : {}),
       ...(foot.length > 0 ? { footerHtml: foot } : {}),
     },
     s,

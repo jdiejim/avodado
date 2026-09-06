@@ -15,9 +15,10 @@
  * stroke; a revert is a hollow dot, a hotfix a dot with a paper core, a
  * release a larger dot under a paper tag chip.
  *
- * Accent rule: the main branch line — the first lane — and its commits take
- * the accent (a branch's `accent` name in the data no longer picks a hue; the
- * skin tells lanes apart by position and name).
+ * Accent rule: the main branch line — the first lane — and its commit dots
+ * are the one accent element; its name and tags stay ink (a branch's
+ * `accent` name in the data no longer picks a hue; the skin tells lanes
+ * apart by position and name).
  */
 
 import type { BlockDataMap } from '@avodado/core';
@@ -112,8 +113,7 @@ export function renderGitgraph(data: GitData): string {
     const attrs = (data.branches ?? []).some((b) => b.name === name)
       ? bp(`branches.${(data.branches ?? []).findIndex((b) => b.name === name)}`)
       : '';
-    const tone = isMain(name) ? ' c-accent' : ' c-ink';
-    s += `<text x="${LEFT - 26}" y="${y + 4}" class="gg-branch t-sub${tone}"${attrs}>${escapeHtml(name)}</text>`;
+    s += `<text x="${LEFT - 26}" y="${y + 4}" class="gg-branch t-sub c-ink"${attrs}>${escapeHtml(name)}</text>`;
   });
   s += `</g>`;
 
@@ -139,10 +139,9 @@ export function renderGitgraph(data: GitData): string {
     }
     if (c.tag !== undefined) {
       const w = Math.max(34, c.tag.length * 6.5 + 14);
-      const tone = isMain(branch) ? ' c-accent' : '';
       s += `<g>`;
-      s += `<rect x="${p.x - w / 2}" y="${p.y - 40}" width="${w}" height="18" rx="2" fill="var(--paper)" stroke="var(--rule-solid)" stroke-width="1"/>`;
-      s += `<text x="${p.x}" y="${p.y - 27.5}" class="t-badge${tone}" text-anchor="middle">${escapeHtml(c.tag)}</text>`;
+      s += `<rect x="${p.x - w / 2}" y="${p.y - 40}" width="${w}" height="18" rx="2" fill="var(--paper)" stroke="var(--ink)" stroke-width="1"/>`;
+      s += `<text x="${p.x}" y="${p.y - 27.5}" class="t-badge c-ink" text-anchor="middle">${escapeHtml(c.tag)}</text>`;
       s += `<line x1="${p.x}" y1="${p.y - 22}" x2="${p.x}" y2="${p.y - 10}" stroke="var(--rule-solid)" stroke-width="1" stroke-dasharray="2 2"/>`;
       s += `</g>`;
     }
@@ -150,8 +149,8 @@ export function renderGitgraph(data: GitData): string {
   });
   s += `</g></svg>`;
 
-  const items: LegendItem[] = [{ swatch: 'edge-accent', label: `${main} (trunk)` }];
-  if (lanes.length > 1) items.push({ swatch: 'edge', label: 'branch' });
+  const items: LegendItem[] = [{ swatch: 'line-dot-accent', label: `${main} (trunk)` }];
+  if (lanes.length > 1) items.push({ swatch: 'line-dot', label: 'branch' });
   if (merges > 0) items.push({ swatch: 'edge-dashed', label: 'merge' });
   if (kinds.release) items.push({ swatch: 'chip', chip: 'v1', label: 'release tag' });
   if (kinds.hotfix) items.push({ swatch: 'chip', chip: '◉', label: 'hotfix' });

@@ -242,8 +242,13 @@ export function renderSankey(data: SankeyData): string {
     const ty = n.y + n.h / 2;
     const anchor = last ? 'end' : 'start';
     const nameCls = n.tone === 'accent' ? 't-name c-accent' : n.tone === 'negative' ? 't-name c-negative' : 't-name';
+    // A paper mask under both lines keeps the label off the ribbon edges
+    // that leave and arrive around the bar.
+    const valueText = fmt(n.value, data.unit);
+    const mw = Math.max(n.label.length * 7.2, valueText.length * 6.2) + 8;
+    s += `<rect x="${r(last ? tx - mw + 4 : tx - 4)}" y="${r(ty - 9)}" width="${r(mw)}" height="28" rx="2" fill="var(--paper)"/>`;
     s += `<text x="${r(tx)}" y="${r(ty + 3)}" class="${nameCls}" text-anchor="${anchor}">${escapeHtml(n.label)}</text>`;
-    s += `<text x="${r(tx)}" y="${r(ty + 15)}" class="t-sub c-muted" text-anchor="${anchor}">${escapeHtml(fmt(n.value, data.unit))}</text>`;
+    s += `<text x="${r(tx)}" y="${r(ty + 15)}" class="t-sub c-muted" text-anchor="${anchor}">${escapeHtml(valueText)}</text>`;
     s += `</g>`;
   }
   s += `</g></svg>`;

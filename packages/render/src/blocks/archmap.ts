@@ -45,7 +45,9 @@ function nameOf(item: ArchmapItem): string {
 function renderTile(item: ArchmapItem, path: string): string {
   const status = statusOf(item);
   const statusClass = status === 'current' ? '' : ` am-t-${status}`;
-  return `<div class="am-tile${statusClass}"${bp(path)}>${escapeHtml(nameOf(item))}</div>`;
+  // A gap is a missing capability, not an error: dashed outline plus a word chip.
+  const chip = status === 'gap' ? `<span class="t-eyebrow am-chip">Gap</span>` : '';
+  return `<div class="am-tile${statusClass}"${bp(path)}>${escapeHtml(nameOf(item))}${chip}</div>`;
 }
 
 function renderArea(area: ArchmapArea, ai: number): string {
@@ -70,17 +72,28 @@ function renderArea(area: ArchmapArea, ai: number): string {
   );
 }
 
-/** The legend row — chip swatch + label for each status actually used. */
+/**
+ * The legend strip (shared `.diagram-legend` style) — one swatch per tile
+ * status actually used; omitted when only one status is in play. The gap
+ * entry shows its word chip, the same chip the tile carries.
+ */
 function renderLegend(areas: ArchmapData['areas']): string {
   const used = new Set<TileStatus>();
   for (const area of areas) {
     for (const item of area.items ?? []) used.add(statusOf(item));
   }
-  if (used.size === 0) return '';
-  const items = STATUS_ORDER.filter((s) => used.has(s))
-    .map((s) => `<span class="item"><span class="sw am-sw-${s}"></span>${STATUS_LABEL[s]}</span>`)
+  const present = STATUS_ORDER.filter((s) => used.has(s));
+  if (present.length < 2) return '';
+  const items = present
+    .map((s) => {
+      const sw =
+        s === 'gap'
+          ? `<span class="lg-chip t-eyebrow">Gap</span>`
+          : `<span class="lg-sw am-sw am-sw-${s}"></span>`;
+      return `<span class="lg-item">${sw}<span class="lg-label">${STATUS_LABEL[s]}</span></span>`;
+    })
     .join('');
-  return `<div class="legend am-legend">${items}</div>`;
+  return `<div class="diagram-legend"><span class="lg-title t-eyebrow">Legend</span>${items}</div>`;
 }
 
 export function renderArchmap(data: ArchmapData): string {

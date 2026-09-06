@@ -10,8 +10,9 @@
  * `interface` is dashed (a contract, not a body); `middleware` and `state`
  * sit on the inactive fill. Data, transport and external nodes borrow the
  * block family's shapes (cylinder, pipe, stack, cloud). Edges follow the
- * stroke table: `uses` solid, `implements` / `reads` dashed with an open
- * head, `async` dotted, network calls (`egress` / `https` / `api`) in `link`.
+ * stroke table: `uses` solid, `implements` dashed with the UML hollow
+ * triangle, `reads` dashed with an open head, `async` dotted, network calls
+ * (`egress` / `https` / `api`) in `link`.
  *
  * Accent rule: the single entry module — `engine` / `core` on the frontend
  * variant, `controller` / `handler` / `route` on `variant: be`. Two or more
@@ -26,7 +27,6 @@ import { nodeSkin } from '../svg/blockStyle.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { edgeAnchorRect, renderShapedNode } from './blockGraph.js';
 import { wrapText } from '../svg/wrapText.js';
-import { safeColor } from '../sanitize.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
@@ -133,7 +133,7 @@ interface FeEdgeStyle {
 function feEdge(kind: string | undefined): FeEdgeStyle {
   switch ((kind ?? 'uses').toLowerCase()) {
     case 'implements':
-      return { stroke: 'var(--muted)', sw: 1.5, dash: '5 4', marker: 'skOpen', legend: 'implements' };
+      return { stroke: 'var(--muted)', sw: 1.5, dash: '5 4', marker: 'feTri', legend: 'implements' };
     case 'egress':
     case 'https':
     case 'api':
@@ -223,20 +223,22 @@ function renderFelogicGraph(data: Data, tag: string): string {
     // The network-call head in `link` — local, since the shared defs carry
     // only the muted / accent / negative heads.
     `<defs><marker id="feLink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
-    `<path d="M0,0 L10,5 L0,10 z" fill="var(--link)"/></marker></defs>`;
+    `<path d="M0,0 L10,5 L0,10 z" fill="var(--link)"/></marker>` +
+    // `implements` carries the UML hollow triangle (the same relation as in
+    // `uml`), so it never reads like a `reads` edge.
+    `<marker id="feTri" viewBox="0 0 14 14" refX="13" refY="7" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
+    `<path d="M1,1 L13,7 L1,13 z" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/></marker></defs>`;
 
-  // Group panels — the skin's paper-2 wash with a hairline and an eyebrow
-  // label; an explicit `color` on the group still tints its outline and label.
+  // Group panels — the skin's paper-2 wash with a `rule-solid` hairline and a
+  // mono eyebrow tab. A group's `color` is not a stroke: boundaries never
+  // borrow `link` or any hue (the tab keeps `soft`).
   s += `<g${bl('groups')}>`;
   for (const { g, gi } of sortedGroups) {
     const r = groupRect(g);
-    const tint = safeColor(g.color, '');
-    const stroke = tint.length > 0 ? tint : 'var(--rule-solid)';
-    const text = tint.length > 0 ? tint : 'var(--soft)';
     s +=
       `<g${bp(`groups.${gi}`)}>` +
-      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="${stroke}" stroke-width="1"/>` +
-      `<text x="${r.x + 12}" y="${r.y + 15}" class="grp-label t-eyebrow" fill="${text}">${escapeHtml(g.label)}</text>` +
+      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="var(--rule-solid)" stroke-width="1"/>` +
+      `<text x="${r.x + 12}" y="${r.y + 15}" class="t-eyebrow">${escapeHtml(g.label)}</text>` +
       `</g>`;
   }
   s += `</g>`; // close the groups list container
@@ -345,7 +347,7 @@ function renderFelogicGraph(data: Data, tag: string): string {
   if (dashedUsed) items.push({ swatch: 'node-dashed', label: 'contract / external' });
   if (inactiveUsed) items.push({ swatch: 'node-fill2', label: 'passive (state, middleware, store)' });
   if (edgeLegend.has('uses')) items.push({ swatch: 'edge', label: 'uses' });
-  if (edgeLegend.has('implements')) items.push({ swatch: 'edge-dashed', label: 'implements' });
+  if (edgeLegend.has('implements')) items.push({ swatch: 'edge-implements', label: 'implements' });
   if (edgeLegend.has('reads')) items.push({ swatch: 'edge-dashed', label: 'reads / optional' });
   if (edgeLegend.has('async')) items.push({ swatch: 'edge-async', label: 'async' });
   if (edgeLegend.has('network')) items.push({ swatch: 'edge-link', label: 'network call' });

@@ -35,18 +35,34 @@ export interface ThemeCard {
 
 /** The renderer's `:root` values (textbook) — fallback when a theme doesn't override. */
 const ROOT_SWATCH = {
-  '--white': '#fcfbf7',
-  '--navy': '#233a5e',
-  '--highlight': '#9c4a2f',
+  '--paper': '#f7f6f2',
+  '--ink': '#1f2430',
+  '--accent': '#b04a25',
 } as const;
 
 type SwatchVar = keyof typeof ROOT_SWATCH;
 
+/** Legacy names a saved theme may still carry for each role. */
+const LEGACY_OF: Readonly<Record<SwatchVar, string>> = {
+  '--paper': '--white',
+  '--ink': '--navy',
+  '--accent': '--highlight',
+};
+
 /** The swatch a resolved (base + var overrides) theme paints. */
 export function swatchFor(resolved: ResolvedTheme): ThemeSwatch {
-  const pick = (k: SwatchVar): string =>
-    resolved.themeVars?.[k] ?? themes[resolved.theme].vars[k] ?? ROOT_SWATCH[k];
-  return { paper: pick('--white'), primary: pick('--navy'), accent: pick('--highlight') };
+  const pick = (k: SwatchVar): string => {
+    const legacy = LEGACY_OF[k];
+    const base = themes[resolved.theme].vars;
+    return (
+      resolved.themeVars?.[k] ??
+      resolved.themeVars?.[legacy] ??
+      base[k] ??
+      base[legacy] ??
+      ROOT_SWATCH[k]
+    );
+  };
+  return { paper: pick('--paper'), primary: pick('--ink'), accent: pick('--accent') };
 }
 
 /**

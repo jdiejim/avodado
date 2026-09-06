@@ -111,9 +111,11 @@ export function renderUml(data: BlockDataMap['uml']): string {
     `<defs>` +
     `<marker id="umlTri" viewBox="0 0 14 14" refX="13" refY="7" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
     `<path d="M1,1 L13,7 L1,13 z" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/></marker>` +
-    `<marker id="umlDiaF" viewBox="0 0 20 12" refX="19" refY="6" markerWidth="11" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
+    // The diamonds sit 6px outside the box edge (refX past the tip), 10px
+    // long, so they never land on a rounded corner.
+    `<marker id="umlDiaF" viewBox="0 0 20 12" refX="30" refY="6" markerWidth="11" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
     `<path d="M1,6 L10,1 L19,6 L10,11 z" fill="var(--muted)"/></marker>` +
-    `<marker id="umlDiaH" viewBox="0 0 20 12" refX="19" refY="6" markerWidth="11" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
+    `<marker id="umlDiaH" viewBox="0 0 20 12" refX="30" refY="6" markerWidth="11" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
     `<path d="M1,6 L10,1 L19,6 L10,11 z" fill="var(--paper)" stroke="var(--muted)" stroke-width="1.2"/></marker>` +
     `<marker id="umlOpen" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
     `<path d="M1,1 L11,6 L1,11" fill="none" stroke="var(--muted)" stroke-width="1.3"/></marker>` +

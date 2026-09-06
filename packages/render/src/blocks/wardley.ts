@@ -48,11 +48,11 @@ const KIND_ATTRS: Record<Kind, string> = {
 };
 
 const KIND_LEGEND: Record<Kind, LegendItem> = {
-  user: { swatch: 'fill', fill: 'var(--ink)', label: 'user' },
-  component: { swatch: 'node', label: 'component' },
-  commodity: { swatch: 'node-fill2', label: 'commodity' },
-  build: { swatch: 'node-accent', label: 'build' },
-  buy: { swatch: 'node-dashed', label: 'buy' },
+  user: { swatch: 'node-dot', fill: 'var(--ink)', label: 'user' },
+  component: { swatch: 'node-dot', label: 'component' },
+  commodity: { swatch: 'node-dot', fill: 'var(--paper-2)', stroke: 'var(--rule-solid)', label: 'commodity' },
+  build: { swatch: 'node-dot', fill: 'var(--accent-tint)', stroke: 'var(--accent)', label: 'build' },
+  buy: { swatch: 'node-dot', dash: '3 2', label: 'buy' },
 };
 
 export function renderWardley(data: WardleyData): string {
@@ -128,7 +128,7 @@ export function renderWardley(data: WardleyData): string {
   const items: LegendItem[] = (['user', 'component', 'commodity', 'build', 'buy'] as const)
     .filter((k) => kinds.has(k))
     .map((k) => KIND_LEGEND[k]);
-  if (hasLinks) items.push({ swatch: 'edge', label: 'depends on' });
+  if (hasLinks) items.push({ swatch: 'line', label: 'depends on' });
   if (hasMovement) items.push({ swatch: 'edge-dashed', label: 'movement' });
   const legendHtml = renderLegend(items);
 

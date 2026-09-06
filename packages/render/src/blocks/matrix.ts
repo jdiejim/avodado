@@ -7,8 +7,17 @@
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 
 type MatrixData = BlockDataMap['matrix'];
+
+/** Legend entry per cell tone — the strip lists only the tones the grid uses. */
+const TONE_ORDER = ['m-full', 'm-some', 'm-none'] as const;
+const TONE_LEGEND: Record<(typeof TONE_ORDER)[number], LegendItem> = {
+  'm-full': { swatch: 'node', label: 'full' },
+  'm-some': { swatch: 'node-dashed', label: 'partial' },
+  'm-none': { swatch: 'chip', chip: '—', label: 'none' },
+};
 
 /** Classifies a cell value into a tone class so cells colour by meaning. */
 function cellTone(raw: string): string {
@@ -31,13 +40,16 @@ export function renderMatrix(data: MatrixData): string {
     `<tr><th class="mx-corner"${bp('corner')}>${escapeHtml(corner)}</th>` +
     data.cols.map((c, i) => `<th scope="col"${bp(`cols.${i}`)}>${escapeHtml(c)}</th>`).join('') +
     `</tr>`;
+  const used = new Set<string>();
   const body = data.rows
     .map((row, ri) => {
       const cells = data.cols
         .map((_, i) => {
           const val = row.cells[i] ?? '';
           const shown = val.trim() === '' ? '—' : val;
-          return `<td class="mx-cell ${cellTone(val)}"${bp(`rows.${ri}.cells.${i}`)}>${escapeHtml(shown)}</td>`;
+          const tone = cellTone(val);
+          used.add(tone);
+          return `<td class="mx-cell ${tone}"${bp(`rows.${ri}.cells.${i}`)}>${escapeHtml(shown)}</td>`;
         })
         .join('');
       return `<tr${bp(`rows.${ri}`)}><th scope="row" class="mx-row"${bp(`rows.${ri}.label`)}>${escapeHtml(row.label)}</th>${cells}</tr>`;
@@ -47,5 +59,6 @@ export function renderMatrix(data: MatrixData): string {
     data.title !== undefined ? `<div class="mx-title">${escapeHtml(data.title)}</div>` : '';
   const desc =
     data.description !== undefined ? `<p class="mx-desc">${escapeHtml(data.description)}</p>` : '';
-  return `<div class="matrix">${caption}${desc}<div class="mx-scroll"><table class="mx-grid"><thead>${head}</thead><tbody${bl('rows')}>${body}</tbody></table></div></div>`;
+  const legend = renderLegend(TONE_ORDER.filter((t) => used.has(t)).map((t) => TONE_LEGEND[t]));
+  return `<div class="matrix">${caption}${desc}<div class="mx-scroll"><table class="mx-grid"><thead>${head}</thead><tbody${bl('rows')}>${body}</tbody></table></div>${legend}</div>`;
 }

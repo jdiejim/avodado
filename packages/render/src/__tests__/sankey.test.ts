@@ -33,7 +33,7 @@ describe('sankey', () => {
   it('infers its nodes from the links, so a bare link list renders', () => {
     const html = renderSankey(SPEND);
     // Bill · Compute · Storage · Serving · Batch
-    expect(parse(html).querySelectorAll('g[data-bl="nodes"] rect')).toHaveLength(5);
+    expect(parse(html).querySelectorAll('g[data-bl="nodes"] > g')).toHaveLength(5);
     expect(html).toContain('>Bill<');
     expect(html).toContain('>Serving<');
     const ribbons = ribbonHeights(html);

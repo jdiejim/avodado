@@ -102,7 +102,7 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
     s +=
       `<g${bp(`clusters.${ci}`)}>` +
       `<rect x="${cb.x}" y="${cb.y}" width="${cb.w}" height="${cb.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="var(--rule-solid)" stroke-width="1"/>` +
-      `<text x="${cb.x + 12}" y="${cb.y + 16}" class="grp-label t-eyebrow">${escapeHtml(cb.c.label)}</text>` +
+      `<text x="${cb.x + 12}" y="${cb.y + 16}" class="t-eyebrow">${escapeHtml(cb.c.label)}</text>` +
       kindLabel +
       `</g>`;
   });

@@ -24,11 +24,29 @@ export type LegendSwatch =
   | 'edge-error'
   | 'edge-accent'
   | 'edge-link'
+  /** The accent spent on a dashed response: accent, dashed, open head. */
+  | 'edge-accent-dashed'
+  /** UML realisation: dashed with a hollow triangle head. */
+  | 'edge-implements'
+  /** A plain line with a dot — a branch lane (gitgraph), no arrowhead. */
+  | 'line-dot'
+  | 'line-dot-accent'
+  /** The three-sided data store (open right edge). */
+  | 'node-store'
+  /** A full stadium (start / end). */
+  | 'node-stadium'
+  | 'node-stadium-fill2'
+  /** A `negative` outline on the negative tint — an error exit. */
+  | 'node-negative'
   | 'chip'
   /** Paper fill, accent outline — the "current" element of a walkthrough. */
   | 'node-accent-outline'
   /** A solid swatch in the token named by `fill` — chart series, ramp steps. */
-  | 'fill';
+  | 'fill'
+  /** A dot node (wardley / quadrant): `fill` / `stroke` / `dash` override paper / ink / solid. */
+  | 'node-dot'
+  /** A plain line with no head — a dependency, a baseline. */
+  | 'line';
 
 /** One legend entry: a swatch (or a text chip) and the label beside it. */
 export interface LegendItem {
@@ -36,8 +54,12 @@ export interface LegendItem {
   readonly label: string;
   /** The chip text, when `swatch` is `chip` (e.g. `EXT`, `#`, `1 / N`). */
   readonly chip?: string;
-  /** The fill token (`var(--series-1, …)`), when `swatch` is `fill`. */
+  /** The fill token (`var(--series-1, …)`), when `swatch` is `fill` or `node-dot`. */
   readonly fill?: string;
+  /** The stroke token, when `swatch` is `node-dot` (default `ink`). */
+  readonly stroke?: string;
+  /** The dash pattern, when `swatch` is `node-dot` (default solid). */
+  readonly dash?: string;
   /** Data path of the series / item this entry stands for (editors click it). */
   readonly path?: string;
 }
@@ -66,9 +88,17 @@ function nodeSwatch(stroke: string, sw: number, fill: string, dash: string): str
   return `<rect x="1" y="1" width="${SW_W - 2}" height="${SW_H - 2}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>`;
 }
 
-function swatchSvg(kind: LegendSwatch, fill?: string): string {
+function swatchSvg(kind: LegendSwatch, fill?: string, stroke?: string, dash?: string): string {
   let inner: string;
   switch (kind) {
+    case 'node-dot': {
+      const dashAttr = dash !== undefined && dash.length > 0 ? ` stroke-dasharray="${dash}"` : '';
+      inner = `<circle cx="${SW_W / 2}" cy="${SW_H / 2}" r="5.5" fill="${fill ?? 'var(--paper)'}" stroke="${stroke ?? 'var(--ink)'}" stroke-width="1.5"${dashAttr}/>`;
+      break;
+    }
+    case 'line':
+      inner = `<line x1="1" y1="${SW_H / 2}" x2="${SW_W - 1}" y2="${SW_H / 2}" stroke="${stroke ?? 'var(--muted)'}" stroke-width="1.25"/>`;
+      break;
     case 'node-accent-outline':
       inner = nodeSwatch('var(--accent)', 1.5, 'var(--paper)', '');
       break;
@@ -105,6 +135,39 @@ function swatchSvg(kind: LegendSwatch, fill?: string): string {
     case 'edge-link':
       inner = edgeSwatch('var(--link)', 1.5, '', true);
       break;
+    case 'edge-accent-dashed':
+      inner = edgeSwatch('var(--accent)', 1.75, '5 4', false);
+      break;
+    case 'edge-implements': {
+      const y = SW_H / 2;
+      inner =
+        `<line x1="1" y1="${y}" x2="${SW_W - 8}" y2="${y}" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>` +
+        `<path d="M${SW_W - 8},${y - 4} L${SW_W - 1},${y} L${SW_W - 8},${y + 4} z" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.2"/>`;
+      break;
+    }
+    case 'line-dot':
+    case 'line-dot-accent': {
+      const y = SW_H / 2;
+      const c = kind === 'line-dot' ? 'var(--muted)' : 'var(--accent)';
+      inner =
+        `<line x1="1" y1="${y}" x2="${SW_W - 1}" y2="${y}" stroke="${c}" stroke-width="${kind === 'line-dot' ? 1.5 : 1.75}"/>` +
+        `<circle cx="${SW_W / 2}" cy="${y}" r="3.5" fill="${c}"/>`;
+      break;
+    }
+    case 'node-store':
+      inner =
+        `<rect x="1" y="1" width="${SW_W - 2}" height="${SW_H - 2}" fill="var(--paper-2)"/>` +
+        `<path d="M${SW_W - 1},1 H1 V${SW_H - 1} H${SW_W - 1}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>`;
+      break;
+    case 'node-stadium':
+      inner = `<rect x="1" y="1" width="${SW_W - 2}" height="${SW_H - 2}" rx="${(SW_H - 2) / 2}" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"/>`;
+      break;
+    case 'node-stadium-fill2':
+      inner = `<rect x="1" y="1" width="${SW_W - 2}" height="${SW_H - 2}" rx="${(SW_H - 2) / 2}" fill="var(--paper-2)" stroke="var(--rule-solid)" stroke-width="1"/>`;
+      break;
+    case 'node-negative':
+      inner = nodeSwatch('var(--negative)', 1.5, 'var(--negative-tint)', '');
+      break;
     case 'chip':
       return '';
   }
@@ -123,7 +186,7 @@ export function renderLegend(items: readonly LegendItem[], listPath?: string): s
       const sw =
         it.swatch === 'chip'
           ? `<span class="lg-chip t-eyebrow">${escapeHtml(it.chip ?? '')}</span>`
-          : swatchSvg(it.swatch, it.fill);
+          : swatchSvg(it.swatch, it.fill, it.stroke, it.dash);
       const path = it.path !== undefined ? bp(it.path) : '';
       return `<span class="lg-item"${path}>${sw}<span class="lg-label">${escapeHtml(it.label)}</span></span>`;
     })

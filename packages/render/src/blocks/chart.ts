@@ -18,7 +18,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
-import { inkTone, marksOf, seriesColor, type Mark } from '../svg/dsTone.js';
+import { inkTone, marksOf, seriesColor, sliceTone, type Mark } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 
 type ChartData = BlockDataMap['chart'];
@@ -45,10 +45,39 @@ interface Frame {
   readonly x1: number; // plot right
   readonly y0: number; // plot top
   readonly y1: number; // plot bottom (baseline)
+  /** The top tick — the axis ceiling the data is scaled to. */
   readonly yMax: number;
+  /** Nice tick values, 0 first, `yMax` last. */
+  readonly ticks: readonly number[];
 }
 
-const TICKS = 4;
+/**
+ * A nice tick step (1 / 2 / 2.5 / 5 × 10^n) for a span, choosing the step
+ * whose tick count over `span` lands in 4–6 (closest to 5).
+ */
+function niceStep(span: number): number {
+  if (!(span > 0)) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(span / 5)));
+  const candidates = [1, 2, 2.5, 5, 10].map((m) => m * mag);
+  let best = candidates[0] ?? 1;
+  let bestScore = Infinity;
+  for (const c of candidates) {
+    const n = Math.ceil(span / c - 1e-9);
+    const score = n >= 4 && n <= 6 ? Math.abs(n - 5) : 10 + Math.abs(n - 5);
+    if (score < bestScore) {
+      best = c;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/** Nice ticks from 0 to the first step multiple at or above `max`. */
+function niceTicks(max: number): number[] {
+  const step = niceStep(max);
+  const n = Math.max(1, Math.ceil(max / step - 1e-9));
+  return Array.from({ length: n + 1 }, (_v, i) => Math.round(i * step * 1e6) / 1e6);
+}
 
 function frameFor(data: ChartData, cats: number, stacked = false): Frame {
   const width = Math.max(420, Math.min(680, 120 + cats * 84));
@@ -61,18 +90,20 @@ function frameFor(data: ChartData, cats: number, stacked = false): Frame {
     ? Array.from({ length: cats }, (_v, i) => series.reduce((a, sr) => a + pos(sr.values[i] ?? 0), 0))
     : [];
   const dataMax = Math.max(0, ...values, ...totals);
-  const yMax = data.max !== undefined && data.max > 0 ? data.max : dataMax > 0 ? dataMax : 1;
-  return { width, height, x0: 52, x1: width - 18, y0: 18, y1: height - 32, yMax };
+  const ceiling = data.max !== undefined && data.max > 0 ? data.max : dataMax > 0 ? dataMax : 1;
+  const ticks = niceTicks(ceiling);
+  const yMax = ticks[ticks.length - 1] ?? ceiling;
+  return { width, height, x0: 52, x1: width - 18, y0: 18, y1: height - 32, yMax, ticks };
 }
 
 /** Baseline, hairline gridlines, tick labels, and category labels. */
 function axes(f: Frame, labels: readonly string[], unit: string | undefined, tagLabels: boolean): string {
   let s = '';
-  for (let t = 0; t <= TICKS; t++) {
-    const y = Math.round(f.y1 - ((f.y1 - f.y0) * t) / TICKS);
-    s += `<line x1="${f.x0}" y1="${y}" x2="${f.x1}" y2="${y}" stroke="${t === 0 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
-    s += `<text x="${f.x0 - 8}" y="${y + 3}" class="t-sub c-soft" text-anchor="end">${escapeHtml(fmt((f.yMax * t) / TICKS, unit))}</text>`;
-  }
+  f.ticks.forEach((t, ti) => {
+    const y = Math.round(f.y1 - ((f.y1 - f.y0) * t) / f.yMax);
+    s += `<line x1="${f.x0}" y1="${y}" x2="${f.x1}" y2="${y}" stroke="${ti === 0 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<text x="${f.x0 - 8}" y="${y + 3}" class="t-sub c-soft" text-anchor="end">${escapeHtml(fmt(t, unit))}</text>`;
+  });
   const n = Math.max(labels.length, 1);
   const slot = (f.x1 - f.x0) / n;
   // Category labels are only addressable when they come from `labels` in the
@@ -102,7 +133,7 @@ function itemsLegend(items: readonly DonutItem[], unit: string | undefined): str
   const marks = marksOf(items.map((it) => it.accent));
   const entries: LegendItem[] = items.map((it, i) => ({
     swatch: 'fill',
-    fill: inkTone(i, marks[i]).fill,
+    fill: sliceTone(i, marks[i]).fill,
     label: `${it.label} — ${fmt(pos(it.value), unit)}`,
     path: `items.${i}`,
   }));
@@ -186,16 +217,19 @@ interface Drawn {
 }
 
 function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
-  const width = 420;
-  const height = 220;
+  const width = 480;
+  const height = 236;
   const cx = Math.round(width / 2);
   const cy = Math.round(height / 2);
   const r = 74;
   const sw = 26;
   const total = items.reduce((acc, it) => acc + pos(it.value), 0);
   let s = svgOpenSize(width, height);
+  const ringEdges =
+    `<circle cx="${cx}" cy="${cy}" r="${r + sw / 2}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="${r - sw / 2}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>`;
   if (total <= 0) {
-    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--paper)" stroke-width="${sw}"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--paper)" stroke-width="${sw}"/>` + ringEdges;
   } else {
     let angle = -90;
     const marks = marksOf(items.map((it) => it.accent));
@@ -208,12 +242,19 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
       const y1 = Math.round((cy + (r + sw / 2 + 1) * Math.sin(a)) * 10) / 10;
       seams.push(`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--paper-2)" stroke-width="2"/>`);
     };
+    // Every slice worth ≥ 8% is named beside the ring, with a leader from
+    // the slice's middle; labels on one side are nudged apart top-down.
+    interface Callout {
+      readonly mid: number; // degrees
+      readonly text: string;
+    }
+    const callouts: Callout[] = [];
     s += `<g${bl('items')}>`;
     items.forEach((it, i) => {
       const v = pos(it.value);
       if (v === 0) return;
       const sweep = (v / total) * 360;
-      const color = inkTone(i, marks[i]).fill;
+      const color = sliceTone(i, marks[i]).fill;
       if (sweep >= 359.999) {
         // A full circle can't be a single arc — draw a ring.
         s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"${bp(`items.${i}`)}/>`;
@@ -228,16 +269,63 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
         s += `<path d="M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="butt"${bp(`items.${i}`)}/>`;
         seam(angle);
       }
+      if (v / total >= 0.08) callouts.push({ mid: angle + sweep / 2, text: `${it.label} ${fmt(v, data.unit)}` });
       angle += sweep;
     });
     s += `</g>`;
+    s += ringEdges;
     // Ground-coloured seams between slices, so pale steps stay separable.
     if (seams.length > 1) s += seams.join('');
+    s += donutCallouts(callouts, cx, cy, r + sw / 2);
   }
   s += `<text x="${cx}" y="${cy + 2}" class="chart-total">${escapeHtml(fmt(total, data.unit))}</text>`;
   s += `<text x="${cx}" y="${cy + 20}" class="t-eyebrow" text-anchor="middle">TOTAL</text>`;
   s += `</svg>`;
   return { svg: s, legend: itemsLegend(items, data.unit) };
+}
+
+/**
+ * Slice callouts: a short leader from the ring's rim to a `.t-sub` label just
+ * outside it, anchored away from the ring. Labels on the same side are swept
+ * top-down and pushed at least 12px apart so neighbours never overprint.
+ */
+function donutCallouts(
+  callouts: ReadonlyArray<{ mid: number; text: string }>,
+  cx: number,
+  cy: number,
+  rim: number,
+): string {
+  const placed = callouts.map((c) => {
+    const a = (c.mid * Math.PI) / 180;
+    const right = Math.cos(a) >= 0;
+    return {
+      text: c.text,
+      right,
+      x0: cx + (rim + 2) * Math.cos(a),
+      y0: cy + (rim + 2) * Math.sin(a),
+      x1: cx + (rim + 12) * Math.cos(a),
+      y: cy + (rim + 12) * Math.sin(a),
+    };
+  });
+  for (const side of [true, false]) {
+    const group = placed.filter((p) => p.right === side).sort((a, b) => a.y - b.y);
+    let floor = -Infinity;
+    for (const p of group) {
+      const y = Math.max(p.y, floor + 12);
+      (p as { y: number }).y = y;
+      floor = y;
+    }
+  }
+  const round = (n: number): number => Math.round(n * 10) / 10;
+  return placed
+    .map((p) => {
+      const lx = p.right ? Math.max(p.x1, cx + rim + 8) : Math.min(p.x1, cx - rim - 8);
+      return (
+        `<line x1="${round(p.x0)}" y1="${round(p.y0)}" x2="${round(lx)}" y2="${round(p.y)}" stroke="var(--muted)" stroke-width="0.75"/>` +
+        `<text x="${round(lx + (p.right ? 4 : -4))}" y="${round(p.y + 3.5)}" class="t-sub c-ink" text-anchor="${p.right ? 'start' : 'end'}">${escapeHtml(p.text)}</text>`
+      );
+    })
+    .join('');
 }
 
 /**
@@ -315,15 +403,6 @@ function renderScatter(
 
 type ScatterPoint = NonNullable<ChartData['points']>[number];
 
-/** A nice tick step (1/2/5 × 10^k) for roughly `count` ticks over `range`. */
-function niceStep(range: number, count: number): number {
-  const raw = range / Math.max(count, 1);
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-  const scaled = raw / mag;
-  const nice = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
-  return nice * mag;
-}
-
 interface NumScale {
   readonly min: number;
   readonly max: number;
@@ -331,7 +410,7 @@ interface NumScale {
 }
 
 /** Pads a data extent, snaps it to nice tick multiples, and lists the ticks. */
-function numScale(values: readonly number[], count: number): NumScale {
+function numScale(values: readonly number[]): NumScale {
   let lo = Math.min(...values);
   let hi = Math.max(...values);
   if (lo === hi) {
@@ -344,7 +423,7 @@ function numScale(values: readonly number[], count: number): NumScale {
     lo -= pad;
     hi += pad;
   }
-  const step = niceStep(hi - lo, count);
+  const step = niceStep(hi - lo);
   const min = Math.floor(lo / step) * step;
   const max = Math.ceil(hi / step) * step;
   const ticks: number[] = [];
@@ -416,8 +495,8 @@ function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): 
   // drawing outside the plot.
   if (guides?.x !== undefined) xs.push(guides.x);
   if (guides?.y !== undefined) ys.push(guides.y);
-  const sx = numScale(xs, 5);
-  const sy = numScale(ys, 5);
+  const sx = numScale(xs);
+  const sy = numScale(ys);
   const X = (v: number): number =>
     Math.round((x0 + ((x1 - x0) * (v - sx.min)) / (sx.max - sx.min)) * 10) / 10;
   const Y = (v: number): number =>
@@ -619,7 +698,7 @@ function renderGauge(data: ChartData, items: readonly DonutItem[]): Drawn {
   items.forEach((it, i) => {
     const r = outer - i * (band + gap);
     if (r <= band) return; // out of rings — the legend still names the item
-    const color = inkTone(i, marks[i]).fill;
+    const color = sliceTone(i, marks[i]).fill;
     const fraction = pos(it.value) / max;
     s += `<g${bp(`items.${i}`)}>`;
     s += `<path d="${arc(r, 1)}" fill="none" stroke="var(--paper)" stroke-width="${band}" stroke-linecap="round"/>`;
@@ -662,18 +741,21 @@ function renderRadar(data: ChartData, labels: readonly string[], series: readonl
   if (n < 3) return svgOpenSize(width, 60) + `</svg>`;
   const values = series.flatMap((s) => s.values.slice(0, n).map(pos));
   const dataMax = values.length > 0 ? Math.max(...values) : 0;
-  const vMax = data.max !== undefined && data.max > 0 ? data.max : dataMax > 0 ? dataMax : 1;
+  const ceiling = data.max !== undefined && data.max > 0 ? data.max : dataMax > 0 ? dataMax : 1;
+  const rings = niceTicks(ceiling);
+  const vMax = rings[rings.length - 1] ?? ceiling;
   const angleAt = (i: number): number => -Math.PI / 2 + (2 * Math.PI * i) / n;
   const ptAt = (i: number, radius: number): readonly [number, number] => {
     const a = angleAt(i);
     return [Math.round(cx + radius * Math.cos(a)), Math.round(cy + radius * Math.sin(a))];
   };
   let s = svgOpenSize(width, height);
-  // Concentric rings (hairline polygons) + axis spokes.
-  for (let ring = 1; ring <= TICKS; ring++) {
-    const pts = Array.from({ length: n }, (_, i) => ptAt(i, (r * ring) / TICKS).join(','));
-    s += `<polygon points="${pts.join(' ')}" fill="none" stroke="${ring === TICKS ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
-  }
+  // Concentric rings (hairline polygons, one per nice tick) + axis spokes.
+  rings.forEach((t, ri) => {
+    if (ri === 0) return;
+    const pts = Array.from({ length: n }, (_, i) => ptAt(i, (r * t) / vMax).join(','));
+    s += `<polygon points="${pts.join(' ')}" fill="none" stroke="${ri === rings.length - 1 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+  });
   for (let i = 0; i < n; i++) {
     const [x, y] = ptAt(i, r);
     s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--rule)" stroke-width="1"/>`;

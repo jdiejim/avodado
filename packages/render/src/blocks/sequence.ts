@@ -486,8 +486,10 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     `<path d="M1,1 L9,5 L1,9" fill="none" stroke="var(--muted)" stroke-width="1.6"/></marker>` +
     `<marker id="sqErr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
     `<path d="M0,0 L10,5 L0,10 z" fill="var(--negative)"/></marker>` +
+    // The accent message is always a response, so its head is the open
+    // return head in `accent` — the legend swatch draws the same stroke.
     `<marker id="sqAccent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
-    `<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>` +
+    `<path d="M1,1 L9,5 L1,9" fill="none" stroke="var(--accent)" stroke-width="1.6"/></marker>` +
     `</defs>`;
 
   // Frame bodies sit under everything; their tabs and guards go above the
@@ -666,7 +668,7 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
   if (used.response) items.push({ swatch: 'edge-dashed', label: 'response' });
   if (used.async) items.push({ swatch: 'edge-async', label: 'async' });
   if (used.error) items.push({ swatch: 'edge-error', label: 'error' });
-  if (accentIdx >= 0) items.push({ swatch: 'edge-accent', label: 'the answer the caller gets' });
+  if (accentIdx >= 0) items.push({ swatch: 'edge-accent-dashed', label: 'the answer the caller gets' });
   if (actors.some((a) => a.external === true)) items.push({ swatch: 'chip', chip: 'EXT', label: 'external actor' });
   if (frames.length > 0) items.push({ swatch: 'node-fill2', label: 'fragment (alt / opt / loop)' });
   if (bars.length > 0) items.push({ swatch: 'node', label: 'active' });

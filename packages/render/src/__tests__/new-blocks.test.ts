@@ -71,7 +71,7 @@ describe('treemap', () => {
   };
 
   it('sizes every tile by value and fills the canvas', () => {
-    const rects = parse(renderTreemap(SPEND)).querySelectorAll('g[data-bl="items"] rect');
+    const rects = parse(renderTreemap(SPEND)).querySelectorAll('g[data-bl="items"] rect[stroke]');
     expect(rects).toHaveLength(3);
     const areas = rects.map((r) => Number(r.getAttribute('width')) * Number(r.getAttribute('height')));
     // 60 / 30 / 10 — twice the value is twice the area (within the gutters).

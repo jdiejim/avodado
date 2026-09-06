@@ -108,9 +108,10 @@ export function gridGroupsSvg(groups: readonly GridGroup[], geo: GridGroupGeom):
       const tint = safeColor(g.color, '');
       const stroke = tint.length > 0 ? tint : 'var(--rule-solid)';
       const text = tint.length > 0 ? tint : 'var(--soft)';
+      // A plain `.t-eyebrow` tab (mono), like a sequence frame's `ALT` / `OPT`.
       const lbl = nested
-        ? `<text x="${r.x + r.w - 12}" y="${r.y + 16}" class="grp-label t-eyebrow" fill="${text}" text-anchor="end">${escapeHtml(g.label)}</text>`
-        : `<text x="${r.x + 12}" y="${r.y + 16}" class="grp-label t-eyebrow" fill="${text}">${escapeHtml(g.label)}</text>`;
+        ? `<text x="${r.x + r.w - 12}" y="${r.y + 16}" class="t-eyebrow" fill="${text}" text-anchor="end">${escapeHtml(g.label)}</text>`
+        : `<text x="${r.x + 12}" y="${r.y + 16}" class="t-eyebrow" fill="${text}">${escapeHtml(g.label)}</text>`;
       s +=
         `<g${bp(`groups.${gi}`)}>` +
         `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="${stroke}" stroke-width="1"/>` +

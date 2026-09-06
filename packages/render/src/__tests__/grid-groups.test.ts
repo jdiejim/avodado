@@ -83,7 +83,7 @@ describe('grid groups on flow / dfd / state / c4', () => {
       expect(html, kind).toContain('data-bl="groups"');
       expect(html, kind).toContain('data-bp="groups.0"');
       expect(html, kind).toMatch(groupRect(kind));
-      expect(html, kind).toMatch(/class="grp-label( t-eyebrow)?"/);
+      expect(html, kind).toMatch(/class="(grp-label|t-eyebrow)"/);
       expect(html, kind).toContain('>Zone A</text>');
       // Beneath: the groups layer appears before the first edge/node markup.
       expect(html.indexOf('data-bl="groups"'), kind).toBeLessThan(html.indexOf('data-bp="nodes.0"') === -1 ? html.indexOf('data-bp="states.0"') : html.indexOf('data-bp="nodes.0"'));

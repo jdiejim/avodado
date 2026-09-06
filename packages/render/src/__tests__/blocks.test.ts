@@ -341,8 +341,10 @@ describe('block renderers — DOM signatures', () => {
     // Headers: user columns + trailing Status column.
     const heads = root.querySelectorAll('thead th').map((h) => h.text);
     expect(heads).toEqual(['Task', 'Update', 'Status']);
-    // Only 2 user labels → no legend (it appears from 4 labels up).
-    expect(root.querySelector('.stt-legend')).toBeFalsy();
+    // The key lists the user's vocabulary first, in declared order (then any
+    // default label the rows use); it appears from two entries up.
+    const keys = root.querySelectorAll('.stt-legend .stt-key .lg-label').map((k) => k.text);
+    expect(keys.slice(0, 2)).toEqual(['In Review', 'stuck']);
   });
 
   it('statustable renders subtasks indented under their parent with their own pills', () => {

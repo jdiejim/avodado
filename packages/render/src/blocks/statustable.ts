@@ -30,7 +30,7 @@ type Subtask = NonNullable<Row['subtasks']>[number];
 const DEFAULT_COLUMNS: readonly string[] = ['Task', 'Update'];
 
 /** How many user-defined labels it takes before a legend adds information. */
-const LEGEND_MIN_LABELS = 4;
+const LEGEND_MIN_LABELS = 2;
 
 /**
  * Resolves a row's status to its palette accent — user vocabulary first, then
@@ -150,17 +150,39 @@ export function renderStatustable(data: StatustableData): string {
       ? `<p class="stt-desc"${bp('description')}>${escapeHtml(data.description)}</p>`
       : '';
 
+  // Legend (the shared strip, inside the frame): the user's vocabulary in its
+  // declared order — each entry addressable by its `statuses.i` paths — then
+  // any status the rows use from the default vocabulary (e.g. `done`), so
+  // every status the table shows is in the key.
+  const entries: Array<{ readonly label: string; readonly index: number }> = statuses.map((s, i) => ({
+    label: s.label,
+    index: i,
+  }));
+  const known = new Set(statuses.map((s) => s.label.toLowerCase()));
+  const note = (status: string): void => {
+    const key = status.toLowerCase();
+    if (!known.has(key)) {
+      known.add(key);
+      entries.push({ label: status, index: -1 });
+    }
+  };
+  for (const row of rows) {
+    note(row.status);
+    for (const sub of row.subtasks ?? []) note(sub.status);
+  }
   const legend =
-    statuses.length >= LEGEND_MIN_LABELS
-      ? `<div class="stt-legend"${bl('statuses')}>` +
-        statuses
-          .map(
-            (s, i) =>
-              `<span class="stt-key"${bp(`statuses.${i}`)}>` +
-              `<i class="stt-dot stt-${normalizeStatusColor(s.color)}"${bp(`statuses.${i}.color`)}></i>` +
-              `<span${bp(`statuses.${i}.label`)}>${escapeHtml(s.label)}</span>` +
-              `</span>`,
-          )
+    entries.length >= LEGEND_MIN_LABELS
+      ? `<div class="diagram-legend stt-legend"${bl('statuses')}><span class="lg-title t-eyebrow">Legend</span>` +
+        entries
+          .map(({ label, index }) => {
+            const own = index >= 0;
+            return (
+              `<span class="lg-item stt-key"${own ? bp(`statuses.${index}`) : ''}>` +
+              `<i class="lg-sw stt-dot stt-${accentFor(label, statuses)}"${own ? bp(`statuses.${index}.color`) : ''}></i>` +
+              `<span class="lg-label"${own ? bp(`statuses.${index}.label`) : ''}>${escapeHtml(label)}</span>` +
+              `</span>`
+            );
+          })
           .join('') +
         `</div>`
       : '';
@@ -170,6 +192,6 @@ export function renderStatustable(data: StatustableData): string {
     `<div class="stt-wrap"><table class="stt-table"${bl('rows')}>` +
     `<thead><tr>${head}</tr></thead>` +
     `${groups}` +
-    `</table></div>${legend}</div>`
+    `</table>${legend}</div></div>`
   );
 }

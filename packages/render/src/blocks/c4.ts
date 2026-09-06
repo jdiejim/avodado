@@ -72,6 +72,31 @@ function c4Skin(n: Node): NodeSkin {
   }
 }
 
+interface FitDesc {
+  readonly lines: string[];
+  /** One step smaller (9px) — the wider budget that kept every word. */
+  readonly small: boolean;
+  /** Still overflowing after the smaller step: the tail is cut with an ellipsis. */
+  readonly clipped: boolean;
+}
+
+/** True when `lines` dropped words of `text`. */
+function dropsWords(text: string, lines: readonly string[]): boolean {
+  return lines.join(' ').split(/\s+/).filter(Boolean).length < text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Wraps a description to ≤ 3 lines; shrinks one step before ever cutting. */
+function fitDesc(desc: string | undefined): FitDesc | undefined {
+  if (desc === undefined || desc.trim() === '') return undefined;
+  let lines = wrapText(desc, 32, 3);
+  if (!dropsWords(desc, lines)) return { lines, small: false, clipped: false };
+  lines = wrapText(desc, 36, 3);
+  if (!dropsWords(desc, lines)) return { lines, small: true, clipped: false };
+  const last = lines[lines.length - 1];
+  if (last !== undefined) lines[lines.length - 1] = `${last.replace(/[.,;:]?$/, '')}…`;
+  return { lines, small: true, clipped: true };
+}
+
 /** The word for what a boundary encloses at the given level. */
 function boundaryLevel(level: string | undefined): string {
   if (level === 'component') return 'CONTAINER';
@@ -86,7 +111,19 @@ export function renderC4(data: BlockDataMap['c4']): string {
   const nodes = ensureGrid(rawNodes, edges, data.dir ?? 'LR');
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const cellW = 212;
-  const cellH = 112;
+  // Descriptions are never dropped: each wraps to ≤ 3 lines at the sublabel
+  // size, steps the font down one notch (9px, wider budget) when that still
+  // loses words, and the cell grows uniformly to fit the tallest node — a
+  // store's cylinder keeps its rim clear of the last line.
+  const descOf = nodes.map((n) => fitDesc(n.desc));
+  const needed = nodes.map((n, i) => {
+    const d = descOf[i];
+    const lines = d?.lines.length ?? 0;
+    const base = n.kind === 'store' ? 86 : 76; // first desc baseline
+    const bottom = n.kind === 'store' ? 16 : 8; // rim / padding under the last line
+    return lines > 0 ? base + (lines - 1) * 13 + bottom : 0;
+  });
+  const cellH = Math.max(112, ...needed);
   const gapX = 56;
   const gapY = 64;
   const groups = data.groups ?? [];
@@ -128,7 +165,7 @@ export function renderC4(data: BlockDataMap['c4']): string {
     return (
       `<g>` +
       `<rect x="${minX}" y="${minY}" width="${maxX - minX}" height="${maxY - minY}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="${stroke}" stroke-width="1"/>` +
-      `<text x="${minX + 12}" y="${minY + 16}" class="grp-label t-eyebrow" fill="${text}">${escapeHtml(label)}</text>` +
+      `<text x="${minX + 12}" y="${minY + 16}" class="t-eyebrow" fill="${text}">${escapeHtml(label)}</text>` +
       `<text x="${maxX - 12}" y="${minY + 16}" class="t-eyebrow" fill="${text}" text-anchor="end">${levelWord}</text>` +
       `</g>`
     );
@@ -225,7 +262,7 @@ export function renderC4(data: BlockDataMap['c4']): string {
     // past the rim); everything else is the rounded card.
     const isStore = n.kind === 'store';
     const dy = isStore ? 10 : 0;
-    const desc = wrapText(n.desc, 32, isStore ? 1 : 2);
+    const d = descOf[ni] ?? { lines: [], small: false, clipped: false };
     const card = isStore
       ? `<path d="M${r.x} ${r.y + 12} A ${r.w / 2} 12 0 0 1 ${r.x + r.w} ${r.y + 12} V ${r.y + r.h - 12} A ${r.w / 2} 12 0 0 1 ${r.x} ${r.y + r.h - 12} Z" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>` +
         `<path d="M${r.x} ${r.y + 12} A ${r.w / 2} 12 0 0 0 ${r.x + r.w} ${r.y + 12}" fill="none" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>`
@@ -246,14 +283,19 @@ export function renderC4(data: BlockDataMap['c4']): string {
       n.tech !== undefined
         ? `<text x="${cxN}" y="${r.y + 56 + dy}" class="t-sub${onInactive ? ' c-muted' : ''}" text-anchor="middle">${escapeHtml(n.tech)}</text>`
         : '';
-    const descLines = desc
+    const small = d.small ? ' style="font-size:9px"' : '';
+    const descLines = d.lines
       .map(
         (ln, j) =>
-          `<text x="${cxN}" y="${r.y + 76 + dy + j * 13}" class="t-sub${subTone}" text-anchor="middle">${escapeHtml(ln)}</text>`,
+          `<text x="${cxN}" y="${r.y + 76 + dy + j * 13}" class="t-sub${subTone}"${small} text-anchor="middle">${escapeHtml(ln)}</text>`,
       )
       .join('');
+    // Only a description that still overflows three small lines is cut, and
+    // then the full text stays reachable as the node's hover title.
+    const title = d.clipped ? `<title>${escapeHtml(n.desc ?? '')}</title>` : '';
     s +=
       `<g${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row, n.w ?? 1)}>` +
+      title +
       card +
       personGlyph +
       chip +

@@ -61,13 +61,21 @@ export interface InkTone {
   readonly dark: boolean;
 }
 
-const INK_RAMP: readonly InkTone[] = [
-  { fill: 'var(--ink)', stroke: 'var(--ink)', dark: true },
-  { fill: 'var(--muted)', stroke: 'var(--muted)', dark: true },
-  { fill: 'var(--soft)', stroke: 'var(--soft)', dark: true },
-  { fill: 'var(--rule-solid)', stroke: 'var(--rule-solid)', dark: false },
-  { fill: 'var(--paper-2)', stroke: 'var(--ink)', dark: false },
-];
+const INK: InkTone = { fill: 'var(--ink)', stroke: 'var(--ink)', dark: true };
+const INK_2: InkTone = { fill: 'var(--ink-2)', stroke: 'var(--ink-2)', dark: true };
+const INK_3: InkTone = { fill: 'var(--ink-3)', stroke: 'var(--ink-3)', dark: false };
+const MUTED: InkTone = { fill: 'var(--muted)', stroke: 'var(--muted)', dark: true };
+const PAPER_2: InkTone = { fill: 'var(--paper-2)', stroke: 'var(--ink)', dark: false };
+
+/** Walked in order (funnel bands, waterfall bars): ink → ink-2 → ink-3 → paper-2. */
+const INK_RAMP: readonly InkTone[] = [INK, INK_2, INK_3, PAPER_2];
+
+/**
+ * For slices that touch (donut, gauge rings): neighbours are always at least
+ * two ramp steps apart — ink / ink-3 / muted / paper-2 — so two small
+ * adjacent slices never read as one grey.
+ */
+const SLICE_ORDER: readonly InkTone[] = [INK, INK_3, MUTED, PAPER_2];
 
 /** How many distinct steps the ink ramp has before it cycles. */
 export const INK_STEPS = INK_RAMP.length;
@@ -100,7 +108,14 @@ export function inkTone(i: number, mark?: Mark): InkTone {
   if (mark === 'negative') return { fill: 'var(--negative)', stroke: 'var(--negative)', dark: true };
   if (mark === 'focal') return { fill: 'var(--accent)', stroke: 'var(--accent)', dark: true };
   const step = ((i % INK_STEPS) + INK_STEPS) % INK_STEPS;
-  return INK_RAMP[step] ?? { fill: 'var(--ink)', stroke: 'var(--ink)', dark: true };
+  return INK_RAMP[step] ?? INK;
+}
+
+/** The slice tone for slice `i` — {@link SLICE_ORDER}, with the same marks as {@link inkTone}. */
+export function sliceTone(i: number, mark?: Mark): InkTone {
+  if (mark !== undefined) return inkTone(i, mark);
+  const n = SLICE_ORDER.length;
+  return SLICE_ORDER[((i % n) + n) % n] ?? INK;
 }
 
 /** The tone names shared by the data-structure blocks. */

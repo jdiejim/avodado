@@ -1,11 +1,19 @@
 /**
  * Theme system. Each theme is a set of CSS variable overrides applied via
- * `style="--navy: …; --blue: …"` on the `.docskin` root element. The full
+ * `style="--paper: …; --accent: …"` on the `.docskin` root element. The full
  * stylesheet (see {@link houseCss}) reads those variables.
  *
- * Adding a new theme = add an entry here. No CSS changes needed.
+ * Themes are written in the skin's ROLE tokens only (`packages/render/DESIGN.md`):
+ * `--paper --paper-2 --ink --muted --soft --rule --rule-solid --accent
+ * --accent-tint --link --negative --negative-tint`, plus `--radius` and the
+ * font stacks. The legacy names (`--navy`, `--charcoal`, `--gray`, …) are
+ * aliases of those roles in `css.ts`, so they follow automatically.
  *
- * Ported verbatim from `resources/doc-studio.jsx` `THEMES`.
+ * Every `soft`, `muted`, `accent`, and `link` value clears 4.5:1 against the
+ * theme's own `--paper-2` (the darkest light surface text sits on), so the
+ * contrast audit passes under any preset.
+ *
+ * Adding a new theme = add an entry here. No CSS changes needed.
  */
 
 /** Built-in theme names. */
@@ -23,122 +31,93 @@ interface ThemeDef {
 
 /** The built-in themes. */
 export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
-  // Default: warm textbook look (cream paper, deep academic navy, terracotta
-  // accent, serif display + body) — the base :root tokens, no overrides needed.
+  // Default: the editorial skin as defined in css.ts — warm-neutral paper,
+  // near-black ink, one rust accent. No overrides needed.
   textbook: {
-    label: 'Textbook',
+    label: 'Editorial',
     vars: {},
   },
-  // Clean, modern, white: near-black ink, a single blue accent (#0070f3),
-  // geometric sans, more rounding. (The former default.)
+  // Clean, modern, white: pure white paper, neutral grays, a single blue
+  // accent, a touch more rounding.
   minimal: {
     label: 'Minimal',
     vars: {
-      '--navy': '#000000',
-      '--navy-tint': '#d4d4d4',
-      '--blue': '#0070f3',
-      '--light-blue': '#e5f0ff',
-      '--charcoal': '#111111',
-      '--slate': '#444444',
-      '--gray': '#6e6e6e',
-      '--light-gray': '#fafafa',
-      '--rule': '#eaeaea',
-      '--highlight': '#0070f3',
-      '--highlight-soft': '#e5f0ff',
-      '--white': '#ffffff',
       '--paper': '#ffffff',
       '--paper-2': '#f4f4f4',
       '--ink': '#111111',
-      '--rule-solid': '#e2e2e2',
-      '--accent': '#0070f3',
-      '--accent-tint': 'rgba(0,112,243,.08)',
+      '--muted': '#4a4a4a',
+      '--soft': '#616161',
+      '--rule': 'rgba(17,17,17,.12)',
+      '--rule-solid': '#d9d9d9',
+      '--accent': '#0062d6',
+      '--accent-tint': 'rgba(0,98,214,.08)',
+      '--link': '#0062d6',
       '--radius': '8px',
-      '--font-display':
-        '"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
-      '--font-body':
-        '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
     },
   },
+  // The editorial paper with a deep teal accent and a cyan link.
   teal: {
     label: 'Teal',
     vars: {
-      '--navy': '#0f766e',
-      '--blue': '#0e7490',
-      // Deep amber: the bright #f59e0b read at 2.07:1 as text on the cream page.
-      '--highlight': '#b45309',
+      '--accent': '#0f766e',
+      '--accent-tint': 'rgba(15,118,110,.09)',
+      '--link': '#0e7490',
     },
   },
+  // Cool neutrals: blue-gray paper and ink, a dark teal accent, Helvetica display.
   slate: {
     label: 'Slate sans',
     vars: {
-      '--navy': '#334155',
-      '--blue': '#475569',
-      // Darker teal: #0d9488 read at 3.62:1 as text on the cream page.
-      '--highlight': '#0d6d66',
+      '--paper': '#f5f6f8',
+      '--paper-2': '#e9ecf0',
+      '--ink': '#1e293b',
+      '--muted': '#475569',
+      '--soft': '#5c6879',
+      '--rule': 'rgba(30,41,59,.14)',
+      '--rule-solid': '#c5ccd6',
+      '--accent': '#0d6d66',
+      '--accent-tint': 'rgba(13,109,102,.09)',
+      '--link': '#3b5f8a',
       '--font-display': '"Helvetica Neue", Arial, sans-serif',
     },
   },
-  // Full dark mode. Surfaces (--white) and ink (--charcoal) flip; neutrals are
-  // remapped so hairlines/edges read as light-on-dark. Accent hues are brightened
-  // for contrast. Node "chip" pastels (in the SVG palette) stay light by design —
-  // they read as colored cards on the dark canvas. The skin's role tokens
-  // (`--paper`, `--ink`, …) flip too, so the migrated renderers follow.
+  // Full dark mode: the skin's dark set, applied explicitly so a document can
+  // be dark regardless of the reader's system preference. `document.ts` also
+  // stamps `data-theme="dark"` so the series ramp and code tokens flip.
   dark: {
     label: 'Dark',
     vars: {
       '--paper': '#161b26',
       '--paper-2': '#222a39',
       '--ink': '#e6e9f2',
-      '--muted': '#a3abbb',
-      '--soft': '#7d8596',
+      '--muted': '#aeb5c3',
+      '--soft': '#9aa3b3',
       '--rule': 'rgba(230,233,242,.14)',
       '--rule-solid': '#333f54',
       '--accent': '#f0865c',
       '--accent-tint': 'rgba(240,134,92,.14)',
       '--link': '#7fb0ff',
-      '--negative-tint': 'rgba(255,107,107,.14)',
-      '--white': '#161b26', // surfaces: page + cards + diagram bg
-      '--charcoal': '#e6e9f2', // primary ink + structural strokes
-      '--slate': '#c2c9d6', // secondary text
-      '--gray': '#94a0b4', // muted text / dashed edges
-      '--light-gray': '#222a39', // subtle panels / zone fills / bars
-      '--navy': '#5b9cff', // primary accent (headings, links, primary nodes)
-      '--navy-tint': '#1e2a44',
-      '--blue': '#7fb0ff',
-      '--light-blue': '#16233a',
-      '--highlight': '#f7a64a',
-      '--highlight-soft': '#3a2c17',
-      '--positive': '#3ecf7a',
-      '--positive-soft': '#16301f',
-      '--negative': '#ff6b6b',
-      '--negative-soft': '#3a1d1d',
-      '--purple': '#b78bff',
-      '--purple-soft': '#271d3a',
-      '--teal': '#4fd1c5',
-      '--teal-soft': '#13302d',
-      '--radius': '14px',
+      '--negative': '#f5a39b',
+      '--negative-tint': 'rgba(245,163,155,.14)',
+      '--radius': '10px',
     },
   },
-  // Soft modern light theme: rounded surfaces, indigo accent, warm-gray ink.
+  // Soft modern light theme: white paper with a lavender secondary surface,
+  // indigo accent, rounder corners.
   soft: {
     label: 'Soft',
     vars: {
-      '--navy': '#4f46e5',
-      '--blue': '#6366f1',
-      '--charcoal': '#1f2433',
-      '--slate': '#4b5366',
-      '--gray': '#646c7e',
-      '--rule': '#e6e8ef',
-      '--light-gray': '#f5f6fa',
       '--paper': '#ffffff',
-      '--paper-2': '#f5f6fa',
+      '--paper-2': '#efedf8',
       '--ink': '#1f2433',
-      '--rule-solid': '#e6e8ef',
-      // Deep amber: the bright #f59e0b read at 2.07:1 as text on the page.
-      '--highlight': '#b45309',
-      '--accent': '#b45309',
-      '--accent-tint': 'rgba(180,83,9,.09)',
-      '--radius': '16px',
+      '--muted': '#4b4f66',
+      '--soft': '#5f6476',
+      '--rule': 'rgba(31,36,51,.12)',
+      '--rule-solid': '#d8d6e6',
+      '--accent': '#4338ca',
+      '--accent-tint': 'rgba(67,56,202,.08)',
+      '--link': '#4f46e5',
+      '--radius': '12px',
       '--font-display': '"Helvetica Neue", Arial, sans-serif',
     },
   },
@@ -146,8 +125,8 @@ export const themes: Readonly<Record<ThemeName, ThemeDef>> = {
 
 /**
  * Returns the CSS variable overrides for a theme as an inline-style string
- * (e.g. `"--navy:#0f766e;--blue:#0e7490;"`). Empty string for the default
- * textbook theme.
+ * (e.g. `"--accent:#0f766e;--link:#0e7490;"`). Empty string for the default
+ * editorial theme.
  */
 export function themeStyle(name: ThemeName): string {
   const vars = themes[name].vars;

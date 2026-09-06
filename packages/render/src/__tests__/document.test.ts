@@ -50,13 +50,13 @@ describe('renderDocument', () => {
     const html = renderDocument(doc, { theme: 'teal' });
     // Theme vars are emitted as a :root style block so they reach the whole page.
     expect(html).toContain(':root{');
-    expect(html).toContain('--navy:#0f766e');
+    expect(html).toContain('--accent:#0f766e');
   });
 
   it('merges custom themeVars after the named theme', () => {
     const doc = parseDocument(roadmap(), 'avodado-roadmap');
     const html = renderDocument(doc, { theme: 'dark', themeVars: { '--navy': '#abcdef' } });
-    expect(html).toContain('--white:#161b26'); // from dark theme
+    expect(html).toContain('--paper:#161b26'); // from dark theme
     expect(html).toContain('--navy:#abcdef'); // override wins (emitted last)
   });
 

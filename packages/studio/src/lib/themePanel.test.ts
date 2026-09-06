@@ -6,7 +6,7 @@ import type { ThemeMeta } from '../state/derive.js';
 const savedMeta: ThemeMeta = {
   theme: 'textbook',
   savedThemes: [
-    { slug: 'acme', name: 'Acme brand', theme: 'minimal', themeVars: { '--highlight': '#ff0000' } },
+    { slug: 'acme', name: 'Acme brand', theme: 'minimal', themeVars: { '--accent': '#ff0000' } },
     { slug: 'night', name: 'Night', theme: 'dark' },
   ],
 };
@@ -51,22 +51,22 @@ describe('themeCards', () => {
   it('swatches merge the base theme vars under the saved overrides', () => {
     const cards = themeCards(savedMeta, 'textbook');
     const acme = cards.find((c) => c.choice === 'saved:acme');
-    // --highlight overridden by the saved theme; --white from its minimal base.
+    // --accent overridden by the saved theme; --paper from its minimal base.
     expect(acme?.swatch.accent).toBe('#ff0000');
-    expect(acme?.swatch.paper).toBe(themes.minimal.vars['--white']);
+    expect(acme?.swatch.paper).toBe(themes.minimal.vars['--paper']);
   });
 });
 
 describe('swatchFor', () => {
   it('falls back to the renderer root values for textbook', () => {
     expect(swatchFor({ theme: 'textbook' })).toEqual({
-      paper: '#fcfbf7',
-      primary: '#233a5e',
-      accent: '#9c4a2f',
+      paper: '#f7f6f2',
+      primary: '#1f2430',
+      accent: '#b04a25',
     });
   });
 
   it('reads a dark surface from the theme vars', () => {
-    expect(swatchFor({ theme: 'dark' }).paper).toBe(themes.dark.vars['--white']);
+    expect(swatchFor({ theme: 'dark' }).paper).toBe(themes.dark.vars['--paper']);
   });
 });

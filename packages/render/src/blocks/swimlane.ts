@@ -156,11 +156,11 @@ export function renderSwimlane(data: BlockDataMap['swimlane']): string {
   s += `</svg>`;
 
   const items: LegendItem[] = [];
-  if (kindsUsed.has('start')) items.push({ swatch: 'node-fill2', label: 'start' });
+  if (kindsUsed.has('start')) items.push({ swatch: 'node-stadium-fill2', label: 'start' });
   if (kindsUsed.has('action')) items.push({ swatch: 'node', label: 'step' });
   if (kindsUsed.has('decision')) items.push({ swatch: 'chip', chip: 'DECISION', label: 'decision' });
   if (kindsUsed.has('wait')) items.push({ swatch: 'chip', chip: 'WAIT', label: 'waiting' });
-  if (kindsUsed.has('end')) items.push({ swatch: 'node', label: 'end (stadium)' });
+  if (kindsUsed.has('end')) items.push({ swatch: 'node-stadium', label: 'end' });
   if (links.length > 0) items.push({ swatch: 'edge', label: 'next' });
   const legend = renderLegend(items);
 

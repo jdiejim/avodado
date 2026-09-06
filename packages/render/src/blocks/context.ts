@@ -171,7 +171,10 @@ export function renderContext(data: ContextData): string {
       );
     })
     .join('');
-  const legend = rows.length > 0 ? `<div class="ctx-legend"${bl('segments')}>${rows}</div>` : '';
+  const legend =
+    rows.length > 0
+      ? `<div class="ctx-legend"${bl('segments')}><span class="lg-title t-eyebrow">Legend</span>${rows}</div>`
+      : '';
 
   return diagramFrame(
     {

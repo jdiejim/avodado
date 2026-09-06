@@ -234,7 +234,8 @@ export function renderState(data: BlockDataMap['state']): string {
   if (kinds.wait) items.push({ swatch: 'node-fill2', label: 'waiting' });
   if (kinds.end) items.push({ swatch: 'chip', chip: '◉', label: 'end' });
   if (used.plain) items.push({ swatch: 'edge', label: 'transition' });
-  if (used.error || kinds.errEnd) items.push({ swatch: 'edge-error', label: 'error exit' });
+  if (kinds.errEnd) items.push({ swatch: 'node-negative', label: 'error exit' });
+  if (used.error) items.push({ swatch: 'edge-error', label: 'error transition' });
   if (accentId !== undefined) items.push({ swatch: 'node-accent', label: 'success exit' });
   const legend = renderLegend(items);
 

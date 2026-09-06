@@ -12,8 +12,8 @@
  * left and recurse into the rest. That is what keeps tiles near-square, which
  * is what makes areas comparable by eye.
  *
- * Skin (`DESIGN.md`): tiles are paper / `paper-2` with an ink outline (the
- * two tones alternate by rank so neighbours separate without hue). The accent
+ * Skin (`DESIGN.md`): every tile is paper with an ink outline — rank is
+ * what the value label and the area say, not a fill. The accent
  * goes to the item the author marked with an accent — or, when none is, to
  * the largest tile, which is the answer the chart exists to give. `accent:
  * red` is `negative`.
@@ -112,11 +112,10 @@ function fmt(v: number, unit: string | undefined): string {
   return unit !== undefined ? `${text}${unit}` : text;
 }
 
-type Tone = 'plain' | 'plain2' | 'accent' | 'negative';
+type Tone = 'plain' | 'accent' | 'negative';
 
 const TONE_ATTRS: Record<Tone, string> = {
   plain: 'fill="var(--paper)" stroke="var(--ink)" stroke-width="1"',
-  plain2: 'fill="var(--paper-2)" stroke="var(--ink)" stroke-width="1"',
   accent: 'fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.5"',
   negative: 'fill="var(--negative-tint)" stroke="var(--negative)" stroke-width="1.5"',
 };
@@ -153,7 +152,7 @@ export function renderTreemap(data: TreemapData): string {
     if (mark === 'negative') return 'negative';
     if (mark === 'focal') return 'accent';
     if (!flagged && rank === 0) return 'accent';
-    return rank % 2 === 0 ? 'plain' : 'plain2';
+    return 'plain';
   };
   const used = new Set<Tone>();
 
@@ -169,6 +168,10 @@ export function renderTreemap(data: TreemapData): string {
     const share = Math.round((t.item.value / total) * 100);
     const nameCls = tone === 'accent' ? 't-name c-accent' : tone === 'negative' ? 't-name c-negative' : 't-name';
     s += `<g${bp(`items.${t.index}`)}>`;
+    // A tint is translucent: paint paper under it so the dot grid stays out.
+    if (tone !== 'plain') {
+      s += `<rect x="${r(x)}" y="${r(y)}" width="${r(w)}" height="${r(h)}" rx="3" fill="var(--paper)"/>`;
+    }
     s += `<rect x="${r(x)}" y="${r(y)}" width="${r(w)}" height="${r(h)}" rx="3" ${TONE_ATTRS[tone]}/>`;
     // Text only where it fits — a 13px line needs room, and a half-clipped
     // label reads worse than a tile that lets its tooltip do the talking.
@@ -192,7 +195,7 @@ export function renderTreemap(data: TreemapData): string {
   s += `</g></svg>`;
 
   const items: LegendItem[] = [];
-  if (used.has('plain') || used.has('plain2')) items.push({ swatch: 'node', label: 'item (area = value)' });
+  if (used.has('plain')) items.push({ swatch: 'node', label: 'item (area = value)' });
   if (used.has('accent')) items.push({ swatch: 'node-accent', label: flagged ? 'focal item' : 'largest item' });
   if (used.has('negative')) items.push({ swatch: 'fill', fill: 'var(--negative-tint)', label: 'negative' });
   return frame(data, s, renderLegend(items));

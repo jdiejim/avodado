@@ -6,7 +6,8 @@
  * `.t-name` task labels. A planned bar is `paper-2` with an ink outline;
  * `done` is solid ink; `active` / `current` — the work happening now, the
  * one thing the schedule is read for — takes the accent; `milestone` is a
- * dashed outline. A legend strip under the drawing names the kinds present.
+ * dashed outline. Renders inside the diagram frame (tag GANTT) with a legend
+ * strip naming the kinds present.
  */
 
 import type { BlockDataMap } from '@avodado/core';
@@ -14,6 +15,7 @@ import { escapeHtml } from '../escape.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { wrapText } from '../svg/wrapText.js';
 import { bl, bp } from '../paths.js';
+import { diagramFrame } from './frame.js';
 
 type Kind = 'planned' | 'done' | 'active' | 'milestone';
 
@@ -64,9 +66,7 @@ export function renderGantt(data: BlockDataMap['gantt']): string {
   const height = padTop + tasks.length * rowH + padBot;
   const xCol = (i: number): number => labelW + padX + i * colW;
 
-  // Pinned to its natural size (and capped at the column) — an unframed
-  // viewBox-only SVG would stretch to the container and blow the type up.
-  let s = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="max-width:100%;height:auto" role="img"><title>Schedule</title>`;
+  let s = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Schedule</title>`;
   s += `<g${bl('periods')}>`;
   for (let i = 0; i < periods.length; i++) {
     s +=
@@ -112,5 +112,14 @@ export function renderGantt(data: BlockDataMap['gantt']): string {
   const items = (['planned', 'done', 'active', 'milestone'] as const)
     .filter((k) => kinds.has(k))
     .map((k) => KIND_LEGEND[k]);
-  return s + renderLegend(items);
+  const legendHtml = renderLegend(items);
+  return diagramFrame(
+    {
+      tag: 'GANTT',
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
+    },
+    s,
+  );
 }

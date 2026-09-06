@@ -105,10 +105,12 @@ export function renderHarvey(data: HarveyData): string {
     .join('')}</tr>`;
 
   const [low, high] = data.scale ?? [];
+  // The rating scale as the shared legend strip, inside the frame.
   const scale =
     low !== undefined && high !== undefined
-      ? `<div class="hv-scale">${ball(0)}<span>${escapeHtml(low)}</span>` +
-        `${ball(STEPS)}<span>${escapeHtml(high)}</span></div>`
+      ? `<div class="diagram-legend hv-scale"><span class="lg-title t-eyebrow">Legend</span>` +
+        `<span class="lg-item">${ball(0)}<span class="lg-label">${escapeHtml(low)}</span></span>` +
+        `<span class="lg-item">${ball(STEPS)}<span class="lg-label">${escapeHtml(high)}</span></span></div>`
       : '';
 
   const caption =
@@ -122,6 +124,6 @@ export function renderHarvey(data: HarveyData): string {
     `<div class="harvey">${caption}${desc}` +
     `<div class="hv-scroll"><table class="hv-table">` +
     `<thead><tr${bl('columns')}><th class="hv-crit">Criteria</th>${head}</tr></thead>` +
-    `<tbody${bl('rows')}>${body}${foot}</tbody></table></div>${scale}</div>`
+    `<tbody${bl('rows')}>${body}${foot}</tbody></table>${scale}</div></div>`
   );
 }

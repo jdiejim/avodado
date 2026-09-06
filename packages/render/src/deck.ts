@@ -215,14 +215,14 @@ body{background:var(--paper-2);font-family:var(--font-body);color:var(--ink);}
 .docskin.slide .st-list{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
 .docskin.slide .env-steps{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
 .docskin.slide .tr-list{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;}
-/* Cover (first slide): centered title, no top bar. Ink on paper; the accent
-   is spent once, on the tag. */
+/* Cover (first slide): centered title, no top bar. Ink on paper; the eyebrow
+   (kind and tags) is a .t-eyebrow in soft — no accent on the cover. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
 .docskin.slide.slide-cover .slide-inner{width:100%;}
 .docskin.slide.slide-cover .cover-title{color:var(--ink);}
 .docskin.slide.slide-cover .cover-sub{margin:0 auto;color:var(--muted);}
 .docskin.slide.slide-cover .cover-meta{margin-bottom:24px;color:var(--soft);font-family:var(--font-mono);font-weight:500;letter-spacing:.14em;}
-.docskin.slide.slide-cover .cover-meta .accent{color:var(--accent);}
+.docskin.slide.slide-cover .cover-meta .accent{color:var(--soft);}
 /* A divider that owns its slide is the title card: center the band's content
    block on the stage with no leftover doc margins. */
 .docskin.slide .slide-inner:has(.dvd) .section-block{margin:0;}

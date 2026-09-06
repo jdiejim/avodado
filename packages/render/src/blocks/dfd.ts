@@ -156,7 +156,7 @@ export function renderDfd(data: BlockDataMap['dfd']): string {
   const items: LegendItem[] = [];
   if (kindsUsed.has('process')) items.push({ swatch: 'node', label: 'process' });
   if (kindsUsed.has('external') && accentId === undefined) items.push({ swatch: 'node-dashed', label: 'external entity' });
-  if (kindsUsed.has('store')) items.push({ swatch: 'node-fill2', label: 'data store' });
+  if (kindsUsed.has('store')) items.push({ swatch: 'node-store', label: 'data store' });
   if (edges.length > 0) items.push({ swatch: 'edge', label: 'data flow' });
   if (accentId !== undefined) items.push({ swatch: 'node-accent', label: 'external entity' });
   const legend = renderLegend(items);
