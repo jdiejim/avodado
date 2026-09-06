@@ -2,22 +2,34 @@
  * Renders a state machine: rounded state pills + start/terminal markers + an
  * orthogonal-routed edge per transition, plus a transition table below.
  *
- * Ported from doc-studio.jsx `StateMachine` + `TransitionTable`.
+ * Skin (`DESIGN.md`): a state is a paper pill with an ink outline; a `wait`
+ * state is the inactive fill (`paper-2`, hairline). The start marker is a
+ * filled ink dot, a terminal a bullseye. Transitions are `muted`; a transition
+ * into an error terminal is `negative`.
+ *
+ * Accent rule: the one terminal state that is not an error exit (its name does
+ * not read as a failure) takes the accent, together with the transitions into
+ * it — the success exit reads at a glance. Two or more candidates, or none,
+ * means no accent.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
-import { edgePill } from '../svg/edgePill.js';
+import { edgeMask } from '../svg/edgePill.js';
 import { edgeStep } from '../svg/edgeSteps.js';
 import { GROUP_PADS, gridGroupsSvg, groupExtent } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
 
 type StateNode = NonNullable<BlockDataMap['state']['states']>[number];
+
+/** A terminal whose name reads as a failure is an error exit, never the accent. */
+const ERR_RE = /\b(error|fail|failed|failure|reject|rejected|cancel|cancelled|canceled|abort|aborted|timeout|timed out|expired|dead)\b/i;
 
 // Long state names wrap (word-aware, ≤3 lines of ~23 chars) so a pill can
 // never grow past its grid cell and overlap a neighbour; the pill gains 15px
@@ -75,17 +87,22 @@ export function renderState(data: BlockDataMap['state']): string {
   const height = padTop * 2 + rows * cellH + (rows - 1) * gapY + padBot;
   const byId = new Map(states.map((s) => [s.id, s]));
 
+  // Error exits and the accent (see the header comment).
+  const isErrTerminal = (s: StateNode | undefined): boolean =>
+    s !== undefined && s.kind === 'terminal' && (ERR_RE.test(s.name ?? '') || ERR_RE.test(s.id));
+  const successExits = states.filter((s) => s.kind === 'terminal' && !isErrTerminal(s));
+  const accentId = successExits.length === 1 ? successExits[0]?.id : undefined;
+
   // Grid metadata for editors (Avodado Studio drag-to-connect): inert attrs
   // mirroring the layout constants plus each state's effective cell below.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
   let s = `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>State machine</title>`;
 
-  // Dashed group zones — beneath transitions and states. Only emitted when
-  // present, keeping group-less documents byte-identical to the old output.
+  // Group panels — beneath transitions and states. Only emitted when present.
   if (groups.length > 0) {
     const xOf = (c: number): number => padX + (c - 1) * (cellW + gapX);
     const yOf = (r: number): number => padTop + (r - 1) * (cellH + gapY);
-    s += gridGroupsSvg(groups, { xOf, yOf, cellW, cellH, gapX, gapY });
+    s += gridGroupsSvg(groups, { xOf, yOf, cellW, cellH, gapX, gapY, skin: true });
   }
 
   // The shared labelled-edge rule, with a twist: the state block already has a
@@ -96,6 +113,7 @@ export function renderState(data: BlockDataMap['state']): string {
 
   // edge lines first; collect labels to draw last (on top of everything)
   const labels: string[] = [];
+  const used = { plain: false, error: false, accent: false };
   const lanes = edgeLanes(trans);
   const entries = entryPortOffsets(trans, (id) => {
     const n = byId.get(id);
@@ -106,10 +124,20 @@ export function renderState(data: BlockDataMap['state']): string {
     const B = byId.get(t.to);
     if (!A || !B) return;
     const label = t.event + (t.guard !== undefined ? ` ${t.guard}` : '');
+    const isErr = isErrTerminal(B);
+    const isAccent = !isErr && accentId !== undefined && t.to === accentId;
+    const stroke = isErr ? 'var(--negative)' : isAccent ? 'var(--accent)' : 'var(--muted)';
+    const marker = isErr ? 'skErr' : isAccent ? 'skAccent' : 'skArrow';
+    const sw = isAccent ? 1.75 : 1.5;
+    const tone = isErr ? 'error' : isAccent ? 'accent' : 'muted';
+    if (isErr) used.error = true;
+    else if (isAccent) used.accent = true;
+    else used.plain = true;
     if (t.from === t.to) {
       const r = rectFor(A, cellW, cellH, gapX, gapY, padX, padTop);
-      s += `<path d="M ${r.cx - 12} ${r.y} C ${r.cx - 30} ${r.y - 32}, ${r.cx + 30} ${r.y - 32}, ${r.cx + 12} ${r.y}" fill="none" stroke="var(--charcoal)" stroke-width="1.3" marker-end="url(#gArrow)"${bp(`transitions.${ti}`)}/>`;
-      const mark = numbered ? edgeStep({ lx: r.cx, ly: r.y - 28 }, ti + 1) : edgePill({ lx: r.cx, ly: r.y - 28 }, label);
+      s += `<path d="M ${r.cx - 12} ${r.y} C ${r.cx - 30} ${r.y - 32}, ${r.cx + 30} ${r.y - 32}, ${r.cx + 12} ${r.y}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${bp(`transitions.${ti}`)}/>`;
+      const at = { lx: r.cx, ly: r.y - 28 };
+      const mark = numbered ? edgeStep(at, ti + 1, isErr, true) : edgeMask(at, label, tone);
       labels.push(`<g${bp(`transitions.${ti}`)}>${mark}</g>`);
       return;
     }
@@ -119,42 +147,54 @@ export function renderState(data: BlockDataMap['state']): string {
       lanes[ti] ?? 0,
       entries[ti] ?? 0,
     );
-    s += `<path d="${p.d}" fill="none" stroke="var(--charcoal)" stroke-width="1.3" marker-end="url(#gArrow)"${bp(`transitions.${ti}`)}/>`;
-    const mark = numbered ? edgeStep(p, ti + 1) : edgePill(p, label);
+    s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${bp(`transitions.${ti}`)}/>`;
+    const mark = numbered ? edgeStep(p, ti + 1, isErr, true) : edgeMask(p, label, tone);
     labels.push(`<g${bp(`transitions.${ti}`)}>${mark}</g>`);
   });
 
   // states
+  const kinds = { active: false, wait: false, start: false, end: false, errEnd: false };
   s += `<g${bl('states')}>`;
   states.forEach((st, si) => {
     const r = rectFor(st, cellW, cellH, gapX, gapY, padX, padTop);
     const place = nodeCellAttrs(st.col, st.row);
     if (st.kind === 'start') {
-      s += `<circle cx="${r.cx}" cy="${r.cy}" r="10" fill="var(--charcoal)"${bp(`states.${si}`)}${place}/>`;
+      kinds.start = true;
+      s += `<circle cx="${r.cx}" cy="${r.cy}" r="10" fill="var(--ink)"${bp(`states.${si}`)}${place}/>`;
     } else if (st.kind === 'terminal') {
+      const accent = st.id === accentId;
+      const err = isErrTerminal(st);
+      if (err) kinds.errEnd = true;
+      else if (!accent) kinds.end = true;
+      const tone = accent ? 'var(--accent)' : err ? 'var(--negative)' : 'var(--ink)';
+      const fill = accent ? 'var(--accent-tint)' : err ? 'var(--negative-tint)' : 'var(--paper)';
       s +=
         `<g${bp(`states.${si}`)}${place}>` +
-        `<circle cx="${r.cx}" cy="${r.cy}" r="12" fill="#fff" stroke="var(--charcoal)" stroke-width="1.5"/>` +
-        `<circle cx="${r.cx}" cy="${r.cy}" r="6" fill="var(--charcoal)"/>` +
+        `<circle cx="${r.cx}" cy="${r.cy}" r="12" fill="${fill}" stroke="${tone}" stroke-width="1.5"/>` +
+        `<circle cx="${r.cx}" cy="${r.cy}" r="6" fill="${tone}"/>` +
         `</g>`;
     } else {
-      const fill = st.kind === 'wait' ? '#fde7cd' : '#dcf1e2';
-      const stroke = st.kind === 'wait' ? '#f7952c' : '#1f9747';
+      const wait = st.kind === 'wait';
+      if (wait) kinds.wait = true;
+      else kinds.active = true;
+      const fill = wait ? 'var(--paper-2)' : 'var(--paper)';
+      const stroke = wait ? 'var(--rule-solid)' : 'var(--ink)';
+      const sw = wait ? 1 : 1.5;
       const lines = nameLines(st);
       const nameText =
         lines.length <= 1
-          ? `<text x="${r.cx}" y="${r.cy + 4.5}" class="sm-name" fill="var(--charcoal)"${bp(`states.${si}.name`)}>${escapeHtml(st.name ?? '')}</text>`
+          ? `<text x="${r.cx}" y="${r.cy + 4.5}" class="t-name" text-anchor="middle"${bp(`states.${si}.name`)}>${escapeHtml(st.name ?? '')}</text>`
           : `<g${bp(`states.${si}.name`)}>` +
             lines
               .map(
                 (ln, j) =>
-                  `<text x="${r.cx}" y="${r.cy + 4.5 - (lines.length - 1) * 7.5 + j * 15}" class="sm-name" fill="var(--charcoal)">${escapeHtml(ln)}</text>`,
+                  `<text x="${r.cx}" y="${r.cy + 4.5 - (lines.length - 1) * 7.5 + j * 15}" class="t-name" text-anchor="middle">${escapeHtml(ln)}</text>`,
               )
               .join('') +
             `</g>`;
       s +=
-        `<g filter="url(#gshadow)"${bp(`states.${si}`)}${place}>` +
-        `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="23" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>` +
+        `<g${bp(`states.${si}`)}${place}>` +
+        `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="23" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>` +
         nameText +
         `</g>`;
     }
@@ -176,7 +216,7 @@ export function renderState(data: BlockDataMap['state']): string {
         numCell(ti) +
         `<td><span class="${pillCls(byId.get(t.from)?.kind)}">${escapeHtml(name(t.from))}</span></td>` +
         `<td style="font-family:var(--font-mono);font-size:11px"${bp(`transitions.${ti}.event`)}>${escapeHtml(t.event)}</td>` +
-        `<td style="color:#6b7280;font-size:11px"${bp(`transitions.${ti}.guard`)}>${escapeHtml(t.guard ?? '—')}</td>` +
+        `<td class="c-soft" style="font-size:11px"${bp(`transitions.${ti}.guard`)}>${escapeHtml(t.guard ?? '—')}</td>` +
         `<td><span class="${pillCls(byId.get(t.to)?.kind)}">${escapeHtml(name(t.to))}</span></td>` +
         `</tr>`,
     )
@@ -188,13 +228,24 @@ export function renderState(data: BlockDataMap['state']): string {
         `<tbody${bl('transitions')}>${rows2}</tbody></table>`
       : '';
 
+  const items: LegendItem[] = [];
+  if (kinds.start) items.push({ swatch: 'chip', chip: '●', label: 'start' });
+  if (kinds.active) items.push({ swatch: 'node', label: 'state' });
+  if (kinds.wait) items.push({ swatch: 'node-fill2', label: 'waiting' });
+  if (kinds.end) items.push({ swatch: 'chip', chip: '◉', label: 'end' });
+  if (used.plain) items.push({ swatch: 'edge', label: 'transition' });
+  if (used.error || kinds.errEnd) items.push({ swatch: 'edge-error', label: 'error exit' });
+  if (accentId !== undefined) items.push({ swatch: 'node-accent', label: 'success exit' });
+  const legend = renderLegend(items);
+
   return diagramFrame(
     {
       tag: 'STATE',
-      tagBg: '#6b21a8',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legend.length > 0 ? { legendHtml: legend } : {}),
+      ...(table.length > 0 ? { footerHtml: table } : {}),
     },
-    s + table,
+    s,
   );
 }

@@ -17,37 +17,42 @@
  *      biggest column first, so ribbons cross as little as the data allows.
  *
  * Ribbons are filled cubic curves (two horizontal-tangent beziers and two
- * straight edges), tinted by the source node so a flow keeps its colour all
- * the way across.
+ * straight edges). Skin (`DESIGN.md`): stages are ink bars, ribbons are paper
+ * pipes with a `rule-solid` edge, and the accent goes to the flows out of a
+ * node the author marked with an accent — or, when none is, to the single
+ * heaviest ribbon, which is the answer the chart exists to give. `accent:
+ * red` is `negative`.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { marksOf, type Mark } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 
 type SankeyData = BlockDataMap['sankey'];
 type Link = SankeyData['links'][number];
 
-/** Accent name → the palette variable the rest of the library uses. */
-const ACCENT: Readonly<Record<string, string>> = {
-  navy: 'var(--navy)',
-  blue: 'var(--blue)',
-  teal: 'var(--teal)',
-  green: 'var(--positive)',
-  amber: 'var(--highlight)',
-  purple: 'var(--purple)',
-  red: 'var(--negative)',
-  gray: 'var(--gray)',
-};
-/** Colour cycle for nodes that name no accent. */
-const CYCLE = ['var(--navy)', 'var(--teal)', 'var(--blue)', 'var(--purple)', 'var(--highlight)'];
+type Tone = 'plain' | 'accent' | 'negative';
 
-/** A node's colour: its declared accent, else the next colour in the cycle. */
-function accentColor(accent: string | undefined, i: number): string {
-  if (accent !== undefined) return ACCENT[accent] ?? CYCLE[0] ?? 'var(--navy)';
-  return CYCLE[i % CYCLE.length] ?? 'var(--navy)';
+/** A node's tone from its mark: `negative`, `focal` → accent, else plain. */
+function toneOf(mark: Mark): Tone {
+  if (mark === 'negative') return 'negative';
+  if (mark === 'focal') return 'accent';
+  return 'plain';
 }
+
+const NODE_FILL: Record<Tone, string> = {
+  plain: 'var(--ink)',
+  accent: 'var(--accent)',
+  negative: 'var(--negative)',
+};
+const RIBBON_ATTRS: Record<Tone, string> = {
+  plain: 'fill="var(--paper)" stroke="var(--rule-solid)" stroke-width="1"',
+  accent: 'fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1"',
+  negative: 'fill="var(--negative-tint)" stroke="var(--negative)" stroke-width="1"',
+};
 
 const W = 900;
 const NODE_W = 13;
@@ -60,7 +65,7 @@ const MIN_H = 3; // a tiny flow still has to be visible
 interface Placed {
   readonly id: string;
   readonly label: string;
-  readonly color: string;
+  readonly tone: Tone;
   col: number;
   value: number;
   x: number;
@@ -116,19 +121,21 @@ export function renderSankey(data: SankeyData): string {
     if (!order.includes(l.to)) order.push(l.to);
   }
   if (order.length === 0 || links.length === 0) {
-    return frame(data, '<svg viewBox="0 0 900 60" role="img"><title>Sankey</title></svg>');
+    return frame(data, '<svg viewBox="0 0 900 60" role="img"><title>Sankey</title></svg>', '');
   }
 
   const derived = columnsOf(order, links);
   const nodes = new Map<string, Placed>();
-  order.forEach((id, i) => {
-    const decl = declared[declaredAt.get(id) ?? -1];
+  const marks = marksOf(declared.map((n) => n.accent));
+  order.forEach((id) => {
+    const di = declaredAt.get(id);
+    const decl = declared[di ?? -1];
     const inflow = links.filter((l) => l.to === id).reduce((a, l) => a + l.value, 0);
     const outflow = links.filter((l) => l.from === id).reduce((a, l) => a + l.value, 0);
     nodes.set(id, {
       id,
       label: decl?.label ?? id,
-      color: accentColor(decl?.accent, i),
+      tone: toneOf(di !== undefined ? marks[di] : undefined),
       col: decl?.col !== undefined ? Math.max(0, decl.col - 1) : (derived.get(id) ?? 0),
       value: Math.max(inflow, outflow),
       x: 0,
@@ -177,9 +184,24 @@ export function renderSankey(data: SankeyData): string {
     }
   });
 
+  // The accent: flows out of a flagged node; else the single heaviest ribbon.
+  const flagged = [...nodes.values()].some((n) => n.tone !== 'plain');
+  let heaviest = -1;
+  if (!flagged) {
+    let best = 0;
+    data.links.forEach((l, li) => {
+      if (l.from === l.to || !nodes.has(l.from) || !nodes.has(l.to)) return;
+      if (l.value > best) {
+        best = l.value;
+        heaviest = li;
+      }
+    });
+  }
+
   let s = `<svg viewBox="0 0 ${W} ${height}" role="img"><title>${escapeHtml(data.title ?? 'Flow volumes')}</title>`;
 
   // Ribbons first, so the node bars and their labels sit on top.
+  const used = new Set<Tone>();
   s += `<g${bl('links')}>`;
   data.links.forEach((l, li) => {
     const a = nodes.get(l.from);
@@ -196,11 +218,14 @@ export function renderSankey(data: SankeyData): string {
     const d =
       `M ${r(x0)} ${r(y0)} C ${r(mid)} ${r(y0)}, ${r(mid)} ${r(y1)}, ${r(x1)} ${r(y1)} ` +
       `L ${r(x1)} ${r(y1 + t)} C ${r(mid)} ${r(y1 + t)}, ${r(mid)} ${r(y0 + t)}, ${r(x0)} ${r(y0 + t)} Z`;
-    s += `<path d="${d}" fill="${a.color}" fill-opacity="0.28" stroke="${a.color}" stroke-opacity="0.35" stroke-width="0.5"${bp(`links.${li}`)}><title>${escapeHtml(`${a.label} → ${b.label}: ${fmt(l.value, data.unit)}`)}</title></path>`;
+    const tone: Tone = a.tone !== 'plain' ? a.tone : li === heaviest ? 'accent' : 'plain';
+    used.add(tone);
+    s += `<path d="${d}" ${RIBBON_ATTRS[tone]}${bp(`links.${li}`)}><title>${escapeHtml(`${a.label} → ${b.label}: ${fmt(l.value, data.unit)}`)}</title></path>`;
     // The value rides the ribbon where it is thick enough to hold it.
     if (t >= 13) {
       const label = l.label ?? fmt(l.value, data.unit);
-      s += `<text x="${r(mid)}" y="${r((y0 + y1) / 2 + t / 2 + 3)}" class="sk-flow">${escapeHtml(label)}</text>`;
+      const cls = tone === 'accent' ? 't-arrow c-accent' : tone === 'negative' ? 't-arrow c-negative' : 't-arrow';
+      s += `<text x="${r(mid)}" y="${r((y0 + y1) / 2 + t / 2 + 3)}" class="${cls}" text-anchor="middle">${escapeHtml(label)}</text>`;
     }
   });
   s += `</g>`;
@@ -209,19 +234,25 @@ export function renderSankey(data: SankeyData): string {
   for (const n of nodes.values()) {
     const attrs = n.path !== undefined ? bp(n.path) : '';
     s += `<g${attrs}>`;
-    s += `<rect x="${r(n.x)}" y="${r(n.y)}" width="${NODE_W}" height="${r(n.h)}" rx="2.5" fill="${n.color}"/>`;
+    s += `<rect x="${r(n.x)}" y="${r(n.y)}" width="${NODE_W}" height="${r(n.h)}" fill="${NODE_FILL[n.tone]}"/>`;
     // Labels sit outside the bar, flipping side on the last column so they
     // never run off the canvas.
     const last = n.col === cols - 1;
     const tx = last ? n.x - 8 : n.x + NODE_W + 8;
     const ty = n.y + n.h / 2;
-    s += `<text x="${r(tx)}" y="${r(ty - 1)}" class="sk-name" text-anchor="${last ? 'end' : 'start'}">${escapeHtml(n.label)}</text>`;
-    s += `<text x="${r(tx)}" y="${r(ty + 11)}" class="sk-value" text-anchor="${last ? 'end' : 'start'}">${escapeHtml(fmt(n.value, data.unit))}</text>`;
+    const anchor = last ? 'end' : 'start';
+    const nameCls = n.tone === 'accent' ? 't-name c-accent' : n.tone === 'negative' ? 't-name c-negative' : 't-name';
+    s += `<text x="${r(tx)}" y="${r(ty + 3)}" class="${nameCls}" text-anchor="${anchor}">${escapeHtml(n.label)}</text>`;
+    s += `<text x="${r(tx)}" y="${r(ty + 15)}" class="t-sub c-muted" text-anchor="${anchor}">${escapeHtml(fmt(n.value, data.unit))}</text>`;
     s += `</g>`;
   }
   s += `</g></svg>`;
 
-  return frame(data, s);
+  const items: LegendItem[] = [{ swatch: 'fill', fill: 'var(--ink)', label: 'stage (height = volume)' }];
+  if (used.has('plain')) items.push({ swatch: 'fill', fill: 'var(--paper)', label: 'flow (width = volume)' });
+  if (used.has('accent')) items.push({ swatch: 'node-accent', label: flagged ? 'focal flow' : 'heaviest flow' });
+  if (used.has('negative')) items.push({ swatch: 'fill', fill: 'var(--negative-tint)', label: 'negative flow' });
+  return frame(data, s, renderLegend(items));
 }
 
 /** Rounds to one decimal — SVG paths don't need more, and diffs stay small. */
@@ -229,13 +260,13 @@ function r(v: number): number {
   return Math.round(v * 10) / 10;
 }
 
-function frame(data: SankeyData, inner: string): string {
+function frame(data: SankeyData, inner: string, legendHtml: string): string {
   return diagramFrame(
     {
       tag: 'SANKEY',
-      tagBg: '#2f6f6a',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     inner,
   );

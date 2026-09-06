@@ -3,15 +3,20 @@
  * from 12 o'clock, with arc arrows between consecutive stages and the last
  * stage feeding the first.
  *
- * Stage pills carry the numbered-circle language of the edge-steps pattern;
- * step descriptions (when present) move to the numbered legend under the SVG,
- * exactly like labelled edges do on dense node diagrams.
+ * Skin (`DESIGN.md`): a stage is a paper stadium with an ink outline; the
+ * arcs are `muted` arrows; each stage carries the hollow numbered badge of
+ * the edge-steps language, and step descriptions (when present) move to the
+ * numbered legend under the SVG.
+ *
+ * Accent rule: none. A loop has no start or focal stage, so the cycle spends
+ * no colour.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { edgeStep, stepsLegend } from '../svg/edgeSteps.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -40,7 +45,15 @@ export function renderCycle(data: BlockDataMap['cycle']): string {
 
   // Ring radius: adjacent pill centers must clear a full pill width plus a
   // gap (chord = 2R·sin(π/n)); small n gets a readable floor.
-  const R = Math.max(96, Math.ceil((pillW + 40) / (2 * Math.sin(Math.PI / n))));
+  // A hub label needs the ring to clear it too: the widest hub line plus a
+  // margin on each side of the side pills' inner edges.
+  const hub = data.center !== undefined && data.center.length > 0 ? wrapText(data.center, 18, 3) : [];
+  const hubW = Math.max(0, ...hub.map((ln) => ln.length)) * 7.2;
+  const R = Math.max(
+    96,
+    Math.ceil((pillW + 40) / (2 * Math.sin(Math.PI / n))),
+    hub.length > 0 ? Math.ceil(pillW / 2 + hubW / 2 + 18) : 0,
+  );
   const pad = 30;
   const c = R + pillW / 2 + pad; // center x == center y
   const size = c * 2;
@@ -79,18 +92,17 @@ export function renderCycle(data: BlockDataMap['cycle']): string {
     const y1 = c + R * Math.sin(a1);
     const x2 = c + R * Math.cos(a2);
     const y2 = c + R * Math.sin(a2);
-    s += `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="var(--charcoal)" stroke-width="1.4" marker-end="url(#gArrow)"/>`;
+    s += `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${R} ${R} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#skArrow)"/>`;
   }
 
   // Optional hub label in the middle of the ring.
-  if (data.center !== undefined && data.center.length > 0) {
-    const hub = wrapText(data.center, 18, 3);
+  if (hub.length > 0) {
     s +=
       `<g class="cycle-center"${bp('center')}>` +
       hub
         .map(
           (ln, j) =>
-            `<text x="${c}" y="${c + 4 - (hub.length - 1) * 8 + j * 16}">${escapeHtml(ln)}</text>`,
+            `<text x="${c}" y="${c + 4 - (hub.length - 1) * 8 + j * 16}" class="t-sub" text-anchor="middle">${escapeHtml(ln)}</text>`,
         )
         .join('') +
       `</g>`;
@@ -107,12 +119,12 @@ export function renderCycle(data: BlockDataMap['cycle']): string {
     const wrapPath = st.labelPath === `steps.${i}` ? '' : bp(st.labelPath);
     const label =
       ls.length <= 1
-        ? `<text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" class="cycle-name"${bp(st.labelPath)}>${escapeHtml(st.label)}</text>`
+        ? `<text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" class="t-name" text-anchor="middle"${bp(st.labelPath)}>${escapeHtml(st.label)}</text>`
         : `<g${wrapPath}>` +
           ls
             .map(
               (ln, j) =>
-                `<text x="${p.x.toFixed(1)}" y="${(p.y + 4 - (ls.length - 1) * 7 + j * 14).toFixed(1)}" class="cycle-name">${escapeHtml(ln)}</text>`,
+                `<text x="${p.x.toFixed(1)}" y="${(p.y + 4 - (ls.length - 1) * 7 + j * 14).toFixed(1)}" class="t-name" text-anchor="middle">${escapeHtml(ln)}</text>`,
             )
             .join('') +
           `</g>`;
@@ -128,18 +140,18 @@ export function renderCycle(data: BlockDataMap['cycle']): string {
     const out = boundary + 14;
     const np = { lx: p.x + ca * out, ly: p.y + sa * out };
     s +=
-      `<g filter="url(#gshadow)"${bp(`steps.${i}`)}>` +
-      `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${pillW}" height="${pillH}" rx="${Math.min(17, pillH / 2)}" fill="var(--navy)" stroke="none"/>` +
+      `<g${bp(`steps.${i}`)}>` +
+      `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${pillW}" height="${pillH}" rx="${Math.min(17, pillH / 2)}" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"/>` +
       label +
       `</g>` +
       // The circled numeral selects its stage too (editors twin it with the
       // pill and the numbered legend row via the shared data path).
-      `<g${bp(`steps.${i}`)}>${edgeStep(np, i + 1)}</g>`;
+      `<g${bp(`steps.${i}`)}>${edgeStep(np, i + 1, false, true)}</g>`;
   });
   s += `</g></svg>`;
 
   // Descriptions live in the numbered legend, matching the node numerals.
-  const legend = steps.some((st) => st.desc !== undefined && st.desc.length > 0)
+  const stepLegend = steps.some((st) => st.desc !== undefined && st.desc.length > 0)
     ? stepsLegend(
         steps.map((st, i) => ({
           label: st.desc !== undefined && st.desc.length > 0 ? `${st.label} — ${st.desc}` : st.label,
@@ -148,13 +160,19 @@ export function renderCycle(data: BlockDataMap['cycle']): string {
       )
     : '';
 
+  const items: LegendItem[] = [
+    { swatch: 'node', label: 'stage' },
+    { swatch: 'edge', label: 'next stage' },
+  ];
+  const legend = renderLegend(items);
+
   return diagramFrame(
     {
       tag: 'CYCLE',
-      tagBg: '#0d9488',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legend.length > 0 ? { legendHtml: legend } : {}),
     },
-    s + legend,
+    s + stepLegend,
   );
 }

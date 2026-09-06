@@ -1,7 +1,7 @@
 /**
  * Slide-deck assembly — turns a document into a self-contained presentation
  * deck: one slide for the cover and one per section, with keyboard / button /
- * jump navigation. Each slide is a `.docskin` card with a coloured right edge.
+ * jump navigation. Each slide is a `.docskin` paper card with a hairline edge.
  *
  * The output is a single HTML file with inline CSS + a tiny vanilla-JS
  * controller (no runtime dependency), so it opens straight in a browser.
@@ -17,31 +17,32 @@ const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ESC[c] ?? c);
 const DECK_CSS = `
 *{box-sizing:border-box;}
 html,body{margin:0;height:100%;}
-body{background:var(--light-gray);font-family:var(--font-body);color:var(--charcoal);}
+/* Deck chrome in the editorial skin (DESIGN.md): role tokens only, so the deck
+   follows the same light/dark sets the document does. Hairlines, no shadows,
+   no filled pills; the small labels are mono eyebrows. */
+body{background:var(--paper-2);font-family:var(--font-body);color:var(--ink);}
 .deck{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px 24px 80px;}
-/* Every slide is the same 16:9 stage, sized to fit the viewport. A gradient rail
-   runs down the left edge (same on every slide). */
+/* Every slide is the same 16:9 stage, sized to fit the viewport: a paper card
+   with a hairline edge. */
 .docskin.slide{display:none;position:relative;width:min(94vw, calc((100vh - 116px) * 16 / 9), 1120px);aspect-ratio:16/9;margin:0 auto;
-  padding:26px 40px 24px 50px;border:1px solid var(--rule);border-radius:14px;box-shadow:0 14px 46px rgba(0,0,0,.14);
-  overflow:hidden;background:var(--white);--scale:1.5;}
-/* Static gradient rail (derived from the active theme's accent colors). */
-.docskin.slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:12px;
-  background:linear-gradient(180deg,var(--navy),var(--purple),var(--teal),var(--blue),var(--highlight));}
+  padding:26px 44px 24px;border:1px solid var(--rule-solid);border-radius:6px;box-shadow:none;
+  overflow:hidden;background:var(--paper);--scale:1.5;}
 .docskin.slide.active{display:flex;flex-direction:column;}
 /* Slide header: title top-left, section top-right, hairline rule beneath. */
 .slide-hd{flex:0 0 auto;display:flex;justify-content:space-between;align-items:baseline;gap:18px;
   margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--rule);}
-.slide-hd-l{font-family:var(--font-display);font-weight:700;font-size:25px;line-height:1.15;letter-spacing:-.01em;color:var(--navy);min-width:0;}
+.slide-hd-l{font-family:var(--font-display);font-weight:700;font-size:25px;line-height:1.15;letter-spacing:-.01em;color:var(--ink);min-width:0;}
 /* The supporting line under an action title: the sentence that makes the
    title an argument. Fixed size — it belongs to the header, not the exhibit. */
-.slide-hd-sub{font-family:var(--font-body);font-weight:400;font-size:15px;line-height:1.45;color:var(--slate);letter-spacing:0;margin-top:6px;max-width:78ch;}
-.slide-hd-r{display:flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray);font-weight:700;white-space:nowrap;}
+.slide-hd-sub{font-family:var(--font-body);font-weight:400;font-size:15px;line-height:1.45;color:var(--muted);letter-spacing:0;margin-top:6px;max-width:78ch;}
+.slide-hd-r{display:flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--soft);font-weight:500;white-space:nowrap;}
 /* Deck tracker: the parts of the deck with the current one lit — "you are
-   here", the strip every long consulting deck carries. */
+   here", the strip every long consulting deck carries. Outlined mono chips;
+   the current part is told apart by weight and an ink edge, never by colour alone. */
 .slide-track{display:flex;align-items:center;gap:6px;}
-.slide-track-part{font-size:9.5px;letter-spacing:.08em;color:var(--gray);opacity:.55;padding:2px 8px;border-radius:9px;background:var(--light-gray);}
-.slide-track-part.on{opacity:1;color:var(--white);background:var(--navy);}
-.slide-ft-src{flex:1 1 auto;text-align:center;color:var(--gray);text-transform:none;letter-spacing:.02em;}
+.slide-track-part{font-size:9.5px;letter-spacing:.1em;color:var(--soft);padding:2px 8px;border:1px solid var(--rule-solid);border-radius:2px;background:var(--paper);line-height:1.4;}
+.slide-track-part.on{color:var(--ink);border-color:var(--ink);font-weight:600;}
+.slide-ft-src{flex:1 1 auto;text-align:center;color:var(--soft);text-transform:none;letter-spacing:.02em;}
 /* Text on a stage reads at presentation scale with a comfortable measure —
    never stretched edge to edge. */
 /* Presentation sizes, not page sizes: a stage is read from across a room, so
@@ -102,7 +103,7 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .sl-code-cols pre{white-space:pre-wrap;word-break:break-word;}
 /* A lone short prose fragment (a hero exhibit's intro that spilled to its own
    slide) reads as a deliberate STATEMENT — larger, centered, measured. */
-.docskin.slide .sl-statement .prose p{font-size:21px;line-height:1.6;max-width:46ch;margin-left:auto;margin-right:auto;text-align:center;color:var(--slate);}
+.docskin.slide .sl-statement .prose p{font-size:21px;line-height:1.6;max-width:46ch;margin-left:auto;margin-right:auto;text-align:center;color:var(--muted);}
 /* Consulting split layout ({split} heading marker): message left, exhibit right. */
 .slide-content.sl-split .slide-inner{display:grid;grid-template-columns:2fr 3fr;gap:38px;align-items:center;width:100%;}
 .sl-msg{display:flex;flex-direction:column;gap:8px;min-width:0;}
@@ -110,10 +111,10 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .sl-msg li{font-size:18px;max-width:none;}
 .sl-exhibit{min-width:0;}
 .sl-exhibit .diagram{margin:0;}
-/* Slide footer: doc title left, page number right. */
+/* Slide footer: doc title left, page number right — a mono eyebrow row. */
 .slide-ft{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px;
   margin-top:14px;padding-top:10px;border-top:1px solid var(--rule);
-  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray);}
+  font-family:var(--font-mono);font-size:9.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);}
 .docskin.slide .section-head{display:none;}              /* the slide header replaces it */
 .docskin.slide .section-block{margin:0;}
 .docskin.slide .diagram{margin:0 auto;}
@@ -214,11 +215,14 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide .st-list{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;}
 .docskin.slide .env-steps{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
 .docskin.slide .tr-list{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;}
-/* Cover (first slide): centered title, no top bar. */
+/* Cover (first slide): centered title, no top bar. Ink on paper; the accent
+   is spent once, on the tag. */
 .docskin.slide.slide-cover .slide-content{text-align:center;}
 .docskin.slide.slide-cover .slide-inner{width:100%;}
-.docskin.slide.slide-cover .cover-sub{margin:0 auto;}
-.docskin.slide.slide-cover .cover-meta{margin-bottom:24px;}
+.docskin.slide.slide-cover .cover-title{color:var(--ink);}
+.docskin.slide.slide-cover .cover-sub{margin:0 auto;color:var(--muted);}
+.docskin.slide.slide-cover .cover-meta{margin-bottom:24px;color:var(--soft);font-family:var(--font-mono);font-weight:500;letter-spacing:.14em;}
+.docskin.slide.slide-cover .cover-meta .accent{color:var(--accent);}
 /* A divider that owns its slide is the title card: center the band's content
    block on the stage with no leftover doc margins. */
 .docskin.slide .slide-inner:has(.dvd) .section-block{margin:0;}
@@ -226,13 +230,14 @@ body{background:var(--light-gray);font-family:var(--font-body);color:var(--charc
 .docskin.slide.slide-cover .cover-pad{border-bottom:none;padding-bottom:0;margin-bottom:0;}
 .docskin.slide.slide-cover .cover-meta{justify-content:center;}
 .deck-nav{position:fixed;left:0;right:0;bottom:0;height:60px;display:flex;align-items:center;justify-content:center;
-  gap:14px;background:var(--white);border-top:1px solid var(--rule);font-family:var(--font-body);font-size:13px;z-index:10;}
-.deck-btn{appearance:none;border:1px solid var(--rule);background:var(--white);color:var(--navy);font-size:18px;line-height:1;
-  width:38px;height:34px;border-radius:8px;cursor:pointer;}
-.deck-btn:hover{background:var(--light-gray);}
-.deck-counter{font-variant-numeric:tabular-nums;color:var(--slate);min-width:54px;text-align:center;}
-.deck-sel{max-width:340px;font-family:var(--font-body);font-size:13px;padding:6px 10px;border:1px solid var(--rule);
-  border-radius:8px;background:var(--white);color:var(--charcoal);}
+  gap:14px;background:var(--paper);border-top:1px solid var(--rule-solid);font-family:var(--font-body);font-size:13px;color:var(--ink);z-index:10;}
+.deck-btn{appearance:none;border:1px solid var(--rule-solid);background:var(--paper);color:var(--ink);font-size:18px;line-height:1;
+  width:38px;height:34px;border-radius:6px;cursor:pointer;}
+.deck-btn:hover{background:var(--paper-2);border-color:var(--ink);}
+.deck-btn:focus-visible{outline:2px solid var(--link);outline-offset:1px;}
+.deck-counter{font-variant-numeric:tabular-nums;color:var(--muted);min-width:54px;text-align:center;}
+.deck-sel{max-width:340px;font-family:var(--font-body);font-size:13px;padding:6px 10px;border:1px solid var(--rule-solid);
+  border-radius:6px;background:var(--paper);color:var(--ink);}
 @media print{@page{size:landscape;}.deck-nav{display:none;}.deck{display:block;padding:0;}
   .docskin.slide{display:flex!important;width:100%;aspect-ratio:auto;min-height:96vh;border-radius:0;box-shadow:none;page-break-after:always;}}
 `;
@@ -423,8 +428,12 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
     `<button class="deck-btn" id="deck-next" aria-label="Next">›</button>` +
     `</div>`;
 
+  // An explicitly chosen theme never mixes with the reader's system dark mode
+  // (the default theme follows the system) — same stamp as `renderDocument`.
+  const dataTheme =
+    opts.theme === 'dark' ? ' data-theme="dark"' : opts.theme !== undefined && opts.theme !== 'textbook' ? ' data-theme="light"' : '';
   return (
-    `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+    `<!doctype html><html lang="en"${dataTheme}><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${esc(title)}</title>` +
     `<style>${css}</style>` +

@@ -398,14 +398,14 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
       };
       // The reference resolves to the saved theme's base + vars…
       expect(meta.theme).toBe('dark');
-      expect(meta.themeVars?.['--navy']).toBe('#ff5a1f');
-      expect(meta.themeVars?.['--white']).toBe('#1a1412');
+      expect(meta.themeVars?.['--ink']).toBe('#ff5a1f');
+      expect(meta.themeVars?.['--paper']).toBe('#1a1412');
       // …meta says WHICH theme is active…
       expect(meta.active).toMatchObject({ kind: 'saved', id: 'ember', name: 'Ember' });
       // …and lists it (resolved) for the studio picker.
       const ember = meta.savedThemes?.find((t) => t.slug === 'ember');
       expect(ember).toMatchObject({ name: 'Ember', scope: 'project', theme: 'dark' });
-      expect(ember?.themeVars?.['--navy']).toBe('#ff5a1f');
+      expect(ember?.themeVars?.['--ink']).toBe('#ff5a1f');
     } finally {
       await s.stop();
     }

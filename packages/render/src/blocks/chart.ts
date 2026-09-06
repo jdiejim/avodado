@@ -1,45 +1,29 @@
 /**
  * Renders a `chart` block — a declarative data chart in pure SVG (no deps).
- * Five kinds: `bar` (grouped, rounded bars with subtle value labels), `line`
- * (2px polyline with dots), `area` (line + soft fill), `donut` (stroked
- * arcs + centered total + a legend row beneath, like c4's legend), and
- * `radar` (a polygon web — concentric rings + spokes, one stroked polygon
- * per series; needs 3+ labels as axes).
+ * Kinds: `bar` (grouped), `stacked`, `line`, `area`, `scatter` (ordinal, or
+ * numeric with `points`), `donut`, `gauge`, `radar`, `waterfall`, `funnel`.
  *
- * Axes are hairlines (`var(--rule)`), category labels are 9.5px mono gray.
- * Series colours come from the bright diagram palette (see `blockStyle`),
- * cycling navy → teal → amber → purple → green → blue when no accent is set.
- * Negative values are clamped at 0.
+ * Skin (`DESIGN.md`, `svg/dsTone.ts`): axes are `rule` hairlines on a
+ * `rule-solid` baseline, tick labels `.t-sub` in `soft`, category labels
+ * `.t-sub`, value labels `.t-arrow` on the paper halo. Colour is spent on the
+ * series only: one series is `ink`; 2–5 series take the desaturated series
+ * ramp in order; a series marked `accent: red` is `negative`. Donut, gauge,
+ * waterfall and funnel tell the parts of one whole apart on the ink ramp
+ * (`ink` → `muted` → `soft` → `rule-solid` → `paper-2`) — an item that names
+ * any other accent is the focal one and takes `accent`. Negative values are
+ * clamped at 0. No gradients, no shadows, no 3D.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { inkTone, marksOf, seriesColor, type Mark } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 
 type ChartData = BlockDataMap['chart'];
 type Series = NonNullable<ChartData['series']>[number];
 type DonutItem = NonNullable<ChartData['items']>[number];
-
-/** Accent name → bright diagram palette hex (matches svg/blockStyle.ts). */
-const ACCENT_HEX: Record<string, string> = {
-  navy: '#0e54a1',
-  blue: '#1a6dbe',
-  teal: '#0f766e',
-  green: '#1f9747',
-  amber: '#f7952c',
-  purple: '#6b21a8',
-  red: '#991b1b',
-  gray: '#6b7280',
-};
-
-/** Default colour cycle when a series/item carries no accent. */
-const CYCLE = ['#0e54a1', '#0f766e', '#f7952c', '#6b21a8', '#1f9747', '#1a6dbe'];
-
-function colorAt(accent: string | undefined, i: number): string {
-  if (accent !== undefined && ACCENT_HEX[accent] !== undefined) return ACCENT_HEX[accent];
-  return CYCLE[i % CYCLE.length] ?? '#0e54a1';
-}
 
 /** Clamps negatives to 0 (charts render the non-negative range only). */
 const pos = (v: number): number => (Number.isFinite(v) && v > 0 ? v : 0);
@@ -49,6 +33,9 @@ function fmt(v: number, unit: string | undefined): string {
   const n = Math.round(v * 100) / 100;
   return `${n}${unit ?? ''}`;
 }
+
+/** Text drawn ON a dark fill: `paper`, and no paper halo (it would blur). */
+const ON_DARK = ' style="fill:var(--paper);stroke:none"';
 
 /** Shared cartesian frame geometry for bar / line / area. */
 interface Frame {
@@ -83,8 +70,8 @@ function axes(f: Frame, labels: readonly string[], unit: string | undefined, tag
   let s = '';
   for (let t = 0; t <= TICKS; t++) {
     const y = Math.round(f.y1 - ((f.y1 - f.y0) * t) / TICKS);
-    s += `<line x1="${f.x0}" y1="${y}" x2="${f.x1}" y2="${y}" class="chart-axis"${t === 0 ? '' : ' opacity="0.6"'}/>`;
-    s += `<text x="${f.x0 - 8}" y="${y + 3}" class="chart-tick">${escapeHtml(fmt((f.yMax * t) / TICKS, unit))}</text>`;
+    s += `<line x1="${f.x0}" y1="${y}" x2="${f.x1}" y2="${y}" stroke="${t === 0 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<text x="${f.x0 - 8}" y="${y + 3}" class="t-sub c-soft" text-anchor="end">${escapeHtml(fmt((f.yMax * t) / TICKS, unit))}</text>`;
   }
   const n = Math.max(labels.length, 1);
   const slot = (f.x1 - f.x0) / n;
@@ -93,25 +80,33 @@ function axes(f: Frame, labels: readonly string[], unit: string | undefined, tag
   if (tagLabels) s += `<g${bl('labels')}>`;
   labels.forEach((label, i) => {
     const x = Math.round(f.x0 + slot * i + slot / 2);
-    s += `<text x="${x}" y="${f.y1 + 18}" class="chart-label"${tagLabels ? bp(`labels.${i}`) : ''}>${escapeHtml(label)}</text>`;
+    s += `<text x="${x}" y="${f.y1 + 18}" class="t-sub" text-anchor="middle"${tagLabels ? bp(`labels.${i}`) : ''}>${escapeHtml(label)}</text>`;
   });
   if (tagLabels) s += `</g>`;
   return s;
 }
 
-/** Legend row beneath the SVG (same `.legend` chrome as c4). */
-function legendRow(
-  entries: ReadonlyArray<{ label: string; color: string; path: string }>,
-  listPath: string,
-): string {
-  if (entries.length === 0) return '';
-  const items = entries
-    .map(
-      (e) =>
-        `<span class="item"${bp(e.path)}><span class="sw" style="background:${e.color};border:1px solid #d1d5db"></span>${escapeHtml(e.label)}</span>`,
-    )
-    .join('');
-  return `<div class="legend"${bl(listPath)}>${items}</div>`;
+/** The series legend — one swatch per series, in the ramp's order. */
+function seriesLegend(series: readonly Series[]): string {
+  const items: LegendItem[] = series.map((sr, i) => ({
+    swatch: 'fill',
+    fill: seriesColor(i, series.length, sr.accent),
+    label: sr.label,
+    path: `series.${i}`,
+  }));
+  return renderLegend(items, 'series');
+}
+
+/** The items legend (donut / gauge) — label and value per slice. */
+function itemsLegend(items: readonly DonutItem[], unit: string | undefined): string {
+  const marks = marksOf(items.map((it) => it.accent));
+  const entries: LegendItem[] = items.map((it, i) => ({
+    swatch: 'fill',
+    fill: inkTone(i, marks[i]).fill,
+    label: `${it.label} — ${fmt(pos(it.value), unit)}`,
+    path: `items.${i}`,
+  }));
+  return renderLegend(entries, 'items');
 }
 
 function renderBars(
@@ -129,7 +124,7 @@ function renderBars(
   const barW = Math.max(6, Math.round((slot - groupPad * 2 - barGap * (k - 1)) / k));
   let s = `<g${bl('series')}>`;
   series.forEach((sr, si) => {
-    const color = colorAt(sr.accent, si);
+    const color = seriesColor(si, series.length, sr.accent);
     s += `<g${bp(`series.${si}`)}>`;
     for (let ci = 0; ci < labels.length; ci++) {
       const v = pos(sr.values[ci] ?? 0);
@@ -138,8 +133,8 @@ function renderBars(
       const x = Math.round(f.x0 + slot * ci + groupPad + si * (barW + barGap));
       const y = f.y1 - h;
       s += `<g${bp(`series.${si}.values.${ci}`)}>`;
-      s += `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h, 1)}" rx="3" fill="${color}"${h === 0 ? ' opacity="0.35"' : ''}/>`;
-      s += `<text x="${x + Math.round(barW / 2)}" y="${y - 4}" class="chart-val">${escapeHtml(fmt(v, data.unit))}</text>`;
+      s += `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h, 1)}" fill="${color}"${h === 0 ? ' opacity="0.35"' : ''}/>`;
+      s += `<text x="${x + Math.round(barW / 2)}" y="${y - 4}" class="t-arrow" text-anchor="middle">${escapeHtml(fmt(v, data.unit))}</text>`;
       s += `</g>`;
     }
     s += `</g>`;
@@ -163,20 +158,20 @@ function renderLineArea(
     Math.round(f.y1 - ((f.y1 - f.y0) * Math.min(pos(v), f.yMax)) / f.yMax);
   let s = `<g${bl('series')}>`;
   series.forEach((sr, si) => {
-    const color = colorAt(sr.accent, si);
+    const color = seriesColor(si, series.length, sr.accent);
     const pts = sr.values.slice(0, labels.length).map((v, i) => `${xAt(i)},${yAt(v)}`);
     if (pts.length === 0) return;
     s += `<g${bp(`series.${si}`)}>`;
     if (area && pts.length > 1) {
       const first = xAt(0);
       const last = xAt(pts.length - 1);
-      s += `<polygon points="${first},${f.y1} ${pts.join(' ')} ${last},${f.y1}" fill="${color}" fill-opacity="0.15" stroke="none"/>`;
+      s += `<polygon points="${first},${f.y1} ${pts.join(' ')} ${last},${f.y1}" fill="${color}" fill-opacity="0.12" stroke="none"/>`;
     }
     if (pts.length > 1) {
-      s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+      s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="1.75" stroke-linejoin="round"/>`;
     }
     sr.values.slice(0, labels.length).forEach((v, i) => {
-      s += `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="3" fill="${color}"/>`;
+      s += `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="3" fill="var(--paper)" stroke="${color}" stroke-width="1.75"/>`;
     });
     s += `</g>`;
   });
@@ -184,7 +179,13 @@ function renderLineArea(
   return svgOpen(f) + axes(f, labels, data.unit, tagLabels) + s + `</svg>`;
 }
 
-function renderDonut(data: ChartData, items: readonly DonutItem[]): string {
+/** A drawing plus the legend strip the frame shows under it. */
+interface Drawn {
+  readonly svg: string;
+  readonly legend: string;
+}
+
+function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
   const width = 420;
   const height = 220;
   const cx = Math.round(width / 2);
@@ -194,15 +195,25 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): string {
   const total = items.reduce((acc, it) => acc + pos(it.value), 0);
   let s = svgOpenSize(width, height);
   if (total <= 0) {
-    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--rule)" stroke-width="${sw}"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--paper)" stroke-width="${sw}"/>`;
   } else {
     let angle = -90;
+    const marks = marksOf(items.map((it) => it.accent));
+    const seams: string[] = [];
+    const seam = (deg: number): void => {
+      const a = (deg * Math.PI) / 180;
+      const x0 = Math.round((cx + (r - sw / 2 - 1) * Math.cos(a)) * 10) / 10;
+      const y0 = Math.round((cy + (r - sw / 2 - 1) * Math.sin(a)) * 10) / 10;
+      const x1 = Math.round((cx + (r + sw / 2 + 1) * Math.cos(a)) * 10) / 10;
+      const y1 = Math.round((cy + (r + sw / 2 + 1) * Math.sin(a)) * 10) / 10;
+      seams.push(`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--paper-2)" stroke-width="2"/>`);
+    };
     s += `<g${bl('items')}>`;
     items.forEach((it, i) => {
       const v = pos(it.value);
       if (v === 0) return;
       const sweep = (v / total) * 360;
-      const color = colorAt(it.accent, i);
+      const color = inkTone(i, marks[i]).fill;
       if (sweep >= 359.999) {
         // A full circle can't be a single arc — draw a ring.
         s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"${bp(`items.${i}`)}/>`;
@@ -215,38 +226,20 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): string {
         const y1 = Math.round(cy + r * Math.sin(a1));
         const large = sweep > 180 ? 1 : 0;
         s += `<path d="M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="butt"${bp(`items.${i}`)}/>`;
+        seam(angle);
       }
       angle += sweep;
     });
     s += `</g>`;
+    // Ground-coloured seams between slices, so pale steps stay separable.
+    if (seams.length > 1) s += seams.join('');
   }
   s += `<text x="${cx}" y="${cy + 2}" class="chart-total">${escapeHtml(fmt(total, data.unit))}</text>`;
-  s += `<text x="${cx}" y="${cy + 20}" class="chart-total-label">TOTAL</text>`;
+  s += `<text x="${cx}" y="${cy + 20}" class="t-eyebrow" text-anchor="middle">TOTAL</text>`;
   s += `</svg>`;
-  const legend = legendRow(
-    items.map((it, i) => ({
-      label: `${it.label} — ${fmt(pos(it.value), data.unit)}`,
-      color: colorAt(it.accent, i),
-      path: `items.${i}`,
-    })),
-    'items',
-  );
-  return s + legend;
+  return { svg: s, legend: itemsLegend(items, data.unit) };
 }
 
-/**
- * `kind: gauge` — radial progress against a ceiling.
- *
- * A donut answers "how does the whole split up"; a gauge answers "how far
- * along is this one number", which is the shape an SLO, a quota, a migration
- * or a rollout actually has. Each item is an arc over the same 270° sweep
- * (open at the bottom, so the dial reads as a dial rather than a ring), swept
- * to `value / max` — `max` defaults to 100, the percentage case.
- *
- * One item draws a single big dial with the value in the middle; several
- * become concentric rings, outermost first, each with the track behind it so
- * an empty arc still reads as "nearly none of it" instead of as missing.
- */
 /**
  * `kind: stacked` — bars that sum instead of standing side by side, for the
  * case where the total matters as much as the split (spend by team per
@@ -271,12 +264,12 @@ function renderStacked(
       if (v === 0) return;
       const h = Math.round(((f.y1 - f.y0) * v) / f.yMax);
       top -= h;
-      s += `<rect x="${x}" y="${top}" width="${Math.round(barW)}" height="${h}" fill="${colorAt(sr.accent, si)}"${bp(`series.${si}.values.${ci}`)}><title>${escapeHtml(`${sr.label} — ${fmt(v, data.unit)}`)}</title></rect>`;
+      s += `<rect x="${x}" y="${top}" width="${Math.round(barW)}" height="${h}" fill="${seriesColor(si, series.length, sr.accent)}" stroke="var(--paper-2)" stroke-width="1"${bp(`series.${si}.values.${ci}`)}><title>${escapeHtml(`${sr.label} — ${fmt(v, data.unit)}`)}</title></rect>`;
     });
     // The column total sits above the stack, which is the number people read.
     const total = series.reduce((a, sr) => a + pos(sr.values[ci] ?? 0), 0);
     if (total > 0) {
-      s += `<text x="${x + Math.round(barW / 2)}" y="${top - 5}" class="chart-val">${escapeHtml(fmt(total, data.unit))}</text>`;
+      s += `<text x="${x + Math.round(barW / 2)}" y="${top - 5}" class="t-arrow" text-anchor="middle">${escapeHtml(fmt(total, data.unit))}</text>`;
     }
   }
   s += `</g>`;
@@ -301,10 +294,10 @@ function renderScatter(
     Math.round(f.y1 - ((f.y1 - f.y0) * Math.min(pos(v), f.yMax)) / f.yMax);
   let s = `<g${bl('series')}>`;
   series.forEach((sr, si) => {
-    const color = colorAt(sr.accent, si);
+    const color = seriesColor(si, series.length, sr.accent);
     s += `<g${bp(`series.${si}`)}>`;
     sr.values.slice(0, labels.length).forEach((v, i) => {
-      s += `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="5" fill="${color}" fill-opacity="0.75" stroke="${color}" stroke-width="1.5"><title>${escapeHtml(`${sr.label} — ${fmt(pos(v), data.unit)}`)}</title></circle>`;
+      s += `<circle cx="${xAt(i)}" cy="${yAt(v)}" r="5" fill="${color}" fill-opacity="0.2" stroke="${color}" stroke-width="1.5"><title>${escapeHtml(`${sr.label} — ${fmt(pos(v), data.unit)}`)}</title></circle>`;
     });
     s += `</g>`;
   });
@@ -401,7 +394,14 @@ function circleHitsBox(c: Dot, b: LabelBox): boolean {
   return dx * dx + dy * dy < c.r * c.r;
 }
 
-function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): string {
+/** A point's colour: `ink`, or the accent / negative its mark gives it. */
+function pointColor(mark: Mark): string {
+  if (mark === 'negative') return 'var(--negative)';
+  if (mark === 'focal') return 'var(--accent)';
+  return 'var(--ink)';
+}
+
+function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): Drawn {
   const guides = data.guides;
   const width = 560;
   const height = 320;
@@ -432,33 +432,33 @@ function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): 
   // Gridlines + tick labels on both axes.
   for (const t of sy.ticks) {
     const y = Y(t);
-    s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" class="chart-axis"${t === sy.min ? '' : ' opacity="0.6"'}/>`;
-    s += `<text x="${x0 - 8}" y="${y + 3}" class="chart-tick">${escapeHtml(fmt(t, data.unit))}</text>`;
+    s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="${t === sy.min ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<text x="${x0 - 8}" y="${y + 3}" class="t-sub c-soft" text-anchor="end">${escapeHtml(fmt(t, data.unit))}</text>`;
   }
   for (const t of sx.ticks) {
     const x = X(t);
-    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" class="chart-axis" opacity="${t === sx.min ? 1 : 0.35}"/>`;
-    s += `<text x="${x}" y="${y1 + 16}" class="chart-label">${escapeHtml(fmt(t, undefined))}</text>`;
+    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="${t === sx.min ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<text x="${x}" y="${y1 + 16}" class="t-sub c-soft" text-anchor="middle">${escapeHtml(fmt(t, undefined))}</text>`;
   }
 
   // Axis titles.
   if (data.xLabel !== undefined) {
-    s += `<text x="${Math.round((x0 + x1) / 2)}" y="${height - 8}" class="chart-label"${bp('xLabel')}>${escapeHtml(data.xLabel)}</text>`;
+    s += `<text x="${Math.round((x0 + x1) / 2)}" y="${height - 8}" class="t-eyebrow" text-anchor="middle"${bp('xLabel')}>${escapeHtml(data.xLabel)}</text>`;
   }
   if (data.yLabel !== undefined) {
     const cy = Math.round((y0 + y1) / 2);
-    s += `<text x="14" y="${cy}" class="chart-label" transform="rotate(-90 14 ${cy})"${bp('yLabel')}>${escapeHtml(data.yLabel)}</text>`;
+    s += `<text x="14" y="${cy}" class="t-eyebrow" text-anchor="middle" transform="rotate(-90 14 ${cy})"${bp('yLabel')}>${escapeHtml(data.yLabel)}</text>`;
   }
 
-  // Dashed reference guides + muted quadrant corner labels (TL, TR, BL, BR).
+  // Dashed reference guides + quadrant corner labels (TL, TR, BL, BR).
   if (guides !== undefined) {
     if (guides.x !== undefined) {
       const gx = X(guides.x);
-      s += `<line x1="${gx}" y1="${y0}" x2="${gx}" y2="${y1}" stroke="var(--gray)" stroke-width="1" stroke-dasharray="5 4" opacity="0.65"${bp('guides.x')}/>`;
+      s += `<line x1="${gx}" y1="${y0}" x2="${gx}" y2="${y1}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="5 4"${bp('guides.x')}/>`;
     }
     if (guides.y !== undefined) {
       const gy = Y(guides.y);
-      s += `<line x1="${x0}" y1="${gy}" x2="${x1}" y2="${gy}" stroke="var(--gray)" stroke-width="1" stroke-dasharray="5 4" opacity="0.65"${bp('guides.y')}/>`;
+      s += `<line x1="${x0}" y1="${gy}" x2="${x1}" y2="${gy}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="5 4"${bp('guides.y')}/>`;
     }
     if (guides.quadrants !== undefined && guides.quadrants.length === 4) {
       const [tl, tr, bl_, br] = guides.quadrants;
@@ -471,7 +471,7 @@ function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): 
       ): string =>
         text === undefined || text === ''
           ? ''
-          : `<text x="${x}" y="${y}" class="chart-label" style="text-anchor:${anchor};opacity:.55"${bp(`guides.quadrants.${i}`)}>${escapeHtml(text)}</text>`;
+          : `<text x="${x}" y="${y}" class="t-eyebrow" text-anchor="${anchor}"${bp(`guides.quadrants.${i}`)}>${escapeHtml(text)}</text>`;
       s += corner(tl, x0 + 8, y0 + 12, 'start', 0);
       s += corner(tr, x1 - 8, y0 + 12, 'end', 1);
       s += corner(bl_, x0 + 8, y1 - 8, 'start', 2);
@@ -488,13 +488,14 @@ function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): 
     r: scRadius(p.size, minS, maxS),
   }));
 
+  const marks = marksOf(points.map((p) => p.accent));
   let dotSvg = `<g${bl('points')}>`;
   points.forEach((p, i) => {
     const d = dots[i];
     if (d === undefined) return;
-    const color = colorAt(p.accent, 0);
+    const color = pointColor(marks[i]);
     const tip = `${p.label !== undefined ? `${p.label} — ` : ''}${fmt(p.x, undefined)}, ${fmt(p.y, data.unit)}${p.size !== undefined ? ` (${fmt(p.size, undefined)})` : ''}`;
-    dotSvg += `<circle cx="${d.px}" cy="${d.py}" r="${d.r}" fill="${color}" fill-opacity="0.55" stroke="${color}" stroke-width="1.5"${bp(`points.${i}`)}><title>${escapeHtml(tip)}</title></circle>`;
+    dotSvg += `<circle cx="${d.px}" cy="${d.py}" r="${d.r}" fill="${color}" fill-opacity="0.18" stroke="${color}" stroke-width="1.5"${bp(`points.${i}`)}><title>${escapeHtml(tip)}</title></circle>`;
   });
   dotSvg += `</g>`;
 
@@ -511,7 +512,7 @@ function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): 
     const d = dots[i];
     if (d === undefined || p.label === undefined || p.label === '') return;
     const text = scLabel(p.label);
-    const w = text.length * 5.6;
+    const w = text.length * 6;
     const { px, py, r } = d;
     // Clearance radius: a coincident or covering bubble (think identical
     // coordinates with different sizes) is what the label really has to
@@ -549,25 +550,45 @@ function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): 
     const dy = pick.ly - (py + 3);
     if (Math.sqrt(dx * dx + dy * dy) > 14) {
       // From the box edge nearest the bubble to just outside the bubble rim.
-      const sx = Math.max(box.x0, Math.min(px, box.x1));
-      const sy = Math.max(box.y0, Math.min(py, box.y1));
-      const len = Math.sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy));
+      const sxp = Math.max(box.x0, Math.min(px, box.x1));
+      const syp = Math.max(box.y0, Math.min(py, box.y1));
+      const len = Math.sqrt((px - sxp) * (px - sxp) + (py - syp) * (py - syp));
       if (len > r + 2) {
-        const ex = px - ((px - sx) / len) * (r + 1.5);
-        const ey = py - ((py - sy) / len) * (r + 1.5);
-        leaders += `<line x1="${Math.round(sx * 10) / 10}" y1="${Math.round(sy * 10) / 10}" x2="${Math.round(ex * 10) / 10}" y2="${Math.round(ey * 10) / 10}" class="chart-leader"/>`;
+        const ex = px - ((px - sxp) / len) * (r + 1.5);
+        const ey = py - ((py - syp) / len) * (r + 1.5);
+        leaders += `<line x1="${Math.round(sxp * 10) / 10}" y1="${Math.round(syp * 10) / 10}" x2="${Math.round(ex * 10) / 10}" y2="${Math.round(ey * 10) / 10}" stroke="var(--muted)" stroke-width="0.75"/>`;
       }
     }
     const full = p.label.length > SC_LABEL_CHARS ? `<title>${escapeHtml(p.label)}</title>` : '';
-    labels += `<text x="${Math.round(pick.lx * 10) / 10}" y="${Math.round(pick.ly * 10) / 10}" class="chart-label" style="text-anchor:${pick.anchor}"${bp(`points.${i}.label`)}>${escapeHtml(text)}${full}</text>`;
+    // Inline style, not an attribute: editors read the anchor back from it.
+    labels += `<text x="${Math.round(pick.lx * 10) / 10}" y="${Math.round(pick.ly * 10) / 10}" class="t-sub c-ink" style="text-anchor:${pick.anchor}"${bp(`points.${i}.label`)}>${escapeHtml(text)}${full}</text>`;
   });
 
   // Leaders under the bubbles, labels on top.
   s += leaders + dotSvg + labels + `</svg>`;
-  return s;
+
+  const items: LegendItem[] = [];
+  if (marks.some((m) => m === undefined)) items.push({ swatch: 'fill', fill: 'var(--ink)', label: 'point' });
+  if (marks.some((m) => m === 'focal')) items.push({ swatch: 'fill', fill: 'var(--accent)', label: 'focal' });
+  if (marks.some((m) => m === 'negative')) items.push({ swatch: 'fill', fill: 'var(--negative)', label: 'negative' });
+  if (guides?.x !== undefined || guides?.y !== undefined) items.push({ swatch: 'edge-dashed', label: 'guide' });
+  return { svg: s, legend: renderLegend(items) };
 }
 
-function renderGauge(data: ChartData, items: readonly DonutItem[]): string {
+/**
+ * `kind: gauge` — radial progress against a ceiling.
+ *
+ * A donut answers "how does the whole split up"; a gauge answers "how far
+ * along is this one number", which is the shape an SLO, a quota, a migration
+ * or a rollout actually has. Each item is an arc over the same 270° sweep
+ * (open at the bottom, so the dial reads as a dial rather than a ring), swept
+ * to `value / max` — `max` defaults to 100, the percentage case.
+ *
+ * One item draws a single big dial with the value in the middle; several
+ * become concentric rings, outermost first, each with the track behind it so
+ * an empty arc still reads as "nearly none of it" instead of as missing.
+ */
+function renderGauge(data: ChartData, items: readonly DonutItem[]): Drawn {
   const width = 420;
   const solo = items.length <= 1;
   const height = solo ? 246 : 264;
@@ -593,14 +614,15 @@ function renderGauge(data: ChartData, items: readonly DonutItem[]): string {
   };
 
   let s = svgOpenSize(width, height);
+  const marks = marksOf(items.map((it) => it.accent));
   s += `<g${bl('items')}>`;
   items.forEach((it, i) => {
     const r = outer - i * (band + gap);
     if (r <= band) return; // out of rings — the legend still names the item
-    const color = colorAt(it.accent, i);
+    const color = inkTone(i, marks[i]).fill;
     const fraction = pos(it.value) / max;
     s += `<g${bp(`items.${i}`)}>`;
-    s += `<path d="${arc(r, 1)}" fill="none" stroke="var(--light-gray)" stroke-width="${band}" stroke-linecap="round"/>`;
+    s += `<path d="${arc(r, 1)}" fill="none" stroke="var(--paper)" stroke-width="${band}" stroke-linecap="round"/>`;
     const filled = arc(r, fraction);
     if (filled !== '') {
       s += `<path d="${filled}" fill="none" stroke="${color}" stroke-width="${band}" stroke-linecap="round"/>`;
@@ -614,29 +636,19 @@ function renderGauge(data: ChartData, items: readonly DonutItem[]): string {
     // The middle carries the leading item: its value big, then what it is.
     s += `<text x="${cx}" y="${cy + (solo ? 6 : 2)}" class="chart-total">${escapeHtml(fmt(pos(lead.value), data.unit))}</text>`;
     const caption = solo ? (lead.desc ?? lead.label) : 'OF ' + fmt(max, data.unit);
-    s += `<text x="${cx}" y="${cy + (solo ? 26 : 20)}" class="chart-total-label">${escapeHtml(caption.toUpperCase())}</text>`;
+    s += `<text x="${cx}" y="${cy + (solo ? 26 : 20)}" class="t-eyebrow" text-anchor="middle">${escapeHtml(caption.toUpperCase())}</text>`;
   }
   // Scale ends, just outside the two open ends of the dial (135° and 45°) —
   // clear of the stroke, so a full arc never runs over its own labels.
   const scaleR = outer + band / 2 + 13;
   const scaleX = Math.round(scaleR * Math.cos((135 * Math.PI) / 180));
   const scaleY = Math.round(cy + scaleR * Math.sin((135 * Math.PI) / 180));
-  s += `<text x="${cx + scaleX}" y="${scaleY}" class="chart-label">0</text>`;
-  s += `<text x="${cx - scaleX}" y="${scaleY}" class="chart-label">${escapeHtml(fmt(max, data.unit))}</text>`;
+  s += `<text x="${cx + scaleX}" y="${scaleY}" class="t-sub c-soft" text-anchor="middle">0</text>`;
+  s += `<text x="${cx - scaleX}" y="${scaleY}" class="t-sub c-soft" text-anchor="middle">${escapeHtml(fmt(max, data.unit))}</text>`;
   s += `</svg>`;
 
-  const legend =
-    items.length > 1 || (items[0]?.desc !== undefined && !solo)
-      ? legendRow(
-          items.map((it, i) => ({
-            label: `${it.label} — ${fmt(pos(it.value), data.unit)}`,
-            color: colorAt(it.accent, i),
-            path: `items.${i}`,
-          })),
-          'items',
-        )
-      : '';
-  return s + legend;
+  const legend = items.length > 1 || (items[0]?.desc !== undefined && !solo) ? itemsLegend(items, data.unit) : '';
+  return { svg: s, legend };
 }
 
 function renderRadar(data: ChartData, labels: readonly string[], series: readonly Series[]): string {
@@ -660,11 +672,11 @@ function renderRadar(data: ChartData, labels: readonly string[], series: readonl
   // Concentric rings (hairline polygons) + axis spokes.
   for (let ring = 1; ring <= TICKS; ring++) {
     const pts = Array.from({ length: n }, (_, i) => ptAt(i, (r * ring) / TICKS).join(','));
-    s += `<polygon points="${pts.join(' ')}" fill="none" class="chart-axis"/>`;
+    s += `<polygon points="${pts.join(' ')}" fill="none" stroke="${ring === TICKS ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
   }
   for (let i = 0; i < n; i++) {
     const [x, y] = ptAt(i, r);
-    s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" class="chart-axis"/>`;
+    s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--rule)" stroke-width="1"/>`;
   }
   // Axis labels at the spoke ends, anchored away from the web.
   s += `<g${bl('labels')}>`;
@@ -673,23 +685,21 @@ function renderRadar(data: ChartData, labels: readonly string[], series: readonl
     const [x, y] = ptAt(i, r + 14);
     const cos = Math.cos(a);
     const anchor = cos > 0.3 ? 'start' : cos < -0.3 ? 'end' : 'middle';
-    // Inline style: the .chart-label class sets text-anchor:middle, which
-    // would override a presentation attribute.
-    s += `<text x="${x}" y="${y + 3}" class="chart-label" style="text-anchor:${anchor}"${bp(`labels.${i}`)}>${escapeHtml(label)}</text>`;
+    s += `<text x="${x}" y="${y + 3}" class="t-sub" text-anchor="${anchor}"${bp(`labels.${i}`)}>${escapeHtml(label)}</text>`;
   });
   s += `</g>`;
   // One stroked polygon (+ vertex dots) per series.
   s += `<g${bl('series')}>`;
   series.forEach((sr, si) => {
-    const color = colorAt(sr.accent, si);
+    const color = seriesColor(si, series.length, sr.accent);
     const pts = Array.from({ length: n }, (_, i) => {
       const v = Math.min(pos(sr.values[i] ?? 0), vMax);
       return ptAt(i, (r * v) / vMax);
     });
     s += `<g${bp(`series.${si}`)}>`;
-    s += `<polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${color}" fill-opacity="0.12" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+    s += `<polygon points="${pts.map((p) => p.join(',')).join(' ')}" fill="${color}" fill-opacity="0.1" stroke="${color}" stroke-width="1.75" stroke-linejoin="round"/>`;
     pts.forEach(([x, y]) => {
-      s += `<circle cx="${x}" cy="${y}" r="2.5" fill="${color}"/>`;
+      s += `<circle cx="${x}" cy="${y}" r="2.5" fill="var(--paper)" stroke="${color}" stroke-width="1.5"/>`;
     });
     s += `</g>`;
   });
@@ -707,12 +717,9 @@ function svgOpenSize(w: number, h: number): string {
 // ─── kind: waterfall (a budget cascade — the former `waterfall` type) ────────
 // Horizontal cascading bars: each bar starts at the running total of the
 // previous items and spans its value; a final full-width TOTAL bar runs from
-// 0 in navy. An optional `budget` draws a dashed cap line — any bar segment
+// 0 in ink. An optional `budget` draws a dashed cap line — any bar segment
 // past it tints negative, and the total row gets an over / under / on-budget
 // chip. Renders inside the diagram frame (tag BUDGET).
-
-/** Bright diagram palette for waterfall bars (same cycle order as bar/donut). */
-const WFL_CYCLE = ['#0e54a1', '#0f766e', '#f7952c', '#6b21a8', '#1f9747', '#1a6dbe'];
 
 const WFL_WIDTH = 720;
 const WFL_LABEL_W = 150; // fixed left label column
@@ -762,24 +769,28 @@ function renderWaterfallBody(data: ChartData): string {
 
   // Cascading item bars.
   let running = 0;
+  let over = false;
+  const marks = marksOf(items.map((it) => it.accent));
+  const focal = marks.includes('focal');
   s += `<g${bl('items')}>`;
   items.forEach((it, i) => {
     const v = pos(it.value);
     const y = topPad + i * (WFL_BAR_H + WFL_GAP);
     const bx = x0 + px(running);
     const bw = Math.max(px(v), v > 0 ? 2 : 0);
-    const color = WFL_CYCLE[i % WFL_CYCLE.length] ?? '#0e54a1';
+    const tone = inkTone(i, marks[i]);
     s += `<g${bp(`items.${i}`)}>`;
-    s += `<text x="0" y="${y + 22}" class="wfl-label"${bp(`items.${i}.label`)}>${escapeHtml(wflLabelFor(it))}</text>`;
-    s += `<rect x="${bx}" y="${y}" width="${bw}" height="${WFL_BAR_H}" rx="3" fill="${color}" fill-opacity="0.9"/>`;
+    s += `<text x="0" y="${y + 22}" class="t-name"${bp(`items.${i}.label`)}>${escapeHtml(wflLabelFor(it))}</text>`;
+    s += `<rect x="${bx}" y="${y}" width="${bw}" height="${WFL_BAR_H}" fill="${tone.fill}" stroke="${tone.stroke}" stroke-width="1"/>`;
     // Segment past the budget line tints negative.
     if (hasBudget && running + v > budget) {
+      over = true;
       const overStart = Math.max(running, budget);
       const ox = x0 + px(overStart);
       const ow = Math.max(px(running + v) - px(overStart), 2);
-      s += `<rect x="${ox}" y="${y}" width="${ow}" height="${WFL_BAR_H}" rx="3" fill="var(--negative)" fill-opacity="0.9"/>`;
+      s += `<rect x="${ox}" y="${y}" width="${ow}" height="${WFL_BAR_H}" fill="var(--negative)"/>`;
     }
-    s += `<text x="${bx + bw + 6}" y="${y + 22}" class="wfl-value"${bp(`items.${i}.value`)}>${escapeHtml(wflFmt(v, unit))}</text>`;
+    s += `<text x="${bx + bw + 6}" y="${y + 22}" class="t-sub c-muted"${bp(`items.${i}.value`)}>${escapeHtml(wflFmt(v, unit))}</text>`;
     s += `</g>`;
     running += v;
   });
@@ -789,40 +800,49 @@ function renderWaterfallBody(data: ChartData): string {
   if (items.length > 0) {
     const y = topPad + items.length * (WFL_BAR_H + WFL_GAP);
     const tw = Math.max(px(total), total > 0 ? 2 : 0);
-    s += `<rect x="${x0}" y="${y}" width="${tw}" height="${WFL_BAR_H}" rx="3" fill="var(--navy)"/>`;
-    s += `<text x="${x0 + 10}" y="${y + 22}" class="wfl-total-label">TOTAL</text>`;
-    s += `<text x="${x0 + tw + 6}" y="${y + 22}" class="wfl-value">${escapeHtml(wflFmt(total, unit))}</text>`;
+    s += `<rect x="${x0}" y="${y}" width="${tw}" height="${WFL_BAR_H}" fill="var(--ink)"/>`;
+    s += `<text x="${x0 + 10}" y="${y + 21}" class="t-eyebrow"${ON_DARK}>TOTAL</text>`;
+    s += `<text x="${x0 + tw + 6}" y="${y + 22}" class="t-sub c-ink">${escapeHtml(wflFmt(total, unit))}</text>`;
     // Over / under / on-budget chip after the total value.
     if (hasBudget) {
       const diff = Math.round((total - budget) * 100) / 100;
-      const over = diff > 0;
-      const label = diff === 0 ? 'on budget' : over ? `${wflFmt(diff, unit)} over` : `${wflFmt(-diff, unit)} under`;
+      const isOver = diff > 0;
+      const label = diff === 0 ? 'on budget' : isOver ? `${wflFmt(diff, unit)} over` : `${wflFmt(-diff, unit)} under`;
       const cw = 20 + label.length * 6;
-      const cx = x0 + tw + 6 + Math.round(wflFmt(total, unit).length * 6.6) + 8;
-      const tone = over ? 'wfl-chip-over' : 'wfl-chip-under';
-      s += `<rect x="${cx}" y="${y + 4}" width="${cw}" height="${WFL_BAR_H - 8}" rx="9" class="wfl-chip-bg ${tone}"/>`;
-      s += `<text x="${cx + Math.round(cw / 2)}" y="${y + 22}" class="wfl-chip ${tone}">${escapeHtml(label)}</text>`;
+      const cx = x0 + tw + 6 + Math.round(wflFmt(total, unit).length * 6.2) + 8;
+      const stroke = isOver ? 'var(--negative)' : 'var(--rule-solid)';
+      const cls = isOver ? ' c-negative' : ' c-muted';
+      s += `<rect x="${cx}" y="${y + 4}" width="${cw}" height="${WFL_BAR_H - 8}" rx="2" fill="var(--paper)" stroke="${stroke}" stroke-width="1"/>`;
+      s += `<text x="${cx + Math.round(cw / 2)}" y="${y + 21}" class="t-arrow${cls}" text-anchor="middle">${escapeHtml(label)}</text>`;
     }
   }
 
   // Dashed budget cap line + label (drawn last so it sits above the bars).
   if (hasBudget && budgetOnScale) {
     const lx = x0 + px(budget);
-    s += `<line x1="${lx}" y1="${topPad - 6}" x2="${lx}" y2="${Math.max(height, 40) - 4}" class="wfl-budget-line"/>`;
+    s += `<line x1="${lx}" y1="${topPad - 6}" x2="${lx}" y2="${Math.max(height, 40) - 4}" stroke="var(--negative)" stroke-width="1.25" stroke-dasharray="5 4"/>`;
     // Flip the label to the left of the line when it would overflow the frame.
     const flip = lx > WFL_WIDTH - 130;
-    s += `<text x="${flip ? lx - 6 : lx + 6}" y="${topPad - 8}" class="wfl-budget-label"${flip ? ' text-anchor="end"' : ''}${bp('budget')}>budget: ${escapeHtml(wflFmt(budget, unit))}</text>`;
+    s += `<text x="${flip ? lx - 6 : lx + 6}" y="${topPad - 8}" class="t-arrow c-negative"${flip ? ' text-anchor="end"' : ''}${bp('budget')}>budget: ${escapeHtml(wflFmt(budget, unit))}</text>`;
   } else if (hasBudget) {
     // Off-scale budget: annotate instead of drawing an unreachable line.
-    s += `<text x="${WFL_WIDTH - 4}" y="${topPad - 8}" class="wfl-budget-label" text-anchor="end"${bp('budget')}>budget: ${escapeHtml(wflFmt(budget, unit))} — beyond scale →</text>`;
+    s += `<text x="${WFL_WIDTH - 4}" y="${topPad - 8}" class="t-arrow c-negative" text-anchor="end"${bp('budget')}>budget: ${escapeHtml(wflFmt(budget, unit))} — beyond scale →</text>`;
   }
 
   s += `</svg>`;
+
+  const legend: LegendItem[] = [];
+  if (items.length > 0) legend.push({ swatch: 'fill', fill: 'var(--ink)', label: 'step (darker first) · total' });
+  if (focal) legend.push({ swatch: 'fill', fill: 'var(--accent)', label: 'focal step' });
+  if (hasBudget) legend.push({ swatch: 'edge-dashed', label: 'budget cap' });
+  if (over) legend.push({ swatch: 'fill', fill: 'var(--negative)', label: 'over budget' });
+  const legendHtml = renderLegend(legend);
   return diagramFrame(
     {
       tag: 'BUDGET',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     s,
   );
@@ -831,14 +851,11 @@ function renderWaterfallBody(data: ChartData): string {
 // ─── kind: funnel (conversion funnel — the former `funnel` type) ─────────────
 // Stages stack vertically as centered trapezoid bands whose width is
 // proportional to `value / maxValue` (with a 28% floor so labels always fit).
-// Band colours cycle the bright diagram palette. Between bands, a small mono
-// chip shows the stage-to-stage conversion (`↓ NN%`) — honestly above 100%
-// when a stage grows, and 0% when the previous stage is 0. Stages come from
-// `items`, or the funnel-era legacy `stages` (whose data paths they keep).
-// Renders inside the diagram frame (tag FUNNEL).
-
-/** Bright diagram palette (matches chart's cycle order for the funnel). */
-const FN_CYCLE = ['#0e54a1', '#1a6dbe', '#0f766e', '#1f9747', '#6b21a8'];
+// Bands step down the ink ramp. Between bands, a small mono chip shows the
+// stage-to-stage conversion (`↓ NN%`) — honestly above 100% when a stage
+// grows, and 0% when the previous stage is 0. Stages come from `items`, or
+// the funnel-era legacy `stages` (whose data paths they keep). Renders inside
+// the diagram frame (tag FUNNEL).
 
 const FN_WIDTH = 560;
 const FN_BAND_H = 54;
@@ -862,6 +879,7 @@ function renderFunnelBand(
   stage: DonutItem,
   nextStage: DonutItem | undefined,
   i: number,
+  mark: Mark,
   maxValue: number,
   y: number,
   unit: string | undefined,
@@ -870,7 +888,7 @@ function renderFunnelBand(
   const cx = FN_WIDTH / 2;
   const topW = fnWidthFor(stage.value, maxValue);
   const botW = nextStage !== undefined ? fnWidthFor(nextStage.value, maxValue) : topW;
-  const color = FN_CYCLE[i % FN_CYCLE.length] ?? '#0e54a1';
+  const tone = inkTone(i, mark);
   const pts = [
     `${cx - topW / 2},${y}`,
     `${cx + topW / 2},${y}`,
@@ -880,14 +898,17 @@ function renderFunnelBand(
   const hasDesc = stage.desc !== undefined && stage.desc.length > 0;
   const labelY = hasDesc ? y + 20 : y + 24;
   const valueY = hasDesc ? y + 35 : y + 40;
+  // Text on a dark band is paper (no halo); on a pale band it keeps the roles.
+  const nameAttrs = tone.dark ? ` class="t-name"${ON_DARK}` : ' class="t-name"';
+  const subAttrs = tone.dark ? ` class="t-sub"${ON_DARK}` : ' class="t-sub c-muted"';
   const descText = hasDesc
-    ? `<text x="${cx}" y="${y + 47}" class="fn-desc"${bp(`${key}.${i}.desc`)}>${escapeHtml(stage.desc ?? '')}</text>`
+    ? `<text x="${cx}" y="${y + 47}"${subAttrs} text-anchor="middle"${bp(`${key}.${i}.desc`)}>${escapeHtml(stage.desc ?? '')}</text>`
     : '';
   return (
     `<g${bp(`${key}.${i}`)}>` +
-    `<polygon points="${pts}" fill="${color}" fill-opacity="0.92"/>` +
-    `<text x="${cx}" y="${labelY}" class="fn-label"${bp(`${key}.${i}.label`)}>${escapeHtml(stage.label)}</text>` +
-    `<text x="${cx}" y="${valueY}" class="fn-value"${bp(`${key}.${i}.value`)}>${escapeHtml(fnFmt(pos(stage.value), unit))}</text>` +
+    `<polygon points="${pts}" fill="${tone.fill}" stroke="${tone.stroke}" stroke-width="1"/>` +
+    `<text x="${cx}" y="${labelY}"${nameAttrs} text-anchor="middle"${bp(`${key}.${i}.label`)}>${escapeHtml(stage.label)}</text>` +
+    `<text x="${cx}" y="${valueY}"${subAttrs} text-anchor="middle"${bp(`${key}.${i}.value`)}>${escapeHtml(fnFmt(pos(stage.value), unit))}</text>` +
     descText +
     `</g>`
   );
@@ -901,8 +922,8 @@ function renderFunnelChip(from: DonutItem, to: DonutItem, y: number): string {
   const label = `↓ ${pct}%`;
   const w = 34 + String(pct).length * 7;
   return (
-    `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="${FN_CHIP_H}" rx="9" class="fn-chip-bg"/>` +
-    `<text x="${cx}" y="${y + 13}" class="fn-chip">${escapeHtml(label)}</text>`
+    `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="${FN_CHIP_H}" rx="2" fill="var(--paper)" stroke="var(--rule-solid)" stroke-width="1"/>` +
+    `<text x="${cx}" y="${y + 13}" class="t-arrow" text-anchor="middle">${escapeHtml(label)}</text>`
   );
 }
 
@@ -918,20 +939,28 @@ function renderFunnelBody(data: ChartData): string {
     0,
   );
   let s = `<svg viewBox="0 0 ${FN_WIDTH} ${height}" role="img"><title>Funnel</title>`;
+  const marks = marksOf(stages.map((st) => st.accent));
   s += `<g${bl(key)}>`;
   stages.forEach((stage, i) => {
     const y = i * stepH;
-    s += renderFunnelBand(stage, stages[i + 1], i, maxValue, y, data.unit, key);
+    s += renderFunnelBand(stage, stages[i + 1], i, marks[i], maxValue, y, data.unit, key);
     const next = stages[i + 1];
     if (next !== undefined) s += renderFunnelChip(stage, next, y + FN_BAND_H + FN_GAP);
   });
   s += `</g>`;
   s += `</svg>`;
+  const legend: LegendItem[] = [];
+  if (stages.length > 1) legend.push({ swatch: 'fill', fill: 'var(--ink)', label: 'stage (darker first)' });
+  if (marks.includes('focal')) legend.push({ swatch: 'fill', fill: 'var(--accent)', label: 'focal stage' });
+  if (marks.includes('negative')) legend.push({ swatch: 'fill', fill: 'var(--negative)', label: 'negative' });
+  if (stages.length > 1) legend.push({ swatch: 'chip', chip: '↓ %', label: 'conversion from the stage above' });
+  const legendHtml = renderLegend(legend);
   return diagramFrame(
     {
       tag: 'FUNNEL',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     s,
   );
@@ -945,26 +974,18 @@ export function renderChart(data: ChartData): string {
   if (kind === 'funnel') return renderFunnelBody(data);
   const labels = data.labels ?? [];
   const series = data.series ?? [];
-  let inner: string;
+  let drawn: Drawn;
   if (kind === 'donut') {
-    inner = renderDonut(data, data.items ?? []);
+    drawn = renderDonut(data, data.items ?? []);
   } else if (kind === 'gauge') {
-    inner = renderGauge(data, data.items ?? []);
+    drawn = renderGauge(data, data.items ?? []);
   } else if (kind === 'scatter' && data.points !== undefined && data.points.length > 0) {
     // Numeric-axis scatter: each point owns its x/y. The `labels`+`series`
     // scatter below stays as the ordinal fallback for existing docs.
-    inner = renderScatterPoints(data, data.points);
+    drawn = renderScatterPoints(data, data.points);
   } else if (kind === 'radar') {
     // Radar uses `labels` as the axes (3+ required to draw a web).
-    const body = renderRadar(data, labels, series);
-    const legend =
-      series.length > 1
-        ? legendRow(
-            series.map((s, i) => ({ label: s.label, color: colorAt(s.accent, i), path: `series.${i}` })),
-            'series',
-          )
-        : '';
-    inner = body + legend;
+    drawn = { svg: renderRadar(data, labels, series), legend: seriesLegend(series) };
   } else {
     // Derive labels when omitted so a bare series still charts (1, 2, 3, …).
     const n = Math.max(labels.length, ...series.map((s) => s.values.length), 0);
@@ -978,21 +999,15 @@ export function renderChart(data: ChartData): string {
           : kind === 'scatter'
             ? renderScatter(data, cats, series, tagLabels)
             : renderLineArea(data, cats, series, kind === 'area', tagLabels);
-    const legend =
-      series.length > 1
-        ? legendRow(
-            series.map((s, i) => ({ label: s.label, color: colorAt(s.accent, i), path: `series.${i}` })),
-            'series',
-          )
-        : '';
-    inner = body + legend;
+    drawn = { svg: body, legend: seriesLegend(series) };
   }
   return diagramFrame(
     {
       tag: 'CHART',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(drawn.legend.length > 0 ? { legendHtml: drawn.legend } : {}),
     },
-    inner,
+    drawn.svg,
   );
 }

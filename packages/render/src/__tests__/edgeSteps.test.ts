@@ -35,14 +35,14 @@ describe('numbered edge steps + legend (labelled edges >= 4)', () => {
   it('dfd keeps pills below the threshold (no legend)', () => {
     const { nodes, edges } = chain(3);
     const html = renderDfd({ nodes, edges });
-    expect(html).toContain('class="edge-label"');
+    expect(html).toContain('class="t-arrow"');
     expect(html).not.toContain('class="edge-steps"');
   });
 
   it('dfd switches to numerals + legend at 4 labelled edges, legend items carry the edge data-bp', () => {
     const { nodes, edges } = chain(4);
     const html = renderDfd({ nodes, edges });
-    expect(html).not.toContain('class="edge-label"');
+    expect(html).not.toContain('class="t-arrow"');
     expect(html).toContain('class="edge-steps"');
     // legend entry № 1 twins with edges.0
     expect(html).toContain('<span class="edge-step" data-bp="edges.0"><b>1</b>step 0</span>');
@@ -170,7 +170,7 @@ describe('numbered edge steps + legend (labelled edges >= 4)', () => {
     ];
     const transitions = [{ from: 'a', to: 'b', event: 'publish' }];
     const html = renderState({ states, transitions });
-    expect(html).toContain('class="edge-label"');
+    expect(html).toContain('class="t-arrow"');
     expect(html).not.toContain('<th>№</th>');
   });
 });

@@ -4,18 +4,22 @@
  * (or whose parent id is unknown). Children are indented based on depth.
  *
  * `variant: issue` (the former `mece` type) renders a MECE issue tree
- * instead — a left-to-right hierarchical SVG tree with depth-based colour
- * stripes, inside the diagram frame. Layout uses DFS positioning: leaves
- * stack vertically, branches center over their first/last child.
+ * instead — a left-to-right hierarchical SVG tree inside the diagram frame.
+ * Layout uses DFS positioning: leaves stack vertically, branches center over
+ * their first/last child.
  *
  * `variant: org` renders a top-down org chart — tidy subtree-width packing,
  * parents centered over their children, node `role` muted under the label.
  *
- * Ported from doc-studio.jsx `Tree` + `MECETree`/`meceStyle`.
+ * Skin (`DESIGN.md`) for both SVG variants: paper cards with an ink outline;
+ * the root — the question or the head of the org — is the one accent; leaves
+ * of an issue tree (the testable claims) are the secondary `paper-2` card.
+ * Links are `muted` elbows. No depth colours, no shadows.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { wrapText } from '../svg/wrapText.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
@@ -23,22 +27,18 @@ import { diagramFrame } from './frame.js';
 type TreeData = BlockDataMap['tree'];
 type Node = NonNullable<TreeData['nodes']>[number];
 
+/** A card's outline per role: the accent root, a primary branch, a secondary leaf. */
+type Card = 'root' | 'branch' | 'leaf';
+
+const CARD_ATTRS: Record<Card, string> = {
+  root: 'fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.5"',
+  branch: 'fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"',
+  leaf: 'fill="var(--paper-2)" stroke="var(--rule-solid)" stroke-width="1"',
+};
+
+const LINK_ATTRS = 'fill="none" stroke="var(--muted)" stroke-width="1.25"';
+
 // ─── variant: issue (MECE issue tree — the former `mece` type) ───────────────
-
-const ISSUE_COLORS = ['#0e54a1', '#1a6dbe', '#0f766e', '#1f9747', '#6b21a8', '#f7952c'];
-
-interface IssueStyle {
-  fill: string;
-  text: string;
-  accent: string;
-  solid?: boolean;
-}
-
-function issueStyle(d: number): IssueStyle {
-  if (d === 0) return { fill: '#0e54a1', text: '#fff', accent: '#0e54a1', solid: true };
-  const c = ISSUE_COLORS[d % ISSUE_COLORS.length] ?? '#0e54a1';
-  return { fill: '#fff', text: c, accent: c };
-}
 
 function renderIssueTree(data: TreeData): string {
   const nodes = data.nodes ?? [];
@@ -99,55 +99,55 @@ function renderIssueTree(data: TreeData): string {
     const cx = xOf(n.id);
     const ccy = yOf(n.id) + nodeH / 2;
     const midX = (px + cx) / 2;
-    s += `<path class="tree-link" d="M ${px} ${pcy} H ${midX} V ${ccy} H ${cx}"/>`;
+    s += `<path ${LINK_ATTRS} d="M ${px} ${pcy} H ${midX} V ${ccy} H ${cx}"/>`;
   }
 
   // nodes — wrap label to fit inside the box (max width ~150px, ~20 chars per line).
   // If a note is present, the label is single-line; otherwise allow up to two lines.
+  const cards = new Set<Card>();
   s += `<g${bl('nodes')}>`;
   nodes.forEach((n, ni) => {
     if (!pos.has(n.id)) return;
     const x = xOf(n.id);
     const y = yOf(n.id);
-    const st = issueStyle(depth.get(n.id) ?? 0);
-    const stroke = st.solid === true ? 'none' : st.accent;
-    // Clean card (the agent-card language): rounded, no left accent bar.
-    const stripe = '';
-    const card = `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="6" fill="${st.fill}" stroke="${stroke}" stroke-width="1.3"/>`;
-    const labelX = x + (st.solid === true ? nodeW / 2 : 14);
-    const anchor = st.solid === true ? 'middle' : 'start';
-    const lines = wrapText(n.label, st.solid === true ? 22 : 20, n.note !== undefined ? 1 : 2);
+    const d = depth.get(n.id) ?? 0;
+    const card: Card = d === 0 ? 'root' : (children.get(n.id) ?? []).length > 0 ? 'branch' : 'leaf';
+    cards.add(card);
+    const rect = `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="4" ${CARD_ATTRS[card]}/>`;
+    const labelX = card === 'root' ? x + nodeW / 2 : x + 14;
+    const anchor = card === 'root' ? 'middle' : 'start';
+    const lines = wrapText(n.label, card === 'root' ? 22 : 20, n.note !== undefined ? 1 : 2);
     const startY =
       lines.length === 2
         ? y + 22
         : y + (n.note !== undefined ? 22 : 30);
+    const cls = card === 'root' ? 't-name c-accent' : 't-name';
     const labelTexts = lines
       .map(
         (ln, j) =>
-          `<text x="${labelX}" y="${startY + j * 14}" class="blk-name" fill="${st.text}" text-anchor="${anchor}">${escapeHtml(ln)}</text>`,
+          `<text x="${labelX}" y="${startY + j * 14}" class="${cls}" text-anchor="${anchor}">${escapeHtml(ln)}</text>`,
       )
       .join('');
     const note =
       n.note !== undefined
-        ? `<text x="${labelX}" y="${y + 38}" class="ft-note" fill="${st.solid === true ? '#cfe0f3' : st.accent}" text-anchor="${anchor}">${escapeHtml(n.note)}</text>`
+        ? `<text x="${labelX}" y="${y + 38}" class="t-sub c-muted" text-anchor="${anchor}">${escapeHtml(n.note)}</text>`
         : '';
-    s +=
-      `<g filter="url(#gshadow)"${bp(`nodes.${ni}`)}>` +
-      card +
-      stripe +
-      labelTexts +
-      note +
-      `</g>`;
+    s += `<g${bp(`nodes.${ni}`)}>` + rect + labelTexts + note + `</g>`;
   });
   s += `</g>`; // close the nodes list container
 
   s += `</svg>`;
+  const items: LegendItem[] = [];
+  if (cards.has('root')) items.push({ swatch: 'node-accent', label: 'question' });
+  if (cards.has('branch')) items.push({ swatch: 'node', label: 'branch' });
+  if (cards.has('leaf')) items.push({ swatch: 'node-fill2', label: 'testable claim' });
+  const legendHtml = renderLegend(items);
   return diagramFrame(
     {
       tag: 'MECE',
-      tagBg: '#0f766e',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     s,
   );
@@ -159,8 +159,7 @@ function renderIssueTree(data: TreeData): string {
 // wide level packs without overlap and the viewBox simply grows. Nodes are
 // rounded cards: label bold (wrapped to two lines, ellipsized past that, the
 // full text in <title>), `role` muted underneath. Links are vertical elbows.
-// The root card is solid navy; every other card stays a calm white — an org
-// chart is not the place for the bright issue-tree stripes.
+// The root card takes the accent; every other card is a calm paper card.
 
 const ORG_W = 148;
 const ORG_H = 58;
@@ -323,7 +322,7 @@ function renderOrgTree(data: TreeData): string {
     const chx = Math.round(((cx.get(n.id) ?? 0)) * 10) / 10;
     const chy = yOf(n.id);
     const midY = py + ORG_VGAP / 2;
-    s += `<path class="tree-link" d="M ${px} ${py} V ${midY} H ${chx} V ${chy}"/>`;
+    s += `<path ${LINK_ATTRS} d="M ${px} ${py} V ${midY} H ${chx} V ${chy}"/>`;
   }
 
   // Stacked groups: one trunk down the corridor, a short stub to each card.
@@ -338,22 +337,22 @@ function renderOrgTree(data: TreeData): string {
       if (cyMid > bottom) bottom = cyMid;
       const ccx = cx.get(c) ?? 0;
       const edgeX = Math.round((ccx < t.trunkX ? ccx + ORG_W / 2 : ccx - ORG_W / 2) * 10) / 10;
-      stubs += `<path class="tree-link" d="M ${tx} ${cyMid} H ${edgeX}"/>`;
+      stubs += `<path ${LINK_ATTRS} d="M ${tx} ${cyMid} H ${edgeX}"/>`;
     }
     const pcx = Math.round((cx.get(t.parent) ?? 0) * 10) / 10;
-    s += `<path class="tree-link" d="M ${pcx} ${py} V ${py + ORG_VGAP / 2} H ${tx} V ${bottom}"/>` + stubs;
+    s += `<path ${LINK_ATTRS} d="M ${pcx} ${py} V ${py + ORG_VGAP / 2} H ${tx} V ${bottom}"/>` + stubs;
   }
 
+  let hasRoot = false;
+  let hasReport = false;
   s += `<g${bl('nodes')}>`;
   nodes.forEach((n, ni) => {
     if (!cx.has(n.id)) return;
     const x = xOf(n.id);
     const y = yOf(n.id);
-    const solid = (depth.get(n.id) ?? 0) === 0;
-    const fill = solid ? '#0e54a1' : '#fff';
-    const stroke = solid ? 'none' : '#b8c4d4';
-    const labelFill = solid ? '#fff' : 'var(--charcoal)';
-    const roleFill = solid ? '#cfe0f3' : 'var(--gray)';
+    const root = (depth.get(n.id) ?? 0) === 0;
+    if (root) hasRoot = true;
+    else hasReport = true;
     const hasRole = n.role !== undefined && n.role !== '';
     const rawLines = wrapText(n.label, ORG_LABEL_CHARS, 2);
     const lines = rawLines.map((ln) => orgClip(ln, ORG_LABEL_CHARS + 2));
@@ -368,14 +367,15 @@ function renderOrgTree(data: TreeData): string {
     const labelStart = hasRole ? (two ? y + 19 : y + 25) : two ? y + 25 : y + 33;
     const roleY = two ? y + 49 : y + 43;
     const midX = x + ORG_W / 2;
+    const cls = root ? 't-name c-accent' : 't-name';
     const labelSvg = lines
       .map(
         (ln, j) =>
-          `<text x="${midX}" y="${labelStart + j * 14}" class="blk-name" fill="${labelFill}" text-anchor="middle"${j === 0 ? bp(`nodes.${ni}.label`) : ''}>${escapeHtml(ln)}</text>`,
+          `<text x="${midX}" y="${labelStart + j * 14}" class="${cls}" text-anchor="middle"${j === 0 ? bp(`nodes.${ni}.label`) : ''}>${escapeHtml(ln)}</text>`,
       )
       .join('');
     const role = hasRole
-      ? `<text x="${midX}" y="${roleY}" class="ft-note" fill="${roleFill}" text-anchor="middle"${bp(`nodes.${ni}.role`)}>${escapeHtml(orgClip(String(n.role), ORG_ROLE_CHARS))}</text>`
+      ? `<text x="${midX}" y="${roleY}" class="t-sub c-muted" text-anchor="middle"${bp(`nodes.${ni}.role`)}>${escapeHtml(orgClip(String(n.role), ORG_ROLE_CHARS))}</text>`
       : '';
     const roleTruncated = hasRole && String(n.role).length > ORG_ROLE_CHARS;
     const tip =
@@ -383,8 +383,8 @@ function renderOrgTree(data: TreeData): string {
         ? `<title>${escapeHtml(hasRole ? `${n.label} — ${String(n.role)}` : n.label)}</title>`
         : '';
     s +=
-      `<g filter="url(#gshadow)"${bp(`nodes.${ni}`)}>` +
-      `<rect x="${x}" y="${y}" width="${ORG_W}" height="${ORG_H}" rx="7" fill="${fill}" stroke="${stroke}" stroke-width="1.3"/>` +
+      `<g${bp(`nodes.${ni}`)}>` +
+      `<rect x="${x}" y="${y}" width="${ORG_W}" height="${ORG_H}" rx="4" ${CARD_ATTRS[root ? 'root' : 'branch']}/>` +
       tip +
       labelSvg +
       role +
@@ -393,12 +393,16 @@ function renderOrgTree(data: TreeData): string {
   s += `</g>`;
 
   s += `</svg>`;
+  const items: LegendItem[] = [];
+  if (hasRoot) items.push({ swatch: 'node-accent', label: 'head' });
+  if (hasReport) items.push({ swatch: 'node', label: 'reports to the card above' });
+  const legendHtml = renderLegend(items);
   return diagramFrame(
     {
       tag: 'ORG',
-      tagBg: '#0e54a1',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     s,
   );

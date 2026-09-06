@@ -1,53 +1,68 @@
 /**
  * Renders a top-down component tree — typical React/Vue hierarchy. Each node
  * has a `kind` (root, layout, page, component, leaf, provider, hook, store)
- * that drives its colour.
+ * shown as an eyebrow chip.
  *
  * Layout uses DFS positioning, children laid out left-to-right, parents
  * centered above their first/last child.
  *
- * Ported from doc-studio.jsx `ComponentTree` + `ftStyle`.
+ * Skin (`DESIGN.md`): a component is a paper card with an ink outline; a
+ * `provider` / `context` is dashed (a boundary wrapping its subtree); `leaf`
+ * and `store` / `state` sit on the inactive fill (nothing beneath them).
+ * Tree links are `muted` hairlines.
+ *
+ * Accent rule: the tree's single root takes the accent. A forest (two or
+ * more roots) has no accent.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
 type Node = NonNullable<BlockDataMap['frontend']['nodes']>[number];
 
-interface FtStyle {
-  accent: string;
-  fill: string;
-  text: string;
-  solid?: boolean;
+interface FtSkin {
+  readonly chip: string;
+  readonly primary: boolean;
+  readonly fill: 'paper' | 'paper-2';
+  readonly dashed: boolean;
 }
 
-function ftStyle(kind: string | undefined): FtStyle {
+function ftSkin(kind: string | undefined): FtSkin {
   switch ((kind ?? 'component').toLowerCase()) {
     case 'root':
-      return { accent: '#0e54a1', fill: '#0e54a1', text: '#fff', solid: true };
+      return { chip: 'ROOT', primary: true, fill: 'paper', dashed: false };
     case 'layout':
-      return { accent: '#0f766e', fill: '#ccfbf1', text: '#0f4f49' };
+      return { chip: 'LAYOUT', primary: true, fill: 'paper', dashed: false };
     case 'page':
-      return { accent: '#0e54a1', fill: '#e5eff8', text: '#0a3a6e' };
-    case 'component':
-      return { accent: '#1f9747', fill: '#dcf1e2', text: '#0f3d22' };
+      return { chip: 'PAGE', primary: true, fill: 'paper', dashed: false };
     case 'leaf':
-      return { accent: '#6b7280', fill: '#f3f4f6', text: '#374151' };
+      return { chip: 'LEAF', primary: false, fill: 'paper-2', dashed: false };
     case 'provider':
     case 'context':
-      return { accent: '#6b21a8', fill: '#ede9fe', text: '#4a1772' };
+      return { chip: 'PROVIDER', primary: true, fill: 'paper', dashed: true };
     case 'hook':
-      return { accent: '#7c3aed', fill: '#ede9fe', text: '#4a1772' };
+      return { chip: 'HOOK', primary: true, fill: 'paper', dashed: false };
     case 'store':
     case 'state':
-      return { accent: '#f7952c', fill: '#fde7cd', text: '#7a3d00' };
+      return { chip: 'STORE', primary: false, fill: 'paper-2', dashed: false };
     default:
-      return { accent: '#1f9747', fill: '#dcf1e2', text: '#0f3d22' };
+      return { chip: '', primary: true, fill: 'paper', dashed: false };
   }
 }
+
+const CHIP_LABEL: Record<string, string> = {
+  ROOT: 'root',
+  LAYOUT: 'layout',
+  PAGE: 'page',
+  LEAF: 'leaf',
+  PROVIDER: 'provider / context',
+  HOOK: 'hook',
+  STORE: 'store / state',
+};
 
 export function renderFrontend(data: BlockDataMap['frontend']): string {
   const nodes = data.nodes ?? [];
@@ -62,6 +77,7 @@ export function renderFrontend(data: BlockDataMap['frontend']): string {
     if (n.parent !== undefined && byId.has(n.parent)) children.get(n.parent)?.push(n.id);
     else roots.push(n.id);
   }
+  const accentId = roots.length === 1 ? roots[0] : undefined;
 
   const pos = new Map<string, number>();
   const depth = new Map<string, number>();
@@ -109,55 +125,70 @@ export function renderFrontend(data: BlockDataMap['frontend']): string {
     const ccx = xOf(n.id) + nodeW / 2;
     const cty = yOf(n.id);
     const midY = (pby + cty) / 2;
-    s += `<path class="tree-link" d="M ${pcx} ${pby} V ${midY} H ${ccx} V ${cty}"/>`;
+    s += `<path d="M ${pcx} ${pby} V ${midY} H ${ccx} V ${cty}" fill="none" stroke="var(--muted)" stroke-width="1.25"/>`;
   }
 
   // nodes — wrap name to fit inside the box (~158px, ~20 chars per line).
   // With a note: single-line name. Without a note: up to two lines.
+  const chipsUsed = new Set<string>();
+  let dashedUsed = false;
+  let inactiveUsed = false;
   s += `<g${bl('nodes')}>`;
   nodes.forEach((n, ni) => {
     if (!pos.has(n.id)) return;
     const x = xOf(n.id);
     const y = yOf(n.id);
-    const st = ftStyle(n.kind);
-    const stroke = st.solid === true ? 'none' : st.accent;
-    // Clean card (the agent-card language): rounded, no left accent bar.
-    const stripe = '';
-    const card = `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="8" fill="${st.fill}" stroke="${stroke}" stroke-width="1.2"/>`;
-    const labelX = x + (st.solid === true ? nodeW / 2 : 14);
-    const anchor = st.solid === true ? 'middle' : 'start';
-    const lines = wrapText(n.name, st.solid === true ? 20 : 18, n.note !== undefined ? 1 : 2);
-    const startY =
-      lines.length === 2
-        ? y + 25
-        : y + (n.note !== undefined ? 25 : 33);
+    const sk = ftSkin(n.kind);
+    const accent = n.id === accentId;
+    if (sk.chip !== '') chipsUsed.add(sk.chip);
+    if (sk.dashed) dashedUsed = true;
+    if (sk.fill === 'paper-2') inactiveUsed = true;
+    const stroke = accent ? 'var(--accent)' : sk.primary ? 'var(--ink)' : 'var(--rule-solid)';
+    const sw = accent || sk.primary ? 1.5 : 1;
+    const fill = accent ? 'var(--accent-tint)' : sk.fill === 'paper-2' ? 'var(--paper-2)' : 'var(--paper)';
+    const dash = sk.dashed ? ' stroke-dasharray="4 3"' : '';
+    const cardSvg = `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="4" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`;
+    const chipTone = accent ? ' c-accent' : sk.fill === 'paper-2' ? ' c-muted' : '';
+    const chip =
+      sk.chip !== ''
+        ? `<text x="${x + 12}" y="${y + 13}" class="t-eyebrow${chipTone}">${sk.chip}</text>`
+        : '';
+    const labelX = x + 12;
+    const lines = wrapText(n.name, 19, n.note !== undefined ? 1 : 2);
+    // Centre the name (+ note) block in the room below the chip.
+    const top = sk.chip !== '' ? 18 : 8;
+    const blockH = lines.length * 14 + (n.note !== undefined ? 14 : 0);
+    const startY = y + top + (nodeH - top - blockH) / 2 + 11;
     const labelTexts = lines
       .map(
         (ln, j) =>
-          `<text x="${labelX}" y="${startY + j * 14}" class="blk-name" fill="${st.text}" text-anchor="${anchor}">${escapeHtml(ln)}</text>`,
+          `<text x="${labelX}" y="${(startY + j * 14).toFixed(1)}" class="t-name${accent ? ' c-accent' : ''}">${escapeHtml(ln)}</text>`,
       )
       .join('');
     const note =
       n.note !== undefined
-        ? `<text x="${labelX}" y="${y + 41}" class="ft-note" fill="${st.solid === true ? '#cfe0f3' : st.accent}" text-anchor="${anchor}">${escapeHtml(n.note)}</text>`
+        ? `<text x="${labelX}" y="${(startY + lines.length * 14).toFixed(1)}" class="t-sub">${escapeHtml(n.note)}</text>`
         : '';
-    s +=
-      `<g filter="url(#gshadow)"${bp(`nodes.${ni}`)}>` +
-      card +
-      stripe +
-      labelTexts +
-      note +
-      `</g>`;
+    s += `<g${bp(`nodes.${ni}`)}>` + cardSvg + chip + labelTexts + note + `</g>`;
   });
   s += `</g>`; // close the nodes list container
 
   s += `</svg>`;
+
+  const items: LegendItem[] = [];
+  if (nodes.some((n) => ftSkin(n.kind).chip === '')) items.push({ swatch: 'node', label: 'component' });
+  for (const chip of chipsUsed) items.push({ swatch: 'chip', chip, label: CHIP_LABEL[chip] ?? chip.toLowerCase() });
+  if (dashedUsed) items.push({ swatch: 'node-dashed', label: 'wraps its subtree' });
+  if (inactiveUsed) items.push({ swatch: 'node-fill2', label: 'leaf / store' });
+  if (accentId !== undefined) items.push({ swatch: 'node-accent', label: 'tree root' });
+  const legend = renderLegend(items);
+
   return diagramFrame(
     {
       tag: 'FE',
-      tagBg: '#0f766e',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legend.length > 0 ? { legendHtml: legend } : {}),
     },
     s,
   );

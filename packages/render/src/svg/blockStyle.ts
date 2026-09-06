@@ -54,6 +54,17 @@ export const KNOWN_NODE_KINDS: readonly string[] = [
   'region', 'geo', 'globe',
 ];
 
+/**
+ * Colour triple for a node: outline (`accent` — a legacy field name, it is
+ * the stroke), fill, text. The block renderer's paint model still carries
+ * these three fields, now always as role tokens.
+ */
+export interface NodeColors {
+  readonly accent: string;
+  readonly fill: string;
+  readonly text: string;
+}
+
 /** How the skin draws one node kind. */
 export interface NodeSkin {
   /** The eyebrow chip text (`SVC`, `DB`, …); `''` when the kind has none. */

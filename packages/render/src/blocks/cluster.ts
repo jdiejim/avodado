@@ -1,21 +1,31 @@
 /**
- * Renders a cluster diagram (Kubernetes-style) — nested cluster boxes with
+ * Renders a cluster diagram (Kubernetes-style) — namespace panels with
  * service tiles inside, optional replica counts as bar marks, and
- * orthogonal-routed edges between services across clusters.
+ * orthogonal-routed edges between services across namespaces.
  *
- * Ported from doc-studio.jsx `ClusterDiagram`.
+ * Skin (`DESIGN.md`): a namespace is the `paper-2` group panel with a
+ * hairline and a `.t-eyebrow` label (its `kind` as a chip top-right); a
+ * service is the block family's shaped node — the same cylinder, pipe and
+ * card silhouettes, kinds told apart by stroke, fill and eyebrow chip.
+ * Replica marks are `muted` bars with a `×N` count. Edges follow the shared
+ * stroke table (`solid` / `dashed` / `forbidden` / `error`).
+ *
+ * Accent rule: none. The schema marks no entry service, so the cluster
+ * spends no colour.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
-import { nodeGlyph, GEDGE } from '../svg/blockStyle.js';
-import { blockStyle } from '../svg/legacyPalette.js';
+import { SKIN_EDGE } from '../svg/blockStyle.js';
+import { blockLegend, renderShapedNode } from './blockGraph.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
 type Service = NonNullable<BlockDataMap['cluster']['services']>[number];
+
+const CYLINDER_KINDS = new Set(['db', 'database', 'store', 'warehouse', 'lake', 'postgres', 'mysql', 'mongo', 'mongodb', 'dynamo']);
 
 export function renderCluster(data: BlockDataMap['cluster']): string {
   const clusters = data.clusters ?? [];
@@ -81,18 +91,18 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
 
   let s = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Cluster diagram</title>`;
 
-  // cluster shells — the refined zone style: dashed outline, tinted wash,
-  // coloured label top-left, muted kind chip top-right (no solid header bar).
+  // Namespace panels — the skin's group panel: paper-2 wash, hairline, an
+  // eyebrow label top-left and the kind chip top-right.
   s += `<g${bl('clusters')}>`;
   clusterBoxes.forEach((cb, ci) => {
     const kindLabel =
       cb.c.kind !== undefined
-        ? `<text x="${cb.x + cb.w - 14}" y="${cb.y + 22}" class="cl-kind" style="fill:var(--gray)">${escapeHtml(cb.c.kind)}</text>`
+        ? `<text x="${cb.x + cb.w - 12}" y="${cb.y + 16}" class="t-eyebrow" text-anchor="end">${escapeHtml(cb.c.kind)}</text>`
         : '';
     s +=
       `<g${bp(`clusters.${ci}`)}>` +
-      `<rect x="${cb.x}" y="${cb.y}" width="${cb.w}" height="${cb.h}" rx="12" fill="var(--navy)" fill-opacity="0.03" stroke="var(--navy)" stroke-opacity="0.65" stroke-width="1.3" stroke-dasharray="7 5"/>` +
-      `<text x="${cb.x + 16}" y="${cb.y + 22}" class="grp-label" fill="var(--navy)">${escapeHtml(cb.c.label)}</text>` +
+      `<rect x="${cb.x}" y="${cb.y}" width="${cb.w}" height="${cb.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="var(--rule-solid)" stroke-width="1"/>` +
+      `<text x="${cb.x + 12}" y="${cb.y + 16}" class="grp-label t-eyebrow">${escapeHtml(cb.c.label)}</text>` +
       kindLabel +
       `</g>`;
   });
@@ -100,6 +110,7 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
 
   // edges
   const pending: EdgeLabelPoint[] = [];
+  const edgeKinds = new Set<string>();
   s += `<g${bl('edges')}>`;
   const lanes = edgeLanes(edges);
   const entries = entryPortOffsets(edges, (id) => rects.get(id));
@@ -108,90 +119,62 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
     const B = rects.get(e.to);
     if (!A || !B) return;
     const p = ortho(A, B, lanes[ei] ?? 0, entries[ei] ?? 0);
-    const st = GEDGE[e.kind ?? 'solid'] ?? GEDGE['solid'] ?? {
-      stroke: 'var(--charcoal)',
-      sw: 1.4,
+    const kind = e.kind ?? 'solid';
+    edgeKinds.add(kind);
+    const st = SKIN_EDGE[kind] ?? SKIN_EDGE['solid'] ?? {
+      stroke: 'var(--muted)',
+      sw: 1.5,
       dash: '',
-      marker: 'gArrow',
+      marker: 'skArrow',
       err: false,
     };
-    s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
+    const dash = st.dash.length > 0 ? ` stroke-dasharray="${st.dash}"` : '';
+    s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}"${dash} marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), err: st.err, path: `edges.${ei}` });
   });
   s += `</g>`; // close the edges list container
 
-  // services
+  // services — the block family's shaped nodes, plus the replica marks.
   s += `<g${bl('services')}>`;
   services.forEach((sv, si) => {
     const r = rects.get(sv.id);
     if (r === undefined) return;
-    const st = blockStyle(sv.kind);
-    const gl = nodeGlyph(sv.kind, r.x + 14, r.y + 14, st.accent);
-    const nx = gl.length > 0 ? r.x + 38 : r.x + 14;
     const reps = sv.replicas ?? 0;
-    const techLine =
-      sv.tech !== undefined
-        ? `<text x="${nx}" y="${r.y + 42}" class="blk-tech" fill="${st.accent}">${escapeHtml(sv.tech)}</text>`
-        : '';
-    const repIndicator =
-      reps > 0
-        ? (() => {
-            const shown = Math.min(reps, 5);
-            let bars = '';
-            for (let j = 0; j < shown; j++) {
-              bars += `<rect x="${r.x + 12 + j * 8}" y="${r.y + r.h - 14}" width="5" height="8" rx="1" fill="${st.accent}" opacity="0.7"/>`;
-            }
-            return (
-              `<g>` +
-              bars +
-              `<text x="${r.x + 12 + shown * 8 + 4}" y="${r.y + r.h - 7}" class="blk-tech" fill="${st.accent}">×${reps}</text>` +
-              `</g>`
-            );
-          })()
-        : '';
-    const isCyl = ['db', 'database', 'store', 'warehouse', 'lake', 'postgres', 'mysql', 'mongo', 'mongodb', 'dynamo'].includes(
-      (sv.kind ?? '').toLowerCase(),
-    );
-    if (isCyl) {
-      // Data stores keep their canonical cylinder shape inside the namespace.
-      const ry = 10;
-      const rx2 = r.w / 2;
-      const cx = r.x + r.w / 2;
-      const techCyl =
-        sv.tech !== undefined
-          ? `<text x="${cx}" y="${r.y + 48}" class="blk-tech" fill="${st.accent}" text-anchor="middle">${escapeHtml(sv.tech)}</text>`
-          : '';
-      s +=
-        `<g filter="url(#gshadow)"${bp(`services.${si}`)}>` +
-        `<path d="M${r.x} ${r.y + ry} A ${rx2} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} V ${r.y + r.h - ry} A ${rx2} ${ry} 0 0 1 ${r.x} ${r.y + r.h - ry} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-        `<path d="M${r.x} ${r.y + ry} A ${rx2} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="1.2"/>` +
-        `<text x="${cx}" y="${r.y + (sv.tech !== undefined ? 36 : 42)}" class="blk-name" fill="${st.text}" style="font-size:12px" text-anchor="middle">${escapeHtml(sv.label)}</text>` +
-        techCyl +
-        repIndicator +
-        `</g>`;
-    } else {
-      s +=
-        `<g filter="url(#gshadow)"${bp(`services.${si}`)}>` +
-        `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="8" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-        gl +
-        `<text x="${nx}" y="${r.y + (sv.tech !== undefined ? 26 : 30)}" class="blk-name" fill="${st.text}" style="font-size:12px">${escapeHtml(sv.label)}</text>` +
-        techLine +
-        repIndicator +
+    let repIndicator = '';
+    if (reps > 0) {
+      const shown = Math.min(reps, 5);
+      // A cylinder's bottom rim takes the last 13px; the marks sit above it.
+      const baseY = CYLINDER_KINDS.has((sv.kind ?? '').toLowerCase()) ? r.y + r.h - 24 : r.y + r.h - 14;
+      let bars = '';
+      for (let j = 0; j < shown; j++) {
+        bars += `<rect x="${r.x + 12 + j * 7}" y="${baseY}" width="4" height="8" rx="1" fill="var(--muted)"/>`;
+      }
+      repIndicator =
+        `<g>` +
+        bars +
+        `<text x="${r.x + 12 + shown * 7 + 4}" y="${baseY + 7}" class="t-sub">×${reps}</text>` +
         `</g>`;
     }
+    const node = renderShapedNode(
+      { kind: sv.kind, name: sv.label, ...(sv.tech !== undefined ? { tech: sv.tech } : {}) },
+      r,
+    );
+    s += `<g${bp(`services.${si}`)}>${node}${repIndicator}</g>`;
   });
   s += `</g>`; // close the services list container
 
-  const { overlay, legend } = edgeLabelLayer(pending, [...rects.values()]);
+  const { overlay, legend: steps } = edgeLabelLayer(pending, [...rects.values()], { skin: true });
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
+
+  const legend = blockLegend(services, edgeKinds, false);
   return diagramFrame(
     {
       tag: 'CLUSTER',
-      tagBg: '#0e54a1',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legend.length > 0 ? { legendHtml: legend } : {}),
     },
-    s + legend,
+    s + steps,
   );
 }

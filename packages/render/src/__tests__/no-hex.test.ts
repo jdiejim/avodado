@@ -36,44 +36,19 @@ const SKINNED = [
  * Not restyled yet — still carry the pre-skin hex palette. Remove an entry
  * when its renderer moves to the skin; the test then enforces it.
  */
-const LEGACY_HEX_ALLOWLIST = new Set([
-  'blocks/agentloop.ts',
-  'blocks/array.ts',
-  'blocks/bintree.ts',
-  'blocks/c4.ts',
-  'blocks/chart.ts',
-  'blocks/cluster.ts',
-  'blocks/context.ts',
-  'blocks/cycle.ts',
-  'blocks/dfd.ts',
-  'blocks/felogic.ts',
-  'blocks/fishbone.ts',
-  'blocks/frontend.ts',
-  'blocks/gantt.ts',
-  'blocks/gitgraph.ts',
-  'blocks/graph.ts',
-  'blocks/hashmap.ts',
-  'blocks/heatmap.ts',
-  'blocks/journey.ts',
-  'blocks/linkedlist.ts',
-  'blocks/packet.ts',
-  'blocks/palette.ts',
-  'blocks/quadrant.ts',
-  'blocks/sankey.ts',
-  'blocks/slopegraph.ts',
-  'blocks/state.ts',
-  'blocks/stats.ts',
-  'blocks/storymap.ts',
-  'blocks/swimlane.ts',
-  'blocks/tree.ts',
-  'blocks/treemap.ts',
-  'blocks/uml.ts',
-  'blocks/venn.ts',
-  'blocks/wardley.ts',
-  'blocks/wireframe.ts',
-  'svg/dsTone.ts',
-  'svg/legacyPalette.ts',
-]);
+const LEGACY_HEX_ALLOWLIST = new Set(['svg/dsTone.ts']);
+
+/**
+ * The stylesheet is where the tokens are DEFINED, so it may carry hex — but
+ * only inside the token blocks: `:root{…}`, the `[data-theme="dark"]` block,
+ * and the `prefers-color-scheme: dark` media block. Every rule after them
+ * names a role (`var(--ink)`), never a value.
+ */
+const TOKEN_BLOCKS = [
+  /^:root\{[\s\S]*?^\}/m,
+  /^:root\[data-theme="dark"\][^\n]*\{[\s\S]*?^\}/m,
+  /^@media \(prefers-color-scheme: dark\)\{[\s\S]*?^\}/m,
+];
 
 /** A hex colour literal; `url(#id)` marker references are stripped first. */
 const HEX_RE = /#[0-9a-fA-F]{3,8}\b/;
@@ -106,5 +81,20 @@ describe('no hex colours in skinned renderers', () => {
   it('the legacy allowlist carries no file that is already hex-free', () => {
     const stale = [...LEGACY_HEX_ALLOWLIST].filter((rel) => hexLiterals(rel).length === 0);
     expect(stale).toEqual([]);
+  });
+
+  it('css.ts carries hex only inside the :root / dark token blocks', () => {
+    let src = readFileSync(resolve(SRC, 'css.ts'), 'utf8');
+    for (const block of TOKEN_BLOCKS) {
+      expect(src).toMatch(block);
+      src = src.replace(block, '');
+    }
+    const offenders = (src.match(new RegExp(HEX_RE.source, 'g')) ?? []).map((hex) => {
+      const at = src.indexOf(hex);
+      const lineStart = src.lastIndexOf('\n', at) + 1;
+      const lineEnd = src.indexOf('\n', at);
+      return src.slice(lineStart, lineEnd < 0 ? undefined : lineEnd).trim().slice(0, 80);
+    });
+    expect(offenders).toEqual([]);
   });
 });

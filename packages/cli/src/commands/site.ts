@@ -79,21 +79,26 @@ export interface SiteResult {
 const LIVE_RELOAD_SCRIPT = `<script>new EventSource('/__events').onmessage=()=>location.reload()</script>`;
 
 /**
- * Compact sidebar + index-card stylesheet, in the house look: `var(--rule)`
- * hairlines, 13px nav type, sticky sidebar that collapses to a top list under
- * 900px. Inlined into every page so pages stay self-contained.
+ * Sidebar + index stylesheet in the editorial skin (`packages/render/DESIGN.md`):
+ * role tokens only (`--paper`, `--ink`, `--muted`, `--soft`, `--rule`, …), so
+ * the chrome follows the same light/dark sets the document does — those are
+ * defined once, on `:root`, in the house CSS. Hairlines, no shadows, no filled
+ * pills; small labels are mono eyebrows. Sticky sidebar that collapses to a
+ * top list under 900px. Inlined into every page so pages stay self-contained.
  */
 const SITE_CSS = `
 body{margin:0;}
 .site{display:flex;align-items:flex-start;max-width:1440px;margin:0 auto;}
-.site-nav{position:sticky;top:0;flex:none;width:248px;max-height:100vh;overflow-y:auto;padding:28px 18px 48px;border-right:1px solid var(--rule);font-family:var(--font-body);font-size:13px;}
-.site-nav .nav-brand{display:block;font-family:var(--font-display);font-weight:700;font-size:14px;letter-spacing:.02em;color:var(--navy);text-decoration:none;padding:4px 8px;margin-bottom:6px;}
-.site-nav .nav-head{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--gray);font-weight:700;padding:10px 8px 6px;border-top:1px solid var(--rule);}
-.site-nav a{display:block;color:var(--charcoal);text-decoration:none;padding:4px 8px;border-radius:4px;line-height:1.45;}
-.site-nav a:hover{background:var(--light-gray);}
-.site-nav a.current{color:var(--navy);font-weight:700;background:var(--light-gray);}
+.site-nav{position:sticky;top:0;flex:none;width:248px;max-height:100vh;overflow-y:auto;padding:28px 18px 48px;border-right:1px solid var(--rule);font-family:var(--font-body);font-size:13px;color:var(--ink);}
+.site-nav .nav-brand{display:block;font-family:var(--font-display);font-weight:600;font-size:14px;letter-spacing:.01em;color:var(--ink);text-decoration:none;padding:4px 8px;margin-bottom:6px;}
+.site-eyebrow{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);}
+.site-nav .nav-head{padding:10px 8px 6px;border-top:1px solid var(--rule);}
+.site-nav a{display:block;color:var(--ink);text-decoration:none;padding:4px 8px;border-radius:4px;line-height:1.45;}
+.site-nav a:hover{background:var(--paper-2);}
+.site-nav a.current{color:var(--ink);font-weight:600;background:var(--paper-2);box-shadow:inset 2px 0 0 var(--ink);}
 .site-nav .nav-sections{margin:2px 0 8px 12px;padding-left:10px;border-left:1px solid var(--rule);}
-.site-nav .nav-sections a{font-size:12px;color:var(--slate);padding:3px 6px;}
+.site-nav .nav-sections a{font-size:12px;color:var(--muted);}
+.site-nav .nav-sections a:hover{color:var(--ink);}
 .site-main{flex:1;min-width:0;}
 .site-main .docskin{padding-top:40px;}
 @media (max-width:900px){
@@ -101,38 +106,49 @@ body{margin:0;}
 .site-nav{position:static;width:auto;max-height:none;border-right:0;border-bottom:1px solid var(--rule);padding:20px 24px;}
 }
 .idx-head{padding:16px 0 28px;margin-bottom:36px;border-bottom:1px solid var(--rule);}
-.idx-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--highlight);font-weight:700;margin-bottom:10px;}
-.idx-title{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,4.4vw,48px);line-height:1.1;letter-spacing:-.015em;color:var(--navy);margin:0;}
-.idx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;}
-.idx-card{display:block;border:1px solid var(--rule);border-radius:10px;background:var(--white);padding:22px 24px 18px;text-decoration:none;color:var(--charcoal);box-shadow:0 1px 2px rgba(0,0,0,.03),0 8px 20px -14px rgba(0,0,0,.10);}
-.idx-card:hover{border-color:var(--navy);}
-.idx-card .idx-tag{display:inline-block;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;background:var(--navy);color:var(--white);margin-bottom:12px;}
-.idx-card h2{font-family:var(--font-display);font-weight:700;font-size:18px;line-height:1.25;color:var(--navy);margin:0 0 8px;}
-.idx-card p{font-size:13px;line-height:1.55;color:var(--slate);margin:0 0 12px;}
-.idx-card .idx-slug{font-family:var(--font-mono);font-size:11px;color:var(--gray);}
+.idx-eyebrow{margin-bottom:10px;}
+.idx-title{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,4.4vw,48px);line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin:0;}
+.idx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.idx-card{display:block;border:1px solid var(--rule-solid);border-radius:6px;background:var(--paper);padding:20px 22px 16px;text-decoration:none;color:var(--ink);box-shadow:none;}
+.idx-card:hover{border-color:var(--ink);}
+.idx-card .idx-tag{display:inline-block;font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;line-height:1.3;padding:2px 7px;border:1px solid var(--rule-solid);border-radius:2px;background:var(--paper);color:var(--muted);margin-bottom:12px;}
+.idx-card h2{font-family:var(--font-body);font-weight:600;font-size:16px;line-height:1.3;color:var(--ink);margin:0 0 6px;}
+.idx-card p{font-size:13px;line-height:1.55;color:var(--muted);margin:0 0 12px;}
+.idx-card .idx-slug{font-family:var(--font-mono);font-size:11px;color:var(--soft);}
 .site-main{position:relative;}
-.view-toggle{position:absolute;top:30px;right:32px;z-index:30;display:inline-flex;border:1px solid var(--rule);border-radius:10px;background:var(--white);overflow:hidden;font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:.01em;box-shadow:0 1px 2px rgba(0,0,0,.04);}
-.view-toggle a{display:flex;align-items:center;padding:5px 14px;color:var(--slate);text-decoration:none;line-height:1.4;}
-.view-toggle a + a{border-left:1px solid var(--rule);}
-.view-toggle a:hover{color:var(--navy);background:var(--light-gray);}
-.view-toggle a[aria-current]{background:var(--navy);color:var(--white);}
-.view-toggle a[aria-current]:hover{background:var(--navy);color:var(--white);}
+.view-toggle{position:absolute;top:30px;right:32px;z-index:30;display:inline-flex;border:1px solid var(--rule-solid);border-radius:6px;background:var(--paper);overflow:hidden;font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:.01em;box-shadow:none;}
+.view-toggle a{display:flex;align-items:center;padding:5px 14px;color:var(--muted);text-decoration:none;line-height:1.4;}
+.view-toggle a + a{border-left:1px solid var(--rule-solid);}
+.view-toggle a:hover{color:var(--ink);background:var(--paper-2);}
+.view-toggle a[aria-current]{background:var(--ink);color:var(--paper);}
+.view-toggle a[aria-current]:hover{background:var(--ink);color:var(--paper);}
 @media (max-width:900px){.view-toggle{top:14px;right:16px;}}
 `;
 
 /**
- * Floating "Document ▸" pill spliced into deck pages — top-right, out of the
- * way of the deck's own bottom nav bar; semi-transparent over the stage.
+ * Floating "Document ▸" chip spliced into deck pages — top-right, out of the
+ * way of the deck's own bottom nav bar; a paper chip with a hairline, no shadow.
  */
 const DECK_BACK_CSS = `
 .deck-doc-link{position:fixed;top:14px;right:18px;z-index:20;display:inline-flex;align-items:center;gap:7px;
-  padding:6px 14px;border:1px solid var(--rule);border-radius:10px;
-  background:color-mix(in srgb, var(--white) 82%, transparent);backdrop-filter:blur(6px);
-  font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--navy);
-  text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,.06);}
-.deck-doc-link:hover{background:var(--white);border-color:var(--navy);}
+  padding:6px 14px;border:1px solid var(--rule-solid);border-radius:6px;
+  background:var(--paper);
+  font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--ink);
+  text-decoration:none;box-shadow:none;}
+.deck-doc-link:hover{background:var(--paper-2);border-color:var(--ink);}
 @media print{.deck-doc-link{display:none;}}
 `;
+
+/**
+ * The `data-theme` stamp for `<html>`: an explicitly chosen theme never mixes
+ * with the reader's system dark mode (the default theme follows the system).
+ * Same rule as `renderDocument` in `@avodado/render`.
+ */
+function dataThemeAttr(theme: ThemeName | undefined): string {
+  if (theme === 'dark') return ' data-theme="dark"';
+  if (theme !== undefined && theme !== DEFAULT_THEME) return ' data-theme="light"';
+  return '';
+}
 
 /** `../` prefix that climbs from a page at `slug` back to the site root. */
 function rootPrefix(slug: string): string {
@@ -200,7 +216,7 @@ function sidebar(
   return (
     `<aside class="site-nav">` +
     `<a class="nav-brand" href="${prefix}index.html">Documentation</a>` +
-    `<div class="nav-head">Documents</div>` +
+    `<div class="nav-head site-eyebrow">Documents</div>` +
     `<nav>${items}</nav>` +
     `</aside>`
   );
@@ -248,12 +264,14 @@ function pageShell(args: {
   readonly liveReload: boolean;
   /** Doc pages only: the Doc | Slides control, pinned to the main column. */
   readonly toggle?: string;
+  /** The explicitly chosen base theme, if any — stamped as `data-theme`. */
+  readonly theme?: ThemeName;
 }): string {
   const themeBlock = args.themeVars.length > 0 ? `<style>:root{${args.themeVars}}</style>` : '';
   const reload = args.liveReload ? LIVE_RELOAD_SCRIPT : '';
   return (
     `<!doctype html>\n` +
-    `<html lang="en">\n` +
+    `<html lang="en"${dataThemeAttr(args.theme)}>\n` +
     `<head>\n` +
     `<meta charset="utf-8">\n` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">\n` +
@@ -298,7 +316,7 @@ function indexCards(docs: readonly SiteDoc[]): string {
   const cards = docs.map((d) => indexCard(d)).join('');
   return (
     `<div class="idx-head">` +
-    `<div class="idx-eyebrow">${docs.length} document${docs.length === 1 ? '' : 's'}</div>` +
+    `<div class="idx-eyebrow site-eyebrow">${docs.length} document${docs.length === 1 ? '' : 's'}</div>` +
     `<h1 class="idx-title">Documentation</h1>` +
     `</div>` +
     `<div class="idx-grid">${cards}</div>`
@@ -313,18 +331,18 @@ function indexCards(docs: readonly SiteDoc[]): string {
  * byte-identical to the pre-rich-index output.
  */
 const RICH_INDEX_CSS = `
-.idx-tldr{display:grid;gap:5px;margin-top:16px;font-size:13px;line-height:1.55;}
-.idx-tldr a{color:var(--charcoal);text-decoration:none;}
-.idx-tldr a:hover{color:var(--navy);}
-.idx-tldr strong{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);}
+.idx-tldr{display:grid;gap:5px;margin-top:16px;font-size:13px;line-height:1.55;color:var(--muted);}
+.idx-tldr a{color:var(--muted);text-decoration:none;}
+.idx-tldr a:hover{color:var(--ink);}
+.idx-tldr strong{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);}
 .idx-group{margin-bottom:40px;}
-.idx-group-head{display:flex;align-items:baseline;gap:10px;font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--navy);margin:0 0 16px;}
-.idx-group-count{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--gray);}
+.idx-group-head{display:flex;align-items:baseline;gap:10px;font-family:var(--font-body);font-weight:600;font-size:18px;color:var(--ink);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
+.idx-group-count{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.14em;color:var(--soft);}
 .idx-graph{margin-top:8px;}
 .idx-graph-legend{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:6px;font-size:13px;}
-.idx-graph-legend a{color:var(--navy);text-decoration:none;font-weight:600;}
+.idx-graph-legend a{color:var(--link);text-decoration:none;font-weight:600;}
 .idx-graph-legend a:hover{text-decoration:underline;}
-.idx-graph-legend .idx-slug{font-family:var(--font-mono);font-size:11px;color:var(--gray);margin-left:8px;}
+.idx-graph-legend .idx-slug{font-family:var(--font-mono);font-size:11px;color:var(--soft);margin-left:8px;}
 `;
 
 /** One group of docs on the rich index (a tag, a folder, or the fallback). */
@@ -496,7 +514,7 @@ function richIndexMain(
   const degenerate = groups.length > 0 && singletons / groups.length > SINGLETON_LIMIT;
   const head =
     `<div class="idx-head">` +
-    `<div class="idx-eyebrow">${docs.length} document${docs.length === 1 ? '' : 's'}</div>` +
+    `<div class="idx-eyebrow site-eyebrow">${docs.length} document${docs.length === 1 ? '' : 's'}</div>` +
     `<h1 class="idx-title">Documentation</h1>` +
     (groups.length > 0 && !degenerate ? tldrDigest(groups) : '') +
     `</div>`;
@@ -558,6 +576,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
           ? richIndexMain(docs, resolved.graph.edges)
           : indexCards(docs),
       liveReload,
+      ...(opts.theme !== undefined ? { theme: opts.theme } : {}),
     }),
   });
 
@@ -570,6 +589,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
       main: parts.body,
       liveReload,
       toggle: viewToggle(doc.slug),
+      ...(opts.theme !== undefined ? { theme: opts.theme } : {}),
     });
     pages.push({
       path: `${doc.slug}.html`,

@@ -15,17 +15,19 @@ import { diagramFrame } from './frame.js';
 
 type PacketData = BlockDataMap['packet'];
 
-const ACCENT: Readonly<Record<string, string>> = {
-  navy: 'var(--navy)',
-  blue: 'var(--blue)',
-  teal: 'var(--teal)',
-  green: 'var(--positive)',
-  amber: 'var(--highlight)',
-  purple: 'var(--purple)',
-  red: 'var(--negative)',
-  gray: 'var(--gray)',
-};
-const CYCLE = ['var(--light-blue)', 'var(--teal-soft)', 'var(--purple-soft)', 'var(--highlight-soft)'];
+/**
+ * Field fills alternate paper / paper-2 so neighbours read apart; an explicit
+ * `accent` on a field marks it as the notable one (accent-tint + accent
+ * stroke), `red` as the negative one. Hue never tells fields apart.
+ */
+const FILL_CYCLE = ['var(--paper)', 'var(--paper-2)'];
+type CellPaint = { readonly fill: string; readonly stroke: string };
+function paintFor(accent: string | undefined, index: number): CellPaint {
+  if (accent === 'red') return { fill: 'var(--negative-tint)', stroke: 'var(--negative)' };
+  if (accent === 'gray') return { fill: 'var(--paper-2)', stroke: 'var(--rule-solid)' };
+  if (accent !== undefined) return { fill: 'var(--accent-tint)', stroke: 'var(--accent)' };
+  return { fill: FILL_CYCLE[index % FILL_CYCLE.length] ?? 'var(--paper)', stroke: 'var(--ink)' };
+}
 
 const LEFT = 34; // room for the row's starting bit offset
 const RIGHT = 8;
@@ -37,7 +39,7 @@ const W = 880;
 interface Cell {
   readonly label: string;
   readonly value: string | undefined;
-  readonly color: string;
+  readonly paint: CellPaint;
   readonly index: number;
   readonly row: number;
   readonly from: number;
@@ -62,7 +64,7 @@ export function renderPacket(data: PacketData): string {
       cells.push({
         label: f.label,
         value: f.value,
-        color: f.accent !== undefined ? (ACCENT[f.accent] ?? CYCLE[0] ?? '') : (CYCLE[index % CYCLE.length] ?? ''),
+        paint: paintFor(f.accent, index),
         index,
         row,
         from,
@@ -101,17 +103,18 @@ export function renderPacket(data: PacketData): string {
     const w = c.bits * cellW;
     const y = TOP + c.row * ROW_H;
     s += `<g${bp(`fields.${c.index}`)}>`;
-    s += `<rect x="${r(x + 1)}" y="${r(y + 2)}" width="${r(w - 2)}" height="${ROW_H - 6}" rx="4" fill="${c.color}" stroke="var(--navy)" stroke-width="1" stroke-opacity="0.45"/>`;
+    s += `<rect x="${r(x + 1)}" y="${r(y + 2)}" width="${r(w - 2)}" height="${ROW_H - 6}" rx="3" fill="${c.paint.fill}" stroke="${c.paint.stroke}" stroke-width="1"/>`;
     // A cell narrower than ~46px can't hold a name; its bit count still reads.
     const cx = x + w / 2;
     if (w >= 46) {
       const suffix = c.cont ? ' (cont.)' : c.cut ? ' →' : '';
-      s += `<text x="${r(cx)}" y="${r(y + (c.value !== undefined && w >= 80 ? 19 : 25))}" class="pk-name">${escapeHtml(c.label + suffix)}</text>`;
+      // Three rows fit the 40px cell: name (17), value (28), bit count (38).
+      s += `<text x="${r(cx)}" y="${r(y + (c.value !== undefined && w >= 80 ? 17 : 24))}" class="pk-name">${escapeHtml(c.label + suffix)}</text>`;
       if (c.value !== undefined && w >= 80) {
-        s += `<text x="${r(cx)}" y="${r(y + 33)}" class="pk-value">${escapeHtml(c.value)}</text>`;
+        s += `<text x="${r(cx)}" y="${r(y + 28)}" class="pk-value">${escapeHtml(c.value)}</text>`;
       }
     }
-    s += `<text x="${r(cx)}" y="${r(y + ROW_H - 11)}" class="pk-bits">${c.bits}</text>`;
+    s += `<text x="${r(cx)}" y="${r(y + ROW_H - 8)}" class="pk-bits">${c.bits}</text>`;
     s += `<title>${escapeHtml(`${c.label} — ${c.bits} bit${c.bits === 1 ? '' : 's'} at offset ${c.row * width + c.from}`)}</title>`;
     s += `</g>`;
   });
@@ -132,7 +135,6 @@ export function renderPacket(data: PacketData): string {
   return diagramFrame(
     {
       tag: 'PACKET',
-      tagBg: '#2f5c8f',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
       footerHtml: footer,

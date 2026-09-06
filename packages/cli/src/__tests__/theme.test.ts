@@ -53,7 +53,14 @@ describe('loadTheme (custom-name resolution)', () => {
       await active(root, { theme: EMBER_SLUG });
       const t = loadTheme(root);
       expect(t.theme).toBe('dark');
-      expect(t.themeVars).toMatchObject({ '--navy': '#ff5a1f', '--white': '#1a1412' });
+      // Roles first, legacy names as aliases of the roles.
+      expect(t.themeVars).toMatchObject({
+        '--ink': '#ff5a1f',
+        '--paper': '#1a1412',
+        '--navy': 'var(--ink)',
+        '--charcoal': 'var(--ink)',
+        '--white': 'var(--paper)',
+      });
     } finally {
       await cleanup();
     }
@@ -75,8 +82,8 @@ describe('loadTheme (custom-name resolution)', () => {
       await active(root, { theme: EMBER_SLUG, colors: { primary: '#000000' } });
       const t = loadTheme(root);
       expect(t.theme).toBe('dark');
-      expect(t.themeVars?.['--navy']).toBe('#000000'); // override wins
-      expect(t.themeVars?.['--white']).toBe('#1a1412'); // rest inherited
+      expect(t.themeVars?.['--ink']).toBe('#000000'); // override wins
+      expect(t.themeVars?.['--paper']).toBe('#1a1412'); // rest inherited
     } finally {
       await cleanup();
     }
@@ -88,7 +95,7 @@ describe('loadTheme (custom-name resolution)', () => {
       await active(root, SUNSET); // theme: 'avo-test-sunset' inside the sunset file itself
       const t = loadTheme(root);
       expect(t.theme).toBeUndefined(); // default base downstream
-      expect(t.themeVars).toMatchObject({ '--navy': '#e11d48' });
+      expect(t.themeVars).toMatchObject({ '--ink': '#e11d48' });
     } finally {
       await cleanup();
     }
@@ -100,7 +107,7 @@ describe('loadTheme (custom-name resolution)', () => {
       await active(root, { theme: 'no-such-theme-xyz', colors: { primary: '#123456' } });
       const t = loadTheme(root);
       expect(t.theme).toBeUndefined();
-      expect(t.themeVars).toMatchObject({ '--navy': '#123456' });
+      expect(t.themeVars).toMatchObject({ '--ink': '#123456' });
     } finally {
       await cleanup();
     }
@@ -111,6 +118,66 @@ describe('loadTheme (custom-name resolution)', () => {
     try {
       await active(root, { theme: 'teal' });
       expect(loadTheme(root)).toEqual({ theme: 'teal' });
+    } finally {
+      await cleanup();
+    }
+  });
+});
+
+describe('loadTheme (skin roles)', () => {
+  it('emits the skin roles first, then the legacy names as aliases, then derived tints', async () => {
+    const { root, cleanup } = await tempProject();
+    try {
+      await active(root, {
+        colors: { paper: '#101418', ink: '#f0f0f0', muted: '#aaaaaa', soft: '#999999', rule: '#333333', accent: '#ff7a00', link: '#4aa3ff' },
+      });
+      const vars = loadTheme(root).themeVars ?? {};
+      const keys = Object.keys(vars);
+      const roles = ['--paper', '--ink', '--muted', '--soft', '--rule', '--accent', '--link'];
+      expect(keys.slice(0, roles.length)).toEqual(roles);
+      expect(vars).toMatchObject({
+        '--white': 'var(--paper)',
+        '--charcoal': 'var(--ink)',
+        '--navy': 'var(--ink)',
+        '--gray': 'var(--muted)',
+        '--slate': 'var(--muted)',
+        '--highlight': 'var(--accent)',
+        '--blue': 'var(--link)',
+        '--highlight-soft': 'var(--accent-tint)',
+      });
+      expect(vars['--accent-tint']).toContain('var(--accent)');
+      expect(vars['--paper-2']).toContain('var(--paper)');
+      // Every alias comes after every role.
+      const lastRole = Math.max(...roles.map((r) => keys.indexOf(r)));
+      for (const k of ['--white', '--charcoal', '--navy', '--gray', '--highlight', '--blue']) {
+        expect(keys.indexOf(k)).toBeGreaterThan(lastRole);
+      }
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('`primary` alone takes the ink role; with `ink` present it keeps the legacy heading color', async () => {
+    const { root, cleanup } = await tempProject();
+    try {
+      await active(root, { colors: { primary: '#ff5a1f' } });
+      expect(loadTheme(root).themeVars).toMatchObject({ '--ink': '#ff5a1f', '--navy': 'var(--ink)' });
+      await active(root, { colors: { primary: '#ff5a1f', ink: '#111111' } });
+      const both = loadTheme(root).themeVars ?? {};
+      expect(both['--ink']).toBe('#111111');
+      expect(both['--charcoal']).toBe('var(--ink)');
+      expect(both['--navy']).toBe('#ff5a1f');
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('`secondary` is the legacy name for `link`; unknown names are ignored', async () => {
+    const { root, cleanup } = await tempProject();
+    try {
+      await active(root, { colors: { secondary: '#0070f3', nope: '#000000' } });
+      const vars = loadTheme(root).themeVars ?? {};
+      expect(vars).toEqual({ '--link': '#0070f3', '--blue': 'var(--link)' });
     } finally {
       await cleanup();
     }
@@ -198,15 +265,15 @@ describe('studioThemeInfo', () => {
       await active(root, { theme: EMBER_SLUG });
       const info = studioThemeInfo(root);
       expect(info.theme).toBe('dark');
-      expect(info.themeVars).toMatchObject({ '--navy': '#ff5a1f' });
+      expect(info.themeVars).toMatchObject({ '--ink': '#ff5a1f' });
       expect(info.active).toEqual({ kind: 'saved', id: EMBER_SLUG, name: 'Avo Test Ember' });
       const ember = info.savedThemes.find((t) => t.slug === EMBER_SLUG);
       expect(ember).toMatchObject({ name: 'Avo Test Ember', scope: 'project', theme: 'dark' });
-      expect(ember?.themeVars).toMatchObject({ '--navy': '#ff5a1f' });
+      expect(ember?.themeVars).toMatchObject({ '--ink': '#ff5a1f' });
       // The self-titled theme resolves to default base + its own vars.
       const sunset = info.savedThemes.find((t) => t.slug === SUNSET_SLUG);
       expect(sunset?.theme).toBeUndefined();
-      expect(sunset?.themeVars).toMatchObject({ '--navy': '#e11d48' });
+      expect(sunset?.themeVars).toMatchObject({ '--ink': '#e11d48' });
     } finally {
       await cleanup();
     }

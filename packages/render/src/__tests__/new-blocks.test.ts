@@ -45,7 +45,7 @@ describe('gitgraph', () => {
     const curves = parse(html).querySelectorAll('path[d^="M"]');
     expect(curves.length).toBeGreaterThanOrEqual(2);
     expect(curves.some((p) => p.getAttribute('stroke-dasharray') === undefined)).toBe(true);
-    expect(curves.some((p) => p.getAttribute('stroke-dasharray') === '5 3')).toBe(true);
+    expect(curves.some((p) => p.getAttribute('stroke-dasharray') === '5 4')).toBe(true);
   });
 
   it('marks a release with its tag', () => {
@@ -71,7 +71,7 @@ describe('treemap', () => {
   };
 
   it('sizes every tile by value and fills the canvas', () => {
-    const rects = parse(renderTreemap(SPEND)).querySelectorAll('rect');
+    const rects = parse(renderTreemap(SPEND)).querySelectorAll('g[data-bl="items"] rect');
     expect(rects).toHaveLength(3);
     const areas = rects.map((r) => Number(r.getAttribute('width')) * Number(r.getAttribute('height')));
     // 60 / 30 / 10 — twice the value is twice the area (within the gutters).
@@ -152,7 +152,7 @@ describe('venn', () => {
     });
     expect(parse(html).querySelectorAll('circle')).toHaveLength(3);
     const centre = parse(html)
-      .querySelectorAll('.vn-shared')
+      .querySelectorAll('g[data-bl="shared"] text')
       .find((t) => t.text.includes('Event'));
     expect(centre?.getAttribute('x')).toBe('310'); // the middle region
   });
@@ -198,7 +198,7 @@ describe('wardley', () => {
   it('draws movement as a dashed arrow along the evolution axis', () => {
     const html = renderWardley(MAP);
     expect(html).toContain('stroke-dasharray="4 3"');
-    expect(html).toContain('marker-end="url(#gArrow)"');
+    expect(html).toContain('marker-end="url(#skOpen)"');
   });
 
   it('clamps positions outside 0–1 instead of drawing off-canvas', () => {
@@ -249,12 +249,12 @@ describe('fishbone', () => {
   it('draws a spine into the head, one bone per cause, one tick label per item', () => {
     const root = parse(renderFishbone(CHECKOUT));
     expect(root.querySelectorAll('g[data-bp^="causes."][data-bp$="label"]')).toHaveLength(3);
-    expect(root.querySelectorAll('.fb-item')).toHaveLength(4);
+    expect(root.querySelectorAll('g[data-bl$=".items"] text')).toHaveLength(4);
     expect(root.querySelector('rect')).toBeTruthy(); // the effect head box
     const html = renderFishbone(CHECKOUT);
-    expect(html).toContain('marker-end="url(#gArrow)"');
+    expect(html).toContain('stroke="var(--ink)" stroke-width="1.5"'); // the spine
     // The effect wraps inside the head box, no clipping.
-    expect(parse(html).querySelectorAll('.fb-effect').map((t) => t.text).join(' ')).toBe(
+    expect(parse(html).querySelectorAll('g[data-bp="effect"] text').map((t) => t.text).join(' ')).toBe(
       'p95 checkout over 2s',
     );
     // Natural-size attributes match the viewBox, so the frame's max-width:100%
@@ -277,7 +277,7 @@ describe('fishbone', () => {
       (html.match(/M 26 ([\d.]+) L/) ?? [])[1] ?? NaN,
     );
     const labelYs = root
-      .querySelectorAll('.fb-cause')
+      .querySelectorAll('g[data-bp$=".label"] > text')
       .map((t) => Number(t.getAttribute('y')));
     expect(labelYs.filter((y) => y < spineY)).toHaveLength(2); // A, C above
     expect(labelYs.filter((y) => y > spineY)).toHaveLength(2); // B, D below
@@ -321,7 +321,7 @@ describe('fishbone', () => {
     });
     // Root SVG title + effect + cause label + one item — the short item gets none.
     expect((clamped.match(/<title>/g) ?? []).length).toBe(4);
-    expect(clamped).toContain(`<g filter="url(#gshadow)" data-bp="effect"><title>${long}</title>`);
+    expect(clamped).toContain(`<g data-bp="effect"><title>${long}</title>`);
     expect(clamped).toContain(`<g data-bp="causes.0.label"><title>${long}</title>`);
     expect(clamped).toContain(`<g data-bp="causes.0.items.0"><title>${longItem}</title>`);
     expect(clamped).not.toContain('<title>short item</title>');
@@ -445,7 +445,7 @@ describe('slopegraph', () => {
 
   const textYs = (html: string, cls: string): number[] =>
     parse(html)
-      .querySelectorAll(`.${cls}`)
+      .querySelectorAll(cls)
       .map((t) => Number(t.getAttribute('y')));
 
   it('draws two baselines, headers, and one line + two labels per item', () => {
@@ -453,18 +453,18 @@ describe('slopegraph', () => {
     const root = parse(html);
     expect(root.querySelectorAll('svg > line')).toHaveLength(2); // the baselines
     expect(root.querySelectorAll('g[data-bl="items"] > g')).toHaveLength(3);
-    expect(root.querySelectorAll('.sg-col').map((t) => t.text)).toEqual(['2023', '2025']);
-    expect(root.querySelectorAll('.sg-left').map((t) => t.text)).toEqual([
+    expect(root.querySelectorAll('text.t-eyebrow').map((t) => t.text)).toEqual(['2023', '2025']);
+    expect(root.querySelectorAll('text[data-bp$=".from"]').map((t) => t.text)).toEqual([
       'Email 48%',
       'Chat 20%',
       'Phone 32%',
     ]);
-    expect(root.querySelectorAll('.sg-right')[0]?.text).toBe('22% Email');
+    expect(root.querySelectorAll('text[data-bp$=".to"]')[0]?.text).toBe('22% Email');
   });
 
   it('positions by value: higher values sit higher on both sides', () => {
     const html = renderSlopegraph(CHANNELS);
-    const [email, chat, phone] = textYs(html, 'sg-left');
+    const [email, chat, phone] = textYs(html, 'text[data-bp$=".from"]');
     expect(email).toBeLessThan(phone ?? 0); // 48 above 32
     expect(phone).toBeLessThan(chat ?? 0); // 32 above 20
   });
@@ -479,7 +479,7 @@ describe('slopegraph', () => {
       { label: 'Steep', from: 2, to: 14 },
     ];
     const html = renderSlopegraph({ left: 'L', right: 'R', items });
-    const lines = parse(html).querySelectorAll('g[data-bl="items"] > g > line:not(.sg-leader)');
+    const lines = parse(html).querySelectorAll('g[data-bl="items"] > g > line:not([stroke="var(--rule-solid)"])');
     expect(lines).toHaveLength(6);
     const y1 = lines.map((l) => Number(l.getAttribute('y1')));
     const y2 = lines.map((l) => Number(l.getAttribute('y2')));
@@ -502,13 +502,13 @@ describe('slopegraph', () => {
     ];
     const html = renderSlopegraph({ left: 'Q1', right: 'Q4', items });
     const root = parse(html);
-    const lines = root.querySelectorAll('g[data-bl="items"] > g > line:not(.sg-leader)');
+    const lines = root.querySelectorAll('g[data-bl="items"] > g > line:not([stroke="var(--rule-solid)"])');
     // All tied endpoints share the exact same y — no fabricated crossings possible.
     const y2s = new Set(lines.map((l) => l.getAttribute('y2')));
     expect(y2s.size).toBe(1);
     // Right labels stack in left order: c (highest from, topmost line) first.
     const rights = root
-      .querySelectorAll('.sg-right')
+      .querySelectorAll('text[data-bp$=".to"]')
       .map((t) => ({ label: t.text, y: Number(t.getAttribute('y')) }))
       .sort((p, q) => p.y - q.y)
       .map((p) => p.label);
@@ -525,7 +525,7 @@ describe('slopegraph', () => {
         { label: 'B', from: 100, to: 0 },
       ],
     });
-    expect(parse(spread).querySelectorAll('.sg-leader')).toHaveLength(0);
+    expect(parse(spread).querySelectorAll('g[data-bl="items"] line[stroke="var(--rule-solid)"]')).toHaveLength(0);
     // A tight cluster forces dodged labels — each displaced one gets a leader
     // whose endpoint-side y equals the true endpoint y.
     const cluster = renderSlopegraph({
@@ -539,7 +539,7 @@ describe('slopegraph', () => {
       ],
     });
     const root = parse(cluster);
-    const leaders = root.querySelectorAll('.sg-leader');
+    const leaders = root.querySelectorAll('g[data-bl="items"] line[stroke="var(--rule-solid)"]');
     expect(leaders.length).toBeGreaterThan(0);
     // The two baselines give the column x positions.
     const axes = root
@@ -547,7 +547,7 @@ describe('slopegraph', () => {
       .map((l) => Number(l.getAttribute('x1')))
       .sort((a, b) => a - b);
     const [leftX, rightX] = axes;
-    const slopes = root.querySelectorAll('g[data-bl="items"] > g > line:not(.sg-leader)');
+    const slopes = root.querySelectorAll('g[data-bl="items"] > g > line:not([stroke="var(--rule-solid)"])');
     const trueLeft = new Set(slopes.map((l) => l.getAttribute('y1')));
     const trueRight = new Set(slopes.map((l) => l.getAttribute('y2')));
     for (const ld of leaders) {
@@ -575,9 +575,12 @@ describe('slopegraph', () => {
 
   it('colors an accented item and leaves the rest neutral', () => {
     const html = renderSlopegraph(CHANNELS);
-    expect(html).toContain('stroke="#0f766e"');
-    expect(html).toContain('fill="#0f766e"');
-    expect((html.match(/stroke="var\(--gray\)"/g) ?? []).length).toBe(2);
+    // The flagged item takes the skin's accent (whatever accent name it wrote);
+    // the other two lines stay `muted`.
+    expect(html).toContain('stroke="var(--accent)" stroke-width="1.75"');
+    expect(html).toContain('class="t-sub c-accent"');
+    expect((html.match(/stroke="var\(--muted\)" stroke-width="1\.25"/g) ?? []).length).toBe(2);
+    expect(html).not.toMatch(/#[0-9a-f]{6}/i);
   });
 
   it('renders a flat line when from equals to, and survives an all-equal domain', () => {
@@ -589,7 +592,7 @@ describe('slopegraph', () => {
         { label: 'B', from: 5, to: 5 },
       ],
     });
-    const lines = parse(html).querySelectorAll('g[data-bl="items"] > g > line:not(.sg-leader)');
+    const lines = parse(html).querySelectorAll('g[data-bl="items"] > g > line:not([stroke="var(--rule-solid)"])');
     expect(lines).toHaveLength(2);
     for (const ln of lines) {
       expect(ln.getAttribute('y1')).toBe(ln.getAttribute('y2'));
@@ -603,20 +606,20 @@ describe('slopegraph', () => {
       to: 10 + (i % 3),
     }));
     const html = renderSlopegraph({ left: 'Q1', right: 'Q4', items });
-    for (const side of ['sg-left', 'sg-right']) {
+    for (const side of ['text[data-bp$=".from"]', 'text[data-bp$=".to"]']) {
       const ys = textYs(html, side).sort((a, b) => a - b);
       for (let i = 1; i < ys.length; i++) {
         expect((ys[i] ?? 0) - (ys[i - 1] ?? 0)).toBeGreaterThanOrEqual(14);
       }
     }
     // Value order preserved on the left: item 20 (highest from) sits on top.
-    const left = textYs(html, 'sg-left');
+    const left = textYs(html, 'text[data-bp$=".from"]');
     expect(Math.min(...left)).toBe(left[19]);
     // Every label fits inside the grown viewBox.
     const vb = (parse(html).querySelector('svg')?.getAttribute('viewBox') ?? '0 0 0 0')
       .split(' ')
       .map(Number);
-    for (const y of [...textYs(html, 'sg-left'), ...textYs(html, 'sg-right')]) {
+    for (const y of [...textYs(html, 'text[data-bp$=".from"]'), ...textYs(html, 'text[data-bp$=".to"]')]) {
       expect(y).toBeGreaterThan(0);
       expect(y).toBeLessThan(vb[3] ?? 0);
     }
@@ -635,7 +638,7 @@ describe('slopegraph', () => {
     });
     expect(html).toContain('…');
     expect(html).toContain(`<title>${longLabel}: -12 ms → 4 ms</title>`);
-    const [a, b] = textYs(html, 'sg-left'); // -12 below 3
+    const [a, b] = textYs(html, 'text[data-bp$=".from"]'); // -12 below 3
     expect(a).toBeGreaterThan(b ?? 0);
   });
 });
@@ -735,7 +738,7 @@ describe('chart scatter with points (numeric axes)', () => {
     });
     expect(new Set(spots).size).toBe(3);
     // The displaced labels of the trio point back to their bubble via leaders.
-    expect(root.querySelectorAll('line.chart-leader').length).toBeGreaterThanOrEqual(2);
+    expect(root.querySelectorAll('line[stroke-width="0.75"]').length).toBeGreaterThanOrEqual(2);
   });
 
   it('40-point stress: no label box crosses any bubble or another label; leaders mark displaced labels', () => {
@@ -901,7 +904,7 @@ describe('tree variant: org', () => {
       }
     }
     // Trunk-and-stub connectors: one stub reaches each stacked card.
-    expect(root.querySelectorAll('path.tree-link').length).toBeGreaterThanOrEqual(13);
+    expect(root.querySelectorAll('path[stroke="var(--muted)"]').length).toBeGreaterThanOrEqual(13);
   });
 
   it('does not stack when no parent exceeds 6 leaf children (one row per level)', () => {
@@ -925,7 +928,7 @@ describe('tree variant: org', () => {
       }),
     );
     expect(root.querySelectorAll('g[data-bl="nodes"] > g')).toHaveLength(2);
-    expect(root.querySelectorAll('path.tree-link')).toHaveLength(1);
+    expect(root.querySelectorAll('path[stroke="var(--muted)"]')).toHaveLength(1);
   });
 
   it('wraps a 400-char label to two clipped lines and keeps the full text in <title>', () => {
@@ -934,7 +937,7 @@ describe('tree variant: org', () => {
       renderTree({ variant: 'org' as const, nodes: [{ id: 'a', label: long, role: 'R'.repeat(60) }] }),
     );
     const g = root.querySelector('g[data-bp="nodes.0"]');
-    const lines = g?.querySelectorAll('text.blk-name') ?? [];
+    const lines = g?.querySelectorAll('text.t-name') ?? [];
     expect(lines).toHaveLength(2);
     for (const ln of lines) expect(ln.text.length).toBeLessThanOrEqual(22);
     expect(g?.querySelector('title')?.text).toContain(long);

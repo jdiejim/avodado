@@ -1,21 +1,30 @@
 /**
  * Renders a C4 model diagram (context / container / component levels).
  *
- * Per-node colour comes from a kind+family lookup (`c4Style`). Optional
- * boundary box wraps the internal nodes (container/component/store). A legend
- * sits below the SVG.
+ * Skin (`DESIGN.md`): every element is a paper card with an ink outline and
+ * the C4 typography stacked in the centre — kind chip, name, technology,
+ * description. Kinds travel through chip, dash and fill: `PERSON` (with the
+ * figure glyph), `SYSTEM`, `EXT` (dashed — outside the boundary), `DB`
+ * (cylinder on the inactive fill), `CONTAINER`, `COMPONENT`; a `family` of
+ * `external` dashes a container / component, a data family (`store` /
+ * `data`) puts it on the inactive fill. Boundaries are the skin's `paper-2`
+ * panels with the boundary name as an eyebrow and the level it encloses
+ * top-right. Relations follow the shared stroke table.
  *
- * Ported from doc-studio.jsx `C4Diagram` + `c4Style`.
+ * Accent rule: at the top level (no `level`, or `level: context`) the single
+ * `system` node — the system the diagram is about — takes the accent. Two or
+ * more systems, none, or a deeper level means no accent.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
-import { edgeStep, stepsLegend } from '../svg/edgeSteps.js';
-import { GEDGE } from '../svg/blockStyle.js';
+import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
+import { nodeGlyph, nodeSkin, SKIN_EDGE, type NodeSkin } from '../svg/blockStyle.js';
 import { GROUP_PADS, gridGroupsSvg, groupExtent } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { safeColor } from '../sanitize.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
@@ -23,127 +32,51 @@ import { ensureGrid } from './autoLayout.js';
 
 type Node = NonNullable<BlockDataMap['c4']['nodes']>[number];
 
-interface C4Style {
-  accent: string;
-  fill: string;
-  text: string;
-  sub: string;
-  chip: string;
-  solid?: boolean;
-  dash?: string;
+interface Rect {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
 }
 
-function c4Style(n: Node): C4Style {
+const CHIP_LABEL: Record<string, string> = {
+  PERSON: 'person',
+  SYSTEM: 'software system',
+  EXT: 'external system',
+  DB: 'database',
+  CONTAINER: 'container',
+  COMPONENT: 'component',
+};
+
+/** The skin of one C4 element: kind first, then the family refinements. */
+function c4Skin(n: Node): NodeSkin {
   const f = (n.family ?? '').toLowerCase();
   switch (n.kind) {
     case 'person':
-      return {
-        accent: '#0e54a1',
-        fill: '#0e54a1',
-        text: '#fff',
-        sub: '#cfe0f3',
-        chip: 'Person',
-        solid: true,
-      };
+      return { chip: 'PERSON', primary: true, fill: 'paper', dashed: false };
     case 'system':
-      return {
-        accent: '#1f9747',
-        fill: '#dcf1e2',
-        text: '#0f3d22',
-        sub: '#356b49',
-        chip: 'Software System',
-      };
+      return { chip: 'SYSTEM', primary: true, fill: 'paper', dashed: false };
     case 'external':
-      return {
-        accent: '#6b7280',
-        fill: '#f3f4f6',
-        text: '#374151',
-        sub: '#6b7280',
-        chip: 'External System',
-        dash: '5 4',
-      };
+      return nodeSkin('external');
     case 'store':
-      return {
-        accent: '#f7952c',
-        fill: '#fde7cd',
-        text: '#7a3d00',
-        sub: '#9a5a12',
-        chip: 'Database',
-      };
-    case 'component':
-      if (f === 'repo')
-        return {
-          accent: '#374151',
-          fill: '#f3f4f6',
-          text: 'var(--charcoal)',
-          sub: '#374151',
-          chip: 'Component',
-        };
-      if (f === 'external')
-        return {
-          accent: '#6b7280',
-          fill: '#fff',
-          text: '#374151',
-          sub: '#6b7280',
-          chip: 'External',
-          dash: '4 3',
-        };
-      if (f === 'controller')
-        return {
-          accent: '#0e54a1',
-          fill: '#e5eff8',
-          text: '#0a3a6e',
-          sub: '#365f86',
-          chip: 'Component',
-        };
-      return {
-        accent: '#1f9747',
-        fill: '#dcf1e2',
-        text: '#0f3d22',
-        sub: '#356b49',
-        chip: 'Component',
-      };
+      return nodeSkin('store');
+    case 'container':
+    case 'component': {
+      const chip = n.kind === 'container' ? 'CONTAINER' : 'COMPONENT';
+      if (f === 'external') return { chip, primary: true, fill: 'paper', dashed: true };
+      if (f === 'store' || f === 'data') return { chip, primary: false, fill: 'paper-2', dashed: false };
+      return { chip, primary: true, fill: 'paper', dashed: false };
+    }
     default:
-      if (f === 'data')
-        return {
-          accent: '#6b21a8',
-          fill: '#ede9fe',
-          text: '#4a1772',
-          sub: '#6b21a8',
-          chip: 'Container',
-        };
-      if (f === 'service')
-        return {
-          accent: '#1f9747',
-          fill: '#dcf1e2',
-          text: '#0f3d22',
-          sub: '#356b49',
-          chip: 'Container',
-        };
-      if (f === 'client')
-        return {
-          accent: '#0e54a1',
-          fill: '#e5eff8',
-          text: '#0a3a6e',
-          sub: '#365f86',
-          chip: 'Container',
-        };
-      if (f === 'store')
-        return {
-          accent: '#f7952c',
-          fill: '#fde7cd',
-          text: '#7a3d00',
-          sub: '#9a5a12',
-          chip: 'Database',
-        };
-      return {
-        accent: '#0e54a1',
-        fill: '#e5eff8',
-        text: '#0a3a6e',
-        sub: '#365f86',
-        chip: 'Container',
-      };
+      return nodeSkin(n.kind);
   }
+}
+
+/** The word for what a boundary encloses at the given level. */
+function boundaryLevel(level: string | undefined): string {
+  if (level === 'component') return 'CONTAINER';
+  if (level === 'container') return 'SYSTEM';
+  return 'BOUNDARY';
 }
 
 export function renderC4(data: BlockDataMap['c4']): string {
@@ -165,12 +98,7 @@ export function renderC4(data: BlockDataMap['c4']): string {
   const gx = groupExtent(groups);
   const cols = Math.max(1, ...nodes.map((n) => n.col + ((n.w ?? 1) - 1)), gx.cols);
   const rows = Math.max(1, ...nodes.map((n) => n.row), gx.rows);
-  const rectFor = (n: Node & { col: number; row: number }): {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  } => ({
+  const rectFor = (n: Node & { col: number; row: number }): Rect => ({
     x: padX + (n.col - 1) * (cellW + gapX),
     y: padTop + (n.row - 1) * (cellH + gapY),
     w: (n.w ?? 1) * cellW + ((n.w ?? 1) - 1) * gapX,
@@ -179,55 +107,57 @@ export function renderC4(data: BlockDataMap['c4']): string {
   const width = padX * 2 + cols * cellW + (cols - 1) * gapX;
   const height = padTop + rows * cellH + (rows - 1) * gapY + padBot;
 
-  // Boundary box around the "internal" nodes (container/component/store)
+  // The accent (see the header comment).
+  const topLevel = data.level === undefined || data.level === 'context';
+  const systems = nodes.filter((n) => n.kind === 'system');
+  const accentId = topLevel && systems.length === 1 ? systems[0]?.id : undefined;
+
+  // A boundary panel fitted around a set of node rects — the skin's group
+  // panel (paper-2 wash, hairline, eyebrow label) with the enclosed level
+  // named top-right. An explicit `color` still tints the outline and label.
+  const levelWord = boundaryLevel(data.level);
+  const boundaryPanel = (rs: readonly Rect[], label: string, color?: string): string => {
+    if (rs.length === 0) return '';
+    const minX = Math.min(...rs.map((r) => r.x)) - 16;
+    const minY = Math.min(...rs.map((r) => r.y)) - 26;
+    const maxX = Math.max(...rs.map((r) => r.x + r.w)) + 16;
+    const maxY = Math.max(...rs.map((r) => r.y + r.h)) + 16;
+    const tint = safeColor(color, '');
+    const stroke = tint.length > 0 ? tint : 'var(--rule-solid)';
+    const text = tint.length > 0 ? tint : 'var(--soft)';
+    return (
+      `<g>` +
+      `<rect x="${minX}" y="${minY}" width="${maxX - minX}" height="${maxY - minY}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="${stroke}" stroke-width="1"/>` +
+      `<text x="${minX + 12}" y="${minY + 16}" class="grp-label t-eyebrow" fill="${text}">${escapeHtml(label)}</text>` +
+      `<text x="${maxX - 12}" y="${minY + 16}" class="t-eyebrow" fill="${text}" text-anchor="end">${levelWord}</text>` +
+      `</g>`
+    );
+  };
+
+  // Boundary box around the "internal" nodes (container/component/store).
   let boundarySvg = '';
   if (data.boundary !== undefined) {
     const internals = nodes
       .filter((n) => n.kind === 'container' || n.kind === 'component' || n.kind === 'store')
       .map(rectFor);
-    if (internals.length > 0) {
-      const minX = Math.min(...internals.map((r) => r.x)) - 16;
-      const minY = Math.min(...internals.map((r) => r.y)) - 26;
-      const maxX = Math.max(...internals.map((r) => r.x + r.w)) + 16;
-      const maxY = Math.max(...internals.map((r) => r.y + r.h)) + 16;
-      const w = Math.max(120, data.boundary.label.length * 6.2);
-      boundarySvg =
-        `<g>` +
-        `<rect x="${minX}" y="${minY}" width="${maxX - minX}" height="${maxY - minY}" rx="12" class="c4-boundary"/>` +
-        `<rect x="${minX + 12}" y="${minY - 8}" width="${w}" height="16" fill="#fff"/>` +
-        `<text x="${minX + 16}" y="${minY + 4}" class="c4-boundary-label">${escapeHtml(data.boundary.label)}</text>` +
-        `</g>`;
-    }
+    boundarySvg = boundaryPanel(internals, data.boundary.label);
   }
 
-  // Named boundaries: each draws a dashed box fitted around its listed node
-  // ids — so one diagram can show several systems / zones side by side.
+  // Named boundaries: each panel fits around its listed node ids — so one
+  // diagram can show several systems / zones side by side.
   let namedBoundariesSvg = '';
   for (const b of data.boundaries ?? []) {
     const rs = b.nodes
       .map((id) => byId.get(id))
       .filter((n): n is NonNullable<typeof n> => n !== undefined)
       .map(rectFor);
-    if (rs.length === 0) continue;
-    const minX = Math.min(...rs.map((r) => r.x)) - 16;
-    const minY = Math.min(...rs.map((r) => r.y)) - 26;
-    const maxX = Math.max(...rs.map((r) => r.x + r.w)) + 16;
-    const maxY = Math.max(...rs.map((r) => r.y + r.h)) + 16;
-    const col = safeColor(b.color, '#64748b');
-    const lw = Math.max(120, b.label.length * 6.2);
-    namedBoundariesSvg +=
-      `<g>` +
-      `<rect x="${minX}" y="${minY}" width="${maxX - minX}" height="${maxY - minY}" rx="12" fill="none" stroke="${col}" stroke-opacity="0.7" stroke-width="1.3" stroke-dasharray="7 5"/>` +
-      `<rect x="${minX + 12}" y="${minY - 8}" width="${lw}" height="16" fill="#fff"/>` +
-      `<text x="${minX + 16}" y="${minY + 4}" class="c4-boundary-label" style="fill:${col}">${escapeHtml(b.label)}</text>` +
-      `</g>`;
+    namedBoundariesSvg += boundaryPanel(rs, b.label, b.color);
   }
 
   // Grid metadata for editors (Avodado Studio drag-to-connect): inert attrs
   // mirroring the layout constants plus each node's effective cell below.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
-  // Dashed group zones — beneath boundaries, edges, and nodes. Only emitted
-  // when present, keeping group-less documents byte-identical to the old output.
+  // Group panels — beneath boundaries, edges, and nodes. Only emitted when present.
   const groupsSvg =
     groups.length > 0
       ? gridGroupsSvg(groups, {
@@ -237,14 +167,13 @@ export function renderC4(data: BlockDataMap['c4']): string {
           cellH,
           gapX,
           gapY,
+          skin: true,
         })
       : '';
   let s = `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>C4 diagram</title>${groupsSvg}${boundarySvg}${namedBoundariesSvg}`;
 
-  // Labelled edges render as circled step numerals (the agent-loop language) —
-  // the label text moves to a legend under the SVG, so dense diagrams stay clean.
-  const labels: string[] = [];
-  const steps: Array<{ label: string; err?: boolean; path?: string }> = [];
+  const pending: EdgeLabelPoint[] = [];
+  const edgeKinds = new Set<string>();
   const lanes = edgeLanes(edges);
   const entries = entryPortOffsets(edges, (id) => {
     const n = byId.get(id);
@@ -256,97 +185,100 @@ export function renderC4(data: BlockDataMap['c4']): string {
     const B = byId.get(e.to);
     if (!A || !B) return;
     const p = ortho(rectFor(A), rectFor(B), lanes[ei] ?? 0, entries[ei] ?? 0);
-    const st = GEDGE[e.kind ?? 'solid'] ??
-      GEDGE['solid'] ?? {
-        stroke: 'var(--charcoal)',
-        sw: 1.4,
-        dash: '',
-        marker: 'gArrow',
-        err: false,
-      };
-    s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
+    const kind = e.kind ?? 'solid';
+    edgeKinds.add(kind);
+    const st = SKIN_EDGE[kind] ?? SKIN_EDGE['solid'] ?? {
+      stroke: 'var(--muted)',
+      sw: 1.5,
+      dash: '',
+      marker: 'skArrow',
+      err: false,
+    };
+    const dash = st.dash.length > 0 ? ` stroke-dasharray="${st.dash}"` : '';
+    s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}"${dash} marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     // C4 convention: the relationship label plus its technology in brackets.
-    const pillLabel =
+    const label =
       e.tech !== undefined
         ? `${e.label !== undefined ? `${e.label} ` : ''}[${e.tech}]`
         : e.label;
-    if (pillLabel !== undefined && pillLabel !== '') {
-      steps.push({ label: pillLabel, path: `edges.${ei}`, ...(st.err ? { err: true } : {}) });
-      labels.push(`<g${bp(`edges.${ei}`)}>${edgeStep(p, steps.length, st.err)}</g>`);
-    }
+    pending.push({ lx: p.lx, ly: p.ly, ...(label !== undefined ? { label } : {}), err: st.err, path: `edges.${ei}` });
   });
   s += `</g>`; // close the edges list container (editors add via its chip)
 
+  const chipsUsed = new Set<string>();
+  let dashedUsed = false;
+  let inactiveUsed = false;
   s += `<g${bl('nodes')}>`;
   nodes.forEach((n, ni) => {
     const r = rectFor(n);
-    const st = c4Style(n);
+    const sk = c4Skin(n);
+    const accent = n.id === accentId;
+    if (sk.chip !== '') chipsUsed.add(sk.chip);
+    if (sk.dashed) dashedUsed = true;
+    if (sk.fill === 'paper-2') inactiveUsed = true;
     const cxN = r.x + r.w / 2;
+    const stroke = accent ? 'var(--accent)' : sk.primary ? 'var(--ink)' : 'var(--rule-solid)';
+    const sw = accent || sk.primary ? 1.5 : 1;
+    const fill = accent ? 'var(--accent-tint)' : sk.fill === 'paper-2' ? 'var(--paper-2)' : 'var(--paper)';
+    const dashAttr = sk.dashed ? ' stroke-dasharray="4 3"' : '';
     // Stores render as the canonical database cylinder (content shifts down
-    // past the rim); everything else is the clean rounded card.
+    // past the rim); everything else is the rounded card.
     const isStore = n.kind === 'store';
     const dy = isStore ? 10 : 0;
     const desc = wrapText(n.desc, 32, isStore ? 1 : 2);
-    const strokeWidth = st.solid === true ? 0 : 1.2;
-    const strokeAttr = st.solid === true ? 'none' : st.accent;
-    const dashAttr = st.dash !== undefined ? ` stroke-dasharray="${st.dash}"` : '';
     const card = isStore
-      ? `<path d="M${r.x} ${r.y + 12} A ${r.w / 2} 12 0 0 1 ${r.x + r.w} ${r.y + 12} V ${r.y + r.h - 12} A ${r.w / 2} 12 0 0 1 ${r.x} ${r.y + r.h - 12} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="1.2"/>` +
-        `<path d="M${r.x} ${r.y + 12} A ${r.w / 2} 12 0 0 0 ${r.x + r.w} ${r.y + 12}" fill="none" stroke="${st.accent}" stroke-width="1.2"/>`
-      : `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" fill="${st.fill}" stroke="${strokeAttr}" stroke-width="${strokeWidth}"${dashAttr}/>`;
+      ? `<path d="M${r.x} ${r.y + 12} A ${r.w / 2} 12 0 0 1 ${r.x + r.w} ${r.y + 12} V ${r.y + r.h - 12} A ${r.w / 2} 12 0 0 1 ${r.x} ${r.y + r.h - 12} Z" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>` +
+        `<path d="M${r.x} ${r.y + 12} A ${r.w / 2} 12 0 0 0 ${r.x + r.w} ${r.y + 12}" fill="none" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>`
+      : `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>`;
     // Person glyph sits in the top-right corner, clear of the centered text.
-    const gx = r.x + r.w - 26;
-    const personGlyph =
-      n.kind === 'person'
-        ? `<g fill="${st.text}"><circle cx="${gx + 7}" cy="${r.y + 18}" r="6"/><path d="M ${gx} ${r.y + 33} a 7 8 0 0 1 14 0 z"/></g>`
+    const personGlyph = n.kind === 'person' ? nodeGlyph('person', r.x + r.w - 28, r.y + 10, 'var(--muted)') : '';
+    // On the inactive fill small text steps up to `muted`; on paper, `soft`
+    // carries the sublines and the chip.
+    const onInactive = sk.fill === 'paper-2';
+    const chipTone = accent ? ' c-accent' : onInactive ? ' c-muted' : '';
+    const subTone = onInactive ? ' c-muted' : ' c-soft';
+    const chip =
+      sk.chip !== ''
+        ? `<text x="${cxN}" y="${r.y + 18 + dy}" class="t-eyebrow${chipTone}" text-anchor="middle">${escapeHtml(sk.chip)}</text>`
         : '';
-    const chipFill = st.solid === true ? st.sub : st.accent;
-    // Structurizr-style centered typography: kind chip · name · tech chip · desc.
+    // Structurizr-style centered typography: kind chip · name · tech · desc.
     const techLine =
       n.tech !== undefined
-        ? (() => {
-            const tw = Math.min(n.tech.length * 5.6 + 14, r.w - 32);
-            return (
-              `<rect x="${(cxN - tw / 2).toFixed(1)}" y="${r.y + 52 + dy}" width="${tw.toFixed(1)}" height="15" rx="7.5" fill="${st.accent}" fill-opacity="${st.solid === true ? '0.28' : '0.12'}"/>` +
-              `<text x="${cxN}" y="${r.y + 63 + dy}" class="c4-tech" fill="${st.sub}" text-anchor="middle">${escapeHtml(n.tech)}</text>`
-            );
-          })()
+        ? `<text x="${cxN}" y="${r.y + 56 + dy}" class="t-sub${onInactive ? ' c-muted' : ''}" text-anchor="middle">${escapeHtml(n.tech)}</text>`
         : '';
     const descLines = desc
       .map(
         (ln, j) =>
-          `<text x="${cxN}" y="${r.y + 82 + dy + j * 13}" class="c4-desc" fill="${st.sub}" text-anchor="middle">${escapeHtml(ln)}</text>`,
+          `<text x="${cxN}" y="${r.y + 76 + dy + j * 13}" class="t-sub${subTone}" text-anchor="middle">${escapeHtml(ln)}</text>`,
       )
       .join('');
     s +=
-      `<g filter="url(#gshadow)"${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row, n.w ?? 1)}>` +
+      `<g${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row, n.w ?? 1)}>` +
       card +
       personGlyph +
-      `<text x="${cxN}" y="${r.y + 22 + dy}" class="c4-chip" fill="${chipFill}" text-anchor="middle">${escapeHtml(st.chip)}</text>` +
-      `<text x="${cxN}" y="${r.y + 44 + dy}" class="c4-name" fill="${st.text}" text-anchor="middle">${escapeHtml(n.name)}</text>` +
+      chip +
+      `<text x="${cxN}" y="${r.y + 40 + dy}" class="t-name${accent ? ' c-accent' : ''}" text-anchor="middle">${escapeHtml(n.name)}</text>` +
       techLine +
       descLines +
       `</g>`;
   });
   s += `</g>`; // close the nodes list container
 
-  s += labels.join(''); // labels on top, never crossed by a line
+  const { overlay, legend: steps } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)), { skin: true });
+  s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
-  // Legend derives from the kinds actually present — no boilerplate rows.
-  const usedLegend = new Map<string, string>();
-  for (const n of nodes) {
-    const st = c4Style(n);
-    if (!usedLegend.has(st.chip)) usedLegend.set(st.chip, st.solid === true ? st.accent : st.fill);
-  }
-  const legend =
-    `<div class="legend">` +
-    [...usedLegend]
-      .map(
-        ([label, sw]) =>
-          `<span class="item"><span class="sw" style="background:${sw};border:1px solid #d1d5db"></span>${escapeHtml(label)}</span>`,
-      )
-      .join('') +
-    `</div>`;
+
+  // Legend derives from the kinds and strokes actually present.
+  const items: LegendItem[] = [];
+  for (const chip of chipsUsed) items.push({ swatch: 'chip', chip, label: CHIP_LABEL[chip] ?? chip.toLowerCase() });
+  if (dashedUsed) items.push({ swatch: 'node-dashed', label: 'outside the boundary' });
+  if (inactiveUsed) items.push({ swatch: 'node-fill2', label: 'data store' });
+  if (edgeKinds.has('solid')) items.push({ swatch: 'edge', label: 'uses' });
+  if (edgeKinds.has('dashed')) items.push({ swatch: 'edge-dashed', label: 'async / optional' });
+  if (edgeKinds.has('forbidden')) items.push({ swatch: 'edge-error', label: 'forbidden' });
+  if (edgeKinds.has('error')) items.push({ swatch: 'edge-error', label: 'error' });
+  if (accentId !== undefined) items.push({ swatch: 'node-accent', label: 'the system in scope' });
+  const legend = renderLegend(items);
 
   return diagramFrame(
     {
@@ -354,7 +286,8 @@ export function renderC4(data: BlockDataMap['c4']): string {
       tagClass: 'c4',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legend.length > 0 ? { legendHtml: legend } : {}),
     },
-    s + stepsLegend(steps) + legend,
+    s + steps,
   );
 }

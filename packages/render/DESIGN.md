@@ -17,12 +17,12 @@ Semantic roles. Renderers name the role (`var(--ink)`), never the value.
 | `paper` | page and default node fill | `#f7f6f2` |
 | `paper-2` | diagram ground, secondary fill, frames | `#efede8` |
 | `ink` | primary text, primary stroke | `#1f2430` |
-| `muted` | secondary text, default arrow stroke, chips | `#5b6577` |
-| `soft` | sublabels, guards, legend text | `#8a93a5` |
+| `muted` | secondary text, default arrow stroke, chips | `#4f5868` |
+| `soft` | sublabels, guards, legend text | `#646d7b` (4.5:1 on paper-2 — the floor for small text) |
 | `rule` | hairlines | `rgba(31,36,48,.14)` |
 | `rule-solid` | frame borders, baselines | `#c9c6bd` |
-| `accent` | the one focal thing, 1–2 uses per diagram | `#c4562e` |
-| `accent-tint` | fill behind an accent-stroked shape | `rgba(196,86,46,.09)` |
+| `accent` | the one focal thing, 1–2 uses per diagram | `#b04a25` (4.7:1 on paper-2, so it may carry small text) |
+| `accent-tint` | fill behind an accent-stroked shape | `rgba(176,74,37,.09)` |
 | `link` | HTTP calls, external arrows, links in prose | `#2f5c8f` |
 | `negative` | real errors only, desaturated | `#9a3f34` |
 | `negative-tint` | fill behind an error shape | `rgba(154,63,52,.08)` |
@@ -100,6 +100,21 @@ set `--scale` on the slide root to enlarge.
   the data; omitted when only one encoding is in play.
 - The step list (sequence) and footer pills stay; badges become hollow
   circles, `muted` stroke, `.t-badge` number; error badges use `negative`.
+
+## Accessibility floor
+
+Every text element passes WCAG AA against what is painted behind it: 4.5:1,
+or 3:1 for text at 24px or 18.66px bold. `soft` is the lightest color that
+may carry text on `paper-2`; on a dark fill, text is `paper`. Never encode a
+meaning in color alone: pair it with a chip, a dash, or a glyph. Run the
+audit on any page:
+
+```
+node packages/render/scripts/contrast-audit.mjs dist/reference/showcase.html
+```
+
+It exits non-zero on the first failure and names the section, element, and
+ratio. The showcase page must pass before a renderer change ships.
 
 ## What never changes
 

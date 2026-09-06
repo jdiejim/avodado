@@ -68,12 +68,13 @@ describe('grid groups on flow / dfd / state / c4', () => {
     ],
   ];
 
-  // The skinned renderers (flow) draw the paper-2 panel; the rest keep the
-  // dashed outline until they migrate.
+  // The skinned renderers draw the paper-2 panel; a renderer that has not
+  // migrated keeps the dashed outline.
+  const SKINNED = new Set(['flow', 'dfd', 'state', 'c4']);
   const SKIN_RECT = /<rect [^>]*fill="var\(--paper-2\)"[^>]*stroke="var\(--rule-solid\)"[^>]*\/>/;
-  const groupRect = (kind: string): RegExp => (kind === 'flow' ? SKIN_RECT : DASHED_RECT);
+  const groupRect = (kind: string): RegExp => (SKINNED.has(kind) ? SKIN_RECT : DASHED_RECT);
   const groupRectXY = (kind: string): RegExp =>
-    kind === 'flow'
+    SKINNED.has(kind)
       ? /<rect x="(-?[\d.]+)" y="(-?[\d.]+)" [^>]*fill="var\(--paper-2\)"[^>]*\/>/
       : /<rect x="(-?[\d.]+)" y="(-?[\d.]+)" [^>]*stroke-dasharray="7 5"\/>/;
 

@@ -1,23 +1,14 @@
 /**
- * The exported node-kind lists must stay in sync with the style switches they
- * document: every listed kind gets non-default styling, and the lists are
+ * The exported node-kind lists must stay in sync with the skin they
+ * document: every listed kind gets an eyebrow chip, and the lists are
  * duplicate-free (they feed editor dropdowns verbatim).
  */
 
 import { describe, expect, it } from 'vitest';
 import { KNOWN_LOGIC_KINDS, KNOWN_NODE_KINDS } from '../index.js';
-import { blockStyle } from '../svg/legacyPalette.js';
 import { nodeSkin } from '../svg/blockStyle.js';
 
-const DEFAULT_FILL = blockStyle('definitely-not-a-kind').fill;
-
 describe('KNOWN_NODE_KINDS', () => {
-  it('every listed kind is styled by blockStyle (not the default)', () => {
-    for (const kind of KNOWN_NODE_KINDS) {
-      expect(blockStyle(kind).fill, kind).not.toBe(DEFAULT_FILL);
-    }
-  });
-
   it('every listed kind has a skin chip (the eyebrow the skin names it by)', () => {
     for (const kind of KNOWN_NODE_KINDS) {
       expect(nodeSkin(kind).chip, kind).not.toBe('');

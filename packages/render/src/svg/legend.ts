@@ -10,6 +10,7 @@
  */
 
 import { escapeHtml } from '../escape.js';
+import { bl, bp } from '../paths.js';
 
 /** The swatch vocabulary — the encodings the skin can tell apart. */
 export type LegendSwatch =
@@ -22,7 +23,12 @@ export type LegendSwatch =
   | 'edge-async'
   | 'edge-error'
   | 'edge-accent'
-  | 'chip';
+  | 'edge-link'
+  | 'chip'
+  /** Paper fill, accent outline — the "current" element of a walkthrough. */
+  | 'node-accent-outline'
+  /** A solid swatch in the token named by `fill` — chart series, ramp steps. */
+  | 'fill';
 
 /** One legend entry: a swatch (or a text chip) and the label beside it. */
 export interface LegendItem {
@@ -30,6 +36,10 @@ export interface LegendItem {
   readonly label: string;
   /** The chip text, when `swatch` is `chip` (e.g. `EXT`, `#`, `1 / N`). */
   readonly chip?: string;
+  /** The fill token (`var(--series-1, …)`), when `swatch` is `fill`. */
+  readonly fill?: string;
+  /** Data path of the series / item this entry stands for (editors click it). */
+  readonly path?: string;
 }
 
 const SW_W = 30;
@@ -56,9 +66,15 @@ function nodeSwatch(stroke: string, sw: number, fill: string, dash: string): str
   return `<rect x="1" y="1" width="${SW_W - 2}" height="${SW_H - 2}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>`;
 }
 
-function swatchSvg(kind: LegendSwatch): string {
+function swatchSvg(kind: LegendSwatch, fill?: string): string {
   let inner: string;
   switch (kind) {
+    case 'node-accent-outline':
+      inner = nodeSwatch('var(--accent)', 1.5, 'var(--paper)', '');
+      break;
+    case 'fill':
+      inner = nodeSwatch('var(--rule-solid)', 1, fill ?? 'var(--ink)', '');
+      break;
     case 'node':
       inner = nodeSwatch('var(--ink)', 1.5, 'var(--paper)', '');
       break;
@@ -86,6 +102,9 @@ function swatchSvg(kind: LegendSwatch): string {
     case 'edge-accent':
       inner = edgeSwatch('var(--accent)', 1.75, '', true);
       break;
+    case 'edge-link':
+      inner = edgeSwatch('var(--link)', 1.5, '', true);
+      break;
     case 'chip':
       return '';
   }
@@ -94,18 +113,21 @@ function swatchSvg(kind: LegendSwatch): string {
 
 /**
  * Renders the legend strip. Returns `''` when `items` has fewer than two
- * entries — a single encoding needs no key.
+ * entries — a single encoding needs no key. `listPath` tags the strip as the
+ * list container of the series / items its entries stand for.
  */
-export function renderLegend(items: readonly LegendItem[]): string {
+export function renderLegend(items: readonly LegendItem[], listPath?: string): string {
   if (items.length < 2) return '';
   const parts = items
     .map((it) => {
       const sw =
         it.swatch === 'chip'
           ? `<span class="lg-chip t-eyebrow">${escapeHtml(it.chip ?? '')}</span>`
-          : swatchSvg(it.swatch);
-      return `<span class="lg-item">${sw}<span class="lg-label">${escapeHtml(it.label)}</span></span>`;
+          : swatchSvg(it.swatch, it.fill);
+      const path = it.path !== undefined ? bp(it.path) : '';
+      return `<span class="lg-item"${path}>${sw}<span class="lg-label">${escapeHtml(it.label)}</span></span>`;
     })
     .join('');
-  return `<div class="diagram-legend"><span class="lg-title t-eyebrow">Legend</span>${parts}</div>`;
+  const list = listPath !== undefined ? bl(listPath) : '';
+  return `<div class="diagram-legend"${list}><span class="lg-title t-eyebrow">Legend</span>${parts}</div>`;
 }

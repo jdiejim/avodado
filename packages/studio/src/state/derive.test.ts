@@ -29,9 +29,28 @@ describe('docSurface', () => {
     expect(docSurface('textbook', { '--white': '#fcfbf7' })).toBe('light');
   });
 
+  it('the skin role `--paper` pins the surface too, ahead of the legacy `--white`', () => {
+    expect(docSurface('textbook', { '--paper': '#161b26' })).toBe('dark');
+    expect(docSurface('textbook', { '--paper': '#f7f6f2', '--white': 'var(--paper)' })).toBe('light');
+    expect(docSurface('textbook', { '--paper': '#1a1412', '--white': 'var(--paper)' })).toBe('dark');
+  });
+
   it('unparseable or irrelevant overrides stay light', () => {
     expect(docSurface('textbook', { '--white': 'papayawhip' })).toBe('light');
     expect(docSurface('textbook', { '--navy': '#000000' })).toBe('light');
+  });
+
+  it('with nothing pinning the paper, the surface follows the system dark preference', () => {
+    // The renderer's tokens flip on prefers-color-scheme unless a theme pins the paper.
+    expect(docSurface('textbook', undefined, true)).toBe('dark');
+    expect(docSurface('teal', undefined, true)).toBe('dark');
+    expect(docSurface('textbook', undefined, false)).toBe('light');
+    // Themes that pin a light paper stay light on a dark system.
+    expect(docSurface('minimal', undefined, true)).toBe('light');
+    expect(docSurface('soft', undefined, true)).toBe('light');
+    // A pinned light paper wins over the system, a pinned dark one too.
+    expect(docSurface('textbook', { '--paper': '#ffffff' }, true)).toBe('light');
+    expect(docSurface('minimal', { '--paper': '#000000' }, false)).toBe('dark');
   });
 });
 

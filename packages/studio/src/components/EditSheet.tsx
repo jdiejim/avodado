@@ -34,6 +34,7 @@ import { DirectLayer } from '../direct/DirectLayer.js';
 import type { DirectHost } from '../direct/host.js';
 import { mapDiagnosticsToFields, previewBlock } from '../lib/blockPreview.js';
 import { docSurface } from '../state/derive.js';
+import { useSystemDark } from '../lib/systemDark.js';
 import { useDerived, useStudio } from '../state/store.js';
 import { emitTourAction } from '../tour/bus.js';
 import { FormTab, type RevealRequest, type YamlPath } from './FormTab.js';
@@ -62,6 +63,7 @@ function SheetInner({ seg, revealField }: {
 }): JSX.Element {
   const theme = useStudio((s) => s.theme);
   const themeVars = useStudio((s) => s.themeVars);
+  const sysDark = useSystemDark();
   const closeSheet = useStudio((s) => s.closeSheet);
   const commitSheet = useStudio((s) => s.commitSheet);
   const setSheetDirty = useStudio((s) => s.setSheetDirty);
@@ -383,7 +385,7 @@ function SheetInner({ seg, revealField }: {
               {preview.html !== '' ? (
                 <div
                   className="stu-sheet-preview-wrap"
-                  data-doc-theme={docSurface(theme, themeVars)}
+                  data-doc-theme={docSurface(theme, themeVars, sysDark)}
                   ref={previewWrapRef}
                 >
                   <div className="docskin stu-sheet-preview-doc" dangerouslySetInnerHTML={{ __html: preview.html }} />

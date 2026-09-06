@@ -1,14 +1,15 @@
 /**
  * Renders an `agentloop` block — the canonical LLM agent-loop diagram, in
- * pure SVG inside the diagram frame (tag AGENT, violet).
+ * pure SVG inside the diagram frame (tag AGENT).
  *
- * Layout: the environment (user) card on the left, the agent card (violet,
- * sparkle glyph, mono model chip) in the centre, a vertical column of tool
- * cards on the right (capped at 5 + "+N more"), and a memory cylinder
- * (orange db family) beneath the agent when `memory` is present. Numbered
- * loop arrows: ① env→agent "prompt", ② agent→tools "tool call", ③ tools→agent
- * "result" (dashed return), ④ agent→env "response"; agent↔memory is a dashed
- * "read/write" link. `stop` renders as a foot pill below the diagram.
+ * Layout: the environment (user) card on the left, the agent card (the
+ * loop's one accent: accent stroke on accent-tint, sparkle glyph, mono model
+ * chip) in the centre, a vertical column of paper-2 tool cards on the right
+ * (capped at 5 + "+N more"), and a paper-2 memory cylinder beneath the agent
+ * when `memory` is present. Numbered loop arrows: ① env→agent "prompt",
+ * ② agent→tools "tool call", ③ tools→agent "result" (dashed return),
+ * ④ agent→env "response"; agent↔memory is a dashed "read/write" link. `stop`
+ * renders as a foot line below the diagram.
  */
 
 import type { BlockDataMap } from '@avodado/core';
@@ -32,12 +33,11 @@ const TOOL_W = 134;
 const TOOL_GAP = 10;
 const MAX_TOOLS = 5;
 
-/** Violet agent family (matches blockStyle's ml/llm/agent kind). */
-const VIOLET = { accent: '#7c3aed', fill: '#ede9fe', text: '#4a1772' };
-/** Client-blue env family (matches blockStyle's user/browser kind). */
-const BLUE = { accent: '#0e54a1', fill: '#e5eff8', text: '#0a3a6e' };
-/** Orange db family for the memory cylinder (matches blockStyle's store kind). */
-const ORANGE = { accent: '#f7952c', fill: '#fde7cd', text: '#7a3d00' };
+/** Paints (DESIGN.md): the agent is the loop's one accent; env is a primary paper node; tools and memory are secondary paper-2 nodes. */
+const ENV = { fill: 'var(--paper)', stroke: 'var(--ink)' };
+const AGENT = { fill: 'var(--accent-tint)', stroke: 'var(--accent)' };
+const TOOL = { fill: 'var(--paper-2)', stroke: 'var(--rule-solid)' };
+const MEM = { fill: 'var(--paper-2)', stroke: 'var(--ink)' };
 
 /** A circled step numeral + its mono label, positioned above an arrow. */
 function loopBadge(n: number, x: number, y: number, label: string): string {
@@ -101,21 +101,21 @@ export function renderAgentloop(data: AgentloopData): string {
 
   // Environment card (left).
   s +=
-    `<rect x="${ENV_X}" y="${envY}" width="${ENV_W}" height="${ENV_H}" rx="10" fill="${BLUE.fill}" stroke="${BLUE.accent}" stroke-width="1.3" filter="url(#gshadow)"/>` +
-    nodeGlyph('user', ENV_X + Math.round(ENV_W / 2) - 8, envY + 10, BLUE.accent) +
-    `<text x="${ENV_X + Math.round(ENV_W / 2)}" y="${envY + ENV_H - 12}" text-anchor="middle" class="al-env" fill="${BLUE.text}"${bp('env')}>${escapeHtml(env)}</text>`;
+    `<rect x="${ENV_X}" y="${envY}" width="${ENV_W}" height="${ENV_H}" rx="4" fill="${ENV.fill}" stroke="${ENV.stroke}" stroke-width="1.5"/>` +
+    nodeGlyph('user', ENV_X + Math.round(ENV_W / 2) - 8, envY + 10, 'var(--muted)') +
+    `<text x="${ENV_X + Math.round(ENV_W / 2)}" y="${envY + ENV_H - 12}" text-anchor="middle" class="al-env"${bp('env')}>${escapeHtml(env)}</text>`;
 
-  // Agent card (centre).
-  s += `<rect x="${AGENT_X}" y="${agentY}" width="${AGENT_W}" height="${agentH}" rx="11" fill="${VIOLET.fill}" stroke="${VIOLET.accent}" stroke-width="1.4" filter="url(#gshadow)"/>`;
-  s += nodeGlyph('agent', AGENT_X + 12, agentY + 12, VIOLET.accent);
-  s += `<text x="${AGENT_X + 36}" y="${agentY + 24}" class="al-name" fill="${VIOLET.text}"${bp('agent.name')}>${escapeHtml(data.agent.name)}</text>`;
+  // Agent card (centre) — the one accent.
+  s += `<rect x="${AGENT_X}" y="${agentY}" width="${AGENT_W}" height="${agentH}" rx="4" fill="${AGENT.fill}" stroke="${AGENT.stroke}" stroke-width="1.5"/>`;
+  s += nodeGlyph('agent', AGENT_X + 12, agentY + 12, 'var(--accent)');
+  s += `<text x="${AGENT_X + 36}" y="${agentY + 24}" class="al-name"${bp('agent.name')}>${escapeHtml(data.agent.name)}</text>`;
   let cursorY = agentY + 34;
   if (hasModel) {
     const model = data.agent.model ?? '';
     const chipW = Math.min(AGENT_W - 24, 16 + model.length * 6);
     s +=
-      `<rect x="${AGENT_X + 12}" y="${cursorY}" width="${chipW}" height="16" rx="8" fill="#fff" stroke="${VIOLET.accent}" stroke-width="1"/>` +
-      `<text x="${AGENT_X + 12 + Math.round(chipW / 2)}" y="${cursorY + 11.5}" text-anchor="middle" class="al-chip" fill="${VIOLET.accent}"${bp('agent.model')}>${escapeHtml(model)}</text>`;
+      `<rect x="${AGENT_X + 12}" y="${cursorY}" width="${chipW}" height="16" rx="3" fill="var(--paper)" stroke="var(--rule-solid)" stroke-width="1"/>` +
+      `<text x="${AGENT_X + 12 + Math.round(chipW / 2)}" y="${cursorY + 11.5}" text-anchor="middle" class="al-chip"${bp('agent.model')}>${escapeHtml(model)}</text>`;
     cursorY += 22;
   }
   noteLines.forEach((line, i) => {
@@ -129,7 +129,7 @@ export function renderAgentloop(data: AgentloopData): string {
     visibleTools.forEach((tool, ti) => {
       const h = toolCardH(tool);
       s += `<g${bp(`tools.${ti}`)}>`;
-      s += `<rect x="${TOOL_X}" y="${ty}" width="${TOOL_W}" height="${h}" rx="8" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.1"/>`;
+      s += `<rect x="${TOOL_X}" y="${ty}" width="${TOOL_W}" height="${h}" rx="4" fill="${TOOL.fill}" stroke="${TOOL.stroke}" stroke-width="1"/>`;
       s += `<text x="${TOOL_X + 11}" y="${ty + 17}" class="al-tool-name"${bp(`tools.${ti}.name`)}>${escapeHtml(tool.name)}</text>`;
       toolDescLines(tool).forEach((line, li) => {
         s += `<text x="${TOOL_X + 11}" y="${ty + 31 + li * 13}" class="al-tool-desc">${escapeHtml(line)}</text>`;
@@ -166,9 +166,9 @@ export function renderAgentloop(data: AgentloopData): string {
     s += `<text x="${cx + 8}" y="${Math.round((agentY + agentH + memTop) / 2) + 3}" class="al-lbl">read/write</text>`;
     const ry = 7;
     s +=
-      `<path d="M${memX} ${memTop + ry} a ${Math.round(memW / 2)} ${ry} 0 0 1 ${memW} 0 V ${memTop + memH - ry} a ${Math.round(memW / 2)} ${ry} 0 0 1 -${memW} 0 Z" fill="${ORANGE.fill}" stroke="${ORANGE.accent}" stroke-width="1.3"/>` +
-      `<ellipse cx="${memX + Math.round(memW / 2)}" cy="${memTop + ry}" rx="${Math.round(memW / 2)}" ry="${ry}" fill="${ORANGE.fill}" stroke="${ORANGE.accent}" stroke-width="1.3"/>`;
-    s += `<text x="${memX + Math.round(memW / 2)}" y="${memTop + 27}" text-anchor="middle" class="al-mem" fill="${ORANGE.text}">memory</text>`;
+      `<path d="M${memX} ${memTop + ry} a ${Math.round(memW / 2)} ${ry} 0 0 1 ${memW} 0 V ${memTop + memH - ry} a ${Math.round(memW / 2)} ${ry} 0 0 1 -${memW} 0 Z" fill="${MEM.fill}" stroke="${MEM.stroke}" stroke-width="1"/>` +
+      `<ellipse cx="${memX + Math.round(memW / 2)}" cy="${memTop + ry}" rx="${Math.round(memW / 2)}" ry="${ry}" fill="${MEM.fill}" stroke="${MEM.stroke}" stroke-width="1"/>`;
+    s += `<text x="${memX + Math.round(memW / 2)}" y="${memTop + 27}" text-anchor="middle" class="al-mem">memory</text>`;
     s += `<g${bl('memory')}>`;
     memItems.forEach((item, i) => {
       const line = wrapText(item, 28, 1)[0] ?? '';
@@ -187,7 +187,6 @@ export function renderAgentloop(data: AgentloopData): string {
   return diagramFrame(
     {
       tag: 'AGENT',
-      tagBg: '#7c3aed',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
       ...(foot.length > 0 ? { footerHtml: foot } : {}),

@@ -12,7 +12,7 @@ import { renderChart } from '../blocks/chart.js';
  */
 function ribbonHeights(html: string): number[] {
   return parse(html)
-    .querySelectorAll('path[fill-opacity]')
+    .querySelectorAll('g[data-bl="links"] > path')
     .map((p) => {
       const m = /,\s*[\d.]+ ([\d.]+) L [\d.]+ ([\d.]+)/.exec(p.getAttribute('d') ?? '');
       return m === null ? 0 : Math.round((Number(m[2]) - Number(m[1])) * 10) / 10;
@@ -33,7 +33,7 @@ describe('sankey', () => {
   it('infers its nodes from the links, so a bare link list renders', () => {
     const html = renderSankey(SPEND);
     // Bill · Compute · Storage · Serving · Batch
-    expect(parse(html).querySelectorAll('rect')).toHaveLength(5);
+    expect(parse(html).querySelectorAll('g[data-bl="nodes"] rect')).toHaveLength(5);
     expect(html).toContain('>Bill<');
     expect(html).toContain('>Serving<');
     const ribbons = ribbonHeights(html);
@@ -49,7 +49,7 @@ describe('sankey', () => {
     const heights = new Map(
       root.querySelectorAll('g[data-bl="nodes"] > g').map((g) => {
         const rect = g.querySelector('rect');
-        const name = g.querySelector('.sk-name')?.text ?? '';
+        const name = g.querySelector('.t-name')?.text ?? '';
         return [name, Number(rect?.getAttribute('height') ?? 0)] as const;
       }),
     );
@@ -66,7 +66,7 @@ describe('sankey', () => {
     const root = parse(renderSankey(SPEND));
     const x = new Map(
       root.querySelectorAll('g[data-bl="nodes"] > g').map((g) => {
-        const name = g.querySelector('.sk-name')?.text ?? '';
+        const name = g.querySelector('.t-name')?.text ?? '';
         return [name, Number(g.querySelector('rect')?.getAttribute('x') ?? 0)] as const;
       }),
     );
@@ -130,9 +130,9 @@ describe('chart kind: gauge', () => {
     });
     expect(html).toContain('21 days');
     expect(html).toContain('>30 days<');
-    // `chart` paints accents as literal hex (its own palette), unlike the
-    // diagram blocks, which use the theme's CSS variables.
-    expect(html).toContain('#991b1b');
+    // `accent: red` is the one accent name that keeps a meaning: `negative`.
+    expect(html).toContain('var(--negative)');
+    expect(html).not.toMatch(/#[0-9a-f]{6}/i);
   });
 
   it('draws several items as concentric rings with a legend', () => {
@@ -146,7 +146,7 @@ describe('chart kind: gauge', () => {
     });
     const rings = parse(html).querySelectorAll('path[stroke-linecap="round"]');
     expect(rings.length).toBe(6); // track + fill per item
-    expect(html).toContain('class="legend"');
+    expect(html).toContain('class="diagram-legend"');
     expect(html).toContain('Adoption — 82');
   });
 });

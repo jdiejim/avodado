@@ -1,9 +1,12 @@
 /* Avodado Studio chrome (v2 — focus editing). All classes are `stu-*` so
    nothing collides with the docskin stylesheet injected for the document. */
 
-/* Editorial Paper — the studio chrome wears the website/style-lab .A system.
-   Light is warm cream paper with navy display ink; dark is "paper at night":
-   warm charcoal, cream-tinted ink, aged-paper primary controls, clay accents.
+/* Editorial Paper — the studio chrome wears the same values as the render
+   skin (packages/render/DESIGN.md): paper #f7f6f2, ink #1f2430, muted
+   #4f5868, hairline rgba(31,36,48,.14), accent #b04a25 — so the app and the
+   canvas match. Navy stays for interactive controls (buttons, focus,
+   selection); the accent is spent on emphasis text and badges only. Dark is
+   the skin's dark set: the neutrals invert, the accent lifts one step.
    The chrome follows the SYSTEM theme (prefers-color-scheme). The rendered
    document keeps its own theme; selection/highlight colors that ride ON the
    doc surface use the fixed --stu-sel/--stu-sel-line tokens below (plus the
@@ -12,22 +15,22 @@
   color-scheme: light dark;
 
   /* chrome — light (paper) */
-  --stu-navy: #233a5e; /* navy ink: primary controls, accents, display */
+  --stu-navy: #233a5e; /* navy: primary controls, focus, selection */
   --stu-navy-strong: #1b2e4c; /* primary hover */
-  --stu-on-navy: #fcfbf7; /* text on primary */
-  --stu-display: #233a5e; /* display headings (cream ink at night) */
+  --stu-on-navy: #fbfaf7; /* text on primary */
+  --stu-display: #1f2430; /* display headings: ink */
   --stu-teal: #2f6f6a; /* positive microcopy */
-  --stu-terra: #9c4a2f; /* terracotta — ONE accent moment per surface */
-  --stu-terra-soft: #f3e4dc;
-  --stu-ink: #211f1a; /* body ink */
-  --stu-slate: #4c473d; /* strong secondary text (warm) */
-  --stu-gray: #6b665a; /* secondary text (warm) */
-  --stu-faint: #a39d8d; /* tertiary/placeholder */
-  --stu-bg: #f4f1e8; /* app canvas around the paper */
-  --stu-panel: #fffdf8; /* raised paper: bars, cards, popovers */
-  --stu-well: #faf8f0; /* sunken paper: nested items, yaml, thumbs */
-  --stu-rule: #e3ded2; /* warm hairline */
-  --stu-rule-soft: #f2efe4;
+  --stu-terra: #b04a25; /* the skin's accent — ONE accent moment per surface */
+  --stu-terra-soft: rgba(176, 74, 37, 0.09); /* accent-tint */
+  --stu-ink: #1f2430; /* body ink */
+  --stu-slate: #4f5868; /* strong secondary text: muted */
+  --stu-gray: #646d7b; /* secondary text: soft (4.5:1 on the diagram ground) */
+  --stu-faint: #66707e; /* tertiary/placeholder (4.6:1 on paper) */
+  --stu-bg: #f7f6f2; /* app canvas around the paper: paper */
+  --stu-panel: #fbfaf7; /* raised paper: bars, cards, popovers */
+  --stu-well: #efede8; /* sunken paper: nested items, yaml, thumbs: paper-2 */
+  --stu-rule: rgba(31, 36, 48, 0.14); /* hairline */
+  --stu-rule-soft: rgba(31, 36, 48, 0.07);
   --stu-amber: #955d10;
   --stu-amber-soft: #f7ecd8;
   --stu-red: #a13b2e;
@@ -38,13 +41,13 @@
   --stu-navy-soft: color-mix(in srgb, var(--stu-navy) 9%, var(--stu-panel));
   --stu-teal-soft: color-mix(in srgb, var(--stu-teal) 12%, var(--stu-panel));
   --stu-ring: 0 0 0 3px rgba(35, 58, 94, 0.16); /* focus halo */
-  --stu-switch-off: #d3cdbd;
-  --stu-tip-bg: #233a5e; /* inverted chips: toasts, hints */
-  --stu-tip-fg: #f6f2e8;
-  --stu-scrim: rgba(33, 31, 26, 0.4); /* modal backdrops (warm) */
-  --stu-shadow: 0 1px 2px rgba(35, 58, 94, 0.05), 0 10px 24px -12px rgba(35, 58, 94, 0.16);
+  --stu-switch-off: #c9c6bd; /* rule-solid */
+  --stu-tip-bg: #1f2430; /* inverted chips: toasts, hints — ink on paper */
+  --stu-tip-fg: #f7f6f2;
+  --stu-scrim: rgba(31, 36, 48, 0.4); /* modal backdrops */
+  --stu-shadow: 0 1px 2px rgba(31, 36, 48, 0.05), 0 10px 24px -12px rgba(31, 36, 48, 0.16);
   --stu-shadow-lift:
-    0 2px 4px rgba(35, 58, 94, 0.06), 0 18px 44px -16px rgba(35, 58, 94, 0.28);
+    0 2px 4px rgba(31, 36, 48, 0.06), 0 18px 44px -16px rgba(31, 36, 48, 0.28);
   --stu-radius: 10px;
   --stu-font:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -58,25 +61,25 @@
   --stu-sel-line: #2f6f6a;
 }
 
-/* Dark chrome — paper at night. Doc-surface tokens (--stu-sel*) stay put. */
+/* Dark chrome — the skin's dark set. Doc-surface tokens (--stu-sel*) stay put. */
 @media (prefers-color-scheme: dark) {
   :root {
     --stu-navy: #e6ddc7; /* aged paper takes the primary role */
     --stu-navy-strong: #f0e9d8;
-    --stu-on-navy: #211f1a;
-    --stu-display: #ece7db; /* cream ink */
+    --stu-on-navy: #1b1e26;
+    --stu-display: #e8e6df; /* ink */
     --stu-teal: #8ec4ba;
-    --stu-terra: #d9906f; /* clay */
-    --stu-terra-soft: #302620;
-    --stu-ink: #ece7db;
-    --stu-slate: #c6bfae;
-    --stu-gray: #a89f90;
-    --stu-faint: #7b7568;
-    --stu-bg: #17181c;
-    --stu-panel: #1e1e22;
-    --stu-well: #232227;
-    --stu-rule: #34312a;
-    --stu-rule-soft: #2a2924;
+    --stu-terra: #e0714a; /* accent, lifted one step */
+    --stu-terra-soft: rgba(224, 113, 74, 0.14);
+    --stu-ink: #e8e6df;
+    --stu-slate: #aeb5c3; /* muted */
+    --stu-gray: #9aa3b3; /* soft */
+    --stu-faint: #8a93a3;
+    --stu-bg: #1b1e26; /* paper */
+    --stu-panel: #232732; /* paper-2 */
+    --stu-well: #20242e;
+    --stu-rule: rgba(232, 230, 223, 0.14);
+    --stu-rule-soft: rgba(232, 230, 223, 0.07);
     --stu-amber: #d9a05a;
     --stu-amber-soft: #322818;
     --stu-red: #e0705c;
@@ -85,9 +88,9 @@
     --stu-green: #94bd85;
     --stu-green-soft: #23301e;
     --stu-ring: 0 0 0 3px rgba(230, 221, 199, 0.22);
-    --stu-switch-off: #413e35;
-    --stu-tip-bg: #e6ddc7;
-    --stu-tip-fg: #211f1a;
+    --stu-switch-off: #3a4050; /* rule-solid */
+    --stu-tip-bg: #e8e6df;
+    --stu-tip-fg: #1b1e26;
     --stu-scrim: rgba(5, 5, 7, 0.6);
     --stu-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 24px -12px rgba(0, 0, 0, 0.5);
     --stu-shadow-lift:
@@ -352,9 +355,11 @@ kbd {
 }
 
 .stu-seg:hover {
+  /* Rides on the doc's paper (#f7f6f2 on the default theme): a hairline one
+     step darker than the skin's rule so it reads on the page, not the chrome. */
   box-shadow:
-    0 0 0 1px #e3ded2,
-    0 2px 10px -4px rgba(35, 58, 94, 0.16);
+    0 0 0 1px rgba(31, 36, 48, 0.24),
+    0 2px 10px -4px rgba(31, 36, 48, 0.16);
 }
 
 .stu-seg-selected,

@@ -232,7 +232,7 @@ export function themeFileContents(theme: string, custom: boolean, name = 'My the
   };
   if (custom) {
     base['//colors'] =
-      'Optional overrides on top of the base theme. Any of: primary, secondary, accent, positive, negative, purple, teal, ink, muted, rule, paper. Values are any CSS color.';
+      'Optional overrides on top of the base theme. Any of: paper, ink, muted, soft, rule, accent, link, negative, primary, secondary, positive, purple, teal. Values are any CSS color.';
     base['colors'] = {};
     base['//fonts'] = 'Optional. display | body | mono. Use single quotes inside font names.';
     base['fonts'] = {};

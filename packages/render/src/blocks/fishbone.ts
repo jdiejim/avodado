@@ -9,10 +9,15 @@
  * the spine so envelopes never intersect — long labels grow the viewBox
  * instead of colliding. Text past the wrap budget is ellipsized, with the
  * full string in a `<title>` on its group (the org-tree pattern).
+ *
+ * Skin (`DESIGN.md`): ink spine and bones, `muted` item ticks, `.t-name`
+ * cause categories, `.t-sub` causes. The head — the effect everything feeds —
+ * is the one accent: an accent outline on the accent tint.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { wrapText } from '../svg/wrapText.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
@@ -74,7 +79,7 @@ export function renderFishbone(data: BlockDataMap['fishbone']): string {
     const labelClamped = wrapClamp(c.label, 16, 4);
     const items = (c.items ?? []).map((it) => {
       const clamped = wrapClamp(it, 24, 2);
-      return { full: it, clamped, w: widest(clamped.lines) * 6.6 };
+      return { full: it, clamped, w: widest(clamped.lines) * 6.2 };
     });
     const maxItemLines = Math.max(1, ...items.map((it) => it.clamped.lines.length));
     const gap = 14 + maxItemLines * 13;
@@ -148,35 +153,37 @@ export function renderFishbone(data: BlockDataMap['fishbone']): string {
   // viewBox-only SVG stretches to the container, blowing small diagrams up.
   let s = `<svg viewBox="0 0 ${f(width)} ${f(height)}" width="${f(width)}" height="${f(height)}" role="img"><title>Fishbone</title>`;
 
-  // Spine, arrowed into the head.
-  s += `<path d="M ${PAD} ${f(spineY)} L ${f(headX - 4)} ${f(spineY)}" fill="none" stroke="var(--charcoal)" stroke-width="1.8" marker-end="url(#gArrow)"/>`;
+  // Spine, running into the head.
+  s += `<path d="M ${PAD} ${f(spineY)} L ${f(headX)} ${f(spineY)}" fill="none" stroke="var(--ink)" stroke-width="1.5"/>`;
 
+  let hasItems = false;
   const bone = (b: BoneNorm, ax: number, h: number, dir: 1 | -1): string => {
     // dir −1 = above the spine, +1 = below.
     const ox = ax - h / TAN;
     const oy = spineY + dir * h;
     let g = `<g${bp(`causes.${b.idx}`)}>`;
-    g += `<path d="M ${f(ax)} ${f(spineY)} L ${f(ox)} ${f(oy)}" fill="none" stroke="var(--charcoal)" stroke-width="1.4"/>`;
+    g += `<path d="M ${f(ax)} ${f(spineY)} L ${f(ox)} ${f(oy)}" fill="none" stroke="var(--ink)" stroke-width="1.25"/>`;
     // Cause label on the shelf beyond the bone's outer end.
     const lh = 15;
     const n = b.labelClamped.lines.length;
     const firstY = dir === -1 ? oy - 10 - (n - 1) * lh : oy + 20;
     g += `<g${bp(`causes.${b.idx}.label`)}>${tip(b.labelClamped, b.label)}`;
     b.labelClamped.lines.forEach((ln, li) => {
-      g += `<text x="${f(ox)}" y="${f(firstY + li * lh)}" class="fb-cause">${escapeHtml(ln)}</text>`;
+      g += `<text x="${f(ox)}" y="${f(firstY + li * lh)}" class="t-name" text-anchor="middle">${escapeHtml(ln)}</text>`;
     });
     g += `</g>`;
     if (b.items.length > 0) {
+      hasItems = true;
       g += `<g${bl(`causes.${b.idx}.items`)}>`;
       b.items.forEach((it, j) => {
         const v = h - (26 + j * b.gap); // height from spine; item 0 nearest the label
         const y = spineY + dir * v;
         const bx = ax - v / TAN;
         let ig = `<g${bp(`causes.${b.idx}.items.${j}`)}>${tip(it.clamped, it.full)}`;
-        ig += `<path d="M ${f(bx - 6)} ${f(y)} L ${f(bx)} ${f(y)}" stroke="var(--gray)" stroke-width="1.2"/>`;
+        ig += `<path d="M ${f(bx - 6)} ${f(y)} L ${f(bx)} ${f(y)}" stroke="var(--muted)" stroke-width="1.25"/>`;
         const m = it.clamped.lines.length;
         it.clamped.lines.forEach((ln, li) => {
-          ig += `<text x="${f(bx - 10)}" y="${f(y + 4 - ((m - 1) * 13) / 2 + li * 13)}" class="fb-item">${escapeHtml(ln)}</text>`;
+          ig += `<text x="${f(bx - 10)}" y="${f(y + 3.5 - ((m - 1) * 13) / 2 + li * 13)}" class="t-sub c-ink" text-anchor="end">${escapeHtml(ln)}</text>`;
         });
         g += ig + `</g>`;
       });
@@ -196,21 +203,26 @@ export function renderFishbone(data: BlockDataMap['fishbone']): string {
   });
   s += `</g>`;
 
-  // The head: the effect in a filled box at the right of the spine.
+  // The head: the effect in the accent box at the right of the spine.
   const hy = spineY - headH / 2;
-  s += `<g filter="url(#gshadow)"${bp('effect')}>${tip(eff, data.effect)}`;
-  s += `<rect x="${f(headX)}" y="${f(hy)}" width="${f(headW)}" height="${f(headH)}" rx="8" fill="var(--navy)" stroke="none"/>`;
+  s += `<g${bp('effect')}>${tip(eff, data.effect)}`;
+  s += `<rect x="${f(headX)}" y="${f(hy)}" width="${f(headW)}" height="${f(headH)}" rx="4" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.5"/>`;
   effLines.forEach((ln, li) => {
-    s += `<text x="${f(headX + headW / 2)}" y="${f(spineY + 4.5 - ((effLines.length - 1) * 16) / 2 + li * 16)}" class="fb-effect">${escapeHtml(ln)}</text>`;
+    s += `<text x="${f(headX + headW / 2)}" y="${f(spineY + 4.5 - ((effLines.length - 1) * 16) / 2 + li * 16)}" class="t-name c-accent" text-anchor="middle">${escapeHtml(ln)}</text>`;
   });
   s += `</g></svg>`;
+
+  const items: LegendItem[] = [{ swatch: 'node-accent', label: 'effect' }];
+  items.push({ swatch: 'chip', chip: 'BONE', label: 'cause category' });
+  if (hasItems) items.push({ swatch: 'chip', chip: '—', label: 'specific cause' });
+  const legendHtml = renderLegend(items);
 
   return diagramFrame(
     {
       tag: 'FISHBONE',
-      tagBg: '#b45309',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     s,
   );

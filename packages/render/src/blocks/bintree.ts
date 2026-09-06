@@ -5,15 +5,17 @@
  * Tidy-ish recursive layout: leaves take consecutive in-order slots, a parent
  * centres over its two children, and a single-child parent offsets half a
  * slot toward the occupied side (so unbalanced chains slant instead of
- * stacking). Levels are 64px apart; nodes are 36px circles; edges are plain
- * 1.4px lines drawn behind the nodes. Nodes without a parent are roots and
- * lay out side by side.
+ * stacking). Levels are 64px apart; nodes are 36px circles; edges are `muted`
+ * 1.5px lines drawn behind the nodes. Nodes without a parent are roots and
+ * lay out side by side. Node tones follow `svg/dsTone.ts`; the legend names
+ * the tones in play.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
-import { dsTone } from '../svg/dsTone.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { DS_TONE_LEGEND, dsTone, dsToneAttrs, type DsTone } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 
 type BintreeData = BlockDataMap['bintree'];
@@ -40,8 +42,8 @@ export function renderBintree(data: BintreeData): string {
   const nodes = data.nodes ?? [];
 
   if (nodes.length === 0) {
-    const s = `<svg viewBox="0 0 220 44" width="220" height="44" role="img"><title>Binary tree</title><text x="${PAD_X}" y="26" class="ds-empty">(empty)</text></svg>`;
-    return frame(data, s);
+    const s = `<svg viewBox="0 0 220 44" width="220" height="44" role="img"><title>Binary tree</title><text x="${PAD_X}" y="26" class="t-sub c-soft">(empty)</text></svg>`;
+    return frame(data, s, '');
   }
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -102,34 +104,44 @@ export function renderBintree(data: BintreeData): string {
     if (parentId === undefined) continue;
     const pp = placed.get(parentId);
     if (pp === undefined) continue;
-    s += `<line x1="${cxOf(pp)}" y1="${cyOf(pp)}" x2="${cxOf(p)}" y2="${cyOf(p)}" class="bt-edge"/>`;
+    s += `<line x1="${cxOf(pp)}" y1="${cyOf(pp)}" x2="${cxOf(p)}" y2="${cyOf(p)}" stroke="var(--muted)" stroke-width="1.5"/>`;
   }
 
   // Nodes (source order keeps the output deterministic).
+  const tones = new Set<DsTone>();
+  let plain = false;
   s += `<g${bl('nodes')}>`;
   nodes.forEach((n, ni) => {
     const p = placed.get(n.id);
     if (p === undefined) return; // unreachable (cyclic parents)
     const t = dsTone(n.tone);
+    if (n.tone !== undefined) tones.add(n.tone);
+    else plain = true;
     s +=
-      `<g filter="url(#gshadow)"${bp(`nodes.${ni}`)}>` +
-      `<circle cx="${cxOf(p)}" cy="${cyOf(p)}" r="${R}" fill="${t.fill}" stroke="${t.stroke}" stroke-width="1.4"/>` +
+      `<g${bp(`nodes.${ni}`)}>` +
+      `<circle cx="${cxOf(p)}" cy="${cyOf(p)}" r="${R}"${dsToneAttrs(t)}/>` +
       `<text x="${cxOf(p)}" y="${cyOf(p) + 4}" class="bt-val" fill="${t.text}"${bp(`nodes.${ni}.value`)}>${escapeHtml(fit(n.value))}</text>` +
       `</g>`;
   });
   s += `</g>`; // close the nodes list container
 
   s += `</svg>`;
-  return frame(data, s);
+
+  const items: LegendItem[] = [];
+  if (plain) items.push({ swatch: 'node', label: 'node' });
+  for (const tone of ['active', 'target', 'visited', 'muted'] as const) {
+    if (tones.has(tone)) items.push(DS_TONE_LEGEND[tone]);
+  }
+  return frame(data, s, renderLegend(items));
 }
 
-function frame(data: BintreeData, inner: string): string {
+function frame(data: BintreeData, inner: string, legendHtml: string): string {
   return diagramFrame(
     {
       tag: 'TREE',
-      tagBg: '#374151',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     inner,
   );

@@ -34,8 +34,8 @@ describe('data-path tagging (charts & overviews)', () => {
     expect(html).toContain('<g data-bp="series.1.values.0">');
     expect(html).toContain('<g data-bl="labels">');
     expect(html).toContain('data-bp="labels.0"');
-    expect(html).toContain('<div class="legend" data-bl="series">');
-    expect(html).toContain('<span class="item" data-bp="series.1">');
+    expect(html).toContain('<div class="diagram-legend" data-bl="series">');
+    expect(html).toContain('<span class="lg-item" data-bp="series.1">');
   });
 
   it('chart (donut) tags slices, the items container, and legend entries', () => {
@@ -49,8 +49,8 @@ describe('data-path tagging (charts & overviews)', () => {
     expect(html).toContain('<g data-bl="items">');
     expect(html).toContain('data-bp="items.0"');
     expect(html).toContain('data-bp="items.1"');
-    expect(html).toContain('<div class="legend" data-bl="items">');
-    expect(html).toContain('<span class="item" data-bp="items.0">');
+    expect(html).toContain('<div class="diagram-legend" data-bl="items">');
+    expect(html).toContain('<span class="lg-item" data-bp="items.0">');
   });
 
   it('chart (waterfall) tags item rows, label/value texts, budget, and the items container', () => {

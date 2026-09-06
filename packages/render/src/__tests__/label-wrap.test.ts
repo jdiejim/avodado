@@ -29,7 +29,7 @@ describe('dfd long-label wrapping', () => {
   });
 
   it('splits a long name across multiple text lines inside a data-bp group', () => {
-    const group = /<g data-bp="nodes\.0\.name">((?:<text [^>]*class="dfd-name"[^>]*>[^<]*<\/text>)+)<\/g>/.exec(html);
+    const group = /<g data-bp="nodes\.0\.name">((?:<text [^>]*class="t-name"[^>]*>[^<]*<\/text>)+)<\/g>/.exec(html);
     expect(group).not.toBeNull();
     const lines = [...(group?.[1] ?? '').matchAll(/<text [^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
     expect(lines).toEqual(['Customer support', 'ticket triage', 'service']);
@@ -42,14 +42,14 @@ describe('dfd long-label wrapping', () => {
     expect(html).toContain('height="94"');
     expect(html).toContain(`viewBox="0 0 452 140"`);
     // Line baselines (63/77/91) sit within the shape's y-range 26..120.
-    expect(html).toContain('y="63" class="dfd-name"');
-    expect(html).toContain('y="91" class="dfd-name"');
+    expect(html).toContain('y="63" class="t-name"');
+    expect(html).toContain('y="91" class="t-name"');
   });
 
   it('keeps text centred within the shape width (no spill past the viewBox)', () => {
     // All name lines anchor at the cell centre; text-anchor middle + a ≤20
     // char budget keeps them within x 26..174 for the first cell.
-    const xs = [...html.matchAll(/<text x="(\d+)" y="\d+" class="dfd-name"/g)].map((m) => Number(m[1]));
+    const xs = [...html.matchAll(/<text x="(\d+)" y="\d+" class="t-name"/g)].map((m) => Number(m[1]));
     expect(xs.length).toBeGreaterThan(1);
     for (const x of xs) expect(x === 100 || x === 352).toBe(true);
   });
@@ -61,7 +61,7 @@ describe('dfd long-label wrapping', () => {
     // Single <text>, carrying the data-bp itself, at the historical y (cy+4)
     // in an unchanged 66px cell.
     expect(short).toContain(
-      '<text x="100" y="63" class="dfd-name" fill="#374151" data-bp="nodes.0.name">Client</text>',
+      '<text x="100" y="63" class="t-name c-accent" text-anchor="middle" data-bp="nodes.0.name">Client</text>',
     );
     expect(short).toContain('height="66"');
     expect(short).not.toContain('<g data-bp="nodes.0.name">');
@@ -77,8 +77,8 @@ describe('state pill clamping + wrapping', () => {
     transitions: [{ from: 'a', to: 'b', event: 'assign' }],
   });
 
-  it('splits a long name across multiple sm-name lines inside a data-bp group', () => {
-    const group = /<g data-bp="states\.0\.name">((?:<text [^>]*class="sm-name"[^>]*>[^<]*<\/text>)+)<\/g>/.exec(html);
+  it('splits a long name across multiple t-name lines inside a data-bp group', () => {
+    const group = /<g data-bp="states\.0\.name">((?:<text [^>]*class="t-name"[^>]*>[^<]*<\/text>)+)<\/g>/.exec(html);
     expect(group).not.toBeNull();
     const lines = [...(group?.[1] ?? '').matchAll(/<text [^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
     expect(lines).toEqual(['Awaiting customer', 'support triage', 'assignment']);
@@ -106,7 +106,7 @@ describe('state pill clamping + wrapping', () => {
     });
     expect(short).toContain('width="96" height="46" rx="23"');
     expect(short).toContain(
-      '<text x="114" y="66.5" class="sm-name" fill="var(--charcoal)" data-bp="states.0.name">Draft</text>',
+      '<text x="114" y="66.5" class="t-name" text-anchor="middle" data-bp="states.0.name">Draft</text>',
     );
     expect(short).not.toContain('<g data-bp="states.0.name">');
   });

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { BLOCK_LABELS } from '@avodado/core';
 import { changesSummary, type ChangeItem } from '../state/changes.js';
 import { docSurface } from '../state/derive.js';
+import { useSystemDark } from '../lib/systemDark.js';
 import { useDerived, useStudio } from '../state/store.js';
 import { IconEdit, IconPlus, IconTrash } from './Icons.js';
 
@@ -32,6 +33,7 @@ export function ReviewDialog(): JSX.Element | null {
   const docs = useStudio((s) => s.docs);
   const theme = useStudio((s) => s.theme);
   const themeVars = useStudio((s) => s.themeVars);
+  const sysDark = useSystemDark();
   const applyReview = useStudio((s) => s.applyReview);
   const cancelReview = useStudio((s) => s.cancelReview);
   const applyRef = useRef<HTMLButtonElement>(null);
@@ -73,7 +75,7 @@ export function ReviewDialog(): JSX.Element | null {
   return (
     <div
       className="stu-review-backdrop"
-      data-surface={docSurface(theme, themeVars)}
+      data-surface={docSurface(theme, themeVars, sysDark)}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) cancelReview();
       }}

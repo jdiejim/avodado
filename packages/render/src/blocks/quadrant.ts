@@ -2,7 +2,10 @@
  * Renders a 2x2 matrix — labelled axes, optional low/high endpoint labels,
  * and dots for each `(x, y, label)` item.
  *
- * Ported from doc-studio.jsx `Quadrant`.
+ * Skin (`DESIGN.md`): a paper plot with a `rule-solid` edge, `muted` axis
+ * arrows through the middle, `.t-eyebrow` axis titles, `.t-sub` endpoint
+ * labels, and ink dots with `.t-name` labels. The high/high quadrant sits on
+ * `paper-2` so it reads as the target corner without a hue.
  */
 
 import type { BlockDataMap } from '@avodado/core';
@@ -34,23 +37,23 @@ export function renderQuadrant(data: BlockDataMap['quadrant']): string {
   const yA = data.yAxis ?? {};
 
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img"><title>Quadrant</title>`;
-  s += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="#fafbfc" stroke="#e5e7eb"/>`;
-  s += `<rect x="${mx}" y="${y0}" width="${x1 - mx}" height="${my - y0}" fill="#0e54a1" fill-opacity="0.04"/>`;
-  s += `<line x1="${x0}" y1="${my}" x2="${x1}" y2="${my}" class="quad-axis" marker-end="url(#gArrow)"/>`;
-  s += `<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y0}" class="quad-axis" marker-end="url(#gArrow)"/>`;
+  s += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="var(--paper)" stroke="var(--rule-solid)" stroke-width="1"/>`;
+  s += `<rect x="${mx}" y="${y0}" width="${x1 - mx}" height="${my - y0}" fill="var(--paper-2)"/>`;
+  s += `<line x1="${x0}" y1="${my}" x2="${x1}" y2="${my}" stroke="var(--muted)" stroke-width="1.25" marker-end="url(#skArrow)"/>`;
+  s += `<line x1="${mx}" y1="${y1}" x2="${mx}" y2="${y0}" stroke="var(--muted)" stroke-width="1.25" marker-end="url(#skArrow)"/>`;
 
   if (xA.label !== undefined)
-    s += `<text x="${x1}" y="${y1 + 30}" class="quad-title" text-anchor="end"${bp('xAxis.label')}>${escapeHtml(xA.label)} →</text>`;
+    s += `<text x="${x1}" y="${y1 + 30}" class="t-eyebrow" text-anchor="end"${bp('xAxis.label')}>${escapeHtml(xA.label)} →</text>`;
   if (yA.label !== undefined)
-    s += `<text x="${mx - 8}" y="${y0 - 4}" class="quad-title" text-anchor="end"${bp('yAxis.label')}>↑ ${escapeHtml(yA.label)}</text>`;
+    s += `<text x="${mx - 8}" y="${y0 - 4}" class="t-eyebrow" text-anchor="end"${bp('yAxis.label')}>↑ ${escapeHtml(yA.label)}</text>`;
   if (xA.low !== undefined)
-    s += `<text x="${x0}" y="${y1 + 16}" class="quad-end" text-anchor="start"${bp('xAxis.low')}>${escapeHtml(xA.low)}</text>`;
+    s += `<text x="${x0}" y="${y1 + 16}" class="t-sub c-soft" text-anchor="start"${bp('xAxis.low')}>${escapeHtml(xA.low)}</text>`;
   if (xA.high !== undefined)
-    s += `<text x="${x1}" y="${y1 + 16}" class="quad-end" text-anchor="end"${bp('xAxis.high')}>${escapeHtml(xA.high)}</text>`;
+    s += `<text x="${x1}" y="${y1 + 16}" class="t-sub c-soft" text-anchor="end"${bp('xAxis.high')}>${escapeHtml(xA.high)}</text>`;
   if (yA.high !== undefined)
-    s += `<text x="${x0 - 10}" y="${y0 + 6}" class="quad-end" text-anchor="end"${bp('yAxis.high')}>${escapeHtml(yA.high)}</text>`;
+    s += `<text x="${x0 - 10}" y="${y0 + 6}" class="t-sub c-soft" text-anchor="end"${bp('yAxis.high')}>${escapeHtml(yA.high)}</text>`;
   if (yA.low !== undefined)
-    s += `<text x="${x0 - 10}" y="${y1}" class="quad-end" text-anchor="end"${bp('yAxis.low')}>${escapeHtml(yA.low)}</text>`;
+    s += `<text x="${x0 - 10}" y="${y1}" class="t-sub c-soft" text-anchor="end"${bp('yAxis.low')}>${escapeHtml(yA.low)}</text>`;
 
   s += `<g${bl('items')}>`;
   items.forEach((it, i) => {
@@ -60,9 +63,9 @@ export function renderQuadrant(data: BlockDataMap['quadrant']): string {
     const tx = cx + (left ? -12 : 12);
     const anchor = left ? 'end' : 'start';
     s +=
-      `<g filter="url(#gshadow)"${bp(`items.${i}`)}>` +
-      `<circle cx="${cx}" cy="${cy}" r="7" fill="#f7952c" stroke="#fff" stroke-width="1.5"/>` +
-      `<text x="${tx}" y="${cy + 4}" class="quad-pt-label" text-anchor="${anchor}"${bp(`items.${i}.label`)}>${escapeHtml(it.label)}</text>` +
+      `<g${bp(`items.${i}`)}>` +
+      `<circle cx="${cx}" cy="${cy}" r="5.5" fill="var(--ink)" stroke="var(--paper)" stroke-width="1.5"/>` +
+      `<text x="${tx}" y="${cy + 4.5}" class="t-name" text-anchor="${anchor}"${bp(`items.${i}.label`)}>${escapeHtml(it.label)}</text>` +
       `</g>`;
   });
   s += `</g>`;
@@ -71,7 +74,6 @@ export function renderQuadrant(data: BlockDataMap['quadrant']): string {
   return diagramFrame(
     {
       tag: '2×2',
-      tagBg: '#0f766e',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
     },

@@ -1,20 +1,29 @@
 /**
  * Frontend / backend module-graph rendering — design-pattern nodes (engine,
  * interface, strategy, controller, service, repo, worker, middleware, model,
- * db, cache, queue, hook, store, external) with kind-specific styling and
- * UML stereotype banners on interface nodes.
+ * db, cache, queue, hook, store, external) as module cards.
  *
  * Backs `felogic` (with `variant: be` for the former `belogic` framing).
  *
- * Ported from doc-studio.jsx `FrontendLogic` + `feStyle` + `feEdge`.
+ * Skin (`DESIGN.md`): a module is a paper card with an ink outline and an
+ * eyebrow chip for its pattern role (`ENGINE`, `INTERFACE`, `CONTROLLER`, …);
+ * `interface` is dashed (a contract, not a body); `middleware` and `state`
+ * sit on the inactive fill. Data, transport and external nodes borrow the
+ * block family's shapes (cylinder, pipe, stack, cloud). Edges follow the
+ * stroke table: `uses` solid, `implements` / `reads` dashed with an open
+ * head, `async` dotted, network calls (`egress` / `https` / `api`) in `link`.
+ *
+ * Accent rule: the single entry module — `engine` / `core` on the frontend
+ * variant, `controller` / `handler` / `route` on `variant: be`. Two or more
+ * candidates, or none, means no accent.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
-import { nodeGlyph } from '../svg/blockStyle.js';
-import { blockStyle } from '../svg/legacyPalette.js';
+import { nodeSkin } from '../svg/blockStyle.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { edgeAnchorRect, renderShapedNode } from './blockGraph.js';
 import { wrapText } from '../svg/wrapText.js';
 import { safeColor } from '../sanitize.js';
@@ -26,18 +35,8 @@ type Data = BlockDataMap['felogic'];
 type Group = NonNullable<Data['groups']>[number];
 type Node = NonNullable<Data['nodes']>[number];
 
-interface FeStyle {
-  accent: string;
-  fill: string;
-  text: string;
-  solid?: boolean;
-  dash?: string;
-  stereo?: string;
-  cloud?: boolean;
-}
-
 /**
- * Every module `kind` {@link feStyle} styles specially (plus `component`, the
+ * Every module `kind` {@link feSkin} styles specially (plus `component`, the
  * default) — the canonical dropdown of documented kinds for `felogic` /
  * `belogic` nodes. Keep it in sync when adding a case below.
  */
@@ -63,133 +62,103 @@ export const KNOWN_LOGIC_KINDS: readonly string[] = [
   'external', 'backend', 'egress', 'api', 'thirdparty',
 ];
 
-function feStyle(kind: string | undefined): FeStyle {
-  switch ((kind ?? 'component').toLowerCase()) {
+/** How the skin draws one module card. */
+interface FeSkin {
+  readonly chip: string;
+  readonly primary: boolean;
+  readonly fill: 'paper' | 'paper-2';
+  readonly dashed: boolean;
+}
+
+const card = (chip: string): FeSkin => ({ chip, primary: true, fill: 'paper', dashed: false });
+const inactive = (chip: string): FeSkin => ({ chip, primary: false, fill: 'paper-2', dashed: false });
+
+function feSkin(kind: string | undefined): FeSkin {
+  const k = (kind ?? 'component').toLowerCase();
+  switch (k) {
+    case 'component':
+      return card('');
     case 'engine':
     case 'core':
-      return { accent: '#0e54a1', fill: '#0e54a1', text: '#fff', solid: true };
+      return card('ENGINE');
     case 'interface':
-      return { accent: '#6b21a8', fill: '#fff', text: '#4a1772', dash: '5 4', stereo: 'interface' };
+      return { chip: 'INTERFACE', primary: true, fill: 'paper', dashed: true };
     case 'strategy':
     case 'impl':
-      return { accent: '#7c3aed', fill: '#ede9fe', text: '#4a1772', stereo: 'strategy' };
+      return card('STRATEGY');
     case 'adapter':
-      return { accent: '#7c3aed', fill: '#ede9fe', text: '#4a1772', stereo: 'adapter' };
+      return card('ADAPTER');
     case 'controller':
     case 'handler':
     case 'route':
-      return { accent: '#0e54a1', fill: '#cfe0f3', text: '#0a3a6e', stereo: 'controller' };
+      return card('CONTROLLER');
     case 'gateway':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e', stereo: 'gateway' };
+      return card('GATEWAY');
     case 'service':
     case 'usecase':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e', stereo: 'service' };
+      return card('SERVICE');
     case 'apiclient':
     case 'client':
-      return { accent: '#1a6dbe', fill: '#e5eff8', text: '#0a3a6e' };
+      return card('CLIENT');
     case 'repository':
     case 'repo':
     case 'dao':
-      return { accent: '#0f766e', fill: '#ccfbf1', text: '#0f4f49', stereo: 'repository' };
+      return card('REPOSITORY');
     case 'worker':
     case 'consumer':
-      return { accent: '#1f9747', fill: '#dcf1e2', text: '#0f3d22' };
+      return card('WORKER');
     case 'middleware':
-      return { accent: '#6b7280', fill: '#f3f4f6', text: '#374151' };
+      return inactive('MIDDLEWARE');
     case 'model':
     case 'entity':
-      return { accent: '#6b21a8', fill: '#ede9fe', text: '#4a1772' };
-    case 'db':
-    case 'store':
-    case 'database':
-      return { accent: '#f7952c', fill: '#fde7cd', text: '#7a3d00' };
-    case 'cache':
-      return { accent: '#0891b2', fill: '#cffafe', text: '#0e4f5c' };
-    case 'queue':
-    case 'bus':
-    case 'broker':
-      return { accent: '#0f766e', fill: '#ccfbf1', text: '#0f4f49' };
+      return card('MODEL');
     case 'state':
     case 'store_state':
-      return { accent: '#f7952c', fill: '#fde7cd', text: '#7a3d00' };
+      return inactive('STATE');
     case 'hook':
-      return { accent: '#7c3aed', fill: '#ede9fe', text: '#4a1772' };
-    case 'external':
-    case 'backend':
-    case 'egress':
-    case 'api':
-    case 'thirdparty':
-      return { accent: '#6b7280', fill: '#f3f4f6', text: '#374151', cloud: true };
+      return card('HOOK');
     default:
-      return { accent: '#1f9747', fill: '#dcf1e2', text: '#0f3d22' };
+      return card(k.toUpperCase());
   }
 }
 
 interface FeEdgeStyle {
-  stroke: string;
-  sw: number;
-  dash: string;
-  marker: string;
+  readonly stroke: string;
+  readonly sw: number;
+  readonly dash: string;
+  readonly marker: string;
+  readonly legend: 'uses' | 'implements' | 'reads' | 'async' | 'network';
 }
 
 function feEdge(kind: string | undefined): FeEdgeStyle {
   switch ((kind ?? 'uses').toLowerCase()) {
     case 'implements':
-      return { stroke: '#6b21a8', sw: 1.4, dash: '5 4', marker: 'gTri' };
+      return { stroke: 'var(--muted)', sw: 1.5, dash: '5 4', marker: 'skOpen', legend: 'implements' };
     case 'egress':
     case 'https':
     case 'api':
-      return { stroke: '#0e54a1', sw: 2, dash: '', marker: 'gArrow' };
+      return { stroke: 'var(--link)', sw: 1.5, dash: '', marker: 'feLink', legend: 'network' };
     case 'reads':
     case 'dashed':
+      return { stroke: 'var(--muted)', sw: 1.5, dash: '5 4', marker: 'skOpen', legend: 'reads' };
     case 'async':
-      return { stroke: '#6b7280', sw: 1.4, dash: '5 4', marker: 'gSoft' };
+      return { stroke: 'var(--muted)', sw: 1.25, dash: '2 3', marker: 'skOpen', legend: 'async' };
     default:
-      return { stroke: 'var(--charcoal)', sw: 1.4, dash: '', marker: 'gArrow' };
+      return { stroke: 'var(--muted)', sw: 1.5, dash: '', marker: 'skArrow', legend: 'uses' };
   }
 }
 
-const GLYPH_KINDS = new Set([
-  'db',
-  'store',
-  'database',
-  'bucket',
-  'blob',
-  'object',
-  'queue',
-  'bus',
-  'broker',
-  'cache',
-  'external',
-  'backend',
-  'api',
-  'thirdparty',
-  'function',
-]);
-const GLYPH_REMAP: Record<string, string> = {
-  database: 'db',
-  store: 'db',
-  bus: 'queue',
-  broker: 'queue',
-  backend: 'external',
-  api: 'external',
-  thirdparty: 'external',
-};
 // Kinds that render with the shared shape language instead of a module card.
 const SHAPE_REMAP: Record<string, string> = {
   bus: 'queue',
   backend: 'external',
   api: 'external',
   thirdparty: 'external',
+  egress: 'external',
 };
 const SHAPED_KINDS = new Set(['db', 'store', 'database', 'queue', 'broker', 'cache', 'redis', 'external']);
 
-interface FrameOpts {
-  readonly tag: string;
-  readonly tagBg?: string;
-}
-
-function renderFelogicGraph(data: Data, frame: FrameOpts): string {
+function renderFelogicGraph(data: Data, tag: string): string {
   const groups = data.groups ?? [];
   const edges = data.edges ?? [];
   // Quick mode: with no coordinate-anchored groups, nodes missing `col`/`row`
@@ -244,16 +213,30 @@ function renderFelogicGraph(data: Data, frame: FrameOpts): string {
       (a, b) => (b.g.cols ?? 1) * (b.g.rows ?? 1) - (a.g.cols ?? 1) * (a.g.rows ?? 1),
     );
 
-  let s = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Module graph</title>`;
+  // The accent (see the header comment).
+  const entryKinds = data.variant === 'be' ? ['controller', 'handler', 'route'] : ['engine', 'core'];
+  const entries0 = nodes.filter((n) => entryKinds.includes((n.kind ?? '').toLowerCase()));
+  const accentId = entries0.length === 1 ? entries0[0]?.id : undefined;
 
+  let s =
+    `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Module graph</title>` +
+    // The network-call head in `link` — local, since the shared defs carry
+    // only the muted / accent / negative heads.
+    `<defs><marker id="feLink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
+    `<path d="M0,0 L10,5 L0,10 z" fill="var(--link)"/></marker></defs>`;
+
+  // Group panels — the skin's paper-2 wash with a hairline and an eyebrow
+  // label; an explicit `color` on the group still tints its outline and label.
   s += `<g${bl('groups')}>`;
   for (const { g, gi } of sortedGroups) {
     const r = groupRect(g);
-    const col = safeColor(g.color, '#0e54a1');
+    const tint = safeColor(g.color, '');
+    const stroke = tint.length > 0 ? tint : 'var(--rule-solid)';
+    const text = tint.length > 0 ? tint : 'var(--soft)';
     s +=
       `<g${bp(`groups.${gi}`)}>` +
-      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="10" fill="${col}" fill-opacity="0.05" stroke="${col}" stroke-opacity="0.5" stroke-width="1.2" stroke-dasharray="7 5"/>` +
-      `<text x="${r.x + 14}" y="${r.y + 15}" class="grp-label" fill="${col}">${escapeHtml(g.label)}</text>` +
+      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="${stroke}" stroke-width="1"/>` +
+      `<text x="${r.x + 12}" y="${r.y + 15}" class="grp-label t-eyebrow" fill="${text}">${escapeHtml(g.label)}</text>` +
       `</g>`;
   }
   s += `</g>`; // close the groups list container
@@ -264,6 +247,7 @@ function renderFelogicGraph(data: Data, frame: FrameOpts): string {
     return edgeAnchorRect(SHAPE_REMAP[k] ?? k, rectFor(n));
   };
   const pending: EdgeLabelPoint[] = [];
+  const edgeLegend = new Set<FeEdgeStyle['legend']>();
   s += `<g${bl('edges')}>`;
   const lanes = edgeLanes(edges);
   const entries = entryPortOffsets(edges, (id) => {
@@ -276,88 +260,135 @@ function renderFelogicGraph(data: Data, frame: FrameOpts): string {
     if (!A || !B) return;
     const p = ortho(anchorOf(A), anchorOf(B), lanes[ei] ?? 0, entries[ei] ?? 0);
     const st = feEdge(e.kind);
-    s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}" stroke-dasharray="${st.dash}" marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
+    edgeLegend.add(st.legend);
+    const dash = st.dash.length > 0 ? ` stroke-dasharray="${st.dash}"` : '';
+    s += `<path d="${p.d}" fill="none" stroke="${st.stroke}" stroke-width="${st.sw}"${dash} marker-end="url(#${st.marker})"${bp(`edges.${ei}`)}/>`;
     pending.push({ lx: p.lx, ly: p.ly, ...(e.label !== undefined ? { label: e.label } : {}), path: `edges.${ei}` });
   });
   s += `</g>`; // close the edges list container
 
+  const chipsUsed = new Map<string, 'card' | 'shape'>();
+  let dashedUsed = false;
+  let inactiveUsed = false;
   s += `<g${bl('nodes')}>`;
   nodes.forEach((n, ni) => {
     const r = rectFor(n);
-    const st = feStyle(n.kind);
     const k = (n.kind ?? '').toLowerCase();
+    const accent = n.id === accentId;
     // Data/transport/external nodes use the shared shape language (cylinder,
     // pipe, stack, cloud) instead of a card — same silhouettes as the block
     // family, so `payments-db` is a cylinder here too.
     const shapeKind = SHAPE_REMAP[k] ?? k;
     if (SHAPED_KINDS.has(shapeKind)) {
+      const sk = nodeSkin(shapeKind);
+      if (sk.chip !== '' && !chipsUsed.has(sk.chip)) chipsUsed.set(sk.chip, 'shape');
+      if (sk.dashed) dashedUsed = true;
+      if (sk.fill === 'paper-2') inactiveUsed = true;
       s += `<g${bp(`nodes.${ni}`)}>${renderShapedNode(
         { kind: shapeKind, name: n.name, ...(n.note !== undefined ? { tech: n.note } : {}) },
         r,
-        blockStyle(shapeKind),
+        undefined,
+        accent,
       )}</g>`;
       return;
     }
-    const gl = GLYPH_KINDS.has(k) ? nodeGlyph(GLYPH_REMAP[k] ?? k, r.x + 16, r.y + 16, st.accent) : '';
-    const nx = st.solid === true ? r.x + r.w / 2 : gl.length > 0 ? r.x + 42 : r.x + 16;
-    const anchor = st.solid === true ? 'middle' : 'start';
-    const stroke = st.solid === true ? 'none' : st.accent;
-    const dashAttr = st.dash !== undefined ? ` stroke-dasharray="${st.dash}"` : '';
-    // Clean card (the agent-card language): rounded, no left accent bar.
-    const stripe = '';
-    const card = `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="9" fill="${st.fill}" stroke="${stroke}" stroke-width="1.2"${dashAttr}/>`;
-    const stereo =
-      st.stereo !== undefined
-        ? `<text x="${r.x + r.w / 2}" y="${r.y + 18}" class="uml-stereo">«${escapeHtml(st.stereo)}»</text>`
+    const sk = feSkin(n.kind);
+    if (sk.chip !== '' && !chipsUsed.has(sk.chip)) chipsUsed.set(sk.chip, 'card');
+    if (sk.dashed) dashedUsed = true;
+    if (sk.fill === 'paper-2') inactiveUsed = true;
+    const stroke = accent ? 'var(--accent)' : sk.primary ? 'var(--ink)' : 'var(--rule-solid)';
+    const sw = accent || sk.primary ? 1.5 : 1;
+    const fill = accent ? 'var(--accent-tint)' : sk.fill === 'paper-2' ? 'var(--paper-2)' : 'var(--paper)';
+    const dashAttr = sk.dashed ? ' stroke-dasharray="4 3"' : '';
+    const cardSvg = `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dashAttr}/>`;
+    const chipTone = accent ? ' c-accent' : sk.fill === 'paper-2' ? ' c-muted' : '';
+    const chip =
+      sk.chip !== ''
+        ? `<text x="${r.x + 12}" y="${r.y + 14}" class="t-eyebrow${chipTone}">${escapeHtml(sk.chip)}</text>`
         : '';
     // Wrap name (≤2 lines) + note (≤2 lines), centred vertically in the space
-    // below any stereotype so long labels never overflow or overlap.
-    const textW = st.solid === true ? r.w - 20 : r.x + r.w - nx - 12;
-    const nameLines = wrapText(n.name, Math.max(6, Math.floor(textW / 6.6)), 2);
-    const noteLines = n.note !== undefined ? wrapText(n.note, Math.max(6, Math.floor(textW / 5.6)), 2) : [];
+    // below the chip so long labels never overflow or overlap.
+    const nx = r.x + 12;
+    const textW = r.w - 24;
+    const nameLines = wrapText(n.name, Math.max(6, Math.floor(textW / 7)), 2);
+    const noteLines = n.note !== undefined ? wrapText(n.note, Math.max(6, Math.floor(textW / 6.2)), 2) : [];
     const nameLineH = 15;
     const noteLineH = 12;
     const gap = 3;
-    const blockTop = r.y + (st.stereo !== undefined ? 26 : 8);
+    const blockTop = r.y + (sk.chip !== '' ? 20 : 8);
     const blockH = nameLines.length * nameLineH + (noteLines.length > 0 ? gap + noteLines.length * noteLineH : 0);
     let ty = blockTop + (r.y + r.h - blockTop - blockH) / 2 + nameLineH - 4;
-    const noteFill = st.solid === true ? '#cfe0f3' : st.accent;
     let labelSvg = '';
     for (const ln of nameLines) {
-      labelSvg += `<text x="${nx}" y="${ty.toFixed(1)}" class="blk-name" fill="${st.text}" text-anchor="${anchor}">${escapeHtml(ln)}</text>`;
+      labelSvg += `<text x="${nx}" y="${ty.toFixed(1)}" class="t-name${accent ? ' c-accent' : ''}">${escapeHtml(ln)}</text>`;
       ty += nameLineH;
     }
     if (noteLines.length > 0) {
       ty += gap - nameLineH + noteLineH;
       for (const ln of noteLines) {
-        labelSvg += `<text x="${nx}" y="${ty.toFixed(1)}" class="blk-tech" fill="${noteFill}" text-anchor="${anchor}">${escapeHtml(ln)}</text>`;
+        labelSvg += `<text x="${nx}" y="${ty.toFixed(1)}" class="t-sub">${escapeHtml(ln)}</text>`;
         ty += noteLineH;
       }
     }
-    s += `<g filter="url(#gshadow)"${bp(`nodes.${ni}`)}>` + card + stripe + gl + stereo + labelSvg + `</g>`;
+    s += `<g${bp(`nodes.${ni}`)}>` + cardSvg + chip + labelSvg + `</g>`;
   });
   s += `</g>`; // close the nodes list container
 
-  const { overlay, legend } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)));
+  const { overlay, legend: steps } = edgeLabelLayer(pending, nodes.map((n) => rectFor(n)), { skin: true });
   s += overlay; // labels on top, never crossed by a line
   s += `</svg>`;
+
+  const items: LegendItem[] = [];
+  for (const chip of chipsUsed.keys()) {
+    items.push({ swatch: 'chip', chip, label: CHIP_LABEL[chip] ?? chip.toLowerCase() });
+  }
+  if (dashedUsed) items.push({ swatch: 'node-dashed', label: 'contract / external' });
+  if (inactiveUsed) items.push({ swatch: 'node-fill2', label: 'passive (state, middleware, store)' });
+  if (edgeLegend.has('uses')) items.push({ swatch: 'edge', label: 'uses' });
+  if (edgeLegend.has('implements')) items.push({ swatch: 'edge-dashed', label: 'implements' });
+  if (edgeLegend.has('reads')) items.push({ swatch: 'edge-dashed', label: 'reads / optional' });
+  if (edgeLegend.has('async')) items.push({ swatch: 'edge-async', label: 'async' });
+  if (edgeLegend.has('network')) items.push({ swatch: 'edge-link', label: 'network call' });
+  if (accentId !== undefined) items.push({ swatch: 'node-accent', label: 'entry point' });
+  const legend = renderLegend(items);
+
   return diagramFrame(
     {
-      tag: frame.tag,
-      ...(frame.tagBg !== undefined ? { tagBg: frame.tagBg } : {}),
+      tag,
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legend.length > 0 ? { legendHtml: legend } : {}),
     },
-    s + legend,
+    s + steps,
   );
 }
 
+/** Legend wording for the chips a module graph can show. */
+const CHIP_LABEL: Record<string, string> = {
+  ENGINE: 'engine / core',
+  INTERFACE: 'interface',
+  STRATEGY: 'strategy',
+  ADAPTER: 'adapter',
+  CONTROLLER: 'controller / route',
+  GATEWAY: 'gateway',
+  SERVICE: 'service / use case',
+  CLIENT: 'API client',
+  REPOSITORY: 'repository',
+  WORKER: 'worker / consumer',
+  MIDDLEWARE: 'middleware',
+  MODEL: 'model / entity',
+  STATE: 'state store',
+  HOOK: 'hook',
+  DB: 'database',
+  QUEUE: 'queue / bus',
+  CACHE: 'cache',
+  EXT: 'external',
+};
+
 /**
- * `felogic` — module logic graph. Default = frontend look (purple LOGIC tag);
- * `variant: be` keeps the former `belogic` presentation (navy LOGIC tag).
+ * `felogic` — module logic graph (`LOGIC` eyebrow). `variant: be` keeps the
+ * former `belogic` framing: the entry module is the controller, not the engine.
  */
 export function renderFelogic(data: BlockDataMap['felogic']): string {
-  return data.variant === 'be'
-    ? renderFelogicGraph(data, { tag: 'LOGIC', tagBg: '#0e54a1' })
-    : renderFelogicGraph(data, { tag: 'LOGIC', tagBg: '#6b21a8' });
+  return renderFelogicGraph(data, 'LOGIC');
 }

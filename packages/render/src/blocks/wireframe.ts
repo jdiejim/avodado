@@ -63,18 +63,22 @@ function elementHeight(el: Element): number {
   }
 }
 
-const PH = 'fill="var(--light-gray)" stroke="var(--rule)" stroke-width="1"';
+const PH = 'fill="var(--paper-2)" stroke="var(--rule-solid)" stroke-width="1"';
 
 /** Draws one element at (x, y) within a content column of width w. Returns SVG. */
 function drawElement(el: Element, x: number, y: number, w: number): string {
   const rows = Math.max(1, el.rows ?? 1);
   const label = el.label ?? '';
+  // Tones by fill: default = ink (paper text), danger = negative (paper text),
+  // muted = paper-2 with ink text — the only filled shapes in a mockup.
   const accent =
     el.tone === 'danger'
       ? 'var(--negative)'
       : el.tone === 'muted'
-        ? 'var(--gray)'
-        : 'var(--navy)';
+        ? 'var(--paper-2)'
+        : 'var(--ink)';
+  const btnText = el.tone === 'muted' ? 'wf-btn on-light' : 'wf-btn';
+  const btnStroke = el.tone === 'muted' ? ' stroke="var(--rule-solid)" stroke-width="1"' : '';
   const anchorX = el.align === 'c' ? x + w / 2 : el.align === 'r' ? x + w : x;
   const anchor = el.align === 'c' ? 'middle' : el.align === 'r' ? 'end' : 'start';
 
@@ -93,8 +97,8 @@ function drawElement(el: Element, x: number, y: number, w: number): string {
     }
     case 'button':
       return (
-        `<rect x="${x}" y="${y}" width="${w}" height="34" rx="8" fill="${accent}"/>` +
-        `<text x="${x + w / 2}" y="${y + 22}" class="wf-btn" text-anchor="middle">${escapeHtml(label || 'Button')}</text>`
+        `<rect x="${x}" y="${y}" width="${w}" height="34" rx="6" fill="${accent}"${btnStroke}/>` +
+        `<text x="${x + w / 2}" y="${y + 22}" class="${btnText}" text-anchor="middle">${escapeHtml(label || 'Button')}</text>`
       );
     case 'input':
     case 'search': {
@@ -185,8 +189,8 @@ function drawElement(el: Element, x: number, y: number, w: number): string {
     case 'badge': {
       const pw = 22 + label.length * 6.4;
       return (
-        `<rect x="${anchorX - (anchor === 'middle' ? pw / 2 : anchor === 'end' ? pw : 0)}" y="${y}" width="${pw}" height="22" rx="11" fill="${accent}"/>` +
-        `<text x="${anchorX - (anchor === 'middle' ? 0 : anchor === 'end' ? pw / 2 : -pw / 2)}" y="${y + 15}" class="wf-btn" text-anchor="middle">${escapeHtml(label || 'New')}</text>`
+        `<rect x="${anchorX - (anchor === 'middle' ? pw / 2 : anchor === 'end' ? pw : 0)}" y="${y}" width="${pw}" height="22" rx="11" fill="${accent}"${btnStroke}/>` +
+        `<text x="${anchorX - (anchor === 'middle' ? 0 : anchor === 'end' ? pw / 2 : -pw / 2)}" y="${y + 15}" class="${btnText}" text-anchor="middle">${escapeHtml(label || 'New')}</text>`
       );
     }
     case 'toggle':
@@ -194,8 +198,8 @@ function drawElement(el: Element, x: number, y: number, w: number): string {
         (label
           ? `<text x="${x}" y="${y + 19}" class="wf-sub" fill="var(--charcoal)">${escapeHtml(label)}</text>`
           : '') +
-        `<rect x="${x + w - 44}" y="${y + 6}" width="44" height="22" rx="11" fill="${accent}"/>` +
-        `<circle cx="${x + w - 16}" cy="${y + 17}" r="8" fill="#fff"/>`
+        `<rect x="${x + w - 44}" y="${y + 6}" width="44" height="22" rx="11" fill="${accent}"${btnStroke}/>` +
+        `<circle cx="${x + w - 16}" cy="${y + 17}" r="8" fill="var(--paper)" stroke="var(--rule-solid)" stroke-width="1"/>`
       );
     case 'spacer':
       return '';
@@ -242,7 +246,7 @@ function drawScreen(screen: Screen, idx: number): { svg: string; width: number; 
   } else {
     inner += `<rect x="0" y="0" width="${frameW}" height="${titleBarH}" fill="var(--light-gray)"/>`;
     inner += `<line x1="0" y1="${titleBarH}" x2="${frameW}" y2="${titleBarH}" stroke="var(--rule)" stroke-width="1"/>`;
-    inner += `<circle cx="18" cy="15" r="5" fill="var(--negative)"/><circle cx="34" cy="15" r="5" fill="var(--highlight)"/><circle cx="50" cy="15" r="5" fill="var(--positive)"/>`;
+    inner += `<circle cx="18" cy="15" r="5" fill="var(--rule-solid)"/><circle cx="34" cy="15" r="5" fill="var(--rule-solid)"/><circle cx="50" cy="15" r="5" fill="var(--rule-solid)"/>`;
     if (screen.title && !isBrowser)
       inner += `<text x="${frameW / 2}" y="20" class="wf-status" text-anchor="middle"${bp(`screens.${idx}.title`)}>${escapeHtml(screen.title)}</text>`;
     if (isBrowser) {
@@ -264,13 +268,13 @@ function drawScreen(screen: Screen, idx: number): { svg: string; width: number; 
   }
 
   const s =
-    `<g filter="url(#gshadow)">` +
+    `<g>` +
     `<defs><clipPath id="${clip}"><rect x="0" y="0" width="${frameW}" height="${frameH}" rx="${rx}"/></clipPath></defs>` +
-    // solid backing so the drop shadow reads against any page colour
-    `<rect x="0" y="0" width="${frameW}" height="${frameH}" rx="${rx}" fill="var(--white)"/>` +
+    // solid paper backing under the chrome and content (no shadow — DESIGN.md)
+    `<rect x="0" y="0" width="${frameW}" height="${frameH}" rx="${rx}" fill="var(--paper)"/>` +
     `<g clip-path="url(#${clip})">${inner}</g>` +
     // border on top — always visible above the fills
-    `<rect x="0" y="0" width="${frameW}" height="${frameH}" rx="${rx}" fill="none" stroke="var(--charcoal)" stroke-width="${sw}"/>` +
+    `<rect x="0" y="0" width="${frameW}" height="${frameH}" rx="${rx}" fill="none" stroke="var(--ink)" stroke-width="${sw}"/>` +
     `</g>`;
   return { svg: s, width: frameW, height: frameH };
 }
@@ -311,7 +315,6 @@ export function renderWireframe(data: BlockDataMap['wireframe']): string {
   return diagramFrame(
     {
       tag: 'UI',
-      tagBg: '#6b21a8',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
     },

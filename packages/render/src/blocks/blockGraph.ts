@@ -28,7 +28,7 @@ import {
   type EdgeStyle,
   type NodeSkin,
 } from '../svg/blockStyle.js';
-import type { NodeColors } from '../svg/legacyPalette.js';
+import type { NodeColors } from '../svg/blockStyle.js';
 import { gridGroupsSvg } from '../svg/gridGroups.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
@@ -101,8 +101,11 @@ function accentNodeId(nodes: readonly { readonly id: string; readonly kind?: str
   return hits.length === 1 ? hits[0]?.id : undefined;
 }
 
-/** Legend items for the kinds and edge styles a diagram used. */
-function blockLegend(
+/**
+ * Legend items for the kinds and edge styles a diagram used. Exported so the
+ * other block-family renderers (cluster) list their kinds with the same words.
+ */
+export function blockLegend(
   nodes: readonly { readonly kind?: string | undefined }[],
   edgeKinds: ReadonlySet<string>,
   accent: boolean,

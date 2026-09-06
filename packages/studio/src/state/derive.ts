@@ -130,19 +130,27 @@ export function sameDiskTheme(a: ThemeMeta | null, b: ThemeMeta | null): boolean
 export function docSurface(
   theme: string,
   themeVars?: Readonly<Record<string, string>>,
+  systemDark = false,
 ): 'dark' | 'light' {
   if (theme === 'dark') return 'dark';
-  const paper = themeVars?.['--white'];
+  // The paper is pinned by the user's vars (the skin role first, then the
+  // legacy name) or by the built-in theme itself; a pinned hex decides.
+  const builtin = (themes as Record<string, { vars: Readonly<Record<string, string>> }>)[theme];
+  const paper =
+    themeVars?.['--paper'] ?? themeVars?.['--white'] ?? builtin?.vars['--paper'] ?? builtin?.vars['--white'];
   if (paper !== undefined) {
     const m = /^#([0-9a-f]{6})$/i.exec(paper.trim());
     if (m !== null) {
       const n = parseInt(m[1] ?? '', 16);
       // Perceived brightness (0-255); below mid-gray reads as a dark surface.
       const lum = 0.299 * ((n >> 16) & 0xff) + 0.587 * ((n >> 8) & 0xff) + 0.114 * (n & 0xff);
-      if (lum < 110) return 'dark';
+      return lum < 110 ? 'dark' : 'light';
     }
+    return 'light';
   }
-  return 'light';
+  // Nothing pins the paper: the renderer's tokens follow the system
+  // (`prefers-color-scheme`), so the surface does too.
+  return systemDark ? 'dark' : 'light';
 }
 
 interface CacheEntry {

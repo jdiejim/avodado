@@ -6,13 +6,15 @@
  * pointer cell (the dot); arrows run from the pointer cell to the next node.
  * `kind: doubly` adds a second, lower back-arrow per link; `nullEnd` (default
  * true) terminates the chain in a ∅ ground symbol. `label` markers ("head",
- * "curr") render above their node with a ▼ tick.
+ * "curr") render above their node with a ▼ tick. Node tones follow
+ * `svg/dsTone.ts`; the legend names the tones in play.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
-import { dsTone } from '../svg/dsTone.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { DS_TONE_LEGEND, dsTone, dsToneAttrs, type DsTone } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 
 type LinkedlistData = BlockDataMap['linkedlist'];
@@ -27,6 +29,8 @@ const PAD_X = 8;
 function fit(v: string): string {
   return v.length > 4 ? `${v.slice(0, 3)}…` : v;
 }
+
+const LINK = 'fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#skArrow)"';
 
 export function renderLinkedlist(data: LinkedlistData): string {
   const nodes = data.nodes ?? [];
@@ -44,8 +48,8 @@ export function renderLinkedlist(data: LinkedlistData): string {
   let s = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img"><title>Linked list</title>`;
 
   if (n === 0) {
-    s += `<text x="${PAD_X}" y="${cy + 4}" class="ds-empty">(empty)</text></svg>`;
-    return frame(data, s);
+    s += `<text x="${PAD_X}" y="${cy + 4}" class="t-sub c-soft">(empty)</text></svg>`;
+    return frame(data, s, '');
   }
 
   const xOf = (i: number): number => PAD_X + i * (NODE_W + GAP);
@@ -55,10 +59,10 @@ export function renderLinkedlist(data: LinkedlistData): string {
     const dotX = xOf(i) + VALUE_W + (NODE_W - VALUE_W) / 2;
     const nextX = xOf(i + 1);
     if (doubly) {
-      s += `<path d="M${dotX},${cy - 7} L${nextX - 2},${cy - 7}" class="ll-link" marker-end="url(#gArrow)"/>`;
-      s += `<path d="M${nextX},${cy + 7} L${xOf(i) + NODE_W + 2},${cy + 7}" class="ll-link" marker-end="url(#gArrow)"/>`;
+      s += `<path d="M${dotX},${cy - 7} L${nextX - 2},${cy - 7}" ${LINK}/>`;
+      s += `<path d="M${nextX},${cy + 7} L${xOf(i) + NODE_W + 2},${cy + 7}" ${LINK}/>`;
     } else {
-      s += `<path d="M${dotX},${cy} L${nextX - 2},${cy}" class="ll-link" marker-end="url(#gArrow)"/>`;
+      s += `<path d="M${dotX},${cy} L${nextX - 2},${cy}" ${LINK}/>`;
     }
   }
 
@@ -67,18 +71,22 @@ export function renderLinkedlist(data: LinkedlistData): string {
     const dotX = xOf(n - 1) + VALUE_W + (NODE_W - VALUE_W) / 2;
     const endX = xOf(n - 1) + NODE_W + GAP;
     const y = doubly ? cy - 7 : cy;
-    s += `<path d="M${dotX},${y} L${endX - 2},${y}" class="ll-link" marker-end="url(#gArrow)"/>`;
-    s += `<text x="${endX + 8}" y="${y + 5}" class="ll-null">∅</text>`;
+    s += `<path d="M${dotX},${y} L${endX - 2},${y}" ${LINK}/>`;
+    s += `<text x="${endX + 8}" y="${y + 5}" class="t-name c-muted">∅</text>`;
   }
 
   // Node boxes: value cell + pointer cell (separator + dot).
+  const tones = new Set<DsTone>();
+  let plain = false;
   s += `<g${bl('nodes')}>`;
   nodes.forEach((nd, i) => {
     const t = dsTone(nd.tone);
+    if (nd.tone !== undefined) tones.add(nd.tone);
+    else plain = true;
     const x = xOf(i);
     s +=
-      `<g filter="url(#gshadow)"${bp(`nodes.${i}`)}>` +
-      `<rect x="${x}" y="${topPad}" width="${NODE_W}" height="${NODE_H}" rx="8" fill="${t.fill}" stroke="${t.stroke}" stroke-width="1.4"/>` +
+      `<g${bp(`nodes.${i}`)}>` +
+      `<rect x="${x}" y="${topPad}" width="${NODE_W}" height="${NODE_H}" rx="4"${dsToneAttrs(t)}/>` +
       `<line x1="${x + VALUE_W}" y1="${topPad + 5}" x2="${x + VALUE_W}" y2="${topPad + NODE_H - 5}" stroke="${t.stroke}" stroke-width="1"/>` +
       `<circle cx="${x + VALUE_W + (NODE_W - VALUE_W) / 2}" cy="${cy}" r="3" fill="${t.text}"/>` +
       `<text x="${x + VALUE_W / 2}" y="${cy + 5}" class="ds-val" fill="${t.text}"${bp(`nodes.${i}.value`)}>${escapeHtml(fit(nd.value))}</text>` +
@@ -91,22 +99,29 @@ export function renderLinkedlist(data: LinkedlistData): string {
     if (nd.label === undefined || nd.label.length === 0) return;
     const cx = xOf(i) + NODE_W / 2;
     s += `<g${bp(`nodes.${i}.label`)}>`;
-    s += `<text x="${cx}" y="${topPad - 14}" class="ds-ptr">${escapeHtml(nd.label)}</text>`;
-    s += `<path d="M${cx - 4},${topPad - 10} L${cx + 4},${topPad - 10} L${cx},${topPad - 4} z" fill="var(--navy)"/>`;
+    s += `<text x="${cx}" y="${topPad - 14}" class="t-badge c-ink" text-anchor="middle">${escapeHtml(nd.label)}</text>`;
+    s += `<path d="M${cx - 4},${topPad - 10} L${cx + 4},${topPad - 10} L${cx},${topPad - 4} z" fill="var(--ink)"/>`;
     s += `</g>`;
   });
 
   s += `</svg>`;
-  return frame(data, s);
+
+  const items: LegendItem[] = [];
+  if (plain) items.push({ swatch: 'node', label: 'node' });
+  for (const tone of ['active', 'target', 'visited', 'muted'] as const) {
+    if (tones.has(tone)) items.push(DS_TONE_LEGEND[tone]);
+  }
+  items.push({ swatch: 'edge', label: doubly ? 'next / prev' : 'next' });
+  return frame(data, s, renderLegend(items));
 }
 
-function frame(data: LinkedlistData, inner: string): string {
+function frame(data: LinkedlistData, inner: string, legendHtml: string): string {
   return diagramFrame(
     {
       tag: 'LIST',
-      tagBg: '#374151',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     inner,
   );

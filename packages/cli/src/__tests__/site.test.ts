@@ -263,7 +263,7 @@ describe('buildSite rich index', () => {
   it('puts a TLDR digest at the top: doc count plus one line per group', () => {
     const { pages } = buildSite(loadRich(), { richIndex: true });
     const index = pages.find((p) => p.path === 'index.html');
-    expect(index?.html).toContain('<div class="idx-eyebrow">5 documents</div>');
+    expect(index?.html).toContain('<div class="idx-eyebrow site-eyebrow">5 documents</div>');
     // Multi-doc group line: label + count only — no single doc's subtitle.
     expect(index?.html).toContain(
       '<a href="#group-guide"><strong>Guide</strong> · 2 documents</a>',

@@ -3,16 +3,19 @@
  * (binary search, two pointers, sliding windows), in pure SVG inside the
  * diagram frame (tag ARRAY).
  *
- * 44px square cells with hairline borders; indices above (when `showIndex`,
- * default true); pointer `label`s below their cell with a small ▲ tick; an
- * optional `window` draws a rounded navy-dashed outline around an inclusive
- * 0-based index range (out-of-bounds values clamp).
+ * 44px square cells; indices above (when `showIndex`, default true); pointer
+ * `label`s below their cell with a small ▲ tick; an optional `window` draws a
+ * dashed ink outline around an inclusive 0-based index range (out-of-bounds
+ * values clamp). Cell tones follow `svg/dsTone.ts`: paper cells with an ink
+ * outline, `active` / `target` on the accent, `visited` on `paper-2`, `muted`
+ * as a dashed ghost — and the legend names the tones in play.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
-import { dsTone } from '../svg/dsTone.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { DS_TONE_LEGEND, dsTone, dsToneAttrs, type DsTone } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 
 type ArrayData = BlockDataMap['array'];
@@ -43,22 +46,26 @@ export function renderArray(data: ArrayData): string {
   let s = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img"><title>Array</title>`;
 
   if (n === 0) {
-    s += `<text x="${PAD_X}" y="${cellsY + 26}" class="ds-empty">(empty)</text></svg>`;
-    return frame(data, s);
+    s += `<text x="${PAD_X}" y="${cellsY + 26}" class="t-sub c-soft">(empty)</text></svg>`;
+    return frame(data, s, '');
   }
 
   const xOf = (i: number): number => PAD_X + i * CELL;
 
   // Cells (+ indices above).
+  const tones = new Set<DsTone>();
+  let plain = false;
   s += `<g${bl('items')}>`;
   items.forEach((it, i) => {
     const t = dsTone(it.tone);
+    if (it.tone !== undefined) tones.add(it.tone);
+    else plain = true;
     const x = xOf(i);
     s += `<g${bp(`items.${i}`)}>`;
     if (showIndex) {
-      s += `<text x="${x + CELL / 2}" y="${cellsY - 5}" class="ds-idx">${i}</text>`;
+      s += `<text x="${x + CELL / 2}" y="${cellsY - 5}" class="t-sub c-soft" text-anchor="middle">${i}</text>`;
     }
-    s += `<rect x="${x}" y="${cellsY}" width="${CELL}" height="${CELL}" fill="${t.fill}" stroke="${t.stroke}" stroke-width="1"/>`;
+    s += `<rect x="${x}" y="${cellsY}" width="${CELL}" height="${CELL}"${dsToneAttrs(t)}/>`;
     s += `<text x="${x + CELL / 2}" y="${cellsY + CELL / 2 + 5}" class="ds-val" fill="${t.text}"${bp(`items.${i}.value`)}>${escapeHtml(fit(it.value))}</text>`;
     s += `</g>`;
   });
@@ -70,8 +77,8 @@ export function renderArray(data: ArrayData): string {
     const cx = xOf(i) + CELL / 2;
     const baseY = cellsY + CELL;
     s += `<g${bp(`items.${i}.label`)}>`;
-    s += `<path d="M${cx - 4},${baseY + 9} L${cx},${baseY + 3} L${cx + 4},${baseY + 9} z" fill="var(--navy)"/>`;
-    s += `<text x="${cx}" y="${baseY + 20}" class="ds-ptr">${escapeHtml(it.label)}</text>`;
+    s += `<path d="M${cx - 4},${baseY + 9} L${cx},${baseY + 3} L${cx + 4},${baseY + 9} z" fill="var(--ink)"/>`;
+    s += `<text x="${cx}" y="${baseY + 20}" class="t-badge c-ink" text-anchor="middle">${escapeHtml(it.label)}</text>`;
     s += `</g>`;
   });
 
@@ -81,23 +88,34 @@ export function renderArray(data: ArrayData): string {
     const hi = Math.max(0, Math.min(n - 1, Math.max(window.from, window.to)));
     const wx = xOf(lo) - 3;
     const ww = (hi - lo + 1) * CELL + 6;
-    s += `<rect x="${wx}" y="${cellsY - 3}" width="${ww}" height="${CELL + 6}" rx="6" class="ds-window"${bp('window')}/>`;
+    s += `<rect x="${wx}" y="${cellsY - 3}" width="${ww}" height="${CELL + 6}" rx="4" fill="none" stroke="var(--ink)" stroke-width="1.25" stroke-dasharray="4 3"${bp('window')}/>`;
     if (window.label !== undefined && window.label.length > 0) {
-      s += `<text x="${wx + ww}" y="${cellsY - idxH - 6}" text-anchor="end" class="ds-window-label"${bp('window.label')}>${escapeHtml(window.label)}</text>`;
+      s += `<text x="${wx + ww}" y="${cellsY - idxH - 6}" text-anchor="end" class="t-eyebrow"${bp('window.label')}>${escapeHtml(window.label)}</text>`;
     }
   }
 
   s += `</svg>`;
-  return frame(data, s);
+  return frame(data, s, dsLegend(plain, tones, window !== undefined));
 }
 
-function frame(data: ArrayData, inner: string): string {
+/** The legend: the plain cell, every tone present, and the window outline. */
+function dsLegend(plain: boolean, tones: ReadonlySet<DsTone>, hasWindow: boolean): string {
+  const items: LegendItem[] = [];
+  if (plain) items.push({ swatch: 'node', label: 'cell' });
+  for (const tone of ['active', 'target', 'visited', 'muted'] as const) {
+    if (tones.has(tone)) items.push(DS_TONE_LEGEND[tone]);
+  }
+  if (hasWindow) items.push({ swatch: 'chip', chip: '[ ]', label: 'window' });
+  return renderLegend(items);
+}
+
+function frame(data: ArrayData, inner: string, legendHtml: string): string {
   return diagramFrame(
     {
       tag: 'ARRAY',
-      tagBg: '#374151',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     inner,
   );

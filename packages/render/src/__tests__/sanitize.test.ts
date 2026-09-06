@@ -75,7 +75,7 @@ describe('block renderers reject malicious colours', () => {
       stats: [{ value: '1', label: 'x', accent: '#fff" onload="alert(1)' }],
     });
     expect(html).not.toContain('onload=');
-    expect(html).toContain('border-top-color:#0e54a1');
+    expect(html).toContain('border-top-color:var(--accent)');
   });
 
   it('block group colour breakout is dropped to the default', () => {

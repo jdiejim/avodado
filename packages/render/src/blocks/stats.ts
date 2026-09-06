@@ -1,7 +1,8 @@
 /**
  * Renders a row of KPI / stat cards with optional delta + trend arrow.
  *
- * Ported from doc-studio.jsx `StatCards`.
+ * A stat's `accent` is the author's own colour (data, kept as written after
+ * sanitising); an unsafe value falls back to the skin's `accent` token.
  */
 
 import type { BlockDataMap } from '@avodado/core';
@@ -17,7 +18,7 @@ export function renderStats(data: BlockDataMap['stats']): string {
     .map((s, i) => {
       const accent =
         s.accent !== undefined
-          ? ` style="border-top-color:${safeColor(s.accent, '#0e54a1')}"`
+          ? ` style="border-top-color:${safeColor(s.accent, 'var(--accent)')}"`
           : '';
       const delta =
         s.delta !== undefined

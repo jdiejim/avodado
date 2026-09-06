@@ -2,17 +2,19 @@
  * Renders a `hashmap` block — bucket slots with chained entries, in pure SVG
  * inside the diagram frame (tag HASH).
  *
- * A vertical column of bucket slots (mono index in a 34px light-gray cell);
+ * A vertical column of bucket slots (mono index in a 34px `paper-2` cell);
  * each bucket's entries chain rightward as rounded `key` / `key: value`
  * pills joined by small arrows, so collision chains read left → right. Empty
  * buckets show a dim "—". Entries whose `bucket` falls outside 0..N-1 are
- * skipped; rendering caps at 12 buckets with a "+N more" note.
+ * skipped; rendering caps at 12 buckets with a "+N more" note. Entry tones
+ * follow `svg/dsTone.ts`; the legend names the tones in play.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
-import { dsTone } from '../svg/dsTone.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { DS_TONE_LEGEND, dsTone, dsToneAttrs, type DsTone } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 
 type HashmapData = BlockDataMap['hashmap'];
@@ -68,31 +70,37 @@ export function renderHashmap(data: HashmapData): string {
   let s = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img"><title>Hash map</title>`;
 
   if (shown === 0) {
-    s += `<text x="${PAD_X}" y="${ROW_H / 2 + 9}" class="ds-empty">(empty)</text></svg>`;
-    return frame(data, s);
+    s += `<text x="${PAD_X}" y="${ROW_H / 2 + 9}" class="t-sub c-soft">(empty)</text></svg>`;
+    return frame(data, s, '');
   }
 
+  const tones = new Set<DsTone>();
+  let plain = false;
+  let chained = false;
   s += `<g${bl('entries')}>`;
   for (let b = 0; b < shown; b += 1) {
     const y = 4 + b * (ROW_H + GAP_Y);
     const cy = y + ROW_H / 2;
     // Bucket index cell.
-    s += `<rect x="${PAD_X}" y="${y}" width="${IDX_W}" height="${ROW_H}" rx="4" fill="var(--light-gray)" stroke="var(--rule)"/>`;
-    s += `<text x="${PAD_X + IDX_W / 2}" y="${cy + 4}" class="hsh-idx">${b}</text>`;
+    s += `<rect x="${PAD_X}" y="${y}" width="${IDX_W}" height="${ROW_H}" rx="2" fill="var(--paper-2)" stroke="var(--rule-solid)" stroke-width="1"/>`;
+    s += `<text x="${PAD_X + IDX_W / 2}" y="${cy + 4}" class="t-sub c-muted" text-anchor="middle">${b}</text>`;
 
     const chain = chains.get(b) ?? [];
     if (chain.length === 0) {
-      s += `<text x="${PAD_X + IDX_W + 12}" y="${cy + 4}" class="hsh-nil">—</text>`;
+      s += `<text x="${PAD_X + IDX_W + 12}" y="${cy + 4}" class="t-sub c-soft">—</text>`;
       continue;
     }
+    if (chain.length > 1) chained = true;
     let x = PAD_X + IDX_W;
     chain.forEach(({ e, idx }) => {
       const w = pillW(e);
-      s += `<path d="M${x + 1},${cy} L${x + LINK_W - 2},${cy}" class="hsh-link" marker-end="url(#gSoft)"/>`;
+      s += `<path d="M${x + 1},${cy} L${x + LINK_W - 2},${cy}" fill="none" stroke="var(--muted)" stroke-width="1.25" marker-end="url(#skArrow)"/>`;
       x += LINK_W;
       const t = dsTone(e.tone);
+      if (e.tone !== undefined) tones.add(e.tone);
+      else plain = true;
       s += `<g${bp(`entries.${idx}`)}>`;
-      s += `<rect x="${x}" y="${cy - PILL_H / 2}" width="${w}" height="${PILL_H}" rx="11" fill="${t.fill}" stroke="${t.stroke}" stroke-width="1.2"/>`;
+      s += `<rect x="${x}" y="${cy - PILL_H / 2}" width="${w}" height="${PILL_H}" rx="4"${dsToneAttrs(t)}/>`;
       s += `<text x="${x + w / 2}" y="${cy + 4}" class="hsh-key" fill="${t.text}">${escapeHtml(fit(pillText(e)))}</text>`;
       s += `</g>`;
       x += w;
@@ -102,20 +110,27 @@ export function renderHashmap(data: HashmapData): string {
 
   if (overflow > 0) {
     const y = 4 + shown * (ROW_H + GAP_Y) + 10;
-    s += `<text x="${PAD_X}" y="${y}" class="hsh-more">+${overflow} more bucket${overflow === 1 ? '' : 's'}</text>`;
+    s += `<text x="${PAD_X}" y="${y}" class="t-sub c-soft">+${overflow} more bucket${overflow === 1 ? '' : 's'}</text>`;
   }
 
   s += `</svg>`;
-  return frame(data, s);
+
+  const items: LegendItem[] = [{ swatch: 'node-fill2', label: 'bucket' }];
+  if (plain) items.push({ swatch: 'node', label: 'entry' });
+  for (const tone of ['active', 'target', 'visited', 'muted'] as const) {
+    if (tones.has(tone)) items.push(DS_TONE_LEGEND[tone]);
+  }
+  if (chained) items.push({ swatch: 'edge', label: 'collision chain' });
+  return frame(data, s, renderLegend(items));
 }
 
-function frame(data: HashmapData, inner: string): string {
+function frame(data: HashmapData, inner: string, legendHtml: string): string {
   return diagramFrame(
     {
       tag: 'HASH',
-      tagBg: '#374151',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     inner,
   );

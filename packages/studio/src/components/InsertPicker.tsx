@@ -38,6 +38,7 @@ import {
 } from '../lib/pickerEngine.js';
 import { buildBlockSource, previewBlock } from '../lib/blockPreview.js';
 import { derive, docSurface } from '../state/derive.js';
+import { useSystemDark } from '../lib/systemDark.js';
 import { useStudio, type PickerOpenState } from '../state/store.js';
 import {
   IconClose,
@@ -301,6 +302,7 @@ function DetailDialog({ hit, canInsert, onClose, onInsert }: {
 }): JSX.Element {
   const theme = useStudio((s) => s.theme);
   const themeVars = useStudio((s) => s.themeVars);
+  const sysDark = useSystemDark();
   const rootRef = useRef<HTMLDivElement>(null);
   const insertRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
@@ -374,7 +376,7 @@ function DetailDialog({ hit, canInsert, onClose, onInsert }: {
         <div className="stu-picker-detail-body">
           <div className="stu-picker-pane stu-picker-pane-preview">
             <div className="stu-picker-pane-label">Preview</div>
-            <div className="stu-picker-preview" data-doc-theme={docSurface(theme, themeVars)}>
+            <div className="stu-picker-preview" data-doc-theme={docSurface(theme, themeVars, sysDark)}>
               {preview.html !== '' ? (
                 <div
                   className="docskin stu-picker-preview-doc"

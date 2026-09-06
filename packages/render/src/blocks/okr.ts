@@ -33,6 +33,9 @@ function renderKr(kr: Kr, path: string): string {
     `<div class="okr-kr-bar">` +
     `<div class="okr-track"><div class="okr-fill ${krTone(kr.status)}" style="width:${width}%"></div></div>` +
     `<span class="okr-pct"${bp(`${path}.progress`)}>${escapeHtml(pct)}</span>` +
+    (kr.status !== undefined
+      ? `<span class="okr-status okr-s-${kr.status}"${bp(`${path}.status`)}>${escapeHtml(kr.status)}</span>`
+      : '') +
     `</div>` +
     `</div>`
   );

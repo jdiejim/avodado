@@ -5,6 +5,11 @@
  * The whole point: a user edits one small JSON file with human names
  * (`primary`, `accent`, `ink`…) and re-runs `avo render` — no rebuild, no
  * CSS knowledge. Anything omitted falls back to the built-in theme.
+ *
+ * Colors map onto the skin's role tokens (`--paper`, `--ink`, `--muted`,
+ * `--soft`, `--rule`, `--accent`, `--link`, …) first; the legacy names
+ * (`--navy`, `--charcoal`, `--highlight`, …) are emitted as aliases of those
+ * roles so the renderers that have not migrated follow the same theme.
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -40,20 +45,103 @@ export function themeSlug(name: string): string {
     .replace(/^-|-$/g, '');
 }
 
-/** Friendly color name → internal CSS variable. */
-const COLOR_TO_VAR: Readonly<Record<string, string>> = {
-  primary: '--navy', // headings, primary nodes, links, section numbers
-  secondary: '--blue', // secondary accents, CDN/consumer nodes
-  accent: '--highlight', // highlight pills, FK keys, "current" markers
-  positive: '--positive', // success / service nodes / done
-  negative: '--negative', // errors / forbidden edges / danger
-  purple: '--purple', // data / context / provider nodes
-  teal: '--teal', // queues / topics / caches
-  ink: '--charcoal', // body text
-  muted: '--gray', // captions, dim text, external nodes
-  rule: '--rule', // hairlines, borders, dividers
-  paper: '--white', // surfaces / card fills
+/**
+ * One friendly color name → the CSS variable it sets, plus the names that
+ * derive from it. `role` is a skin role (`packages/render/DESIGN.md`) where
+ * one exists, else the legacy variable itself. `aliases` are the legacy names
+ * that follow the role (`--navy: var(--ink)`), so a base theme that pins a
+ * legacy value (the built-in `dark` does) still yields to the user's role.
+ * `derived` are tints computed from the role in CSS.
+ */
+interface ColorSlot {
+  readonly role: string;
+  readonly aliases: readonly string[];
+  readonly derived?: Readonly<Record<string, string>>;
+}
+
+/** Friendly color name → skin role + derived legacy names. */
+const COLOR_SLOTS: Readonly<Record<string, ColorSlot>> = {
+  paper: {
+    // surfaces / card fills; the diagram ground is one step darker
+    role: '--paper',
+    aliases: ['--white'],
+    derived: { '--paper-2': 'color-mix(in srgb, var(--paper) 94%, var(--ink))' },
+  },
+  ink: { role: '--ink', aliases: ['--charcoal', '--navy'] }, // text, headings, primary strokes
+  primary: { role: '--ink', aliases: ['--navy', '--charcoal'] }, // same role; see `colorsToVars`
+  muted: { role: '--muted', aliases: ['--gray', '--slate'] }, // captions, secondary text, chips
+  soft: { role: '--soft', aliases: [] }, // sublabels, legend text
+  rule: { role: '--rule', aliases: [] }, // hairlines, borders, dividers
+  accent: {
+    // the one focal thing; legacy highlight pills, FK keys, "current" markers
+    role: '--accent',
+    aliases: ['--highlight'],
+    derived: {
+      '--accent-tint': 'color-mix(in srgb, var(--accent) 9%, transparent)',
+      '--highlight-soft': 'var(--accent-tint)',
+    },
+  },
+  link: { role: '--link', aliases: ['--blue'] }, // HTTP calls, external arrows, links
+  secondary: { role: '--link', aliases: ['--blue'] }, // legacy name for `link`
+  negative: {
+    role: '--negative',
+    aliases: [],
+    derived: {
+      '--negative-tint': 'color-mix(in srgb, var(--negative) 8%, transparent)',
+      '--negative-soft': 'var(--negative-tint)',
+    },
+  },
+  // Legacy-only slots: no skin role, they still reach the renderers that
+  // have not migrated.
+  positive: {
+    role: '--positive',
+    aliases: [],
+    derived: { '--positive-soft': 'color-mix(in srgb, var(--positive) 9%, transparent)' },
+  },
+  purple: {
+    role: '--purple',
+    aliases: [],
+    derived: { '--purple-soft': 'color-mix(in srgb, var(--purple) 9%, transparent)' },
+  },
+  teal: {
+    role: '--teal',
+    aliases: [],
+    derived: { '--teal-soft': 'color-mix(in srgb, var(--teal) 9%, transparent)' },
+  },
 };
+
+/**
+ * Maps friendly colors to CSS variables: the skin roles first, then the
+ * legacy names as aliases of those roles, then the derived tints. Unknown
+ * names are ignored. `primary` and `ink` share the `--ink` role; when a file
+ * sets both, `ink` owns the role and `primary` keeps its legacy meaning — the
+ * heading / primary-node color (`--navy`) — as a direct value.
+ */
+function colorsToVars(colors: Readonly<Record<string, string>>): Record<string, string> {
+  const roles: Record<string, string> = {};
+  const aliases: Record<string, string> = {};
+  const derived: Record<string, string> = {};
+  const byName = new Map<string, string>();
+  for (const key of Object.keys(colors)) {
+    const value = colors[key];
+    if (typeof value === 'string') byName.set(key.toLowerCase(), value);
+  }
+  const splitPrimary = byName.has('primary') && byName.has('ink');
+  for (const [name, value] of byName) {
+    const slot = COLOR_SLOTS[name];
+    if (slot === undefined) continue;
+    if (name === 'primary' && splitPrimary) {
+      aliases['--navy'] = value;
+      continue;
+    }
+    roles[slot.role] = value;
+    for (const alias of slot.aliases) {
+      if (!(splitPrimary && alias === '--navy')) aliases[alias] = `var(${slot.role})`;
+    }
+    Object.assign(derived, slot.derived ?? {});
+  }
+  return { ...roles, ...aliases, ...derived };
+}
 
 /** Friendly font slot → internal CSS variable. */
 const FONT_TO_VAR: Readonly<Record<string, string>> = {
@@ -148,14 +236,10 @@ export function loadTheme(cwd: string): LoadedTheme {
 function toVars(raw: unknown): Readonly<Record<string, string>> | undefined {
   if (raw === null || typeof raw !== 'object') return undefined;
   const file = raw as ThemeFile;
-  const vars: Record<string, string> = {};
-  if (file.colors !== undefined) {
-    for (const key of Object.keys(file.colors)) {
-      const cssVar = COLOR_TO_VAR[key.toLowerCase()];
-      const value = file.colors[key];
-      if (cssVar !== undefined && typeof value === 'string') vars[cssVar] = value;
-    }
-  }
+  const vars: Record<string, string> =
+    file.colors !== undefined && file.colors !== null && typeof file.colors === 'object'
+      ? colorsToVars(file.colors)
+      : {};
   if (file.fonts !== undefined) {
     for (const key of Object.keys(file.fonts)) {
       const cssVar = FONT_TO_VAR[key.toLowerCase()];
@@ -228,7 +312,7 @@ export function validateThemeFile(text: string, knownNames: readonly string[] = 
   const checkSlots = (
     slots: Readonly<Record<string, string>> | undefined,
     field: 'colors' | 'fonts',
-    known: Readonly<Record<string, string>>,
+    known: Readonly<Record<string, unknown>>,
   ): void => {
     if (slots === undefined) return;
     if (typeof slots !== 'object' || slots === null) {
@@ -240,7 +324,7 @@ export function validateThemeFile(text: string, knownNames: readonly string[] = 
       else recognized += 1;
     }
   };
-  checkSlots(file.colors, 'colors', COLOR_TO_VAR);
+  checkSlots(file.colors, 'colors', COLOR_SLOTS);
   checkSlots(file.fonts, 'fonts', FONT_TO_VAR);
 
   if (errors.length === 0 && recognized === 0) {

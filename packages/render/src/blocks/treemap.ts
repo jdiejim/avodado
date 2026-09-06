@@ -11,28 +11,24 @@
  * aspect-ratio in that row, then lay the row along the short edge of what's
  * left and recurse into the rest. That is what keeps tiles near-square, which
  * is what makes areas comparable by eye.
+ *
+ * Skin (`DESIGN.md`): tiles are paper / `paper-2` with an ink outline (the
+ * two tones alternate by rank so neighbours separate without hue). The accent
+ * goes to the item the author marked with an accent — or, when none is, to
+ * the largest tile, which is the answer the chart exists to give. `accent:
+ * red` is `negative`.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
+import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { marksOf } from '../svg/dsTone.js';
 import { wrapText } from '../svg/wrapText.js';
 import { diagramFrame } from './frame.js';
 
 type TreemapData = BlockDataMap['treemap'];
 type Item = TreemapData['items'][number];
-
-const ACCENT: Readonly<Record<string, string>> = {
-  navy: 'var(--navy)',
-  blue: 'var(--blue)',
-  teal: 'var(--teal)',
-  green: 'var(--positive)',
-  amber: 'var(--highlight)',
-  purple: 'var(--purple)',
-  red: 'var(--negative)',
-  gray: 'var(--gray)',
-};
-const CYCLE = ['var(--navy)', 'var(--teal)', 'var(--blue)', 'var(--purple)', 'var(--highlight)'];
 
 const W = 880;
 const H = 400;
@@ -116,6 +112,15 @@ function fmt(v: number, unit: string | undefined): string {
   return unit !== undefined ? `${text}${unit}` : text;
 }
 
+type Tone = 'plain' | 'plain2' | 'accent' | 'negative';
+
+const TONE_ATTRS: Record<Tone, string> = {
+  plain: 'fill="var(--paper)" stroke="var(--ink)" stroke-width="1"',
+  plain2: 'fill="var(--paper-2)" stroke="var(--ink)" stroke-width="1"',
+  accent: 'fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.5"',
+  negative: 'fill="var(--negative-tint)" stroke="var(--negative)" stroke-width="1.5"',
+};
+
 export function renderTreemap(data: TreemapData): string {
   // Biggest first — squarified layout depends on descending order, and the
   // authored index rides along so click-to-edit still points at the right item.
@@ -128,8 +133,8 @@ export function renderTreemap(data: TreemapData): string {
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img"><title>${escapeHtml(data.title ?? 'Treemap')}</title>`;
 
   if (ordered.length === 0 || total <= 0) {
-    s += `<rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="var(--light-gray)"/></svg>`;
-    return frame(data, s);
+    s += `<rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="var(--paper)" stroke="var(--rule-solid)"/></svg>`;
+    return frame(data, s, '');
   }
 
   const tiles: Tile[] = ordered.map((e) => ({ item: e.item, index: e.index, x: 0, y: 0, w: 0, h: 0 }));
@@ -140,6 +145,18 @@ export function renderTreemap(data: TreemapData): string {
     { x: 0, y: 0, w: W, h: H },
   );
 
+  // The accent: the author's one flagged item; failing that, the largest tile.
+  const marks = marksOf(ordered.map((e) => e.item.accent));
+  const flagged = marks.includes('focal');
+  const toneOf = (t: Tile, rank: number): Tone => {
+    const mark = marks[rank];
+    if (mark === 'negative') return 'negative';
+    if (mark === 'focal') return 'accent';
+    if (!flagged && rank === 0) return 'accent';
+    return rank % 2 === 0 ? 'plain' : 'plain2';
+  };
+  const used = new Set<Tone>();
+
   s += `<g${bl('items')}>`;
   tiles.forEach((t, i) => {
     const x = t.x + PAD / 2;
@@ -147,44 +164,51 @@ export function renderTreemap(data: TreemapData): string {
     const w = Math.max(0, t.w - PAD);
     const h = Math.max(0, t.h - PAD);
     if (w < 2 || h < 2) return;
-    const color = t.item.accent !== undefined ? (ACCENT[t.item.accent] ?? CYCLE[0]) : CYCLE[i % CYCLE.length];
+    const tone = toneOf(t, i);
+    used.add(tone);
     const share = Math.round((t.item.value / total) * 100);
+    const nameCls = tone === 'accent' ? 't-name c-accent' : tone === 'negative' ? 't-name c-negative' : 't-name';
     s += `<g${bp(`items.${t.index}`)}>`;
-    s += `<rect x="${r(x)}" y="${r(y)}" width="${r(w)}" height="${r(h)}" rx="5" fill="${color ?? 'var(--navy)'}" fill-opacity="${0.9 - Math.min(i, 6) * 0.08}"/>`;
-    // Text only where it fits — a 12px line needs room, and a half-clipped
+    s += `<rect x="${r(x)}" y="${r(y)}" width="${r(w)}" height="${r(h)}" rx="3" ${TONE_ATTRS[tone]}/>`;
+    // Text only where it fits — a 13px line needs room, and a half-clipped
     // label reads worse than a tile that lets its tooltip do the talking.
     if (w >= 58 && h >= 30) {
-      const chars = Math.max(6, Math.floor(w / 7.2));
+      const chars = Math.max(6, Math.floor(w / 7.4));
       const lines = wrapText(t.item.label, chars, h >= 58 ? 2 : 1);
       lines.forEach((line, li) => {
-        s += `<text x="${r(x + 9)}" y="${r(y + 20 + li * 14)}" class="tm-name">${escapeHtml(line)}</text>`;
+        s += `<text x="${r(x + 9)}" y="${r(y + 20 + li * 15)}" class="${nameCls}">${escapeHtml(line)}</text>`;
       });
-      const below = y + 20 + lines.length * 14;
+      const below = y + 20 + lines.length * 15;
       if (h >= 48) {
-        s += `<text x="${r(x + 9)}" y="${r(below + 2)}" class="tm-value">${escapeHtml(fmt(t.item.value, data.unit))} · ${share}%</text>`;
+        s += `<text x="${r(x + 9)}" y="${r(below + 1)}" class="t-sub c-muted">${escapeHtml(fmt(t.item.value, data.unit))} · ${share}%</text>`;
       }
       if (t.item.desc !== undefined && h >= 74) {
-        s += `<text x="${r(x + 9)}" y="${r(below + 18)}" class="tm-desc">${escapeHtml(t.item.desc)}</text>`;
+        s += `<text x="${r(x + 9)}" y="${r(below + 16)}" class="t-sub c-soft">${escapeHtml(t.item.desc)}</text>`;
       }
     }
     s += `<title>${escapeHtml(`${t.item.label}: ${fmt(t.item.value, data.unit)} (${share}%)`)}</title>`;
     s += `</g>`;
   });
   s += `</g></svg>`;
-  return frame(data, s);
+
+  const items: LegendItem[] = [];
+  if (used.has('plain') || used.has('plain2')) items.push({ swatch: 'node', label: 'item (area = value)' });
+  if (used.has('accent')) items.push({ swatch: 'node-accent', label: flagged ? 'focal item' : 'largest item' });
+  if (used.has('negative')) items.push({ swatch: 'fill', fill: 'var(--negative-tint)', label: 'negative' });
+  return frame(data, s, renderLegend(items));
 }
 
 function r(v: number): number {
   return Math.round(v * 10) / 10;
 }
 
-function frame(data: TreemapData, inner: string): string {
+function frame(data: TreemapData, inner: string, legendHtml: string): string {
   return diagramFrame(
     {
       tag: 'TREEMAP',
-      tagBg: '#5b4a8a',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
+      ...(legendHtml.length > 0 ? { legendHtml } : {}),
     },
     inner,
   );

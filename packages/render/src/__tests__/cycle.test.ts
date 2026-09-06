@@ -21,7 +21,7 @@ describe('cycle renderer', () => {
     // (clickable in editors), and its legend entry.
     expect(pills.length).toBe(9);
     // The ring closes: N steps → N arc arrows, all with the shared marker.
-    expect(html.match(/marker-end="url\(#gArrow\)"/g)?.length).toBe(3);
+    expect(html.match(/marker-end="url\(#skArrow\)"/g)?.length).toBe(3);
     expect(root.querySelector('[data-bl="steps"]')).not.toBeNull();
   });
 
@@ -32,7 +32,7 @@ describe('cycle renderer', () => {
     expect(strHtml).not.toContain('.label"');
     // The string step's label text carries the whole-scalar path.
     const root = parse(strHtml);
-    const texts = root.querySelectorAll('text.cycle-name[data-bp="steps.0"]');
+    const texts = root.querySelectorAll('text.t-name[data-bp="steps.0"]');
     expect(texts.length).toBe(1);
     expect(texts[0]?.text).toBe('Detect');
   });
@@ -73,7 +73,7 @@ describe('cycle renderer', () => {
     const root = parse(html);
     const group = root.querySelector('g[data-bp="steps.0"] g[data-bp="steps.0"]');
     // Wrapped label = a group of >1 <text> lines under the pill group.
-    const wrapped = root.querySelectorAll('[data-bp="steps.0"] text.cycle-name');
+    const wrapped = root.querySelectorAll('[data-bp="steps.0"] text.t-name');
     expect(wrapped.length).toBeGreaterThan(1);
     expect(group).toBeNull(); // no accidental double-nesting of the same path
   });

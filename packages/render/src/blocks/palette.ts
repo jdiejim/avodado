@@ -6,21 +6,29 @@
  * colour computed from the hex's relative luminance), then the token name and
  * an optional usage line. Invalid / unsafe colour values fall back to a
  * neutral gray swatch with dark label text.
+ *
+ * The swatches are the author's DATA and keep their colours; the label on a
+ * swatch must contrast with that fixed colour in either theme, so it is a
+ * fixed colour too (`SWATCH_TEXT` in `svg/dsTone.ts`), and it sits on a
+ * translucent chip of the opposite tone so a mid-tone swatch still clears
+ * 4.5:1. An author-supplied `on` colour is used as given, without the chip.
+ * Only the chrome around the swatches is the skin's.
  */
 
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { safeColor } from '../sanitize.js';
+import { SWATCH_TEXT } from '../svg/dsTone.js';
 
 type PaletteData = BlockDataMap['palette'];
 type PaletteColor = PaletteData['colors'][number];
 
 /** Neutral gray swatch used when a colour value is missing or unsafe. */
-const FALLBACK_SWATCH = '#d1d5db';
+const FALLBACK_SWATCH = SWATCH_TEXT.fallback;
 /** Label colours for light / dark swatches. */
-const DARK_TEXT = '#1f2937';
-const LIGHT_TEXT = '#ffffff';
+const DARK_TEXT = SWATCH_TEXT.dark;
+const LIGHT_TEXT = SWATCH_TEXT.light;
 
 /** Parses `#rgb` / `#rrggbb` / `#rrggbbaa` into [r, g, b] (0-255), or null. */
 function parseHex(value: string): readonly [number, number, number] | null {
@@ -59,9 +67,15 @@ export function contrastFor(swatch: string): string {
   return relativeLuminance(rgb) > 0.6 ? DARK_TEXT : LIGHT_TEXT;
 }
 
+/** The chip behind an auto-contrast label: the opposite tone, translucent so the swatch shows through. */
+const CHIP_UNDER_DARK = 'rgba(255,255,255,.86)';
+const CHIP_UNDER_LIGHT = 'rgba(0,0,0,.58)';
+
 function renderCard(color: PaletteColor, i: number): string {
   const swatch = safeColor(color.value, FALLBACK_SWATCH);
-  const label = safeColor(color.on, contrastFor(swatch));
+  const auto = contrastFor(swatch);
+  const label = safeColor(color.on, auto);
+  const chip = color.on === undefined ? `;background:${label === DARK_TEXT ? CHIP_UNDER_DARK : CHIP_UNDER_LIGHT}` : '';
   const usage =
     color.usage !== undefined
       ? `<div class="pl-usage"${bp(`colors.${i}.usage`)}>${escapeHtml(color.usage)}</div>`
@@ -69,10 +83,10 @@ function renderCard(color: PaletteColor, i: number): string {
   return (
     `<div class="pl-card"${bp(`colors.${i}`)}>` +
     `<div class="pl-swatch" style="background:${swatch}">` +
-    `<span class="pl-hex" style="color:${label}"${bp(`colors.${i}.value`)}>${escapeHtml(color.value)}</span>` +
+    `<span class="pl-hex" style="color:${label}${chip}"${bp(`colors.${i}.value`)}>${escapeHtml(color.value)}</span>` +
     `</div>` +
     `<div class="pl-meta">` +
-    `<div class="pl-name"${bp(`colors.${i}.name`)}>${escapeHtml(color.name)}</div>` +
+    `<div class="pl-name t-name"${bp(`colors.${i}.name`)}>${escapeHtml(color.name)}</div>` +
     usage +
     `</div>` +
     `</div>`

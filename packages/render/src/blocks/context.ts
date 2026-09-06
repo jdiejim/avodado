@@ -2,9 +2,9 @@
  * Renders a `context` block — a context-window token budget, in pure SVG
  * inside the diagram frame (tag CONTEXT). One horizontal stacked bar sized
  * against `window`: segments left-to-right proportional to their tokens,
- * coloured by accent (default bright cycle) at fill-opacity .9; wide
- * segments (>90px) carry a white label, narrow ones a numeral matching the
- * legend beneath. Remaining space renders as a dim light-gray "free (N)"
+ * filled from the skin's series ramp (or the accent's series token); wide
+ * segments (>90px) carry their label on a paper mask, narrow ones a numeral
+ * matching the legend beneath. Remaining space renders as a paper-2 "free (N)"
  * segment; when the segments sum past the window, the overflow renders in
  * var(--negative) past a dashed window boundary with an "over budget" chip.
  *
@@ -20,24 +20,36 @@ import { diagramFrame } from './frame.js';
 type ContextData = BlockDataMap['context'];
 type Segment = ContextData['segments'][number];
 
-/** Accent name → bright diagram palette hex (matches chart / blockStyle). */
-const ACCENT_HEX: Record<string, string> = {
-  navy: '#0e54a1',
-  blue: '#1a6dbe',
-  teal: '#0f766e',
-  green: '#1f9747',
-  amber: '#f7952c',
-  purple: '#6b21a8',
-  red: '#991b1b',
-  gray: '#6b7280',
+/** Accent name → the skin's series ramp (DESIGN.md); `red` is the negative, `gray` the neutral step. */
+const ACCENT_TOKEN: Record<string, string> = {
+  navy: 'var(--series-2)',
+  blue: 'var(--series-2)',
+  teal: 'var(--series-1)',
+  green: 'var(--series-1)',
+  amber: 'var(--series-3)',
+  purple: 'var(--series-5)',
+  red: 'var(--negative)',
+  gray: 'var(--ink-3)',
 };
 
-/** Default colour cycle when a segment carries no accent. */
-const CYCLE = ['#0e54a1', '#0f766e', '#f7952c', '#6b21a8', '#1f9747', '#1a6dbe'];
+/** Default series cycle when a segment carries no accent. */
+const CYCLE = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)'];
 
 function colorAt(accent: string | undefined, i: number): string {
-  if (accent !== undefined && ACCENT_HEX[accent] !== undefined) return ACCENT_HEX[accent];
-  return CYCLE[i % CYCLE.length] ?? '#0e54a1';
+  if (accent !== undefined && ACCENT_TOKEN[accent] !== undefined) return ACCENT_TOKEN[accent];
+  return CYCLE[i % CYCLE.length] ?? 'var(--series-1)';
+}
+
+/**
+ * A label on a paper mask: series fills are mid-tone, so no text reads on
+ * them directly (DESIGN.md: labels sit on a paper mask, never on a fill).
+ */
+function maskedLabel(cx: number, cy: number, text: string): string {
+  const w = 10 + text.length * 6.2;
+  return (
+    `<rect x="${Math.round(cx - w / 2)}" y="${cy - 8}" width="${Math.round(w)}" height="16" rx="3" class="ctx-seg-mask"/>` +
+    `<text x="${cx}" y="${cy + 3.5}" text-anchor="middle" class="ctx-seg-label">${escapeHtml(text)}</text>`
+  );
 }
 
 const WIDTH = 820;
@@ -98,12 +110,13 @@ export function renderContext(data: ContextData): string {
     const w = Math.max(px(running + v) - x, 2);
     const first = i === 0;
     const last = i === segments.length - 1 && free === 0;
-    s += `<path d="${segPath(x, w, TOP, BAR_H, first ? RADIUS : 0, last ? RADIUS : 0)}" fill="${colorAt(seg.accent, i)}" fill-opacity="0.9"${bp(`segments.${si}`)}/>`;
+    s += `<path d="${segPath(x, w, TOP, BAR_H, first ? RADIUS : 0, last ? RADIUS : 0)}" fill="${colorAt(seg.accent, i)}"${bp(`segments.${si}`)}/>`;
     const cx = x + Math.round(w / 2);
+    const cy = TOP + Math.round(BAR_H / 2);
     if (w > 90) {
-      s += `<text x="${cx}" y="${TOP + 21}" text-anchor="middle" class="ctx-seg-label">${escapeHtml(seg.label)}</text>`;
-    } else if (w >= 18) {
-      s += `<text x="${cx}" y="${TOP + 21}" text-anchor="middle" class="ctx-seg-label">${i + 1}</text>`;
+      s += maskedLabel(cx, cy, seg.label);
+    } else if (w >= 22) {
+      s += maskedLabel(cx, cy, String(i + 1));
     }
     running += v;
   });
@@ -113,7 +126,7 @@ export function renderContext(data: ContextData): string {
   if (free > 0) {
     const x = px(sum);
     const w = Math.max(WIDTH - x, 2);
-    s += `<path d="${segPath(x, w, TOP, BAR_H, segments.length === 0 ? RADIUS : 0, RADIUS)}" fill="var(--light-gray)" stroke="var(--rule)" stroke-width="1"/>`;
+    s += `<path d="${segPath(x, w, TOP, BAR_H, segments.length === 0 ? RADIUS : 0, RADIUS)}" fill="var(--paper-2)" stroke="var(--rule-solid)" stroke-width="1"/>`;
     if (w >= 90) {
       s += `<text x="${x + Math.round(w / 2)}" y="${TOP + 21}" text-anchor="middle" class="ctx-free-label">free (${escapeHtml(fmt(free))})</text>`;
     }
@@ -123,9 +136,9 @@ export function renderContext(data: ContextData): string {
   if (over) {
     const bx = px(window);
     const ow = Math.max(WIDTH - bx, 2);
-    s += `<path d="${segPath(bx, ow, TOP, BAR_H, 0, RADIUS)}" fill="var(--negative)" fill-opacity="0.9"/>`;
+    s += `<path d="${segPath(bx, ow, TOP, BAR_H, 0, RADIUS)}" fill="var(--negative)"/>`;
     if (ow >= 70) {
-      s += `<text x="${bx + Math.round(ow / 2)}" y="${TOP + 21}" text-anchor="middle" class="ctx-seg-label">+${escapeHtml(fmt(sum - window))}</text>`;
+      s += maskedLabel(bx + Math.round(ow / 2), TOP + Math.round(BAR_H / 2), `+${fmt(sum - window)}`);
     }
     s += `<line x1="${bx}" y1="${TOP - 6}" x2="${bx}" y2="${TOP + BAR_H + 5}" class="ctx-boundary"/>`;
     const chipLabel = 'over budget';
@@ -163,7 +176,6 @@ export function renderContext(data: ContextData): string {
   return diagramFrame(
     {
       tag: 'CONTEXT',
-      tagBg: '#7c3aed',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
     },

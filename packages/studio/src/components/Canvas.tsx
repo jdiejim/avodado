@@ -23,6 +23,7 @@ import { levelsBySegment } from '../lib/segDiagnostics.js';
 import { slashUsed } from '../lib/prefs.js';
 import { segmentLabel } from '../state/changes.js';
 import { docSurface } from '../state/derive.js';
+import { useSystemDark } from '../lib/systemDark.js';
 import { useDerived, useStudio } from '../state/store.js';
 import {
   IconArrowDown,
@@ -497,6 +498,7 @@ export function Canvas(): JSX.Element {
   const slashHintAt = useStudio((s) => s.slashHintAt);
   const theme = useStudio((s) => s.theme);
   const themeVars = useStudio((s) => s.themeVars);
+  const sysDark = useSystemDark();
   const showSlashHint = slashHintAt !== null && !slashUsed();
 
   // Per-segment error/warning tallies for the card badges — derived from the
@@ -532,7 +534,7 @@ export function Canvas(): JSX.Element {
       <style>{`.docskin{${rendered.themeVars}}`}</style>
       <div
         className="stu-page"
-        data-doc-theme={docSurface(theme, themeVars)}
+        data-doc-theme={docSurface(theme, themeVars, sysDark)}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="docskin">

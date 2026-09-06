@@ -41,13 +41,15 @@ export function renderStorymap(data: BlockDataMap['storymap']): string {
   const n = data.backbone.length;
   const rowW = LABEL_W + n * COL_W;
 
-  // Backbone header row: one emphasized step card per activity.
+  // Backbone header row: one paper step card per activity — an eyebrow with
+  // the step number, the activity as the name, the note as a sublabel.
   let head = `<div class="sm-row sm-head"${bl('backbone')} style="min-width:${rowW}px">`;
   head += `<div class="sm-gutter"></div>`;
   data.backbone.forEach((step, i) => {
     const long = step.label.length > CLAMP_HINT;
     head += `<div class="sm-colcell"><div class="sm-step"${bp(`backbone.${i}`)}${long ? ` title="${escapeHtml(step.label)}"` : ''}>`;
-    head += `<div class="sm-step-label"${bp(`backbone.${i}.label`)}>${escapeHtml(step.label)}</div>`;
+    head += `<span class="t-eyebrow sm-step-eyebrow">Step ${i + 1}</span>`;
+    head += `<div class="sm-step-label t-name"${bp(`backbone.${i}.label`)}>${escapeHtml(step.label)}</div>`;
     if (step.note !== undefined) {
       head += `<div class="sm-step-note">${escapeHtml(step.note)}</div>`;
     }
@@ -55,10 +57,11 @@ export function renderStorymap(data: BlockDataMap['storymap']): string {
   });
   head += `</div>`;
 
-  // One band per slice: label column + one cell (card stack) per step.
+  // One band per slice: label column + one cell (card stack) per step. The
+  // first slice (the nearest release) is the map's one accent.
   let bands = `<div${bl('slices')}>`;
   data.slices.forEach((slice, si) => {
-    bands += `<div class="sm-row sm-band"${bp(`slices.${si}`)} style="min-width:${rowW}px">`;
+    bands += `<div class="sm-row sm-band${si === 0 ? ' sm-band-first' : ''}"${bp(`slices.${si}`)} style="min-width:${rowW}px">`;
     bands += `<div class="sm-gutter sm-slice"${bp(`slices.${si}.label`)}>${escapeHtml(slice.label)}</div>`;
     slice.cells.forEach((cell, ci) => {
       bands += `<div class="sm-colcell sm-cell"${bl(`slices.${si}.cells.${ci}`)}>`;
@@ -83,7 +86,6 @@ export function renderStorymap(data: BlockDataMap['storymap']): string {
   return diagramFrame(
     {
       tag: 'STORY MAP',
-      tagBg: '#0f766e',
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.description !== undefined ? { desc: data.description } : {}),
     },
