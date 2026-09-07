@@ -12,6 +12,9 @@
  * - matrix/journey/heatmap rows pad their cell arrays to the column count;
  * - prose blocks start as a paragraph with placeholder text.
  *
+ * `blankListItem` is the second entry point: the context menu has no schema
+ * tree to build from, so the list-ordered kinds keep their blank item here.
+ *
  * Pure — no React, no DOM; validated per kind through the real pipeline in
  * the tests.
  */
@@ -122,4 +125,54 @@ export function fixupNewItem(
   }
 
   return item;
+}
+
+/* ─── blank items for the list-ordered kinds (context menu) ───────────────── */
+
+/**
+ * One blank item per LIST-ORDERED kind (the `REORDER_LISTS` family): every
+ * REQUIRED field of the item schema, nothing else. `Insert before` /
+ * `Insert after` / `Add …` in the context menu seed from here, so the write
+ * validates the moment it lands.
+ */
+const LIST_ITEM_SEEDS: Readonly<Record<string, () => Record<string, unknown>>> = {
+  glossary: () => ({ term: 'New term', def: 'What it means' }),
+  faq: () => ({ q: 'New question', a: 'The answer' }),
+  steps: () => ({ title: 'New step' }),
+  list: () => ({ lead: 'New item' }),
+  takeaways: () => ({ text: 'New takeaway' }),
+  agenda: () => ({ title: 'New item' }),
+  team: () => ({ name: 'New member' }),
+  stats: () => ({ value: '0', label: 'New stat' }),
+  saga: () => ({ id: 'step', name: 'New step', service: 'Service' }),
+};
+
+/**
+ * A blank item for `kind`'s ordered list, with a unique `id` when the schema
+ * has one. Null for a kind outside the list family.
+ */
+export function blankListItem(kind: string, siblings: readonly unknown[]): unknown | null {
+  const make = LIST_ITEM_SEEDS[kind];
+  return make === undefined ? null : withUniqueId(make(), siblings);
+}
+
+/**
+ * `item` with its `id` made unique against `siblings` — `step` → `step2` → …
+ * Items without a string `id` pass through (nothing to keep unique).
+ */
+export function withUniqueId(item: unknown, siblings: readonly unknown[]): unknown {
+  const rec = asRecord(item);
+  const id = rec?.['id'];
+  if (rec === null || typeof id !== 'string') return item;
+  const used = new Set(
+    siblings.map((s) => asRecord(s)?.['id']).filter((v): v is string => typeof v === 'string'),
+  );
+  const base = id.replace(/\d+$/, '') === '' ? 'item' : id.replace(/\d+$/, '');
+  let next = base;
+  let n = 2;
+  while (used.has(next)) {
+    next = `${base}${n}`;
+    n += 1;
+  }
+  return { ...rec, id: next };
 }

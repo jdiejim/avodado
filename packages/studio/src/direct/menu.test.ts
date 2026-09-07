@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseDocument, validateDocument, type Document } from '@avodado/core';
 import { specFor } from './connect.js';
+import { applyReorder } from './drag.js';
 import { deletePathInSegment, setPathsInSegment } from './host.js';
 import {
   flattenMenu,
@@ -121,6 +122,78 @@ const FENCES: Readonly<Record<string, string>> = {
     '  - { from: web, to: api, label: retry, activate: true }',
     '```',
   ].join('\n'),
+  glossary: [
+    '```glossary',
+    'terms:',
+    '  - { term: Saga, def: A transaction split across services }',
+    '  - { term: Outbox, def: A table of pending events }',
+    '  - { term: Idempotent, def: Safe to repeat }',
+    '```',
+  ].join('\n'),
+  faq: [
+    '```faq',
+    'items:',
+    '  - { q: Why a saga?, a: No shared transaction }',
+    '  - { q: When does it run?, a: On checkout }',
+    '```',
+  ].join('\n'),
+  steps: [
+    '```steps',
+    'items:',
+    '  - { title: Install the CLI }',
+    '  - { title: Add a config, body: Write avodado.config.ts }',
+    '```',
+  ].join('\n'),
+  list: [
+    '```list',
+    'items:',
+    '  - { lead: First }',
+    '  - { lead: Second, text: with a detail }',
+    '```',
+  ].join('\n'),
+  takeaways: [
+    '```takeaways',
+    'items:',
+    '  - { text: One }',
+    '  - { text: Two }',
+    '  - { text: Three }',
+    '  - { text: Four }',
+    '  - { text: Five }',
+    '  - { text: Six }',
+    '```',
+  ].join('\n'),
+  // The same kind at its schema MINIMUM (2) — where `Delete` must go dark.
+  takeaways2: ['```takeaways', 'items:', '  - { text: One }', '  - { text: Two }', '```'].join('\n'),
+  agenda: [
+    '```agenda',
+    'items:',
+    '  - { title: Intro, duration: 5m }',
+    '  - { title: Demo, owner: Ada }',
+    '```',
+  ].join('\n'),
+  team: [
+    '```team',
+    'members:',
+    '  - { name: Ada }',
+    '  - { name: Lin, role: Design }',
+    '```',
+  ].join('\n'),
+  stats: [
+    '```stats',
+    'stats:',
+    '  - { value: 99.9%, label: Uptime, trend: up }',
+    '  - { value: 12, label: Errors }',
+    '```',
+  ].join('\n'),
+  saga: [
+    '```saga',
+    'steps:',
+    '  - { id: reserve, name: Reserve stock, service: inventory, compensate: release stock }',
+    '  - { id: charge, name: Charge card, service: payments }',
+    '  - { id: ship, name: Book shipment, service: shipping }',
+    'failAt: charge',
+    '```',
+  ].join('\n'),
   erd: [
     '```erd',
     'entities:',
@@ -215,6 +288,24 @@ function expectAllOpsValid(f: Fixture, items: readonly MenuItem[]): number {
 }
 
 const GRID_KINDS = ['flow', 'dfd', 'state', 'c4', 'block', 'felogic', 'graph'];
+
+/** The list-ordered family: the list field, the item noun, the move wording. */
+const LIST_KINDS: ReadonlyArray<{
+  readonly kind: string;
+  readonly field: string;
+  readonly noun: string;
+  readonly move: readonly [string, string];
+}> = [
+  { kind: 'glossary', field: 'terms', noun: 'term', move: ['Move up', 'Move down'] },
+  { kind: 'faq', field: 'items', noun: 'question', move: ['Move up', 'Move down'] },
+  { kind: 'steps', field: 'items', noun: 'step', move: ['Move up', 'Move down'] },
+  { kind: 'list', field: 'items', noun: 'item', move: ['Move up', 'Move down'] },
+  { kind: 'takeaways', field: 'items', noun: 'takeaway', move: ['Move up', 'Move down'] },
+  { kind: 'agenda', field: 'items', noun: 'item', move: ['Move up', 'Move down'] },
+  { kind: 'team', field: 'members', noun: 'member', move: ['Move up', 'Move down'] },
+  { kind: 'stats', field: 'stats', noun: 'stat', move: ['Move left', 'Move right'] },
+  { kind: 'saga', field: 'steps', noun: 'step', move: ['Move left', 'Move right'] },
+];
 
 describe('targetFor', () => {
   it('maps paths to targets per family (leaves count as their item)', () => {
@@ -634,6 +725,185 @@ describe('erd', () => {
   });
 });
 
+describe('list-ordered kinds', () => {
+  for (const k of LIST_KINDS) {
+    it(`${k.kind}: item = move/duplicate/insert/delete, background = add + yaml, every op valid`, () => {
+      const f = fixture(k.kind);
+      const ctx = ctxFor(k.kind, f);
+      const items = menuFor({ type: 'item', index: 1 }, ctx);
+      expect(labels(items).slice(-6)).toEqual([
+        ...k.move,
+        'Duplicate',
+        'Insert before',
+        'Insert after',
+        'Delete',
+      ]);
+      for (const leaf of flattenMenu(items)) {
+        expect(leaf.op !== undefined || leaf.action !== undefined, leaf.label).toBe(true);
+      }
+      expect(expectAllOpsValid(f, items)).toBeGreaterThan(0);
+
+      const bg = menuFor({ type: 'background' }, ctx);
+      expect(labels(bg)).toEqual([`Add ${k.noun}`, 'Open YAML']);
+      expect(must(bg[bg.length - 1]).action).toEqual({ type: 'openYaml' });
+      const count = ((f.data as Record<string, unknown[]>)[k.field] ?? []).length;
+      expect(must(bg[0]).then).toEqual({ select: `${k.field}.${count}`, edit: expect.any(String) });
+      expectAllOpsValid(f, bg);
+
+      // targetFor: an item (or any leaf inside it) is the item; else background.
+      expect(targetFor(k.kind, `${k.field}.1`)).toEqual({ type: 'item', index: 1 });
+      expect(targetFor(k.kind, `${k.field}.0.label`)).toEqual({ type: 'item', index: 0 });
+      expect(targetFor(k.kind, 'title')).toEqual({ type: 'background' });
+      expect(targetFor(k.kind, null)).toEqual({ type: 'background' });
+    });
+  }
+
+  it('the ends disable their move; the schema bounds disable delete and the inserts', () => {
+    const f = fixture('glossary');
+    const first = menuFor({ type: 'item', index: 0 }, ctxFor('glossary', f));
+    expect(must(first.find((i) => i.label === 'Move up')).disabled).toBe(true);
+    expect(must(first.find((i) => i.label === 'Move down')).disabled).not.toBe(true);
+    const last = menuFor({ type: 'item', index: 2 }, ctxFor('glossary', f));
+    expect(must(last.find((i) => i.label === 'Move down')).disabled).toBe(true);
+    expect(must(last.find((i) => i.label === 'Move up')).disabled).not.toBe(true);
+    // takeaways at its schema max (6): no duplicate, no insert, no add.
+    const full = fixture('takeaways');
+    const items = menuFor({ type: 'item', index: 1 }, ctxFor('takeaways', full));
+    expect(
+      ['Duplicate', 'Insert before', 'Insert after'].map(
+        (l) => must(items.find((i) => i.label === l)).disabled,
+      ),
+    ).toEqual([true, true, true]);
+    expect(must(items.find((i) => i.label === 'Delete')).disabled).not.toBe(true);
+    expect(must(menuFor({ type: 'background' }, ctxFor('takeaways', full))[0]).disabled).toBe(true);
+    // …and at its minimum (2): no delete.
+    const small = fixture('takeaways2');
+    const tight = menuFor({ type: 'item', index: 0 }, ctxFor('takeaways', small));
+    expect(must(tight.find((i) => i.label === 'Delete')).disabled).toBe(true);
+    expect(must(tight.find((i) => i.label === 'Duplicate')).disabled).not.toBe(true);
+  });
+
+  it("Move is the drag layer's own splice, written as one whole-list set", () => {
+    const f = fixture('list');
+    const items = menuFor({ type: 'item', index: 0 }, ctxFor('list', f));
+    const down = must(items.find((i) => i.label === 'Move down'));
+    const ops = must(down.op)();
+    const arr = (f.data as { items: unknown[] }).items;
+    expect(ops).toEqual([{ path: ['items'], value: applyReorder(arr, 0, 2) }]);
+    expect(down.then).toEqual({ select: 'items.1' });
+    const out = apply(f, ops);
+    expect(errorsOf(out)).toEqual([]);
+    expect(out.indexOf('Second')).toBeLessThan(out.indexOf('First'));
+  });
+
+  it('Duplicate inserts the copy after the item and regenerates its id', () => {
+    const f = fixture('saga');
+    const items = menuFor({ type: 'item', index: 0 }, ctxFor('saga', f));
+    const ops = must(must(items.find((i) => i.label === 'Duplicate')).op)();
+    const list = (ops[0] as { value: Array<Record<string, unknown>> }).value;
+    expect(list).toHaveLength(4);
+    expect(list[1]?.['id']).toBe('reserve2');
+    expect(list[1]?.['name']).toBe('Reserve stock');
+    expect(errorsOf(apply(f, ops))).toEqual([]);
+    // A kind whose items carry no id copies them verbatim.
+    const g = fixture('glossary');
+    const gops = must(
+      must(menuFor({ type: 'item', index: 0 }, ctxFor('glossary', g)).find((i) => i.label === 'Duplicate')).op,
+    )();
+    expect((gops[0] as { value: unknown[] }).value[1]).toEqual({
+      term: 'Saga',
+      def: 'A transaction split across services',
+    });
+  });
+
+  it('Insert before / after seed a blank item and open its main field', () => {
+    const f = fixture('team');
+    const items = menuFor({ type: 'item', index: 1 }, ctxFor('team', f));
+    const before = must(items.find((i) => i.label === 'Insert before'));
+    const ops = must(before.op)();
+    expect((ops[0] as { value: unknown[] }).value[1]).toEqual({ name: 'New member' });
+    expect(before.then).toEqual({ select: 'members.1', edit: 'name' });
+    expect(errorsOf(apply(f, ops))).toEqual([]);
+    const after = must(items.find((i) => i.label === 'Insert after'));
+    expect(after.then).toEqual({ select: 'members.2', edit: 'name' });
+    expect((must(after.op)()[0] as { value: unknown[] }).value[2]).toEqual({ name: 'New member' });
+  });
+
+  it('saga: the failure point toggles, and Status ▸ checks the derived one', () => {
+    const f = fixture('saga');
+    const ctx = ctxFor('saga', f);
+    const failing = menuFor({ type: 'item', index: 1 }, ctx);
+    expect(labels(failing)).toEqual([
+      'Clear failure point',
+      'Status',
+      'Move left',
+      'Move right',
+      'Duplicate',
+      'Insert before',
+      'Insert after',
+      'Delete',
+    ]);
+    const clear = must(failing[0]);
+    expect(clear.checked).toBe(true);
+    expect(must(clear.op)()).toEqual([{ path: ['failAt'], remove: true }]);
+    const cleared = apply(f, must(clear.op)());
+    expect(errorsOf(cleared)).toEqual([]);
+    expect(cleared).not.toContain('failAt');
+    // Another step takes the failure over.
+    const set = must(menuFor({ type: 'item', index: 2 }, ctx)[0]);
+    expect([set.label, set.checked]).toEqual(['Set as failure point', false]);
+    const out = apply(f, must(set.op)());
+    expect(errorsOf(out)).toEqual([]);
+    expect(out).toContain('failAt: ship');
+    // The checkmark tracks the DERIVED status: before / at / after the failure.
+    const statusOf = (i: number): string | undefined =>
+      must(must(menuFor({ type: 'item', index: i }, ctx).find((x) => x.label === 'Status')).children).find(
+        (c) => c.checked === true,
+      )?.label;
+    expect([0, 1, 2].map(statusOf)).toEqual(['Compensated', 'Failed', 'Skipped']);
+    // Only the step that has a compensation offers to drop it.
+    expect(labels(menuFor({ type: 'item', index: 0 }, ctx))).toContain('Remove compensation');
+    const drop = must(menuFor({ type: 'item', index: 0 }, ctx).find((i) => i.label === 'Remove compensation'));
+    expect(apply(f, must(drop.op)())).not.toContain('release stock');
+  });
+
+  it('saga: deleting the failing step drops the dangling failAt in the same write', () => {
+    const f = fixture('saga');
+    const ctx = ctxFor('saga', f);
+    const del = must(menuFor({ type: 'item', index: 1 }, ctx).find((i) => i.label === 'Delete'));
+    const ops = must(del.op)();
+    expect(isHomogeneous(ops)).toBe(true);
+    const out = apply(f, ops);
+    expect(errorsOf(out)).toEqual([]);
+    expect(out).not.toContain('failAt');
+    expect(out).not.toContain('charge');
+    // A step the failure does not name is a plain remove.
+    const other = must(menuFor({ type: 'item', index: 2 }, ctx).find((i) => i.label === 'Delete'));
+    expect(must(other.op)()).toEqual([{ path: ['steps', 2], remove: true }]);
+    expect(errorsOf(apply(f, must(other.op)()))).toEqual([]);
+  });
+
+  it('stats: Trend ▸ writes the schema enum; None drops the key', () => {
+    const f = fixture('stats');
+    const ctx = ctxFor('stats', f);
+    const trend = must(menuFor({ type: 'item', index: 0 }, ctx).find((i) => i.label === 'Trend'));
+    expect(must(trend.children).map((c) => [c.label, c.checked])).toEqual([
+      ['Up', true],
+      ['Down', false],
+      ['Flat', false],
+      ['None', false],
+    ]);
+    const none = must(must(trend.children).find((c) => c.label === 'None'));
+    expect((must(none.op)()[0] as { value: Record<string, unknown> }).value['trend']).toBeUndefined();
+    expect(errorsOf(apply(f, must(none.op)()))).toEqual([]);
+    const bare = must(menuFor({ type: 'item', index: 1 }, ctx).find((i) => i.label === 'Trend'));
+    expect(must(bare.children).find((c) => c.checked === true)?.label).toBe('None');
+    // No other list kind grows extras above the generic block.
+    expect(labels(menuFor({ type: 'item', index: 0 }, ctxFor('agenda', fixture('agenda'))))[0]).toBe('Move up');
+    expect(labels(menuFor({ type: 'item', index: 0 }, ctxFor('team', fixture('team'))))[0]).toBe('Move up');
+  });
+});
+
 describe('reachability + homogeneity across every target', () => {
   const targets: Array<[string, MenuTarget]> = [
     ...GRID_KINDS.flatMap((k): Array<[string, MenuTarget]> => [
@@ -651,6 +921,10 @@ describe('reachability + homogeneity across every target', () => {
     ['erd', { type: 'column', entity: 1, index: 1 }],
     ['erd', { type: 'edge', index: 0 }],
     ['erd', { type: 'background' }],
+    ...LIST_KINDS.flatMap((k): Array<[string, MenuTarget]> => [
+      [k.kind, { type: 'item', index: 0 }],
+      [k.kind, { type: 'background' }],
+    ]),
   ];
   for (const [kind, target] of targets) {
     it(`${kind}/${target.type}: every leaf is ≤ 2 levels deep, carries an op or an action, and its ops are one-step`, () => {

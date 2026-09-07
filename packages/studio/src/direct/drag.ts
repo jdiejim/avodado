@@ -56,8 +56,11 @@ export type DragTarget =
  * array index. Dragging a step along the row therefore splices it to a new
  * index (the useful gesture for a saga: reordering the transaction), and the
  * grid metadata the coordinate diagrams emit would be a lie here.
+ *
+ * The context menu reads the same map (`listMenu` in `menu.ts`), so a kind
+ * added here gets the drag AND the right-click menu from one entry.
  */
-const REORDER_LISTS: Readonly<Record<string, string>> = {
+export const REORDER_LISTS: Readonly<Record<string, string>> = {
   glossary: 'terms',
   faq: 'items',
   steps: 'items',

@@ -28,10 +28,11 @@ import {
   type ConnectKind,
   type ConnectSpec,
 } from './connect.js';
-import type { Placement } from './drag.js';
+import { applyReorder, REORDER_LISTS, type Placement } from './drag.js';
 import { isSequenceMessage } from './duals.js';
 import { groupIndexFromPath, groupOps, groupRangeAt, type CellRange } from './groupMarquee.js';
 import type { PathSeg } from './paths.js';
+import { blankListItem, withUniqueId } from './seedItem.js';
 
 /* ─── ops ─────────────────────────────────────────────────────────────────── */
 
@@ -57,6 +58,8 @@ export type MenuTarget =
   | { readonly type: 'message'; readonly index: number }
   | { readonly type: 'entity'; readonly index: number }
   | { readonly type: 'column'; readonly entity: number; readonly index: number }
+  /** One item of a list-ordered block (glossary term, saga step, stat…). */
+  | { readonly type: 'item'; readonly index: number }
   | { readonly type: 'background' };
 
 /**
@@ -85,6 +88,12 @@ export function targetFor(
     m = /^relations\.(\d+)(?:\..+)?$/.exec(path);
     if (m !== null) return { type: 'edge', index: Number(m[1]) };
     return { type: 'background' };
+  }
+  const listField = REORDER_LISTS[kind];
+  if (listField !== undefined) {
+    if (path === null) return { type: 'background' };
+    const m = new RegExp(`^${listField}\\.(\\d+)(?:\\..+)?$`).exec(path);
+    return m !== null ? { type: 'item', index: Number(m[1]) } : { type: 'background' };
   }
   const spec = specFor(kind);
   if (spec !== null && path !== null) {
@@ -316,6 +325,8 @@ export function nodeKindChoices(ctx: MenuCtx, spec: ConnectSpec): ConnectKind[] 
 export function menuFor(target: MenuTarget, ctx: MenuCtx): MenuItem[] {
   if (ctx.kind === 'sequence') return sequenceMenu(target, ctx);
   if (ctx.kind === 'erd') return erdMenu(target, ctx);
+  const listField = REORDER_LISTS[ctx.kind];
+  if (listField !== undefined) return listMenu(target, ctx, listField);
   const spec = specFor(ctx.kind);
   if (spec === null) return target.type === 'background' ? [openYaml()] : [];
   switch (target.type) {
@@ -951,6 +962,258 @@ function uniqueEntityName(entities: ReadonlyArray<Record<string, unknown>>): str
     name = `Entity${n}`;
   }
   return name;
+}
+
+/* ─── list-ordered kinds ──────────────────────────────────────────────────── */
+
+/**
+ * What the generic list menu needs per kind, on top of the list field that
+ * {@link REORDER_LISTS} already owns:
+ *
+ * - `noun` names an item ("Add term", "Add member");
+ * - `axis` is the direction the renderer lays the list out, so the move items
+ *   read `up`/`down` (a column) or `left`/`right` (a row);
+ * - `field` is the field a fresh item opens for editing;
+ * - `min`/`max` mirror the item array's schema bounds — `Delete` is disabled
+ *   at `min`, the inserts and `Duplicate` at `max`.
+ */
+interface ListShape {
+  readonly noun: string;
+  readonly axis: 'x' | 'y';
+  readonly field: string;
+  readonly min: number;
+  readonly max?: number;
+}
+
+const LIST_SHAPES: Readonly<Record<string, ListShape>> = {
+  glossary: { noun: 'term', axis: 'y', field: 'term', min: 0 },
+  faq: { noun: 'question', axis: 'y', field: 'q', min: 1 },
+  steps: { noun: 'step', axis: 'y', field: 'title', min: 1 },
+  list: { noun: 'item', axis: 'y', field: 'lead', min: 1 },
+  takeaways: { noun: 'takeaway', axis: 'y', field: 'text', min: 2, max: 6 },
+  agenda: { noun: 'item', axis: 'y', field: 'title', min: 0 },
+  team: { noun: 'member', axis: 'y', field: 'name', min: 1 },
+  stats: { noun: 'stat', axis: 'x', field: 'label', min: 0 },
+  saga: { noun: 'step', axis: 'x', field: 'name', min: 1 },
+};
+
+/**
+ * The menu for a list-ordered kind: move / duplicate / insert / delete on an
+ * item, `Add <noun>` on the background, plus the handful of per-kind choices
+ * in {@link listExtras}. Position IS array order here, so every structural
+ * item is the SAME splice the drag and the ⌥-arrow nudge commit
+ * ({@link applyReorder}), written as one whole-list set.
+ */
+function listMenu(target: MenuTarget, ctx: MenuCtx, field: string): MenuItem[] {
+  const shape = LIST_SHAPES[ctx.kind];
+  if (shape === undefined) return [];
+  const items = listOf(ctx.data, field);
+  if (target.type !== 'item') return listBackgroundMenu(ctx, field, shape, items);
+  const i = target.index;
+  const item = asRecord(items[i]);
+  if (item === null) return [];
+  const n = items.length;
+  const full = shape.max !== undefined && n >= shape.max;
+  const seed = (): unknown => blankListItem(ctx.kind, items) ?? {};
+  const insertAt = (k: number): Op[] => [
+    { path: [field], value: [...items.slice(0, k), seed(), ...items.slice(k)] },
+  ];
+  const extras = listExtras(i, item, ctx, field, items);
+  return [
+    ...extras,
+    ...(extras.length > 0 ? [SEP] : []),
+    {
+      label: shape.axis === 'x' ? 'Move left' : 'Move up',
+      shortcut: shape.axis === 'x' ? '⌥←' : '⌥↑',
+      disabled: i === 0,
+      op: (): Op[] => reorderOps(field, items, i, i - 1),
+      then: { select: `${field}.${i - 1}` },
+    },
+    {
+      label: shape.axis === 'x' ? 'Move right' : 'Move down',
+      shortcut: shape.axis === 'x' ? '⌥→' : '⌥↓',
+      disabled: i >= n - 1,
+      op: (): Op[] => reorderOps(field, items, i, i + 2),
+      then: { select: `${field}.${i + 1}` },
+    },
+    {
+      label: 'Duplicate',
+      disabled: full,
+      op: (): Op[] => [
+        {
+          path: [field],
+          value: [...items.slice(0, i + 1), withUniqueId(item, items), ...items.slice(i + 1)],
+        },
+      ],
+      then: { select: `${field}.${i + 1}` },
+    },
+    {
+      label: 'Insert before',
+      disabled: full,
+      op: (): Op[] => insertAt(i),
+      then: { select: `${field}.${i}`, edit: shape.field },
+    },
+    {
+      label: 'Insert after',
+      disabled: full,
+      op: (): Op[] => insertAt(i + 1),
+      then: { select: `${field}.${i + 1}`, edit: shape.field },
+    },
+    SEP,
+    {
+      label: 'Delete',
+      shortcut: '⌫',
+      danger: true,
+      disabled: n <= shape.min,
+      fades: [`${field}.${i}`],
+      op: (): Op[] => listDeleteOps(ctx, field, items, i),
+    },
+  ];
+}
+
+function listBackgroundMenu(
+  ctx: MenuCtx,
+  field: string,
+  shape: ListShape,
+  items: readonly unknown[],
+): MenuItem[] {
+  return [
+    {
+      label: `Add ${shape.noun}`,
+      disabled: shape.max !== undefined && items.length >= shape.max,
+      op: (): Op[] => [
+        { path: [field, items.length], value: blankListItem(ctx.kind, items) ?? {} },
+      ],
+      then: { select: `${field}.${items.length}`, edit: shape.field },
+    },
+    SEP,
+    openYaml(),
+  ];
+}
+
+/** The whole-list set a from→gap move commits (the drag layer's own splice). */
+function reorderOps(field: string, items: readonly unknown[], from: number, gap: number): Op[] {
+  const next = applyReorder(items, from, gap);
+  return next === null ? [] : [{ path: [field], value: next }];
+}
+
+/**
+ * Removing one item is a single `remove` — the raw YAML around it keeps its
+ * formatting. One exception: a saga step named by the block's `failAt` would
+ * leave that key dangling (the schema rejects it), so that case rewrites the
+ * body without the key, as one set.
+ */
+function listDeleteOps(
+  ctx: MenuCtx,
+  field: string,
+  items: readonly unknown[],
+  i: number,
+): Op[] {
+  const data = asRecord(ctx.data);
+  if (ctx.kind === 'saga' && data !== null && data['failAt'] === asRecord(items[i])?.['id']) {
+    const rest = withKey(data, 'failAt', undefined);
+    return [{ path: [], value: { ...rest, [field]: items.filter((_, k) => k !== i) } }];
+  }
+  return [{ path: [field, i], remove: true }];
+}
+
+/** The per-kind choices above the generic block (empty for most kinds). */
+function listExtras(
+  i: number,
+  item: Record<string, unknown>,
+  ctx: MenuCtx,
+  field: string,
+  items: readonly unknown[],
+): MenuItem[] {
+  if (ctx.kind === 'saga') return sagaStepItems(i, item, ctx, field, items);
+  if (ctx.kind === 'stats') return [trendItem(i, item, field)];
+  return [];
+}
+
+const SAGA_STATUSES = ['ok', 'failed', 'skipped', 'compensated'] as const;
+
+/**
+ * The effective status of step `i` — what the renderer draws: an explicit
+ * `status` wins, otherwise `failAt` derives it (before it `compensated`, at
+ * it `failed`, after it `skipped`).
+ */
+function sagaStatusAt(ctx: MenuCtx, steps: readonly unknown[], i: number): string {
+  const explicit = asRecord(steps[i])?.['status'];
+  if (typeof explicit === 'string') return explicit;
+  const failAt = asRecord(ctx.data)?.['failAt'];
+  const failIdx =
+    failAt !== undefined
+      ? steps.findIndex((s) => asRecord(s)?.['id'] === failAt)
+      : steps.findIndex((s) => asRecord(s)?.['status'] === 'failed');
+  if (failIdx < 0) return 'ok';
+  return i < failIdx ? 'compensated' : i === failIdx ? 'failed' : 'skipped';
+}
+
+/**
+ * A saga step's own choices: where the transaction fails (the block-level
+ * `failAt`), an explicit status for this step, and dropping its compensation.
+ */
+function sagaStepItems(
+  i: number,
+  step: Record<string, unknown>,
+  ctx: MenuCtx,
+  field: string,
+  steps: readonly unknown[],
+): MenuItem[] {
+  const id = typeof step['id'] === 'string' ? (step['id'] as string) : '';
+  const fails = id !== '' && asRecord(ctx.data)?.['failAt'] === id;
+  const effective = sagaStatusAt(ctx, steps, i);
+  const items: MenuItem[] = [
+    fails
+      ? {
+          label: 'Clear failure point',
+          checked: true,
+          op: (): Op[] => [{ path: ['failAt'], remove: true }],
+        }
+      : {
+          label: 'Set as failure point',
+          checked: false,
+          disabled: id === '',
+          op: (): Op[] => (id === '' ? [] : [{ path: ['failAt'], value: id }]),
+        },
+    {
+      label: 'Status',
+      children: SAGA_STATUSES.map((s) => ({
+        label: titleCase(s),
+        checked: effective === s,
+        op: (): Op[] => [{ path: [field, i], value: withKey(step, 'status', s) }],
+      })),
+    },
+  ];
+  if (typeof step['compensate'] === 'string') {
+    items.push({
+      label: 'Remove compensation',
+      op: (): Op[] => [{ path: [field, i], value: withKey(step, 'compensate', undefined) }],
+    });
+  }
+  return items;
+}
+
+const TRENDS = ['up', 'down', 'flat'] as const;
+
+/** `Trend ▸` for a KPI card (`statSchema.trend`); `None` drops the key. */
+function trendItem(i: number, stat: Record<string, unknown>, field: string): MenuItem {
+  const cur = stat['trend'];
+  return {
+    label: 'Trend',
+    children: [
+      ...TRENDS.map((t) => ({
+        label: titleCase(t),
+        checked: cur === t,
+        op: (): Op[] => [{ path: [field, i], value: withKey(stat, 'trend', t) }],
+      })),
+      {
+        label: 'None',
+        checked: cur === undefined,
+        op: (): Op[] => [{ path: [field, i], value: withKey(stat, 'trend', undefined) }],
+      },
+    ],
+  };
 }
 
 /* ─── tree helpers (used by the glue and the tests) ───────────────────────── */
