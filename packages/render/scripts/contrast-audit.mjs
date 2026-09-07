@@ -8,6 +8,13 @@
 // `--root` names the container to audit (default `.docskin`); pass `body` to
 // audit a whole page, chrome included (site index, deck nav).
 //
+// `--nontext` switches to WCAG 1.4.11 Non-text Contrast (3:1): every STROKED
+// SVG shape that carries meaning — a node outline, a chip outline, an arrow, a
+// border that encodes state — measured against the surface painted BEHIND it.
+// Pure decoration is out of scope and skipped: the dot-grid page ground, chart
+// gridlines and separators, and anything a renderer marks `data-decorative`
+// (the attribute is inherited by descendants).
+//
 // Exit code 1 when any failure is found. Groups failures by the nearest
 // `section[id]` and the element's class so a renderer owner can act on it.
 
@@ -24,12 +31,13 @@ const optIdx = (name) => args.indexOf(name);
 const optValueAt = new Set(['--min', '--root'].map(optIdx).filter((i) => i >= 0).map((i) => i + 1));
 const file = args.find((a, i) => !a.startsWith('--') && !optValueAt.has(i));
 if (!file) {
-  console.error('usage: contrast-audit.mjs <page.html> [--json] [--min 4.5] [--root <selector>]');
+  console.error('usage: contrast-audit.mjs <page.html> [--json] [--nontext] [--min 4.5] [--root <selector>]');
   process.exit(2);
 }
 const asJson = args.includes('--json');
+const NONTEXT = args.includes('--nontext');
 const minIdx = optIdx('--min');
-const MIN = minIdx >= 0 ? Number(args[minIdx + 1]) : 4.5;
+const MIN = minIdx >= 0 ? Number(args[minIdx + 1]) : NONTEXT ? 3 : 4.5;
 const rootIdx = optIdx('--root');
 const ROOT = rootIdx >= 0 ? args[rootIdx + 1] : '.docskin';
 
@@ -38,7 +46,7 @@ const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
 await page.goto(pathToFileURL(resolve(file)).href, { waitUntil: 'load' });
 await page.waitForTimeout(400);
 
-const failures = await page.evaluate(({ MIN, ROOT }) => {
+const failures = await page.evaluate(({ MIN, ROOT, NONTEXT }) => {
   const parse = (s) => {
     const m = /rgba?\(([^)]+)\)/.exec(s);
     if (!m) return null;
@@ -96,6 +104,69 @@ const failures = await page.evaluate(({ MIN, ROOT }) => {
   };
   const out = [];
   const seen = new Set();
+
+  if (NONTEXT) {
+    // WCAG 1.4.11: a stroked shape that carries meaning must reach 3:1
+    // against the surface behind it. `<line>` joins the shape list here —
+    // arrows and connectors are lines, and they are never a surface.
+    const STROKED = new Set([...SVG_SHAPES, 'line']);
+    for (const el of document.querySelectorAll(`${ROOT} *`)) {
+      if (!isSvg(el) || !STROKED.has(el.tagName.toLowerCase())) continue;
+      // Decoration is out of scope — the attribute covers descendants too.
+      if (el.closest('[data-decorative]') !== null) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+      if (cs.stroke === 'none') continue;
+      const sw = parseFloat(cs.strokeWidth);
+      if (!(sw > 0)) continue;
+      const stroke = parse(cs.stroke);
+      const sOpacity = cs.strokeOpacity === '' ? 1 : parseFloat(cs.strokeOpacity);
+      if (!stroke || stroke.a === 0 || !(sOpacity > 0)) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 1 && r.height < 1) continue;
+      el.scrollIntoView({ block: 'center', behavior: 'instant' });
+      const r2 = el.getBoundingClientRect();
+      const px = Math.max(0, Math.min(r2.left + r2.width / 2, innerWidth - 1));
+      const py = Math.max(0, Math.min(r2.top + r2.height / 2, innerHeight - 1));
+      const bg = backgroundAt(el, px, py);
+      // Stroke paint over the surface behind it (alpha + stroke-opacity).
+      const eff = over({ ...stroke, a: stroke.a * sOpacity }, bg);
+      // A KNOCKOUT: the stroke paints exactly what is already behind it, so no
+      // line is drawn at all. It exists to notch a gap between two adjacent
+      // marks (stacked bars, donut slices, a bullseye's inner dot) and there
+      // is nothing for a reader to see or fail to see.
+      const same = (a, b) =>
+        a !== null && b !== null &&
+        Math.round(a.r) === Math.round(b.r) && Math.round(a.g) === Math.round(b.g) && Math.round(a.b) === Math.round(b.b);
+      if (same(eff, bg)) continue;
+      // The same, inward: a stroke in the shape's OWN fill draws no edge of its
+      // own — it only fattens the fill by half a stroke width (the pale steps
+      // of the ink ramp do this to keep their geometry crisp). What must carry
+      // 3:1 there is the FILL, and a fill is not a stroke.
+      const ownFill = cs.fill === 'none' ? null : parse(cs.fill);
+      if (ownFill !== null && ownFill.a >= 0.999 && same(eff, ownFill)) continue;
+      const c = ratio(eff, bg);
+      if (c >= MIN) continue;
+      const section = el.closest('section[id]');
+      const key = `${section?.id ?? '-'}|${el.tagName.toLowerCase()}.${(el.getAttribute('class') ?? '').split(' ').filter(Boolean).slice(0, 2).join('.')}|${cs.stroke}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        section: section?.id ?? '-',
+        block: section?.querySelector('.section-eyebrow, .section-num')?.textContent?.trim() ?? '',
+        el: el.tagName.toLowerCase(),
+        cls: el.getAttribute('class') ?? '',
+        text: (el.closest('[data-bp]')?.getAttribute('data-bp') ?? '').slice(0, 40),
+        fg: cs.stroke,
+        bg: `rgb(${Math.round(bg.r)}, ${Math.round(bg.g)}, ${Math.round(bg.b)})`,
+        size: sw,
+        ratio: Math.round(c * 100) / 100,
+        need: MIN,
+      });
+    }
+    return out;
+  }
+
   const nodes = document.querySelectorAll(`${ROOT} *`);
   for (const el of nodes) {
     // Only elements that directly own visible text.
@@ -143,7 +214,7 @@ const failures = await page.evaluate(({ MIN, ROOT }) => {
     });
   }
   return out;
-}, { MIN, ROOT });
+}, { MIN, ROOT, NONTEXT });
 
 await browser.close();
 
@@ -154,6 +225,10 @@ if (asJson) {
   for (const f of failures) {
     console.log(`${pad(f.section, 12)} ${pad(f.el + (f.cls ? '.' + f.cls.split(' ')[0] : ''), 28)} ${pad(f.ratio + ':1', 8)} need ${f.need}  ${pad(f.size + 'px', 8)} ${f.fg} on ${f.bg}  "${f.text}"`);
   }
-  console.log(`\n${failures.length} text element(s) under ${MIN}:1 (3:1 for large text)`);
+  console.log(
+    NONTEXT
+      ? `\n${failures.length} meaningful stroked shape(s) under ${MIN}:1`
+      : `\n${failures.length} text element(s) under ${MIN}:1 (3:1 for large text)`,
+  );
 }
 process.exit(failures.length > 0 ? 1 : 0);

@@ -31,8 +31,10 @@
 import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type ErdData = BlockDataMap['erd'];
 type ErdEntity = NonNullable<ErdData['entities']>[number];
@@ -537,7 +539,7 @@ export function renderErd(data: BlockDataMap['erd']): string {
         open = row.colIdx;
         s += `<g${bp(`entities.${b.idx}.columns.${row.colIdx}`)}>`;
         if (row.note !== undefined) s += `<title>${escapeHtml(row.note)}</title>`;
-        if (j > 0) s += `<line x1="${rd(x + 1)}" y1="${rd(rowTop)}" x2="${rd(x + b.w - 1)}" y2="${rd(rowTop)}" class="er-rowline"/>`;
+        if (j > 0) s += `<line x1="${rd(x + 1)}" y1="${rd(rowTop)}" x2="${rd(x + b.w - 1)}" y2="${rd(rowTop)}" class="er-rowline"${DECORATIVE}/>`;
         row.markers.forEach((m, k) => {
           used.add(m);
           s += `<text x="${rd(x + PAD_X + k * MARKER_W)}" y="${rd(ty)}" class="er-key ${markerClass(m)} t-sub c-muted">${escapeHtml(m)}</text>`;
@@ -569,7 +571,7 @@ export function renderErd(data: BlockDataMap['erd']): string {
         `<line x1="${rd(cx)}" y1="${rd(cy + HEAD_H)}" x2="${rd(cx + c.w)}" y2="${rd(cy + HEAD_H)}" class="er-headline"/>`;
       c.values.forEach((v, j) => {
         const rowTop = cy + HEAD_H + j * ROW_H;
-        if (j > 0) s += `<line x1="${rd(cx + 1)}" y1="${rd(rowTop)}" x2="${rd(cx + c.w - 1)}" y2="${rd(rowTop)}" class="er-rowline"/>`;
+        if (j > 0) s += `<line x1="${rd(cx + 1)}" y1="${rd(rowTop)}" x2="${rd(cx + c.w - 1)}" y2="${rd(rowTop)}" class="er-rowline"${DECORATIVE}/>`;
         s += `<text x="${rd(cx + PAD_X)}" y="${rd(rowTop + 14)}" class="er-col t-sub c-ink">${escapeHtml(v)}</text>`;
       });
       s += `</g>`;
@@ -583,7 +585,10 @@ export function renderErd(data: BlockDataMap['erd']): string {
 
   const W = Math.ceil(maxX + MARGIN);
   const H = Math.ceil(maxY + MARGIN);
-  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img"><title>Entity-relationship diagram</title>` + s + `</svg>`;
+  const a11y = svgName('Entity relationship diagram', data.title, [
+    countPhrase(ents.length, 'entity', 'entities'),
+  ]);
+  const svg = `<svg viewBox="0 0 ${W} ${H}"${a11y.attrs}>` + a11y.title + s + `</svg>`;
 
   const items: LegendItem[] = [];
   if (used.has('#')) items.push({ swatch: 'chip', chip: '#', label: 'primary key' });

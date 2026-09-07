@@ -21,6 +21,7 @@ import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { revealAttr } from '../svg/reveal.js';
+import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -153,7 +154,13 @@ export function renderSaga(data: SagaData): string {
     return k < 0 ? j : n + k;
   };
 
-  let s = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Saga</title>`;
+  const a11y = svgName('Saga', data.title, [
+    countPhrase(n, 'step'),
+    ...(compLines.filter((l) => l.length > 0).length > 0
+      ? [countPhrase(compLines.filter((l) => l.length > 0).length, 'compensation')]
+      : []),
+  ]);
+  let s = `<svg viewBox="0 0 ${width} ${height}"${a11y.attrs}>${a11y.title}`;
 
   // Coordinator band (orchestration only) with a fan-out arrow into every step.
   if (orchestrated) {

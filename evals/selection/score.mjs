@@ -40,13 +40,49 @@ function scoreOne(req, ans) {
   return { score: 0, tag: 'off', primary: p, justified };
 }
 
+/**
+ * Structural distinctness: two DIFFERENT requests that produce the same
+ * ordered list of block types were templated, not designed. Reports the
+ * colliding pairs and the fraction of answered requests whose structure is
+ * unique. Prose-only blocks (meta, callout, prose, divider) are stripped
+ * first — every doc opens the same way, and that is not templating.
+ */
+const CHROME = new Set(['meta', 'callout', 'prose', 'divider', 'takeaways']);
+
+function structureOf(ans) {
+  if (!Array.isArray(ans?.blocks)) return null;
+  const sig = ans.blocks
+    .map((b) => String(b.type ?? '').trim())
+    .filter((t) => t.length > 0 && !CHROME.has(t));
+  return sig.length > 0 ? sig.join('>') : null;
+}
+
+function distinctness(answers) {
+  const byStructure = new Map();
+  for (const r of requests) {
+    const s = structureOf(answers.get(r.id));
+    if (s === null) continue;
+    if (!byStructure.has(s)) byStructure.set(s, []);
+    byStructure.get(s).push(r.id);
+  }
+  const answered = [...byStructure.values()].reduce((n, ids) => n + ids.length, 0);
+  const collisions = [...byStructure.entries()].filter(([, ids]) => ids.length > 1);
+  const templated = collisions.reduce((n, [, ids]) => n + ids.length, 0);
+  return {
+    answered,
+    unique: byStructure.size,
+    templated,
+    collisions: collisions.map(([sig, ids]) => ({ sig, ids })),
+  };
+}
+
 function scoreRun(dir) {
   const answers = loadRun(dir);
   const rows = requests.map((r) => ({ id: r.id, ...scoreOne(r, answers.get(r.id)) }));
   const total = rows.reduce((s, r) => s + r.score, 0);
   const traps = rows.filter((r) => r.tag === 'TRAP').length;
   const justified = rows.filter((r) => r.justified).length;
-  return { dir, rows, total, traps, justified };
+  return { dir, rows, total, traps, justified, distinct: distinctness(answers) };
 }
 
 const runs = process.argv.slice(2).map(scoreRun);
@@ -60,6 +96,11 @@ for (const run of runs) {
   console.log(`\n== ${run.dir}`);
   for (const r of run.rows) console.log(`  ${pad(r.id, 20)} ${pad(r.tag, 8)} ${pad(r.primary, 12)} ${r.justified ? '' : 'no-rejected-alt'}`);
   console.log(`  score ${run.total}/${requests.length}  traps ${run.traps}  justified ${run.justified}/${requests.length}`);
+  const d = run.distinct;
+  console.log(
+    `  structure ${d.unique} distinct of ${d.answered} answered · ${d.templated} in a colliding shape`,
+  );
+  for (const c of d.collisions) console.log(`    same shape: ${c.ids.join(' + ')}  [${c.sig}]`);
 }
 
 if (runs.length > 1) {

@@ -137,7 +137,7 @@ const FALLBACK_HTML =
   '<body style="font:16px/1.6 system-ui,sans-serif;max-width:38rem;margin:4rem auto;padding:0 1rem;">' +
   '<h1>Avodado Studio</h1>' +
   '<p>The studio web app (<code>@avodado/studio</code>) is not installed, so there is ' +
-  'nothing to show here. Reinstall <code>@avodado/cli</code> to get the bundled assets.</p>' +
+  'nothing to show here. Reinstall <code>avodado</code> to get the bundled assets.</p>' +
   '<p>The file-bridge API is still running: <code>/api/meta</code>, <code>/api/docs</code>, ' +
   '<code>/api/doc/&lt;slug&gt;</code> and the <code>/__events</code> stream all work.</p>' +
   '</body></html>';

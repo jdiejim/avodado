@@ -27,6 +27,32 @@ node evals/selection/score.mjs .scratch/evals/before .scratch/evals/after
   `traps` made the model more confident, not better.
 - `justified` counts requests where every chosen block named its rejected
   alternative. The skill makes this mandatory.
+- `structure` counts how many distinct block-type sequences the run produced,
+  after stripping the chrome every doc shares (`meta`, `callout`, `prose`,
+  `divider`, `takeaways`). Two different requests that yield the same ordered
+  block list were templated, not designed; each collision is printed with the
+  ids that share it. This is the measure that says whether the agent composes.
+
+  A collision is a **screening result, not a verdict**. Block types are a
+  coarse signal: two genuinely similar questions can reach for the same two
+  types and still produce different documents. Open both answers and compare
+  the outlines and the per-block reasons before calling it templating. On
+  2026-09-06, `prod-request-path` and `zones-and-replicas` both came out as
+  `block > table` and were cleared on inspection — one drew an `infra` preset
+  hop chain with per-hop timeouts, the other a `k8s` preset nested by region
+  and zone with a zone-loss table, and they shared no heading.
+
+## Results
+
+| Run | Requests | Score | Traps | Justified | Distinct structures |
+|---|---|---|---|---|---|
+| `before` (skill pre-split) | 30 | 29/30 | 0 | 30/30 | 29 of 30 |
+| `after` (skill split) | 30 | 28.5/30 | 1 | 30/30 | 30 of 30 |
+| `sep06` (94 blocks) | 37 | 36.5/37 | 0 | 37/37 | 36 of 37 |
+
+The seven requests added on 2026-09-06 cover the new block types and include
+two traps (a request that sounds like a trace but wants `sequence`, one that
+sounds like a saga but wants `steps`). All seven were answered correctly.
 
 Keep the request set stable. A changed request invalidates every earlier run.
 Add new requests at the end of the file.

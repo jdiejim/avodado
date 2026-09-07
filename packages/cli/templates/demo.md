@@ -120,7 +120,7 @@ title: Engineering priorities
 levels:
   - { label: Vision, desc: Documentation as a navigable typed model }
   - { label: Strategy, desc: Files on disk are the source of truth }
-  - { label: This quarter, desc: "76 blocks, themes, agent skill" }
+  - { label: This quarter, desc: "94 blocks, one look, agent skill" }
   - { label: This week, desc: Phase 2 blocks shipped }
 ```
 
@@ -567,6 +567,40 @@ edges:
   - build -> deploy
 ```
 
+## Saga
+
+Each service owns its own database, so no single transaction covers an order.
+The order service issues every compensation itself, and a customer can see the
+stock reservation before the refund lands.
+
+```saga
+title: Place order
+mode: orchestration
+coordinator: Order service
+steps:
+  - reserve: Reserve stock · inventory · release stock
+  - coupon: Redeem coupon · promotions · restore coupon
+  - charge: Charge card · payments · refund card
+  - ship: Book shipment · shipping · cancel shipment
+  - notify: Send confirmation · notifications
+failAt: ship
+```
+
+## Incident loop
+
+Every incident feeds the next one: the review only closes when a guardrail
+lands in code. A loop that ends at the write-up is the one that repeats.
+
+```cycle
+title: How an incident closes
+steps:
+  - { label: Detect, desc: An SLO burn alert pages the on-call engineer }
+  - { label: Mitigate, desc: "Stop the bleeding first — roll back or shed load" }
+  - { label: Review, desc: Write the timeline while the details are fresh }
+  - { label: Guardrail, desc: "Ship the alert, test, or limit that catches it next time" }
+center: every page
+```
+
 ## Architecture map
 
 ```archmap
@@ -667,6 +701,25 @@ messages:
   - api --> client: 201 Created
 ```
 
+## Trace waterfall
+
+A trace holds one sampled request, not an average. A dependency that retries
+only sometimes costs a real user the full time here, which a percentile chart
+hides.
+
+```spans
+title: GET /orders/{id}
+description: One sampled request, 2026-08-28. The payments call was retried once.
+unit: ms
+spans:
+  - { id: get, service: api, name: "GET /orders/{id}", start: 0, duration: 138, kind: server }
+  - api/auth: verify token · 3 · 9 · get
+  - db/orders: SELECT orders · 14 · 38 · get
+  - { id: cat, service: catalogue, name: "GET /skus", start: 55, duration: 62, parent: get, kind: client }
+  - { id: sku, service: cache, name: "GET sku:A1", start: 58, duration: 4, parent: cat, kind: cache }
+  - { id: pay, service: payments, name: "GET /payments/ord_123", start: 120, duration: 16, parent: get, kind: client, error: true, attrs: { http.status: 502 }, note: The first call returned 502 and the retry succeeded. }
+```
+
 ## ERD
 
 ```erd
@@ -718,6 +771,23 @@ columns:
   - { label: To do, cards: [ { title: Auth, tag: backend }, { title: Login UI } ] }
   - { label: Doing, cards: [ { title: Checkout, tag: api } ] }
   - { label: Done, cards: [ { title: DB schema } ] }
+```
+
+## Rollout
+
+A gate compares the new version against the old one on the same traffic, not
+against last week. A stage that fails its gate holds; nothing reverts until a
+person or the rollback line says so.
+
+```rollout
+title: Orders API v2
+strategy: canary
+stages:
+  - "[done] 1% · Smoke · 15m — no 5xx"
+  - "[current] 10% · Canary · 30m — error rate < 0.5%"
+  - "[next] 50% · Half · 2h — p95 < 300 ms"
+  - { name: Full, traffic: 100, status: next, note: Delete the v1 deployment after 24 h. }
+rollback: Flip the orders-v2 flag off; v1 keeps serving without a deploy.
 ```
 
 ## Story map
@@ -838,6 +908,38 @@ fields:
   - { label: Flags, bits: 4 }
   - { label: Total length, bits: 24 }
   - { label: Request id, bits: 32, accent: teal }
+```
+
+## Event contract
+
+Payments emits this event and never waits for a reply, so the endpoint contract
+above does not apply to it. Delivery is at-least-once: a consumer that is not
+idempotent will ship the same order twice.
+
+```eventcontract
+name: order.paid
+version: v2
+channel: orders
+summary: Payment for an order was captured, so fulfilment may start.
+producers: [payments]
+consumers: [fulfilment, billing, analytics]
+delivery: at-least-once
+ordering: per-key
+key: order_id
+retention: 7d
+schema:
+  - order_id uuid required — The order the payment belongs to
+  - payment_id uuid required — The capture in the payment provider
+  - amount money required — Captured amount, as a decimal string with currency
+  - method string required — One of card, wallet, or invoice
+  - captured_at timestamp required — When the provider confirmed the capture
+headers:
+  - trace_id string required — W3C trace id of the checkout request
+example: |
+  { "order_id": "ord_123", "payment_id": "pay_77", "amount": "42.00 EUR", "method": "card" }
+errors:
+  - DuplicateCapture — the same payment_id arrived twice; drop the event
+note: Fulfilment must be idempotent on order_id.
 ```
 
 ## Pull quote
@@ -1301,7 +1403,7 @@ title: Taking Avodado to the enterprise
 description: Where we stand before the enterprise push.
 strengths:
   - Docs-as-code fits existing review workflows
-  - 76 typed blocks cover most technical stories
+  - 94 typed blocks cover most technical stories
   - Renders to HTML, slides, and PDF from one file
 weaknesses:
   - No SSO / SCIM integration yet

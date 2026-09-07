@@ -20,7 +20,7 @@ Semantic roles. Renderers name the role (`var(--ink)`), never the value.
 | `muted` | secondary text, default arrow stroke, chips | `#4f5868` |
 | `soft` | sublabels, guards, legend text | `#646d7b` (4.5:1 on paper-2 — the floor for small text) |
 | `rule` | hairlines | `rgba(31,36,48,.14)` |
-| `rule-solid` | frame borders, baselines | `#c9c6bd` |
+| `rule-solid` | frame borders, baselines, secondary node and chip outlines | `#807b70` (3.6:1 on paper-2 — the floor for a line that carries meaning) |
 | `accent` | the one focal thing, 1–2 uses per diagram | `#b04a25` (4.7:1 on paper-2, so it may carry small text) |
 | `accent-tint` | fill behind an accent-stroked shape | `rgba(176,74,37,.09)` |
 | `link` | HTTP calls, external arrows, links in prose | `#2f5c8f` |
@@ -115,6 +115,22 @@ node packages/render/scripts/contrast-audit.mjs dist/reference/showcase.html
 
 It exits non-zero on the first failure and names the section, element, and
 ratio. The showcase page must pass before a renderer change ships.
+
+**Non-text (WCAG 1.4.11).** A stroked shape that carries meaning — a node
+outline, a chip outline, an arrow, a border that encodes state — needs 3:1
+against the surface behind it. `--rule-solid` is the lightest line that may
+carry meaning; `--rule` is the decorative hairline and never does.
+
+```
+node packages/render/scripts/contrast-audit.mjs dist/reference/showcase.html --nontext
+```
+
+Decoration is out of scope, and a renderer says so with `data-decorative` on
+the shape (or on the layer that holds it): tick gridlines, row separators
+inside a card, the silhouette detail inside a node glyph, and knockout strokes
+that only cut a gap between two adjacent marks. The audit also skips a stroke
+that paints exactly what is already behind it or its own fill — no line is
+drawn there at all.
 
 ## What never changes
 

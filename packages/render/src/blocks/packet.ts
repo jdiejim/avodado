@@ -12,6 +12,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type PacketData = BlockDataMap['packet'];
 
@@ -90,7 +91,7 @@ export function renderPacket(data: PacketData): string {
   for (let b = 0; b <= width; b += 1) {
     const x = xAt(b);
     const major = b % 8 === 0;
-    s += `<line x1="${r(x)}" y1="${major ? 10 : 15}" x2="${r(x)}" y2="20" stroke="var(--rule)" stroke-width="1"/>`;
+    s += `<line x1="${r(x)}" y1="${major ? 10 : 15}" x2="${r(x)}" y2="20" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>`;
     if (major && b < width) {
       s += `<text x="${r(x + 2)}" y="${8}" class="pk-tick">${b}</text>`;
     }

@@ -34,9 +34,11 @@ import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { wrapText } from '../svg/wrapText.js';
 import { safeColor } from '../sanitize.js';
+import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type Data = BlockDataMap['block'];
 type Node = NonNullable<Data['nodes']>[number];
@@ -559,7 +561,7 @@ function shapedBody(
     return (
       `<g${shadow}>` +
       `<path d="M${r.x + ex} ${r.y} H ${r.x + r.w - ex} A ${ex} ${ry} 0 0 1 ${r.x + r.w - ex} ${r.y + r.h} H ${r.x + ex} A ${ex} ${ry} 0 0 1 ${r.x + ex} ${r.y} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
-      `<ellipse cx="${r.x + r.w - ex}" cy="${cy}" rx="${ex}" ry="${ry}" fill="none" stroke="${st.accent}" stroke-width="1.1" stroke-opacity="0.7"/>` +
+      `<ellipse cx="${r.x + r.w - ex}" cy="${cy}" rx="${ex}" ry="${ry}" fill="none" stroke="${st.accent}" stroke-width="1.1" stroke-opacity="0.7"${DECORATIVE}/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -681,7 +683,7 @@ function shapedBody(
     const ry = Math.min(12, r.h * 0.14);
     const rx = r.w / 2;
     const rim = (dy: number): string =>
-      `<path d="M${r.x} ${r.y + dy} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + dy}" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.55"/>`;
+      `<path d="M${r.x} ${r.y + dy} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + dy}" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.55"${DECORATIVE}/>`;
     return (
       `<g${shadow}>` +
       `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} V ${r.y + r.h - ry} A ${rx} ${ry} 0 0 1 ${r.x} ${r.y + r.h - ry} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
@@ -712,7 +714,7 @@ function shapedBody(
       slabs +=
         `<rect x="${r.x}" y="${sy.toFixed(1)}" width="${r.w}" height="${slabH.toFixed(1)}" rx="6" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
         `<circle cx="${r.x + 12}" cy="${(sy + slabH / 2).toFixed(1)}" r="2.4" fill="${gc}" opacity="0.8"/>` +
-        `<path d="M${r.x + 20} ${(sy + slabH / 2).toFixed(1)} H ${r.x + 32}" stroke="${st.accent}" stroke-width="1.4" stroke-opacity="0.5"/>`;
+        `<path d="M${r.x + 20} ${(sy + slabH / 2).toFixed(1)} H ${r.x + 32}" stroke="${st.accent}" stroke-width="1.4" stroke-opacity="0.5"${DECORATIVE}/>`;
     }
     return (
       `<g${shadow}>` +
@@ -841,7 +843,7 @@ function shapedBody(
       `<g${shadow}>` +
       `<rect x="${r.x}" y="${r.y + 3}" width="${r.w}" height="${r.h - 3}" rx="9" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       `<path d="M${r.x} ${r.y + 12} a 9 9 0 0 1 9 -9 H ${r.x + r.w - 9} a 9 9 0 0 1 9 9 V ${r.y + 3 + hh} H ${r.x} Z" fill="${gc}" fill-opacity="0.16"/>` +
-      `<path d="M${r.x} ${r.y + 3 + hh} H ${r.x + r.w}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.5"/>` +
+      `<path d="M${r.x} ${r.y + 3 + hh} H ${r.x + r.w}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.5"${DECORATIVE}/>` +
       ring(r.x + r.w * 0.3) +
       ring(r.x + r.w * 0.7) +
       `<circle cx="${ccx}" cy="${ccy}" r="${cr}" fill="var(--paper)" stroke="${st.accent}" stroke-width="1.4"/>` +
@@ -987,9 +989,9 @@ function shapedBody(
     return (
       `<g>` +
       `<circle cx="${cx}" cy="${gcy.toFixed(1)}" r="${rad}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
-      `<ellipse cx="${cx}" cy="${gcy.toFixed(1)}" rx="${(rad * 0.42).toFixed(1)}" ry="${rad}" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.65"/>` +
-      `<path d="M${(cx - rad).toFixed(1)} ${gcy.toFixed(1)} H ${(cx + rad).toFixed(1)}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.65"/>` +
-      `<path d="M${(cx - rad * 0.87).toFixed(1)} ${(gcy - rad * 0.45).toFixed(1)} a ${rad * 1.15} ${rad * 1.15} 0 0 1 ${(rad * 1.74).toFixed(1)} 0" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.45"/>` +
+      `<ellipse cx="${cx}" cy="${gcy.toFixed(1)}" rx="${(rad * 0.42).toFixed(1)}" ry="${rad}" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.65"${DECORATIVE}/>` +
+      `<path d="M${(cx - rad).toFixed(1)} ${gcy.toFixed(1)} H ${(cx + rad).toFixed(1)}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.65"${DECORATIVE}/>` +
+      `<path d="M${(cx - rad * 0.87).toFixed(1)} ${(gcy - rad * 0.45).toFixed(1)} a ${rad * 1.15} ${rad * 1.15} 0 0 1 ${(rad * 1.74).toFixed(1)} 0" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.45"${DECORATIVE}/>` +
       nodeLabels({
         name: n.name,
         ...tech,
@@ -1041,7 +1043,7 @@ function shapedBody(
       `<g${shadow}>` +
       `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="9" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       `<path d="M${r.x} ${r.y + 9} a 9 9 0 0 1 9 -9 H ${r.x + r.w - 9} a 9 9 0 0 1 9 9 V ${r.y + hh} H ${r.x} Z" fill="${gc}" fill-opacity="0.14"/>` +
-      `<path d="M${r.x} ${r.y + hh} H ${r.x + r.w}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.5"/>` +
+      `<path d="M${r.x} ${r.y + hh} H ${r.x + r.w}" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.5"${DECORATIVE}/>` +
       dot(0) +
       dot(1) +
       dot(2) +
@@ -1175,7 +1177,11 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
   // post-auto-layout.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
 
-  let s = `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>Block diagram</title>`;
+  const a11y = svgName('Block diagram', data.title, [
+    countPhrase(nodes.length, 'node'),
+    countPhrase(edges.length, 'connection'),
+  ]);
+  let s = `<svg viewBox="0 0 ${width} ${height}"${a11y.attrs}${gridMeta}>${a11y.title}`;
 
   // Group panels (shared drawing across the grid diagrams).
   s += gridGroupsSvg(groups, { xOf, yOf, cellW, cellH, gapX, gapY, skin: true });
@@ -1263,8 +1269,12 @@ function renderLayered(data: Data, entry: readonly string[]): { svg: string; leg
     });
   });
 
+  const a11y = svgName('Layered architecture', data.title, [
+    countPhrase(layers.length, 'layer'),
+    countPhrase(nodes.length, 'node'),
+  ]);
   let s =
-    `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Layered architecture</title>` +
+    `<svg viewBox="0 0 ${width} ${height}"${a11y.attrs}>${a11y.title}` +
     // The system boundary: a dashed hairline, the label as an eyebrow.
     `<rect x="${outerPad}" y="${outerPad}" width="${width - outerPad * 2}" height="${height - outerPad * 2}" rx="8" fill="none" stroke="var(--rule-solid)" stroke-width="1" stroke-dasharray="4 3"/>`;
   if (data.systemLabel !== undefined) {

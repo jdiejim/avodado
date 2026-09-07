@@ -20,6 +20,7 @@ import { bl, bp } from '../paths.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { inkTone, marksOf, seriesColor, sliceTone, type Mark } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type ChartData = BlockDataMap['chart'];
 type Series = NonNullable<ChartData['series']>[number];
@@ -101,7 +102,7 @@ function axes(f: Frame, labels: readonly string[], unit: string | undefined, tag
   let s = '';
   f.ticks.forEach((t, ti) => {
     const y = Math.round(f.y1 - ((f.y1 - f.y0) * t) / f.yMax);
-    s += `<line x1="${f.x0}" y1="${y}" x2="${f.x1}" y2="${y}" stroke="${ti === 0 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<line x1="${f.x0}" y1="${y}" x2="${f.x1}" y2="${y}" stroke="${ti === 0 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"${DECORATIVE}/>`;
     s += `<text x="${f.x0 - 8}" y="${y + 3}" class="t-sub c-soft" text-anchor="end">${escapeHtml(fmt(t, unit))}</text>`;
   });
   const n = Math.max(labels.length, 1);
@@ -229,7 +230,7 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
     `<circle cx="${cx}" cy="${cy}" r="${r + sw / 2}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>` +
     `<circle cx="${cx}" cy="${cy}" r="${r - sw / 2}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>`;
   if (total <= 0) {
-    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--paper)" stroke-width="${sw}"/>` + ringEdges;
+    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--paper)" stroke-width="${sw}"${DECORATIVE}/>` + ringEdges;
   } else {
     let angle = -90;
     const marks = marksOf(items.map((it) => it.accent));
@@ -240,7 +241,7 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
       const y0 = Math.round((cy + (r - sw / 2 - 1) * Math.sin(a)) * 10) / 10;
       const x1 = Math.round((cx + (r + sw / 2 + 1) * Math.cos(a)) * 10) / 10;
       const y1 = Math.round((cy + (r + sw / 2 + 1) * Math.sin(a)) * 10) / 10;
-      seams.push(`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--paper-2)" stroke-width="2"/>`);
+      seams.push(`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--paper-2)" stroke-width="2"${DECORATIVE}/>`);
     };
     // Every slice worth ≥ 8% is named beside the ring, with a leader from
     // the slice's middle; labels on one side are nudged apart top-down.
@@ -352,7 +353,7 @@ function renderStacked(
       if (v === 0) return;
       const h = Math.round(((f.y1 - f.y0) * v) / f.yMax);
       top -= h;
-      s += `<rect x="${x}" y="${top}" width="${Math.round(barW)}" height="${h}" fill="${seriesColor(si, series.length, sr.accent)}" stroke="var(--paper-2)" stroke-width="1"${bp(`series.${si}.values.${ci}`)}><title>${escapeHtml(`${sr.label} — ${fmt(v, data.unit)}`)}</title></rect>`;
+      s += `<rect x="${x}" y="${top}" width="${Math.round(barW)}" height="${h}" fill="${seriesColor(si, series.length, sr.accent)}" stroke="var(--paper-2)" stroke-width="1"${DECORATIVE}${bp(`series.${si}.values.${ci}`)}><title>${escapeHtml(`${sr.label} — ${fmt(v, data.unit)}`)}</title></rect>`;
     });
     // The column total sits above the stack, which is the number people read.
     const total = series.reduce((a, sr) => a + pos(sr.values[ci] ?? 0), 0);
@@ -511,12 +512,12 @@ function renderScatterPoints(data: ChartData, points: readonly ScatterPoint[]): 
   // Gridlines + tick labels on both axes.
   for (const t of sy.ticks) {
     const y = Y(t);
-    s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="${t === sy.min ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="${t === sy.min ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"${DECORATIVE}/>`;
     s += `<text x="${x0 - 8}" y="${y + 3}" class="t-sub c-soft" text-anchor="end">${escapeHtml(fmt(t, data.unit))}</text>`;
   }
   for (const t of sx.ticks) {
     const x = X(t);
-    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="${t === sx.min ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="${t === sx.min ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"${DECORATIVE}/>`;
     s += `<text x="${x}" y="${y1 + 16}" class="t-sub c-soft" text-anchor="middle">${escapeHtml(fmt(t, undefined))}</text>`;
   }
 
@@ -701,7 +702,7 @@ function renderGauge(data: ChartData, items: readonly DonutItem[]): Drawn {
     const color = sliceTone(i, marks[i]).fill;
     const fraction = pos(it.value) / max;
     s += `<g${bp(`items.${i}`)}>`;
-    s += `<path d="${arc(r, 1)}" fill="none" stroke="var(--paper)" stroke-width="${band}" stroke-linecap="round"/>`;
+    s += `<path d="${arc(r, 1)}" fill="none" stroke="var(--paper)" stroke-width="${band}" stroke-linecap="round"${DECORATIVE}/>`;
     const filled = arc(r, fraction);
     if (filled !== '') {
       s += `<path d="${filled}" fill="none" stroke="${color}" stroke-width="${band}" stroke-linecap="round"/>`;
@@ -754,11 +755,11 @@ function renderRadar(data: ChartData, labels: readonly string[], series: readonl
   rings.forEach((t, ri) => {
     if (ri === 0) return;
     const pts = Array.from({ length: n }, (_, i) => ptAt(i, (r * t) / vMax).join(','));
-    s += `<polygon points="${pts.join(' ')}" fill="none" stroke="${ri === rings.length - 1 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"/>`;
+    s += `<polygon points="${pts.join(' ')}" fill="none" stroke="${ri === rings.length - 1 ? 'var(--rule-solid)' : 'var(--rule)'}" stroke-width="1"${DECORATIVE}/>`;
   });
   for (let i = 0; i < n; i++) {
     const [x, y] = ptAt(i, r);
-    s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--rule)" stroke-width="1"/>`;
+    s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>`;
   }
   // Axis labels at the spoke ends, anchored away from the web.
   s += `<g${bl('labels')}>`;

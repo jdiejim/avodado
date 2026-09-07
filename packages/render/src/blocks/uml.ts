@@ -22,6 +22,7 @@ import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { roundedPath } from '../svg/shapes.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type UmlClass = NonNullable<BlockDataMap['uml']['classes']>[number];
 
@@ -182,9 +183,9 @@ export function renderUml(data: BlockDataMap['uml']): string {
       `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>` +
       stereo +
       `<text x="${r.x + r.w / 2}" y="${nameY}" class="t-name${accent ? ' c-accent' : ''}" text-anchor="middle"${bp(`classes.${ci}.name`)}>${escapeHtml(c.name)}</text>` +
-      `<line x1="${r.x}" y1="${r.y + hh}" x2="${r.x + r.w}" y2="${r.y + hh}" class="uml-sep"/>` +
+      `<line x1="${r.x}" y1="${r.y + hh}" x2="${r.x + r.w}" y2="${r.y + hh}" class="uml-sep"${DECORATIVE}/>` +
       attrs +
-      `<line x1="${r.x}" y1="${r.y + hh + aH}" x2="${r.x + r.w}" y2="${r.y + hh + aH}" class="uml-sep"/>` +
+      `<line x1="${r.x}" y1="${r.y + hh + aH}" x2="${r.x + r.w}" y2="${r.y + hh + aH}" class="uml-sep"${DECORATIVE}/>` +
       methods +
       `</g>`;
   });

@@ -72,7 +72,7 @@ function containedBy(inner: GridGroup, outer: GridGroup): boolean {
 }
 
 /** How far a nested panel steps in from its container, per level. */
-interface Inset {
+export interface Inset {
   readonly x: number;
   readonly y: number;
   readonly w: number;
@@ -89,7 +89,7 @@ interface Inset {
 const STEP_IN: Inset = { x: 4, y: 8, w: 8, h: 12 };
 const GROW_OUT: Inset = { x: 4, y: 10, w: 8, h: 14 };
 
-interface Nest {
+export interface Nest {
   readonly depth: number;
   readonly inset: Inset;
   readonly declared: boolean;
@@ -168,6 +168,17 @@ function resolveNesting(groups: readonly GridGroup[]): Map<GridGroup, Nest> {
     });
   }
   return out;
+}
+
+/**
+ * The per-group nesting a renderer that draws its OWN group panels needs
+ * (`felogic`): the resolved insets and depths when any group declares a
+ * `parent`, and an EMPTY map otherwise — a document with no declared nesting
+ * keeps the renderer's legacy geometry byte for byte.
+ */
+export function declaredNesting(groups: readonly GridGroup[]): ReadonlyMap<GridGroup, Nest> {
+  if (!groups.some((g) => g.parent !== undefined)) return new Map();
+  return resolveNesting(groups);
 }
 
 /**

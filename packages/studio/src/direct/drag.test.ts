@@ -27,6 +27,8 @@ import {
   type Box,
   type GridGeom,
 } from './drag.js';
+import { specFor } from './connect.js';
+import { classifyPart, deletablePathFor } from './partSelect.js';
 
 describe('drag-intent classifier', () => {
   it('stays a click at or below the 6px threshold', () => {
@@ -539,5 +541,72 @@ describe('dragTargetFor — ordered HTML lists reorder by drag (the sweep set)',
     for (const k of ['glossary', 'faq', 'steps', 'list', 'takeaways', 'agenda', 'team', 'stats']) {
       expect(blockSupportsDrag(k), k).toBe(true);
     }
+  });
+});
+
+describe('saga steps drag-reorder (position IS the array index)', () => {
+  it('a step — or a leaf inside it — grabs the step for a reorder', () => {
+    expect(dragTargetFor('saga', 'steps.0')).toEqual({ mode: 'reorder', listPath: 'steps', index: 0 });
+    expect(dragTargetFor('saga', 'steps.2.compensate')).toEqual({ mode: 'reorder', listPath: 'steps', index: 2 });
+    expect(dragTargetFor('saga', 'steps.1.service')).toEqual({ mode: 'reorder', listPath: 'steps', index: 1 });
+    expect(dragTargetFor('saga', 'coordinator')).toBeNull();
+    expect(dragTargetFor('saga', 'failAt')).toBeNull();
+  });
+
+  it('is NOT a grid kind — a saga step has no col/row to write', () => {
+    expect(specFor('saga')).toBeNull();
+    expect(dragTargetFor('saga', 'groups.0')).toBeNull();
+    expect(blockSupportsDrag('saga')).toBe(true);
+  });
+
+  it('the selected part classifies as a reorderable list item, not a grid node', () => {
+    expect(classifyPart('saga', 'steps.2')).toEqual({ kind: 'item', listPath: 'steps', index: 2 });
+    expect(deletablePathFor('saga', 'steps.2.compensate')).toBe('steps.2');
+  });
+
+  it('a horizontal drag splices the step to its new index and stays schema-valid', async () => {
+    const { parseDocument, validateDocument } = await import('@avodado/core');
+    const { setPathsInSegment } = await import('./host.js');
+    const source = [
+      '# T',
+      '',
+      '```saga',
+      'title: Place order',
+      'steps:',
+      '  - reserve: Reserve stock · inventory · release stock',
+      '  - charge: Charge card · payments · refund card',
+      '  - ship: Book shipment · shipping · cancel shipment',
+      'failAt: ship',
+      '```',
+      '',
+    ].join('\n');
+    const doc = parseDocument(source, 't');
+    const idx = doc.segments.findIndex((s) => s.kind !== 'markdown');
+    const seg = doc.segments[idx];
+    if (seg === undefined || seg.kind === 'markdown') throw new Error('segment missing');
+    const steps = (seg.data as { steps: Array<{ id: string }> }).steps;
+    expect(steps.map((s) => s.id)).toEqual(['reserve', 'charge', 'ship']);
+
+    // The steps sit left to right, so the drag axis is x and the drop gap
+    // comes from the measured centres — exactly the sequence-actor path.
+    const boxes = [box(20, 40, 160, 90), box(224, 40, 160, 90), box(428, 40, 160, 90)];
+    expect(dominantAxis(boxes)).toBe('x');
+    const gap = insertionIndex(centersAlong(boxes, 'x'), 560); // dropped past `ship`
+    expect(gap).toBe(3);
+    const next = applyReorder(steps, 0, gap); // `reserve` → last
+    expect(next).not.toBeNull();
+
+    const edited = setPathsInSegment(source, doc, idx, [{ path: ['steps'], value: next }]);
+    const errors = validateDocument(parseDocument(edited, 't'), 't.md').filter(
+      (d) => d.level === 'error',
+    );
+    expect(errors).toEqual([]);
+    const reparsed = parseDocument(edited, 't').segments[idx];
+    if (reparsed === undefined || reparsed.kind === 'markdown') throw new Error('segment missing');
+    expect((reparsed.data as { steps: Array<{ id: string }> }).steps.map((s) => s.id)).toEqual([
+      'charge',
+      'ship',
+      'reserve',
+    ]);
   });
 });

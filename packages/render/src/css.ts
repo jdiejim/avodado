@@ -17,13 +17,13 @@ html{scroll-behavior:smooth;}
   /* The skin's role tokens (packages/render/DESIGN.md). Renderers name the
      role, never the value; the dark set overrides these on :root. */
   --paper:#f7f6f2; --paper-2:#efede8; --ink:#1f2430; --muted:#4f5868; --soft:#5f6876;
-  --rule:rgba(31,36,48,.14); --rule-solid:#c9c6bd;
+  --rule:rgba(31,36,48,.14); --rule-solid:#807b70;
   --accent:#b04a25; --accent-tint:rgba(176,74,37,.09); --link:#2f5c8f;
   --negative:#9a3f34; --negative-tint:rgba(154,63,52,.08);
   /* Tone steps between paper-2 and ink (heatmap ramp: paper → paper-2 → ink-3 → ink-2 → ink). Fills only, never text. */
   --ink-2:#5d6067; --ink-3:#9c9d9e;
   /* Chart series ramp: five desaturated hues for categorical series. Text never sits on them directly — use a paper mask. */
-  --series-1:#7c8f6f; --series-2:#5e7a9b; --series-3:#b8915a; --series-4:#9c6b50; --series-5:#6e6479;
+  --series-1:#788a6a; --series-2:#5e7a9b; --series-3:#a37c45; --series-4:#9c6b50; --series-5:#6e6479;
   /* The code surface is the one deliberate dark panel in both themes; every token colour clears 4.5:1 on it. */
   --code-bg:#1f2430; --code-fg:#f7f6f2; --code-muted:#9aa3b5; --code-rule:rgba(247,246,242,.12);
   --code-kw:#d7a8e8; --code-str:#b5cfa6; --code-num:#e8c58f; --code-fn:#8fbde6; --code-ty:#e6cf8f; --code-com:#9aa3b5;
@@ -46,7 +46,7 @@ html{scroll-behavior:smooth;}
    in with data-theme="dark", or follows the system unless it says "light". */
 :root[data-theme="dark"],[data-theme="dark"] .docskin,.docskin[data-theme="dark"]{
   --paper:#1b1e26; --paper-2:#232732; --ink:#e8e6df; --muted:#aeb5c3; --soft:#9aa3b3;
-  --rule:rgba(232,230,223,.14); --rule-solid:#3a4050;
+  --rule:rgba(232,230,223,.14); --rule-solid:#787f95;
   --accent:#e0714a; --accent-tint:rgba(224,113,74,.14); --link:#8fb4e6;
   --negative:#f5a39b; --negative-tint:rgba(245,163,155,.14);
   --ink-2:#adadab; --ink-3:#727377;
@@ -56,7 +56,7 @@ html{scroll-behavior:smooth;}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --paper:#1b1e26; --paper-2:#232732; --ink:#e8e6df; --muted:#aeb5c3; --soft:#9aa3b3;
-    --rule:rgba(232,230,223,.14); --rule-solid:#3a4050;
+    --rule:rgba(232,230,223,.14); --rule-solid:#787f95;
     --accent:#e0714a; --accent-tint:rgba(224,113,74,.14); --link:#8fb4e6;
     --negative:#f5a39b; --negative-tint:rgba(245,163,155,.14);
     --ink-2:#adadab; --ink-3:#727377;

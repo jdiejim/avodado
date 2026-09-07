@@ -19,10 +19,11 @@ import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
 import { edgeMask } from '../svg/edgePill.js';
 import { edgeStep } from '../svg/edgeSteps.js';
-import { GROUP_PADS, gridGroupsSvg, groupExtent } from '../svg/gridGroups.js';
+import { GROUP_PADS, gridGroupsSvg, groupExtent, nestingPads } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { revealAttr } from '../svg/reveal.js';
+import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
@@ -78,9 +79,12 @@ export function renderState(data: BlockDataMap['state']): string {
   const groups = data.groups ?? [];
   // Group outlines overshoot their cells (label headroom): grow the padding
   // to fit them ONLY when groups exist, so group-less docs stay byte-identical.
-  const padX = groups.length > 0 ? GROUP_PADS.padX : 30;
-  const padTop = groups.length > 0 ? GROUP_PADS.padTop : 30;
-  const padBot = groups.length > 0 ? GROUP_PADS.padBot : 20;
+  // Declared group nesting (`parent`) grows the outermost panels outward; the
+  // pads grow with them so a nested group never clips at the viewBox edge.
+  const nestPad = nestingPads(groups);
+  const padX = (groups.length > 0 ? GROUP_PADS.padX : 30) + nestPad.padX;
+  const padTop = (groups.length > 0 ? GROUP_PADS.padTop : 30) + nestPad.padTop;
+  const padBot = (groups.length > 0 ? GROUP_PADS.padBot : 20) + nestPad.padBot;
   const gx = groupExtent(groups);
   const cols = Math.max(1, ...states.map((s) => s.col), gx.cols);
   const rows = Math.max(1, ...states.map((s) => s.row), gx.rows);
@@ -97,7 +101,11 @@ export function renderState(data: BlockDataMap['state']): string {
   // Grid metadata for editors (Avodado Studio drag-to-connect): inert attrs
   // mirroring the layout constants plus each state's effective cell below.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
-  let s = `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>State machine</title>`;
+  const a11y = svgName('State machine', data.title, [
+    countPhrase(states.length, 'state'),
+    countPhrase(trans.length, 'transition'),
+  ]);
+  let s = `<svg viewBox="0 0 ${width} ${height}"${a11y.attrs}${gridMeta}>${a11y.title}`;
 
   // Group panels — beneath transitions and states. Only emitted when present.
   if (groups.length > 0) {

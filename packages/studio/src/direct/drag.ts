@@ -47,9 +47,15 @@ export type DragTarget =
   | { readonly mode: 'ring'; readonly listPath: string; readonly index: number };
 
 /**
- * Ordered flat HTML lists whose items drag-reorder like timeline items —
- * one entry per kind is all the machinery needs (measured axis, insertion
- * gap, ghost, one-commit drop all come from the shared reorder path).
+ * Ordered lists whose items drag-reorder like timeline items — one entry per
+ * kind is all the machinery needs (measured axis, insertion gap, ghost,
+ * one-commit drop all come from the shared reorder path).
+ *
+ * `saga` is here rather than in the grid family on purpose: a saga step has no
+ * `col`/`row` — the schema is strict and has neither — so its position IS its
+ * array index. Dragging a step along the row therefore splices it to a new
+ * index (the useful gesture for a saga: reordering the transaction), and the
+ * grid metadata the coordinate diagrams emit would be a lie here.
  */
 const REORDER_LISTS: Readonly<Record<string, string>> = {
   glossary: 'terms',
@@ -60,6 +66,7 @@ const REORDER_LISTS: Readonly<Record<string, string>> = {
   agenda: 'items',
   team: 'members',
   stats: 'stats',
+  saga: 'steps',
 };
 
 /**

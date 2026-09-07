@@ -13,6 +13,7 @@ import {
   stitchSkill,
   annotateIndex,
   templatesDir,
+  readCliVersion,
   EXEMPLAR_FILES,
 } from '../commands/init.js';
 
@@ -192,6 +193,27 @@ describe('runInit', () => {
       // stampSkillVersion covers canonical + stub alike
       expect(canonical).toMatch(/^version: \d+\.\d+\.\d+$/m);
       expect(frontmatterOf(stub)).toBe(frontmatterOf(canonical));
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('stamps the real CLI version, not the 0.0.0 placeholder', async () => {
+    const pkg = JSON.parse(
+      await readFile(join(import.meta.dirname, '../../package.json'), 'utf8'),
+    ) as { version: string };
+    expect(readCliVersion()).toBe(pkg.version);
+    expect(readCliVersion()).not.toBe('0.0.0');
+
+    const { root, cleanup } = await tempDir();
+    try {
+      await installTool({ cwd: root, tool: 'claude' });
+      for (const rel of ['.avodado/skill/SKILL.md', '.claude/skills/avodado-docs/SKILL.md']) {
+        const md = await readFile(join(root, rel), 'utf8');
+        expect(md, `${rel} should carry the CLI version`).toMatch(
+          new RegExp(`^version: ${pkg.version.replace(/\./g, '\\.')}$`, 'm'),
+        );
+      }
     } finally {
       await cleanup();
     }

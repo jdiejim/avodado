@@ -8,6 +8,7 @@
  */
 
 import { escapeHtml } from '../escape.js';
+import { DECORATIVE } from './decorative.js';
 
 /** Pill placement (midpoint of the labelled edge). */
 export interface PillPoint {
@@ -26,7 +27,7 @@ export function edgePill(p: PillPoint, label: string | undefined, err = false): 
   const errClass = err ? ' err' : '';
   return (
     `<g>` +
-    `<rect x="${p.lx - w / 2}" y="${p.ly - 9}" width="${w}" height="18" rx="9" fill="var(--white)" stroke="var(--rule)"/>` +
+    `<rect x="${p.lx - w / 2}" y="${p.ly - 9}" width="${w}" height="18" rx="9" fill="var(--white)" stroke="var(--rule)"${DECORATIVE}/>` +
     `<text x="${p.lx}" y="${p.ly + 3}" class="edge-label${errClass}">${escapeHtml(label)}</text>` +
     `</g>`
   );

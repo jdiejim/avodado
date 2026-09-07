@@ -192,3 +192,51 @@
   expected: [scqa]
   acceptable: [stats, bignumber, takeaways]
   wrong: [sequence, c4, timeline]
+
+# ── Added 2026-09-06, after the cloud/microservices blocks shipped ──────────
+# Requests 1–30 are unchanged, so runs before this date stay comparable.
+# These seven cover the new block types plus two traps that SOUND like a new
+# block and want an old one.
+
+- id: checkout-slow
+  request: Our checkout API got slow last week. Show where the time actually goes inside one request.
+  expected: [spans]
+  acceptable: [sequence, chart]
+  wrong: [timeline, gantt, table]
+
+- id: shipping-fails-after-payment
+  request: What happens if the payment succeeds but the shipping booking then fails, and how do we undo the earlier work?
+  expected: [saga]
+  acceptable: [flow, state]
+  wrong: [sequence, steps, timeline]
+
+- id: user-deleted-event
+  request: Document the user.deleted event so other teams can consume it safely.
+  expected: [eventcontract]
+  acceptable: [table, spec]
+  wrong: [endpoint, sequence, packet]
+
+- id: pricing-engine-ship
+  request: How do we ship the new pricing engine gradually, and what stops it if something looks wrong?
+  expected: [rollout]
+  acceptable: [steps, flow]
+  wrong: [gantt, timeline, kanban]
+
+- id: zones-and-replicas
+  request: Show how the service is laid out across regions and availability zones, with how many copies of each part run.
+  expected: [block]
+  acceptable: [c4, cluster]
+  wrong: [flow, tree, table]
+
+# Traps: these sound like a new block and want an older one.
+- id: signup-call-order
+  request: Walk me through the order of calls when a user signs up, across the app, the API, and the mailer.
+  expected: [sequence]
+  acceptable: [flow]
+  wrong: [spans, steps, timeline]
+
+- id: onboard-tenant
+  request: Write the procedure for onboarding a new enterprise tenant, step by step.
+  expected: [steps]
+  acceptable: [flow, checklist]
+  wrong: [saga, rollout, timeline]

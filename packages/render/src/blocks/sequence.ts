@@ -36,6 +36,7 @@ import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { revealAttr } from '../svg/reveal.js';
+import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -502,9 +503,14 @@ export function renderSequence(data: BlockDataMap['sequence']): string {
     for (const b of list) b.y2 = explicit ? cursor : b.last;
   }
 
+  // The accessible name, built from the data: what the diagram is about and
+  // how big it is (`msgRows` counts messages only, never frame markers).
+  const a11y = svgName('Sequence diagram', data.title ?? data.endpoint?.path, [
+    `${countPhrase(msgRows.length, 'message')} between ${countPhrase(actors.length, 'actor')}`,
+  ]);
   let s =
-    `<svg viewBox="0 0 ${width} ${height}" role="img">` +
-    `<title>Sequence diagram</title>` +
+    `<svg viewBox="0 0 ${width} ${height}"${a11y.attrs}>` +
+    a11y.title +
     `<defs>` +
     `<marker id="sqArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">` +
     `<path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>` +

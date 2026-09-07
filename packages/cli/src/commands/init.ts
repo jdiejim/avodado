@@ -12,6 +12,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { cliVersion } from '../io/version.js';
+
 /** AI tools `avo init` can generate config for. */
 export type AiTool = 'claude' | 'cursor' | 'copilot' | 'windsurf';
 
@@ -215,25 +217,11 @@ export function templatesDir(): string {
   throw new Error(`Could not locate avodado/cli templates directory near ${import.meta.url}`);
 }
 
-/** Reads @avodado/cli's own version (stamped into installed skills). */
-function readCliVersion(): string {
-  try {
-    let dir = dirname(fileURLToPath(import.meta.url));
-    for (let i = 0; i < 6; i++) {
-      const p = join(dir, 'package.json');
-      if (existsSync(p)) {
-        const j = JSON.parse(readFileSync(p, 'utf8')) as { name?: string; version?: string };
-        if (j.name === '@avodado/cli' && typeof j.version === 'string') return j.version;
-      }
-      const parent = dirname(dir);
-      if (parent === dir) break;
-      dir = parent;
-    }
-  } catch {
-    /* ignore */
-  }
-  return '0.0.0';
-}
+/**
+ * The version stamped into every installed skill. Shares one resolver with
+ * `--version` and the studio's `/api/meta`, so the three never disagree.
+ */
+export const readCliVersion = cliVersion;
 
 const isSkillDest = (dest: string): boolean => dest.endsWith('SKILL.md');
 

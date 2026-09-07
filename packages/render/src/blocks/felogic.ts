@@ -31,6 +31,7 @@ import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
+import { declaredNesting, nestingPads } from '../svg/gridGroups.js';
 
 type Data = BlockDataMap['felogic'];
 type Group = NonNullable<Data['groups']>[number];
@@ -174,9 +175,17 @@ function renderFelogicGraph(data: Data, tag: string): string {
   const cellH = 80;
   const gapX = 54;
   const gapY = 60;
-  const padX = 26;
-  const padTop = 30;
-  const padBot = 20;
+  // Declared group nesting (`parent`) steps each child panel in and grows its
+  // ancestors out. Two levels need more room than a single panel's 22px of
+  // label headroom, so a nesting document uses the shared group overshoot and
+  // grows the pads to match — the outermost tab must stay inside the viewBox.
+  // With no `parent` anywhere the map is empty and the output is unchanged.
+  const nesting = declaredNesting(groups);
+  const nestPad = nestingPads(groups);
+  const over = nesting.size > 0 ? { x: 28, top: 38, bot: 28 } : { x: 16, top: 22, bot: 16 };
+  const padX = 26 + (over.x - 16) + nestPad.padX;
+  const padTop = 30 + (over.top - 22) + nestPad.padTop;
+  const padBot = 20 + (over.bot - 16) + nestPad.padBot;
   const cols = Math.max(
     1,
     ...nodes.map((n) => n.col + ((n.w ?? 1) - 1)),
@@ -201,19 +210,25 @@ function renderFelogicGraph(data: Data, tag: string): string {
     h: cellH,
   });
   const groupRect = (g: Group): { x: number; y: number; w: number; h: number } => ({
-    x: xOf(g.col) - 16,
-    y: yOf(g.row) - 22,
-    w: (g.cols ?? 1) * cellW + ((g.cols ?? 1) - 1) * gapX + 32,
-    h: (g.rows ?? 1) * cellH + ((g.rows ?? 1) - 1) * gapY + 38,
+    x: xOf(g.col) - over.x,
+    y: yOf(g.row) - over.top,
+    w: (g.cols ?? 1) * cellW + ((g.cols ?? 1) - 1) * gapX + over.x * 2,
+    h: (g.rows ?? 1) * cellH + ((g.rows ?? 1) - 1) * gapY + over.top + over.bot,
   });
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const width = padX * 2 + cols * cellW + (cols - 1) * gapX;
   const height = padTop + rows * cellH + (rows - 1) * gapY + padBot;
   // Largest groups first so smaller ones layer on top (index kept for paths).
+  // With declared nesting, parents draw first (shallowest depth), then by area.
+  const area = (g: Group): number => (g.cols ?? 1) * (g.rows ?? 1);
   const sortedGroups = groups
     .map((g, gi) => ({ g, gi }))
-    .sort(
-      (a, b) => (b.g.cols ?? 1) * (b.g.rows ?? 1) - (a.g.cols ?? 1) * (a.g.rows ?? 1),
+    .sort((a, b) =>
+      nesting.size > 0
+        ? (nesting.get(a.g)?.depth ?? 0) - (nesting.get(b.g)?.depth ?? 0) ||
+          area(b.g) - area(a.g) ||
+          a.gi - b.gi
+        : area(b.g) - area(a.g),
     );
 
   // The accent (see the header comment).
@@ -240,11 +255,28 @@ function renderFelogicGraph(data: Data, tag: string): string {
   // borrow `link` or any hue (the tab keeps `soft`).
   s += `<g${bl('groups')}>`;
   for (const { g, gi } of sortedGroups) {
-    const r = groupRect(g);
+    const raw = groupRect(g);
+    // A declared child steps IN from its parent and its ancestors grow OUT, so
+    // the levels never sit on each other; the tab alternates left / right per
+    // level so three levels of label never collide.
+    const nest = nesting.get(g);
+    const r =
+      nest === undefined
+        ? raw
+        : {
+            x: raw.x + nest.inset.x,
+            y: raw.y + nest.inset.y,
+            w: raw.w - nest.inset.w,
+            h: raw.h - nest.inset.h,
+          };
+    const tabEnd = nest !== undefined && nest.depth % 2 === 1;
+    const lbl = tabEnd
+      ? `<text x="${r.x + r.w - 12}" y="${r.y + 15}" class="t-eyebrow" text-anchor="end">${escapeHtml(g.label)}</text>`
+      : `<text x="${r.x + 12}" y="${r.y + 15}" class="t-eyebrow">${escapeHtml(g.label)}</text>`;
     s +=
       `<g${bp(`groups.${gi}`)}>` +
       `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6" fill="var(--paper-2)" fill-opacity="0.6" stroke="var(--rule-solid)" stroke-width="1"/>` +
-      `<text x="${r.x + 12}" y="${r.y + 15}" class="t-eyebrow">${escapeHtml(g.label)}</text>` +
+      lbl +
       `</g>`;
   }
   s += `</g>`; // close the groups list container

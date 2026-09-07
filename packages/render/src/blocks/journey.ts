@@ -13,6 +13,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 function clamp01(v: number): number {
   if (v < 0) return 0;
@@ -26,10 +27,12 @@ function moodOf(v: number): Mood {
   return v >= 0.6 ? 'high' : v <= 0.35 ? 'low' : 'mid';
 }
 
+// A `paper` ring keeps a dot legible where it crosses the curve — a halo, not
+// a boundary, so it is decoration; the dot's FILL is the mark.
 const DOT_ATTRS: Record<Mood, string> = {
-  high: 'fill="var(--ink)" stroke="var(--paper)" stroke-width="1.5"',
+  high: `fill="var(--ink)" stroke="var(--paper)" stroke-width="1.5"${DECORATIVE}`,
   mid: 'fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5"',
-  low: 'fill="var(--negative)" stroke="var(--paper)" stroke-width="1.5"',
+  low: `fill="var(--negative)" stroke="var(--paper)" stroke-width="1.5"${DECORATIVE}`,
 };
 
 const MOOD_LEGEND: Record<Mood, LegendItem> = {

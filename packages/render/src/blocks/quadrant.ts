@@ -12,6 +12,7 @@ import type { BlockDataMap } from '@avodado/core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 function clamp01(v: number | undefined): number {
   if (v === undefined || Number.isNaN(v)) return 0.5;
@@ -64,7 +65,7 @@ export function renderQuadrant(data: BlockDataMap['quadrant']): string {
     const anchor = left ? 'end' : 'start';
     s +=
       `<g${bp(`items.${i}`)}>` +
-      `<circle cx="${cx}" cy="${cy}" r="5.5" fill="var(--ink)" stroke="var(--paper)" stroke-width="1.5"/>` +
+      `<circle cx="${cx}" cy="${cy}" r="5.5" fill="var(--ink)" stroke="var(--paper)" stroke-width="1.5"${DECORATIVE}/>` +
       `<text x="${tx}" y="${cy + 4.5}" class="t-name" text-anchor="${anchor}"${bp(`items.${i}.label`)}>${escapeHtml(it.label)}</text>` +
       `</g>`;
   });

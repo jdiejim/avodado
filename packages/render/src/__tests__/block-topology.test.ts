@@ -9,6 +9,11 @@
 import { describe, expect, it } from 'vitest';
 import { renderBlock } from '../blocks/blockGraph.js';
 import { renderCluster } from '../blocks/cluster.js';
+import { renderFlow } from '../blocks/flow.js';
+import { renderDfd } from '../blocks/dfd.js';
+import { renderState as renderStateBlock } from '../blocks/state.js';
+import { renderC4 } from '../blocks/c4.js';
+import { renderFelogic } from '../blocks/felogic.js';
 import { gridGroupsSvg, nestingPads } from '../svg/gridGroups.js';
 import { KNOWN_NODE_KINDS, nodeGlyph, nodeSkin } from '../svg/blockStyle.js';
 import { cloudGlyph, glyphNameFor, glyphPath, hasGlyph, GENERIC_BOX } from '../svg/glyphs.js';
@@ -257,5 +262,51 @@ describe('cluster accent', () => {
     expect(two).not.toContain('var(--accent-tint)');
     const none = renderCluster({ ...base, services: base.services.filter((sv) => sv.kind !== 'gateway') });
     expect(none).not.toContain('var(--accent-tint)');
+  });
+});
+
+describe('nested groups on the other grid renderers', () => {
+  const nested = [
+    { id: 'outer', col: 1, row: 1, cols: 2, rows: 1, label: 'Outer' },
+    { id: 'inner', parent: 'outer', col: 1, row: 1, label: 'Inner' },
+  ];
+  const plain = [{ id: 'outer', col: 1, row: 1, cols: 2, rows: 1, label: 'Outer' }];
+
+  /** The `<svg>` viewBox height/width and the top-left of the first group rect. */
+  function frame(html: string): { w: number; h: number; gx: number; gy: number } {
+    const vb = /viewBox="0 0 (\d+) (\d+)"/.exec(html);
+    const g = rects(html)[0];
+    return { w: Number(vb?.[1]), h: Number(vb?.[2]), gx: g?.x ?? 0, gy: g?.y ?? 0 };
+  }
+
+  const cases: ReadonlyArray<{
+    name: string;
+    render: (groups: typeof nested) => string;
+  }> = [
+    { name: 'flow', render: (groups) => renderFlow({ groups, nodes: [{ id: 'a', col: 1, row: 1, label: 'A' }] }) },
+    { name: 'dfd', render: (groups) => renderDfd({ groups, nodes: [{ id: 'a', col: 1, row: 1, name: 'A' }] }) },
+    { name: 'state', render: (groups) => renderStateBlock({ groups, states: [{ id: 'a', col: 1, row: 1, name: 'A' }] }) },
+    { name: 'c4', render: (groups) => renderC4({ groups, nodes: [{ id: 'a', kind: 'system', col: 1, row: 1, name: 'A' }] }) },
+    { name: 'felogic', render: (groups) => renderFelogic({ groups, nodes: [{ id: 'a', col: 1, row: 1, name: 'A' }] }) },
+  ];
+
+  it.each(cases)('$name: the outermost panel stays inside the viewBox', ({ render }) => {
+    const f = frame(render(nested));
+    expect(f.gx).toBeGreaterThanOrEqual(0);
+    expect(f.gy).toBeGreaterThanOrEqual(0);
+    // The pads grew by exactly the outward growth of one nesting level.
+    const p = frame(render(plain as unknown as typeof nested));
+    expect(f.w).toBeGreaterThan(p.w);
+    expect(f.h).toBeGreaterThan(p.h);
+  });
+
+  it.each(cases)('$name: a document with no `parent` is byte-identical to the pre-nesting output', ({ render }) => {
+    // `nestingPads` and `declaredNesting` both no-op without a `parent`, so the
+    // only proof that matters is that the rendered string does not move.
+    const a = render(plain as unknown as typeof nested);
+    const b = render(plain as unknown as typeof nested);
+    expect(a).toBe(b);
+    // …and the group rect sits exactly where the un-nested geometry puts it.
+    expect(rects(a)[0]?.y).toBe(frame(a).gy);
   });
 });

@@ -16,6 +16,7 @@ import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { wrapText } from '../svg/wrapText.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type Kind = 'planned' | 'done' | 'active' | 'milestone';
 
@@ -71,12 +72,12 @@ export function renderGantt(data: BlockDataMap['gantt']): string {
   for (let i = 0; i < periods.length; i++) {
     s +=
       `<g${bp(`periods.${i}`)}>` +
-      `<line x1="${xCol(i)}" y1="${padTop - 6}" x2="${xCol(i)}" y2="${height - padBot}" stroke="var(--rule)" stroke-width="1"/>` +
+      `<line x1="${xCol(i)}" y1="${padTop - 6}" x2="${xCol(i)}" y2="${height - padBot}" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>` +
       `<text x="${xCol(i) + colW / 2}" y="${padTop - 12}" class="t-eyebrow" text-anchor="middle">${escapeHtml(periods[i] ?? '')}</text>` +
       `</g>`;
   }
   s += `</g>`;
-  s += `<line x1="${xCol(P)}" y1="${padTop - 6}" x2="${xCol(P)}" y2="${height - padBot}" stroke="var(--rule)" stroke-width="1"/>`;
+  s += `<line x1="${xCol(P)}" y1="${padTop - 6}" x2="${xCol(P)}" y2="${height - padBot}" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>`;
   const kinds = new Set<Kind>();
   s += `<g${bl('tasks')}>`;
   for (let i = 0; i < tasks.length; i++) {

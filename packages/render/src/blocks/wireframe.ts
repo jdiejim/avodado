@@ -13,6 +13,7 @@ import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type Screen = NonNullable<BlockDataMap['wireframe']['screens']>[number];
 type Element = NonNullable<Screen['elements']>[number];
@@ -108,7 +109,7 @@ function drawElement(el: Element, x: number, y: number, w: number): string {
           : '';
       const tx = el.type === 'search' ? x + 30 : x + 12;
       return (
-        `<rect x="${x}" y="${y}" width="${w}" height="34" rx="8" fill="var(--white)" stroke="var(--rule)" stroke-width="1.2"/>` +
+        `<rect x="${x}" y="${y}" width="${w}" height="34" rx="8" fill="var(--white)" stroke="var(--rule-solid)" stroke-width="1.2"/>` +
         icon +
         `<text x="${tx}" y="${y + 21}" class="wf-ph-text">${escapeHtml(label || 'Type here…')}</text>`
       );
@@ -133,7 +134,7 @@ function drawElement(el: Element, x: number, y: number, w: number): string {
       for (let i = 0; i < rows; i++) {
         const cy = y + i * 74;
         s +=
-          `<rect x="${x}" y="${cy}" width="${w}" height="64" rx="10" fill="var(--white)" stroke="var(--rule)" stroke-width="1.2"/>` +
+          `<rect x="${x}" y="${cy}" width="${w}" height="64" rx="10" fill="var(--white)" stroke="var(--rule-solid)" stroke-width="1.2"/>` +
           `<rect x="${x + 12}" y="${cy + 12}" width="40" height="40" rx="8" ${PH}/>` +
           `<rect x="${x + 64}" y="${cy + 16}" width="${w - 92}" height="7" rx="3.5" fill="var(--rule)"/>` +
           `<rect x="${x + 64}" y="${cy + 34}" width="${(w - 92) * 0.6}" height="6" rx="3" fill="var(--rule)"/>`;
@@ -175,7 +176,7 @@ function drawElement(el: Element, x: number, y: number, w: number): string {
     case 'tabs': {
       const items = (label || 'Home, Search, Bell, Profile').split(',').map((t) => t.trim());
       const seg = w / items.length;
-      let s = `<line x1="${x}" y1="${y}" x2="${x + w}" y2="${y}" stroke="var(--rule)" stroke-width="1"/>`;
+      let s = `<line x1="${x}" y1="${y}" x2="${x + w}" y2="${y}" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>`;
       items.forEach((it, i) => {
         const cx = x + seg * i + seg / 2;
         s +=
@@ -185,7 +186,7 @@ function drawElement(el: Element, x: number, y: number, w: number): string {
       return s;
     }
     case 'divider':
-      return `<line x1="${x}" y1="${y + 7}" x2="${x + w}" y2="${y + 7}" stroke="var(--rule)" stroke-width="1"/>`;
+      return `<line x1="${x}" y1="${y + 7}" x2="${x + w}" y2="${y + 7}" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>`;
     case 'badge': {
       const pw = 22 + label.length * 6.4;
       return (
@@ -245,13 +246,13 @@ function drawScreen(screen: Screen, idx: number): { svg: string; width: number; 
     inner += `<text x="${frameW - 16}" y="20" class="wf-status" text-anchor="end">100%</text>`;
   } else {
     inner += `<rect x="0" y="0" width="${frameW}" height="${titleBarH}" fill="var(--light-gray)"/>`;
-    inner += `<line x1="0" y1="${titleBarH}" x2="${frameW}" y2="${titleBarH}" stroke="var(--rule)" stroke-width="1"/>`;
+    inner += `<line x1="0" y1="${titleBarH}" x2="${frameW}" y2="${titleBarH}" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>`;
     inner += `<circle cx="18" cy="15" r="5" fill="var(--rule-solid)"/><circle cx="34" cy="15" r="5" fill="var(--rule-solid)"/><circle cx="50" cy="15" r="5" fill="var(--rule-solid)"/>`;
     if (screen.title && !isBrowser)
       inner += `<text x="${frameW / 2}" y="20" class="wf-status" text-anchor="middle"${bp(`screens.${idx}.title`)}>${escapeHtml(screen.title)}</text>`;
     if (isBrowser) {
       const url = screen.url ?? screen.title ?? 'example.com';
-      inner += `<rect x="68" y="${titleBarH + 5}" width="${frameW - 84}" height="16" rx="8" fill="var(--white)" stroke="var(--rule)" stroke-width="1"/>`;
+      inner += `<rect x="68" y="${titleBarH + 5}" width="${frameW - 84}" height="16" rx="8" fill="var(--white)" stroke="var(--rule-solid)" stroke-width="1"/>`;
       inner += `<text x="78" y="${titleBarH + 16}" class="wf-url"${bp(`screens.${idx}.url`)}>${escapeHtml(url)}</text>`;
     }
   }

@@ -62,7 +62,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     title: 'Insert your first block',
     body:
       'Press / to open the insert menu, type "seq", and hit ⏎ to insert a Sequence diagram. ' +
-      'Every one of the 76 block types inserts this way.',
+      'Every one of the 94 block types inserts this way.',
     keys: ['/', 'type seq', '⏎'],
     advance: 'insert',
   },

@@ -140,7 +140,8 @@ describe('saga', () => {
     expect(steps).toHaveLength(4);
     expect(root.querySelectorAll('g[data-bp$=".compensate"]')).toHaveLength(3);
     expect(steps[3]?.querySelector('g[data-bp$=".compensate"]')).toBeNull();
-    expect(root.querySelector('title')?.text).toBe('Saga');
+    // The accessible name is built from the block's own data.
+    expect(root.querySelector('title')?.text).toBe('Saga: Place order, 4 steps, 3 compensations');
   });
 
   it('derives statuses from failAt: compensated before, FAILED at, skipped after', () => {

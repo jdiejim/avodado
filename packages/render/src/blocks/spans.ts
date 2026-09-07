@@ -19,8 +19,10 @@ import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { revealAttr } from '../svg/reveal.js';
+import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type Span = BlockDataMap['spans']['spans'][number];
 type SpanKind = NonNullable<Span['kind']>;
@@ -243,7 +245,8 @@ export function renderSpans(data: BlockDataMap['spans']): string {
     .forEach((r, n) => reveal.set(r.idx, n));
   const rv = (idx: number): string => revealAttr(reveal.get(idx) ?? 0);
 
-  let s = `<svg viewBox="0 0 ${width} ${height}" role="img"><title>Trace waterfall</title>`;
+  const a11y = svgName('Trace waterfall', data.title, [countPhrase(spans.length, 'span')]);
+  let s = `<svg viewBox="0 0 ${width} ${height}"${a11y.attrs}>${a11y.title}`;
 
   // Time axis: nice ticks in `unit`, gridlines down through the lanes.
   const step = niceStep(total, 6);
@@ -251,7 +254,7 @@ export function renderSpans(data: BlockDataMap['spans']): string {
   for (let t = 0; t <= total + 1e-9; t += step) {
     const tx = x(t);
     s +=
-      `<line x1="${tx}" y1="${AXIS_Y}" x2="${tx}" y2="${bottom}" class="sp-grid"/>` +
+      `<line x1="${tx}" y1="${AXIS_Y}" x2="${tx}" y2="${bottom}" class="sp-grid"${DECORATIVE}/>` +
       `<text x="${tx}" y="${AXIS_Y - 7}" class="t-arrow c-soft" text-anchor="middle">${fmt(t)} ${escapeHtml(unit)}</text>`;
   }
   s += `<line x1="${plotX0}" y1="${AXIS_Y}" x2="${plotX0 + PLOT_W}" y2="${AXIS_Y}" class="sp-axis"/>`;
@@ -259,7 +262,7 @@ export function renderSpans(data: BlockDataMap['spans']): string {
 
   // Lane heads and separators.
   lanes.forEach((ln, i) => {
-    if (i > 0) s += `<line x1="0" y1="${ln.y}" x2="${width}" y2="${ln.y}" class="sp-lane-rule"/>`;
+    if (i > 0) s += `<line x1="0" y1="${ln.y}" x2="${width}" y2="${ln.y}" class="sp-lane-rule"${DECORATIVE}/>`;
     const nameY = ln.y + 21;
     s += `<g class="sp-lane">`;
     ln.lines.forEach((line, j) => {

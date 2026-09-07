@@ -26,6 +26,7 @@ import { escapeHtml } from '../escape.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
+import { DECORATIVE } from '../svg/decorative.js';
 
 type GitData = BlockDataMap['gitgraph'];
 
@@ -109,7 +110,7 @@ export function renderGitgraph(data: GitData): string {
   s += `<g${bl('branches')}>`;
   lanes.forEach((name, i) => {
     const y = TOP + i * LANE;
-    s += `<line x1="${LEFT - 18}" y1="${y}" x2="${width - 12}" y2="${y}" stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 5"/>`;
+    s += `<line x1="${LEFT - 18}" y1="${y}" x2="${width - 12}" y2="${y}" stroke="var(--rule)" stroke-width="1" stroke-dasharray="2 5"${DECORATIVE}/>`;
     const attrs = (data.branches ?? []).some((b) => b.name === name)
       ? bp(`branches.${(data.branches ?? []).findIndex((b) => b.name === name)}`)
       : '';

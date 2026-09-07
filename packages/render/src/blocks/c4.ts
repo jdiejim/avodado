@@ -22,10 +22,11 @@ import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { nodeGlyph, nodeSkin, SKIN_EDGE, type NodeSkin } from '../svg/blockStyle.js';
-import { GROUP_PADS, gridGroupsSvg, groupExtent } from '../svg/gridGroups.js';
+import { GROUP_PADS, gridGroupsSvg, groupExtent, nestingPads } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { safeColor } from '../sanitize.js';
+import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
@@ -129,9 +130,12 @@ export function renderC4(data: BlockDataMap['c4']): string {
   const groups = data.groups ?? [];
   // Group outlines overshoot their cells (label headroom): grow the padding
   // to fit them ONLY when groups exist, so group-less docs stay byte-identical.
-  const padX = groups.length > 0 ? GROUP_PADS.padX : 26;
-  const padTop = groups.length > 0 ? GROUP_PADS.padTop : 46;
-  const padBot = groups.length > 0 ? GROUP_PADS.padBot : 24;
+  // Declared group nesting (`parent`) grows the outermost panels outward; the
+  // pads grow with them so a nested group never clips at the viewBox edge.
+  const nestPad = nestingPads(groups);
+  const padX = (groups.length > 0 ? GROUP_PADS.padX : 26) + nestPad.padX;
+  const padTop = (groups.length > 0 ? GROUP_PADS.padTop : 46) + nestPad.padTop;
+  const padBot = (groups.length > 0 ? GROUP_PADS.padBot : 24) + nestPad.padBot;
   const gx = groupExtent(groups);
   const cols = Math.max(1, ...nodes.map((n) => n.col + ((n.w ?? 1) - 1)), gx.cols);
   const rows = Math.max(1, ...nodes.map((n) => n.row), gx.rows);
@@ -207,7 +211,11 @@ export function renderC4(data: BlockDataMap['c4']): string {
           skin: true,
         })
       : '';
-  let s = `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>C4 diagram</title>${groupsSvg}${boundarySvg}${namedBoundariesSvg}`;
+  const a11y = svgName('C4 diagram', data.title, [
+    countPhrase(nodes.length, 'element'),
+    countPhrase(edges.length, 'relationship'),
+  ]);
+  let s = `<svg viewBox="0 0 ${width} ${height}"${a11y.attrs}${gridMeta}>${a11y.title}${groupsSvg}${boundarySvg}${namedBoundariesSvg}`;
 
   const pending: EdgeLabelPoint[] = [];
   const edgeKinds = new Set<string>();
