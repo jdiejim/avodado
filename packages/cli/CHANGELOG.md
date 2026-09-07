@@ -1,5 +1,121 @@
 # @avodado/cli
 
+## 0.44.0
+
+### Minor Changes
+
+- 430ba0b: CLI safety: no silent data loss, no stale site, no unreadable document called clean, no anonymous render crash.
+
+  **A command never destroys a file you wrote.** `avo sync openapi|csv|sql|dbml|prisma --out` used to overwrite the target and print a checkmark; it now refuses, names the file, and names `--force`. The same rule covers every command that writes to a path you named: `avo new -o`, `avo block -o`, `avo template -o`, `avo design <slug> -o`, and `avo skill -o` never replace an existing file, while the export commands (`avo html|slides|pdf|pptx`, and the gallery writers `demo` / `catalog` / `compare` / `design -p -o`) replace a file only when the path already carries the extension they produce — re-exporting `report.html` is the normal loop, writing HTML over `notes.md` is not. Each of those commands gained a `--force` flag. `avo init` already skipped existing files and is unchanged; `avo build` owns its output directory and is covered by the manifest below.
+
+  **`avo build` prunes.** It records what it generated in `dist/.avodado-build.json` and, on the next build, removes exactly the files that manifest lists and this build no longer generates — so a doc deleted from `docs/` stops being served. Nothing else is touched: a `CNAME`, an `assets/` folder, or any other file you placed in the output directory was never in the manifest. An output directory with no manifest (built by an older Avodado) is left completely alone, with a one-line note; pruning starts from the next build.
+
+  **A file that is not UTF-8 is reported, not validated.** `avo check` used to pass invalid bytes and UTF-16 files clean, silently validating replacement characters. It now emits `E_ENCODING` naming the file and the line. A UTF-8 byte order mark is stripped instead of pushing the first fence off line 1. Symlinks under the docs root are no longer followed, and the same file reached by two paths loads once — a `docs/loop -> .` cycle used to invent dozens of duplicate-id errors.
+
+  **A renderer crash names its document.** `avo build` reported a renderer throw as a bare `Invalid string length` with no file, line, or block type. Every render is now guarded per document: the failure becomes an `E_RENDER` error that names the file, the line, and the block (found by re-rendering each block on its own), the failed document gets a placeholder page so its URL keeps working, every other document still builds, and the build exits 1. `avo html|slides|pdf|pptx` prefix the same attribution onto their error. `@avodado/core` adds the `E_ENCODING` and `E_RENDER` codes to the diagnostic taxonomy.
+
+- 02bc78b: One look. Theme presets are gone: the editorial skin is the single look for every export, and it follows the reader's OS light/dark setting. Removed: `avo theme` (and `avodado.theme.json`, `.avodado/themes/`, `~/.avodado/themes/`), the theme step in `avo init`, the `theme` line in the bare `avo` status, the Studio theme panel with its `/api/theme` route and `/api/meta` theme fields, and the `theme` parameter of the MCP `render_document` tool. A leftover `theme` key in `avodado.config.json` is ignored silently. `@avodado/render` keeps `ThemeName` as the single name `textbook` (label `Editorial`), `themeStyle()` returns `''`, rendered pages no longer stamp `data-theme` on `<html>` (the `[data-theme="dark"]` CSS stays so a host page can force dark), and `themeVars` remains an internal `:root` override with no user surface.
+
+### Patch Changes
+
+- 2b88a17: Step-through builds for decks. Diagrams with a natural order now mark it: `sequence` (messages and frame `open` / `else` markers in document order; an activation bar arrives with the message that opened it; the step list follows the diagram), `flow` (a topological walk from `start`, each edge with the node it leads to), `state` (transitions in document order, label and table row with the arrow), `saga` (steps left to right, then the compensations from the failure point back), `spans` (bars by `start` across lanes), `steps` and `timeline` (items). The renderer emits `data-reveal="n"` on the group that appears at step n (`svg/reveal.ts` › `revealAttr`); the attribute is inert everywhere except the deck. In `avo slides` output, → / Space / PageDown / the Next button reveal one step at a time before the deck advances, earlier steps stay, and the step just revealed takes the accent for that moment (the presentation-time exception to the one-accent rule); ← / Backspace / PageUp walk back one step, then one slide. A slide reached backwards, by the jump menu or by URL hash shows its build complete in its normal rendering; the hash keeps the slide index only. Builds are announced through an `aria-live` region ("Step 3 of 18"); `prefers-reduced-motion` drops the fade. Nothing is hidden by the markup: without JS, in print, and on a page the diagram is whole. Opt a slide out with the `{nobuild}` heading marker (`## Title {nobuild}`), stripped from the title like `{top}` / `{split}` — `@avodado/core` gains `readBuildMarker` beside the other marker readers. Studio bundles the renderer, so Present mode gets the same builds.
+- 6498446: Two cloud & microservices blocks. **`spans`** draws a distributed-trace waterfall: one lane per service (first-appearance order, with a chip for its dominant span kind), a nice-number time axis in `unit` (`ms` · `s` · `us`), and one bar per span placed by `start` and sized by `duration` on that shared scale — bars lighten with nesting depth (ink → muted → paper-2), a thin connector joins each child to its parent, the critical path (root, then the longest child at every hop) takes the accent, and `error: true` draws a negative outline plus an `ERR` chip. `attrs` and `note` list under the drawing; a name that cannot fit its bar follows the duration label instead of being cut. Terse item: `service/id: name · start · duration [· parent]`. Density warns past 40 spans. **`rollout`** draws a progressive-delivery strip: one paper card per stage with a `STAGE n` eyebrow, the name, the status chip (done = paper-2 fill · current = accent outline · next = dashed · blocked = negative), an ink traffic bar, the hold `duration`, and the note; each stage's `gate` rides as a chip on the connector to the next card; `rollback` is the footer line; `strategy` (`canary` · `blue-green` · `rolling` · `feature-flag`) shows in the eyebrow. Terse stage: `"[status] traffic% · name · duration — gate"`.
+- b81194c: Pilot of the editorial skin (`packages/render/DESIGN.md`) on four blocks: `sequence`, `flow`, `block` (grid and layered, all presets) and `erd`. Meaning now travels through shape, stroke weight, dash and eyebrow chips (`SVC`, `DB`, `EXT`, `ENTITY`, `AGGREGATE ROOT`, …); each diagram spends colour on one accent the renderer picks from the data (the caller's final response, the happy-path exit, the entry gateway, the aggregate root) and on `negative` for real errors. Every figure gets a legend strip listing only the encodings it used. Shared chrome moves with it: role tokens (`--paper`, `--ink`, `--muted`, `--accent`, …) with a dark set on `[data-theme="dark"]` and `prefers-color-scheme`, the legacy token names kept as aliases, five type-role classes (`.t-name` … `.t-badge`), a quiet frame (dot-grid `paper-2` ground, hairline border, plain eyebrow instead of the family pill), and figures that never upscale (`--scale` lets decks enlarge them). The other 86 renderers are not restyled yet and keep rendering through the aliases. Studio bundles the renderer, so it ships the same skin.
+- 6498446: `block` learns deployment topology. Groups nest by declaration: `groups[].parent: <id>` places a zone inside a region and a subnet inside the zone; the renderer draws parents first and steps each child in 8px with its own eyebrow tab (three levels read), and `avo check` warns (`W_GROUP_NESTING`) when a child's cells fall outside its parent or the `parent` id resolves to nothing. Nodes take `replicas: N` — from 2 up the node draws as a stacked card (two offset paper cards behind) with a `×N` chip, and the legend names it. `preset: k8s` frames a Kubernetes namespace map: `ingress` (the entry, so the accent), `service`, `deployment`, `pod`, `configmap`, `secret`, `job` / `cronjob`, `node` and `namespace` get chips, shapes and glyphs. A new cloud glyph set (`svg/glyphs.ts`) draws one 14px single-stroke `muted` path per kind — function, bucket, queue, topic, cache, db, cdn, lb, gateway, pod, cluster, user, browser, mobile, cron, ml, secret, config — with a generic box for everything else. `cluster` follows the family's accent rule: the single `gateway`-kind service, when exactly one exists. Documents without `parent` or `replicas` render byte-for-byte as before.
+- 6498446: Two async-contract blocks. `eventcontract` is the twin of `endpoint` for events: `name`, `version`, `channel`, `summary`, `producers` / `consumers`, `delivery` (at-least-once · at-most-once · exactly-once), `ordering` (none · per-key · global), `key`, `retention`, payload `schema` and `headers` (terse `name type [required] — desc`), an `example`, `errors` (terse `Name — when`), and a `note`. It renders as a card in the skin: an `EVENT · v2` eyebrow, a channel chip, a PRODUCERS → CONSUMERS strip of mono chips, the delivery facts as outlined word chips, the payload table with the partition-key row marked `#` (the card's one accent) and optional fields `?`, and the example on the code surface. `saga` draws a distributed transaction: `steps` (terse `id: Name · service · compensate`, or `· service · action · compensate`) as paper cards left to right with the owning service as a chip, the compensation under each as a dashed card, and `failAt` naming the step that fails — it takes the one accent and a `FAILED` chip, earlier steps read `COMPENSATED`, later ones `SKIPPED` on the inactive fill, the forward arrows past it turn dashed, and a `negative` dashed compensating flow runs right to left back to step 1; `mode: orchestration` adds a coordinator band on top fanning out to every step. Both blocks carry data paths for Studio, a legend (saga), a density budget of 12 saga steps, catalog templates, and skill reference entries.
+- 5dfac44: Accessibility and editing gaps: named diagrams, non-text contrast, nested group
+  padding, and a draggable `saga`.
+
+  **Diagram SVGs announce what they contain.** Every diagram carried a generic
+  `<title>` ("Sequence diagram"), which tells a screen-reader user only what kind
+  of picture they cannot see. Each now builds its name from its own data —
+  `Sequence diagram: /orders, 3 messages between 3 actors`,
+  `Flowchart: Checkout, 3 steps`, `Entity relationship diagram: 2 entities` — and
+  carries it on both `<title>` and a matching `aria-label`, with `role="img"`.
+  Wired through `sequence`, `flow`, `erd`, `block` (grid and layered), `c4`,
+  `spans`, `saga`, `state`, and `dfd`.
+
+  **Meaningful lines reach 3:1.** `contrast-audit.mjs` gained a `--nontext` mode
+  for WCAG 1.4.11: it measures every stroked SVG shape that carries meaning — a
+  node outline, a chip outline, an arrow, a border that encodes state — against
+  the surface behind it, and skips decoration (`data-decorative`, plus strokes
+  that paint exactly what is already behind them or their own fill). The showcase
+  went from 96 failures to 3. `--rule-solid` darkens to `#807b70` (light) /
+  `#787f95` (dark) so a secondary node, a group panel and a chip outline are
+  visible; `--series-1` and `--series-3` darken a step so every chart series
+  clears 3:1. Gridlines, row separators, glyph silhouette detail and knockout
+  gaps are marked `data-decorative` instead of darkened. Wireframe input and card
+  outlines move from the decorative hairline to `--rule-solid`. Text contrast is
+  unchanged at zero failures.
+
+  **Nested groups no longer clip.** `flow`, `dfd`, `state`, `c4` and `felogic`
+  accept a group `parent` but did not grow their diagram padding for it, so a
+  nested group flush against the top edge lost its tab. All five now wire
+  `nestingPads`; `felogic` also draws declared nesting (it previously ignored
+  `parent`). Documents with no `parent` render byte-identically.
+
+  **A saga can be reordered in Studio.** A saga step's position IS its array
+  index — the schema has no `col`/`row` — so `saga` joins the order-based drag
+  set: dragging a step (or its compensation card) along the row splices it to a
+  new index in one undo step, and the arrow keys do the same one step at a time.
+
+- 6498446: feat(erd): the ERD overhaul — a full relational model in, a layered auto-layout out; DBML / Prisma fences and `avo sync sql | dbml | prisma`
+  - **Schema (additive; every existing `erd` doc is unchanged).** Columns gain `unique`, `nullable`, `default`, `index`, `enum: [..]`, `ref: table.column`, `note`; entities gain `kind` (`table` · `view` · `enum` · `external`), `schema`, `note`, `indexes: [{ columns, unique?, name? }]`; relations gain `identifying`, `fromCol`, `toCol` and the cards `0..1` / `0..N`; the block gains `groups` (schema panels), `enums` (value cards) and `dir: LR | TB`. The terse column string grows: `email text unique !null default=now()`, `user_id uuid fk -> users.id`, `status enum(open,closed)`; the terse relation reads every Mermaid crow's-foot end and a `..` body for non-identifying (`users ||..o{ sessions: opens`, `orders ||--o| payments`).
+  - **Renderer.** Layered auto-layout ranked by relation adjacency: the aggregate root centred, its neighbours fanned out by depth on both sides, a join table between its parents; `groups` / shared `schema` as non-overlapping `paper-2` panels with an eyebrow tab; `enums` as cards in a side column; orthogonal field-level routes with one gutter slot per relation, `1` / `N` / `0..1` letters at each end, identifying solid, non-identifying dashed, labels on a paper mask. Rows carry `#` `→` `U` `?` `⌘` markers, the FK target and default after the type, enum values as a sub-row; kind chips `VIEW` / `ENUM` / `EXT` (dashed). Nothing is truncated any more — cards grow. The legend lists exactly the markers used. Density budget: 20 entities / 60 columns.
+  - **Input dialects.** A ` ```dbml ` fence and a ` ```prisma ` fence parse into an `erd` (`sourceType: 'dbml' | 'prisma'`), with `E_PARSE_DBML` / `E_PARSE_PRISMA` on a bad line; an edit rewrites the fence to ` ```erd `. The Mermaid `erDiagram` converter keeps `UK` (→ `unique`), column comments (→ `note`) and `..` (→ `identifying: false`). New `dialects.ts` is the one place that knows the dialect tags (`isDialectSource`, `convertDialect`, `dialectBodyYaml`).
+  - **`avo sync sql | dbml | prisma <file> [--out doc.md] [--title] [--id]`** converts a schema file to an `erd` fence (stdout) or a minimal doc validated by `avo check`. SQL DDL reads `CREATE TABLE` (inline and table constraints, Postgres / MySQL / SQL Server quoting), `CREATE INDEX`, `ALTER TABLE ADD`, `CREATE TYPE … AS ENUM`, `CREATE VIEW`, `COMMENT ON`. The importer registry claims `.sql` / `.ddl` / `.dbml` / `.prisma`; Studio's drop-to-import inserts them as an `erd`.
+  - Skill: `blocks/data-model.md` documents the full grammar; `reference/mermaid.md` becomes "Input dialects" (Mermaid, DBML, Prisma). New example `docs/examples/data-model.md`.
+
+- d1a5570: feat(core): Mermaid input dialect — a ` ```mermaid ` fence parses into a typed block
+  - A ` ```mermaid ` fence whose first line is `sequenceDiagram`, `flowchart` / `graph`, `erDiagram`, `stateDiagram` / `stateDiagram-v2`, or `pie` parses into the matching `sequence`, `flow`, `erd`, `state`, or `chart` (donut) block with `sourceType: 'mermaid'`. The converter (`core/src/mermaid/`, `convertMermaid`) emits exactly the data the block schema accepts, so validation and rendering are identical to a YAML block. Any other Mermaid grammar (gantt, classDiagram, mindmap, …) stays prose, exactly as before, and is never flagged as a suspect fence.
+  - New diagnostic code `E_PARSE_MERMAID` (error, same shape as `E_PARSE_YAML`, positioned at the offending body line) for a line outside the supported subset. A Mermaid fence never emits `W_ALIAS_TYPE`.
+  - `replaceBlockBody` on a Mermaid segment rewrites the opening fence to the canonical block tag, so an edit from Studio or the MCP writes YAML under ` ```sequence ` (etc.), never YAML under ` ```mermaid `. New `editableBodyYaml(seg)` returns the YAML an editor starts a structured edit from (bare-text and Mermaid bodies canonicalized). Studio uses it for its sheet and direct edits.
+  - New skill reference `reference/mermaid.md` (installed by `avo init` / `avo install`, embedded in the MCP skill) documents the exact subset, what is ignored, and what is lost; `SKILL.md` gains the `E_PARSE_MERMAID` row. New catalog example `docs/examples/mermaid-dialect.md`.
+  - Exports: `MERMAID_SOURCE`, `MERMAID_KEYWORDS`, `detectMermaidKind`, `convertMermaid`, `mermaidBodyYaml`, `editableBodyYaml`.
+
+- 3a8d480: `sequence` is now a complete sequence diagram. Core: `messages[]` items are a union of a message (now with `activate` / `deactivate`), a frame open (`{ frame: alt | opt | loop | par | break | critical, label? }`), a frame else (`{ else: label }`) and a frame end (`{ end: true }`); terse forms `- alt: token valid`, `- else: expired`, `- end`, and `A -> +B` / `B --> -A` activation signs; a new `W_SEQ_FRAME` warning for a stray `else`/`end` or an unclosed frame; the density budget counts messages only; the Mermaid dialect keeps `alt`/`opt`/`loop`/`par`/`critical`/`break` … `else`/`and`/`option` … `end` and the `+`/`-` activation suffixes instead of dropping them. Render: variable row heights, UML frames (tab, `[guard]`, dashed else divider, nested insets) drawn under the lifelines, explicit or inferred activation bars (a bar opens on an incoming call and closes on its reply), real self-message loops, note boxes beside one lifeline or over two, and frame dividers in the step list. Studio: the message form and inline editor pick the union arm that matches the item, and step numbers skip frame markers.
+- 5dfac44: Stamp the real CLI version into installed skills, and complete the showcase.
+
+  `avo init` / `avo claude` matched the package name `@avodado/cli` when reading
+  the CLI's own version, but the package is named `avodado`. Every installed
+  `SKILL.md` therefore carried `version: 0.0.0`. The version now comes from the
+  same resolver as `avo --version` and the studio's `/api/meta`, which accepts
+  both spellings. The studio fallback page also told the reader to reinstall
+  `@avodado/cli`; it now names `avodado`.
+
+  The showcase (`docs/reference/showcase.md` and the `avo demo` template) claims
+  one example of every block type but had none for `spans`, `saga`,
+  `eventcontract`, or `rollout`. All four are added beside their family
+  neighbours.
+
+- d5e8928: Skill: `SKILL.md` is now the decision path only (procedure, question table, design and prose rules, file map) at 18 KB, down from 29 KB. The mechanics moved to two reference files read at the step that needs them: `reference/writing.md` (block anatomy, terse items, YAML traps, `doc#id`, naming) for step 6 and `reference/check.md` (commands, every error and warning code with its fix) for step 7. Both install with `avo init` / `avo install` and embed in the MCP skill. Adds `evals/selection` and `evals/write`, the two agent evals used to measure the change.
+- f8df705: Editorial skin, group D — everything around the rendered document. The `avo build` site chrome (sidebar, index page with its groups, cards and TLDR, the Doc | Slides toggle, the deck's back-link) and the slide deck (stage, header, tracker, footer, cover, bottom nav) now draw only from the skin's role tokens (`--paper`, `--ink`, `--muted`, `--soft`, `--rule`, `--accent`, `--link`): Inter body, mono eyebrow labels, hairlines, no shadows, no filled pills; index tags and the deck tracker are outlined mono chips. Both stamp `data-theme` on `<html>` when a theme is chosen explicitly, so it never mixes with the reader's system dark mode. Studio's `--stu-*` token values align with the skin (paper `#f7f6f2`, ink `#1f2430`, muted `#4f5868`, hairline `rgba(31,36,48,.14)`, accent `#b04a25`; navy stays for controls) in both its light and dark sets, and the canvas now knows when the document follows the system dark scheme so selection and hover outlines read on either surface. `avo theme` files map onto the skin: colors emit the role names first (`paper`, `ink`, `muted`, `soft`, `rule`, `accent`, `link`, `negative`) with the legacy names (`--navy`, `--charcoal`, `--highlight`, `--blue`, …) as aliases of those roles; `primary`/`secondary` keep working. The contrast audit script takes `--root <selector>` to audit a whole page.
+- Updated dependencies [430ba0b]
+- Updated dependencies [2b88a17]
+- Updated dependencies [6498446]
+- Updated dependencies [b81194c]
+- Updated dependencies [6498446]
+- Updated dependencies [6498446]
+- Updated dependencies [5dfac44]
+- Updated dependencies [6498446]
+- Updated dependencies [430ba0b]
+- Updated dependencies [9528f0c]
+- Updated dependencies [d1a5570]
+- Updated dependencies [02bc78b]
+- Updated dependencies [430ba0b]
+- Updated dependencies [3a8d480]
+- Updated dependencies [d5e8928]
+- Updated dependencies [f8df705]
+- Updated dependencies [f8df705]
+- Updated dependencies [f8df705]
+- Updated dependencies [f8df705]
+- Updated dependencies [2b88a17]
+- Updated dependencies [76ec7dd]
+- Updated dependencies [430ba0b]
+  - @avodado/core@0.22.0
+  - @avodado/render@0.31.0
+  - @avodado/studio@0.14.0
+
 ## 0.43.0
 
 ### Minor Changes
