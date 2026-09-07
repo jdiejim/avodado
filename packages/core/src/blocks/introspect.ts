@@ -32,7 +32,19 @@ import type { BlockType } from '../types.js';
  *   unwrap to their inner object (see `unwrap`).
  */
 export type FieldNode =
-  | { readonly kind: 'string' | 'number' | 'boolean'; readonly optional: boolean }
+  | { readonly kind: 'string' | 'boolean'; readonly optional: boolean }
+  | {
+      readonly kind: 'number';
+      readonly optional: boolean;
+      /**
+       * Declared `.min(n)`, when the schema sets one. A form has to seed at
+       * least this — zero is not a legal grid coordinate or draw count, and a
+       * form that offers it writes a value the schema rejects on save.
+       */
+      readonly min?: number;
+      /** Declared `.max(n)`, when the schema sets one. */
+      readonly max?: number;
+    }
   | { readonly kind: 'enum'; readonly optional: boolean; readonly options: readonly string[] }
   | {
       readonly kind: 'array';
@@ -68,7 +80,19 @@ function describe(schema: z.ZodTypeAny): FieldNode {
   cur = unwrap(cur);
 
   if (cur instanceof z.ZodString) return { kind: 'string', optional };
-  if (cur instanceof z.ZodNumber) return { kind: 'number', optional };
+  if (cur instanceof z.ZodNumber) {
+    // `.min(n)` / `.max(n)` are part of the contract, the way an array's
+    // `.min(n)` is: a grid coordinate starts at 1, not at 0.
+    const checks = (cur._def as { checks?: ReadonlyArray<{ kind: string; value: number }> }).checks ?? [];
+    const min = checks.find((c) => c.kind === 'min')?.value;
+    const max = checks.find((c) => c.kind === 'max')?.value;
+    return {
+      kind: 'number',
+      optional,
+      ...(typeof min === 'number' ? { min } : {}),
+      ...(typeof max === 'number' ? { max } : {}),
+    };
+  }
   if (cur instanceof z.ZodBoolean) return { kind: 'boolean', optional };
   if (cur instanceof z.ZodEnum) {
     return { kind: 'enum', optional, options: (cur.options as string[]).slice() };

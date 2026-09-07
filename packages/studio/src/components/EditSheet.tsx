@@ -178,7 +178,7 @@ function SheetInner({ seg, revealField }: {
   }, [draft, dirty]);
 
   const commitPath = (path: YamlPath, value: unknown): void => {
-    commitDraft(setYamlPath(draftRef.current, path, value));
+    commitDraft(setYamlPath(draftRef.current, path, value, seg.kind));
     // Scalar commits are real typing (structural seeds commit objects/arrays)
     // — that's the "fill a field" action the tour advances on.
     if (typeof value !== 'object' || value === null) emitTourAction('field-commit');
@@ -187,7 +187,7 @@ function SheetInner({ seg, revealField }: {
     commitDraft(deleteYamlPath(draftRef.current, path));
   };
   const stagePath = (path: YamlPath, value: unknown): void => {
-    scheduleRefresh(() => setYamlPath(draftRef.current, path, value));
+    scheduleRefresh(() => setYamlPath(draftRef.current, path, value, seg.kind));
   };
 
   /* ---- direct editing inside the preview (always on) ---- */
@@ -209,10 +209,10 @@ function SheetInner({ seg, revealField }: {
   const previewHost = useMemo<DirectHost>(
     () => ({
       kind: seg.kind,
-      commitPath: (path, value) => commitDraft(setYamlPath(draftRef.current, path, value)),
+      commitPath: (path, value) => commitDraft(setYamlPath(draftRef.current, path, value, seg.kind)),
       commitPaths: (sets) => {
         let raw = draftRef.current;
-        for (const s of sets) raw = setYamlPath(raw, s.path, s.value);
+        for (const s of sets) raw = setYamlPath(raw, s.path, s.value, seg.kind);
         commitDraft(raw);
       },
       deletePath: (path) => commitDraft(deleteYamlPath(draftRef.current, path)),

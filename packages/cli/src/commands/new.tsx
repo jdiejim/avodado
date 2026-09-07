@@ -19,6 +19,7 @@ import {
   type BlockType,
 } from '@avodado/core';
 import { DOC_TEMPLATES, DOC_TEMPLATE_INFO, isDocTemplate } from './docTemplates.js';
+import { assertWritable } from '../io/write.js';
 
 export interface NewOptions {
   readonly cwd: string;
@@ -44,9 +45,18 @@ export { DOC_TEMPLATES, DOC_TEMPLATE_INFO, isDocTemplate };
 /**
  * Writes a new doc to `out` from the chosen doc-template or block-type name.
  * Returns the absolute path written.
+ *
+ * A template is a starting point, never a replacement: an existing file at
+ * `out` is left alone and the call throws unless `force` is set.
  */
-export async function writeNewDoc(opts: { cwd: string; type: string; out: string }): Promise<string> {
+export async function writeNewDoc(opts: {
+  cwd: string;
+  type: string;
+  out: string;
+  force?: boolean;
+}): Promise<string> {
   const outAbs = resolve(opts.cwd, opts.out);
+  assertWritable(outAbs, opts.force === true ? { force: true } : {});
   await mkdir(dirname(outAbs), { recursive: true });
   const content = isDocTemplate(opts.type)
     ? (DOC_TEMPLATES[opts.type] as string)

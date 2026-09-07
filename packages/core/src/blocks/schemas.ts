@@ -17,6 +17,79 @@
 import { z } from 'zod';
 import type { BlockType } from '../types.js';
 
+/* ── numeric field builders ─────────────────────────────────────────────────
+ * Every number a block body carries goes through one of these. Zod's bare
+ * `z.number()` rejects `NaN` but ACCEPTS `Infinity`, and YAML `.inf` parses to
+ * exactly that — so `packet: {width: .inf}` validated clean and then made a
+ * renderer append to a string until V8 ran out of memory. No schema in this
+ * file uses `z.number()`; `schema-hardening.test.ts` fails if one comes back.
+ *
+ * No block field wants a non-finite value. Every number here becomes a grid
+ * coordinate, a size, a count, a share, or a printed label, and all five need
+ * a real magnitude.
+ */
+
+/**
+ * Message for a non-finite number, shown verbatim by `validate.ts` — which
+ * also uses it to drop the follow-on issues (`Infinity` is not an integer and
+ * exceeds every ceiling, so an unfiltered `.inf` reports three times).
+ */
+export const NOT_FINITE_MESSAGE =
+  'must be a finite number — `.inf` and `.nan` are not values a renderer can draw';
+
+/** A finite number. The base of every numeric field in this file. */
+const num = z.number().finite(NOT_FINITE_MESSAGE);
+
+/**
+ * Highest grid coordinate or cell span a diagram places legibly. Far past
+ * every density budget (20–30 nodes), so it only catches a typo or a
+ * generated absurdity, never a real drawing.
+ */
+const GRID_MAX = 100;
+
+/**
+ * A 1-based grid coordinate (`col` / `row`). The first cell is 1: `col: 0`
+ * used to paint the node at a negative x, entirely outside the `viewBox`,
+ * with nothing on the page to say a node was lost.
+ */
+const gridCoord = num
+  .int('a grid coordinate is a whole number of cells')
+  .min(1, 'grid coordinates are 1-based — the first column is `col: 1`, the first row is `row: 1`')
+  .max(GRID_MAX, `grid coordinates stop at ${GRID_MAX} — split the diagram instead`);
+
+/** A cell span (`cols` / `rows` / `w`) — at least one cell wide. */
+const gridSpan = num
+  .int('a cell span is a whole number of cells')
+  .min(1, 'a cell span covers at least 1 cell')
+  .max(GRID_MAX, `a cell span stops at ${GRID_MAX} cells — split the diagram instead`);
+
+/** A 0-based index into a declared list (`lane` into `lanes`, `layer` into `layers`). */
+const laneIndex = num
+  .int('a lane index is a whole number')
+  .min(0, 'lane indexes are 0-based — the first lane is 0');
+
+/**
+ * A count the renderer turns into a loop: `n` becomes `n` drawn things, so an
+ * unbounded value multiplies the output. `max` is what the renderer can still
+ * draw; a value that is merely unwise gets a `W_DENSE_BLOCK` warning instead
+ * (see `density.ts`).
+ */
+const drawCount = (min: number, max: number) =>
+  num
+    .int('a count is a whole number')
+    .min(min, `must be at least ${min}`)
+    .max(max, `must be at most ${max} — past that the picture stops being readable`);
+
+/**
+ * The declared ids/names a bad in-block reference could have meant, for the
+ * "use one of" tail of a diagnostic. Long id spaces are truncated so the
+ * message stays one readable line.
+ */
+function nameList(names: Iterable<string>): string {
+  const all = [...names];
+  return all.length > 8 ? `${all.slice(0, 8).join(', ')}, … (${all.length} in all)` : all.join(', ');
+}
+
 // ─── meta ───────────────────────────────────────────────────────────────────
 export const metaSchema = z
   .object({
@@ -54,10 +127,10 @@ const tableColumnSchema = z.union([
 ]);
 const tableCellSchema = z.union([
   z.string(),
-  z.number(),
+  num,
   z
     .object({
-      v: z.union([z.string(), z.number()]),
+      v: z.union([z.string(), num]),
       tone: z.enum(['pos', 'neg', 'warn', 'muted']).optional(),
       lead: z.boolean().optional(),
       highlight: z.boolean().optional(),
@@ -228,7 +301,39 @@ export const erdSchema = z
     groups: z.array(erdGroupSchema).optional(),
     enums: z.array(erdEnumSchema).optional(),
   })
-  .strict();
+  .strict()
+  // In-block references, checked the way `spans` and `saga` check theirs: the
+  // renderer looks each relation end up in a name map and DROPS the relation
+  // when it misses, so a typo silently deletes a line from the diagram.
+  .superRefine((val, ctx) => {
+    const entities = val.entities ?? [];
+    const names = new Set<string>();
+    entities.forEach((e, i) => {
+      // The renderer keys entities by bare name AND by `schema.name`.
+      const qualified = e.schema !== undefined ? `${e.schema}.${e.name}` : undefined;
+      if (names.has(e.name) || (qualified !== undefined && names.has(qualified))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['entities', i, 'name'],
+          message: `duplicate entity "${qualified ?? e.name}" — every entity needs its own name`,
+        });
+      }
+      names.add(e.name);
+      if (qualified !== undefined) names.add(qualified);
+    });
+    if (names.size === 0) return; // nothing declared — relations name nothing to check
+    (val.relations ?? []).forEach((r, i) => {
+      for (const end of ['from', 'to'] as const) {
+        const target = r[end];
+        if (names.has(target)) continue;
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['relations', i, end],
+          message: `relation ${end} "${target}" is not an entity name — use one of: ${nameList(names)}`,
+        });
+      }
+    });
+  });
 
 // ─── userstory ──────────────────────────────────────────────────────────────
 // Unchanged from the previous shape (doc-studio uses the same userstory).
@@ -253,7 +358,7 @@ export const userstorySchema = z
     want: z.string().optional(),
     soThat: z.string().optional(),
     priority: z.string().optional(),
-    points: z.number().optional(),
+    points: num.optional(),
     tags: z.array(z.string()).optional(),
     criteria: z.array(criterionSchema).optional(),
     links: z.array(linkSchema).optional(),
@@ -370,7 +475,7 @@ export const cvtSchema = z
 // ─── stats (KPI cards) ──────────────────────────────────────────────────────
 const statSchema = z
   .object({
-    value: z.union([z.string(), z.number()]),
+    value: z.union([z.string(), num]),
     label: z.string(),
     delta: z.string().optional(),
     trend: z.enum(['up', 'down', 'flat']).optional(),
@@ -450,7 +555,7 @@ const treeNodeSchema = z
      * becomes a DRIVER TREE — p95 = queue + compute + network, revenue =
      * price × volume — with each child's share of its parent computed.
      */
-    value: z.number().optional(),
+    value: num.optional(),
   })
   .strict();
 export const treeSchema = z
@@ -489,10 +594,10 @@ const gridGroupSchema = z
   .object({
     id: z.string().optional(),
     parent: z.string().optional(),
-    col: z.number(),
-    row: z.number(),
-    cols: z.number().optional(),
-    rows: z.number().optional(),
+    col: gridCoord,
+    row: gridCoord,
+    cols: gridSpan.optional(),
+    rows: gridSpan.optional(),
     label: z.string(),
     color: z.string().optional(),
   })
@@ -511,9 +616,9 @@ const gridDirSchema = z.enum(['LR', 'TB']).optional();
 const flowNodeSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
-    w: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
+    w: gridSpan.optional(),
     label: z.string(),
     kind: z.enum(['start', 'end', 'decision', 'process']).optional(),
   })
@@ -544,8 +649,8 @@ export const flowSchema = z
 const stateNodeSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
     name: z.string().optional(),
     kind: z.enum(['start', 'terminal', 'active', 'wait']).optional(),
   })
@@ -574,11 +679,11 @@ export const stateSchema = z
 const dfdNodeSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
     name: z.string(),
     kind: z.enum(['process', 'external', 'store', 'datastore']).optional(),
-    num: z.union([z.string(), z.number()]).optional(),
+    num: z.union([z.string(), num]).optional(),
   })
   .strict();
 const dfdEdgeSchema = z
@@ -615,7 +720,7 @@ export const journeySchema = z
     lede: z.string().optional(),
     stages: z.array(journeyStageSchema).optional(),
     rows: z.array(journeyRowSchema).optional(),
-    emotion: z.array(z.number()).optional(),
+    emotion: z.array(num).optional(),
   })
   .strict();
 
@@ -623,8 +728,8 @@ export const journeySchema = z
 const ganttTaskSchema = z
   .object({
     label: z.string(),
-    start: z.number().optional(),
-    span: z.number().optional(),
+    start: num.optional(),
+    span: num.optional(),
     kind: z.enum(['done', 'active', 'current', 'milestone']).optional(),
   })
   .strict();
@@ -645,10 +750,10 @@ export const ganttSchema = z
 const graphNodeSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
     label: z.string(),
-    group: z.number().optional(),
+    group: num.optional(),
     state: z.enum(['visited', 'current', 'frontier', 'target']).optional(),
   })
   .strict();
@@ -658,7 +763,7 @@ const graphEdgeSchema = z
     to: z.string(),
     label: z.string().optional(),
     dir: z.enum(['directed', 'undirected']).optional(),
-    weight: z.number().optional(),
+    weight: num.optional(),
   })
   .strict();
 export const graphSchema = z
@@ -683,8 +788,8 @@ const quadrantAxisSchema = z
   .strict();
 const quadrantItemSchema = z
   .object({
-    x: z.number(),
-    y: z.number(),
+    x: num,
+    y: num,
     label: z.string(),
   })
   .strict();
@@ -704,8 +809,8 @@ const swimlaneLaneSchema = z.object({ label: z.string() }).strict();
 const swimlaneStepSchema = z
   .object({
     id: z.string(),
-    col: z.number(),
-    lane: z.number(),
+    col: gridCoord,
+    lane: laneIndex,
     label: z.string(),
     kind: z.enum(['action', 'decision', 'start', 'end', 'wait']).optional(),
   })
@@ -732,9 +837,9 @@ export const swimlaneSchema = z
 const c4NodeSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
-    w: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
+    w: gridSpan.optional(),
     kind: z.enum(['person', 'system', 'external', 'store', 'container', 'component']),
     family: z.string().optional(),
     name: z.string(),
@@ -780,8 +885,8 @@ export const c4Schema = z
 const umlClassSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
     name: z.string(),
     stereotype: z.string().optional(),
     attrs: z.array(z.string()).optional(),
@@ -864,7 +969,8 @@ const clusterServiceSchema = z
     label: z.string(),
     kind: z.string().optional(),
     tech: z.string().optional(),
-    replicas: z.number().optional(),
+    /** Instance count. The renderer draws at most 5 marks and prints `×N`. */
+    replicas: num.int('a replica count is a whole number').min(1).optional(),
   })
   .strict();
 const clusterEdgeSchema = z
@@ -899,15 +1005,15 @@ const blockGraphLayerSchema = z
 const blockGraphNodeSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
-    layer: z.number().optional(),
-    w: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
+    layer: laneIndex.optional(),
+    w: gridSpan.optional(),
     kind: z.string().optional(),
     name: z.string(),
     tech: z.string().optional(),
     // Instance count. From 2 up the node draws as a stacked card with a `×N` chip.
-    replicas: z.number().int().min(1).optional(),
+    replicas: num.int().min(1).optional(),
   })
   .strict();
 const blockGraphEdgeSchema = z
@@ -933,7 +1039,49 @@ export const blockGraphSchema = z
     nodes: z.array(blockGraphNodeSchema).optional(),
     edges: z.array(blockGraphEdgeSchema).optional(),
   })
-  .strict();
+  .strict()
+  // In-block references, checked the way `spans` and `saga` check theirs. The
+  // renderer looks both edge ends up in a node map and DROPS the edge when
+  // either misses, and a second node with the same id shadows the first — both
+  // silently, so the drawing loses a line with nothing to say so.
+  // (`groups[].parent` is checked at validate time — see `lintGroupNesting`.)
+  .superRefine((val, ctx) => {
+    const ids = new Set<string>();
+    (val.nodes ?? []).forEach((n, i) => {
+      if (ids.has(n.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['nodes', i, 'id'],
+          message: `duplicate node id "${n.id}" — every node needs its own id`,
+        });
+      }
+      ids.add(n.id);
+    });
+    const groupIds = new Set<string>();
+    (val.groups ?? []).forEach((g, i) => {
+      if (g.id === undefined) return;
+      if (groupIds.has(g.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['groups', i, 'id'],
+          message: `duplicate group id "${g.id}" — every group needs its own id`,
+        });
+      }
+      groupIds.add(g.id);
+    });
+    if (ids.size === 0) return; // no nodes declared — edges name nothing to check
+    (val.edges ?? []).forEach((e, i) => {
+      for (const end of ['from', 'to'] as const) {
+        const target = e[end];
+        if (ids.has(target)) continue;
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['edges', i, end],
+          message: `edge ${end} "${target}" is not a node id — use one of: ${nameList(ids)}`,
+        });
+      }
+    });
+  });
 
 // ─── felogic (frontend/backend module graph) ────────────────────────────────
 // `variant: be` renders the backend presentation (controller / service /
@@ -941,9 +1089,9 @@ export const blockGraphSchema = z
 const feLogicNodeSchema = z
   .object({
     id: z.string(),
-    col: z.number().optional(),
-    row: z.number().optional(),
-    w: z.number().optional(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
+    w: gridSpan.optional(),
     kind: z.string().optional(),
     name: z.string(),
     note: z.string().optional(),
@@ -998,7 +1146,8 @@ const wireframeElementSchema = z
       ])
       .optional(),
     label: z.string().optional(),
-    rows: z.number().optional(),
+    /** Repeat count for the stacked elements (list, card, text). One row is drawn per unit, so the value multiplies the output. */
+    rows: drawCount(1, 40).optional(),
     align: z.enum(['l', 'c', 'r']).optional(),
     tone: z.enum(['accent', 'muted', 'danger']).optional(),
   })
@@ -1043,7 +1192,7 @@ const endpointFieldSchema = z
   .strict();
 const endpointResponseSchema = z
   .object({
-    status: z.union([z.string(), z.number()]),
+    status: z.union([z.string(), num]),
     desc: z.string().optional(),
     example: z.string().optional(),
   })
@@ -1235,7 +1384,7 @@ const storyItemSchema = z
     want: z.string().optional(),
     soThat: z.string().optional(),
     priority: z.string().optional(),
-    points: z.number().optional(),
+    points: num.optional(),
     tags: z.array(z.string()).optional(),
     criteria: z.array(criterionSchema).optional(),
     links: z.array(linkSchema).optional(),
@@ -1296,7 +1445,8 @@ export const gallerySchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
-    cols: z.number().optional(),
+    /** Columns in the CSS grid. */
+    cols: drawCount(1, 24).optional(),
     items: z.array(galleryItemSchema).min(1),
   })
   .strict()
@@ -1341,13 +1491,13 @@ const chartSeriesSchema = z
   .object({
     label: z.string(),
     accent: accentEnum.optional(),
-    values: z.array(z.number()),
+    values: z.array(num),
   })
   .strict();
 const chartItemSchema = z
   .object({
     label: z.string(),
-    value: z.number(),
+    value: num,
     accent: accentEnum.optional(),
     desc: z.string().optional(),
   })
@@ -1356,9 +1506,9 @@ const chartItemSchema = z
 // bubble area; `label` is drawn beside the bubble.
 const chartPointSchema = z
   .object({
-    x: z.number(),
-    y: z.number(),
-    size: z.number().optional(),
+    x: num,
+    y: num,
+    size: num.optional(),
     label: z.string().optional(),
     accent: accentEnum.optional(),
   })
@@ -1368,8 +1518,8 @@ const chartPointSchema = z
 // the plot into, in TL, TR, BL, BR order.
 const chartGuidesSchema = z
   .object({
-    x: z.number().optional(),
-    y: z.number().optional(),
+    x: num.optional(),
+    y: num.optional(),
     quadrants: z.array(z.string()).length(4).optional(),
   })
   .strict();
@@ -1395,8 +1545,8 @@ export const chartSchema = z
     xLabel: z.string().optional(),
     yLabel: z.string().optional(),
     unit: z.string().optional(),
-    budget: z.number().optional(),
-    max: z.number().optional(),
+    budget: num.optional(),
+    max: num.optional(),
   })
   .strict();
 
@@ -1406,7 +1556,7 @@ export const figureSchema = z
     src: z.string(),
     alt: z.string().optional(),
     caption: z.string().optional(),
-    width: z.number().optional(),
+    width: num.optional(),
   })
   .strict();
 
@@ -1486,7 +1636,7 @@ const sloItemSchema = z
     target: z.string(),
     current: z.string().optional(),
     window: z.string().optional(),
-    budget: z.number().min(0).optional(),
+    budget: num.min(0).optional(),
   })
   .strict();
 export const sloSchema = z
@@ -1517,7 +1667,7 @@ export const swotSchema = z
 const okrKrSchema = z
   .object({
     kr: z.string(),
-    progress: z.number(),
+    progress: num,
     status: z.enum(['on-track', 'at-risk', 'off-track', 'done']).optional(),
   })
   .strict();
@@ -1606,7 +1756,7 @@ export const teamSchema = z
 const heatmapRowSchema = z
   .object({
     label: z.string(),
-    values: z.array(z.number()),
+    values: z.array(num),
   })
   .strict();
 export const heatmapSchema = z
@@ -1616,8 +1766,8 @@ export const heatmapSchema = z
     xLabels: z.array(z.string()).min(1),
     rows: z.array(heatmapRowSchema).min(1),
     unit: z.string().optional(),
-    min: z.number().optional(),
-    max: z.number().optional(),
+    min: num.optional(),
+    max: num.optional(),
   })
   .strict();
 
@@ -1628,13 +1778,13 @@ export const heatmapSchema = z
 const scorecardCriterionSchema = z
   .object({
     label: z.string(),
-    weight: z.number().optional(),
+    weight: num.optional(),
   })
   .strict();
 const scorecardOptionSchema = z
   .object({
     label: z.string(),
-    scores: z.array(z.number()),
+    scores: z.array(num),
     note: z.string().optional(),
   })
   .strict();
@@ -1684,7 +1834,8 @@ export const paletteSchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
-    cols: z.number().optional(),
+    /** Columns in the CSS grid. */
+    cols: drawCount(1, 24).optional(),
     colors: z.array(paletteColorSchema).min(1),
   })
   .strict();
@@ -1695,9 +1846,9 @@ export const paletteSchema = z
 const typescaleItemSchema = z
   .object({
     name: z.string(),
-    size: z.number(),
-    weight: z.number().optional(),
-    lineHeight: z.number().optional(),
+    size: num,
+    weight: num.optional(),
+    lineHeight: num.optional(),
     font: z.enum(['display', 'body', 'mono']).optional(),
     note: z.string().optional(),
   })
@@ -1767,8 +1918,8 @@ const arrayItemSchema = z
   .strict();
 const arrayWindowSchema = z
   .object({
-    from: z.number(),
-    to: z.number(),
+    from: num,
+    to: num,
     label: z.string().optional(),
   })
   .strict();
@@ -1856,7 +2007,8 @@ const hashmapEntrySchema = z
   .object({
     key: z.string(),
     value: z.string().optional(),
-    bucket: z.number(),
+    /** Which bucket holds the entry, 0-based. Outside `0..buckets-1` it is skipped. */
+    bucket: num.int('a bucket index is a whole number').min(0, 'bucket indexes are 0-based'),
     tone: dsToneEnum.optional(),
   })
   .strict();
@@ -1864,7 +2016,8 @@ export const hashmapSchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
-    buckets: z.number(),
+    /** Bucket count. The renderer draws the first 12 and notes "+N more", so a large table stays legible. */
+    buckets: num.int('a bucket count is a whole number').min(0),
     entries: z.array(hashmapEntrySchema).optional(),
   })
   .strict();
@@ -1956,7 +2109,7 @@ export const promptSchema = z
 const contextSegmentSchema = z
   .object({
     label: z.string(),
-    tokens: z.number(),
+    tokens: num,
     accent: accentEnum.optional(),
     desc: z.string().optional(),
   })
@@ -1965,7 +2118,7 @@ export const contextSchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
-    window: z.number(),
+    window: num,
     unit: z.string().optional(),
     segments: z.array(contextSegmentSchema),
   })
@@ -1995,7 +2148,8 @@ export const archmapSchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
-    cols: z.number().optional(),
+    /** Columns in the CSS grid. */
+    cols: drawCount(1, 24).optional(),
     areas: z.array(archmapAreaSchema).min(1),
   })
   .strict();
@@ -2086,13 +2240,13 @@ const statustableStatusSchema = z
   .strict();
 const statustableSubtaskSchema = z
   .object({
-    cells: z.array(z.union([z.string(), z.number()])).min(1),
+    cells: z.array(z.union([z.string(), num])).min(1),
     status: z.string(),
   })
   .strict();
 const statustableRowSchema = z
   .object({
-    cells: z.array(z.union([z.string(), z.number()])).min(1),
+    cells: z.array(z.union([z.string(), num])).min(1),
     status: z.string(),
     // One level of nesting: subtask rows render indented under their parent.
     // The parent's status stays explicit — no roll-up; the author decides.
@@ -2211,14 +2365,14 @@ const sankeyNodeSchema = z
     label: z.string().optional(),
     accent: accentEnum.optional(),
     /** 1-indexed column, when the derived depth reads wrong. */
-    col: z.number().optional(),
+    col: gridCoord.optional(),
   })
   .strict();
 const sankeyLinkSchema = z
   .object({
     from: z.string(),
     to: z.string(),
-    value: z.number(),
+    value: num,
     label: z.string().optional(),
   })
   .strict();
@@ -2255,10 +2409,10 @@ const benchmarkSubjectSchema = z
   .strict();
 const benchmarkValueSchema = z.union([
   z.string(),
-  z.number(),
+  num,
   z
     .object({
-      value: z.union([z.string(), z.number()]).optional(),
+      value: z.union([z.string(), num]).optional(),
       /** Forces the win highlight (ties, or a winner that isn't a number). */
       best: z.boolean().optional(),
       /** Tiny label above the value (e.g. the variant of the subject used). */
@@ -2340,7 +2494,7 @@ export const gitgraphSchema = z
 const treemapItemSchema = z
   .object({
     label: z.string(),
-    value: z.number(),
+    value: num,
     accent: accentEnum.optional(),
     /** Second line inside the tile, when it fits. */
     desc: z.string().optional(),
@@ -2364,7 +2518,8 @@ export const treemapSchema = z
 const packetFieldSchema = z
   .object({
     label: z.string(),
-    bits: z.number(),
+    /** How many bits the field takes. It wraps across `width`-bit rows, so the value multiplies the output. */
+    bits: drawCount(1, 4096),
     accent: accentEnum.optional(),
     /** Fixed value or note, shown under the name when the cell is wide. */
     value: z.string().optional(),
@@ -2376,8 +2531,13 @@ export const packetSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
-    /** Bits per row. Default 32. */
-    width: z.number().optional(),
+    /**
+     * Bits per row. Default 32. Each row draws one tick per bit and the cell
+     * width is the frame width divided by this, so the value multiplies the
+     * output; past 128 the cells are thinner than their own hairlines.
+     * 32 and 64 are the readable widths — `density.ts` warns above 64.
+     */
+    width: drawCount(1, 128).optional(),
     fields: z.array(packetFieldSchema).min(1),
   })
   .strict();
@@ -2422,12 +2582,12 @@ const wardleyComponentSchema = z
     id: z.string().optional(),
     label: z.string(),
     /** Evolution, 0 (genesis) → 1 (commodity). */
-    x: z.number(),
+    x: num,
     /** Visibility to the user, 0 (invisible) → 1 (visible). */
-    y: z.number(),
+    y: num,
     kind: z.enum(['user', 'component', 'commodity', 'build', 'buy']).optional(),
     /** Where this component is heading, as an evolution delta. */
-    movement: z.number().optional(),
+    movement: num.optional(),
   })
   .strict();
 const wardleyLinkSchema = z
@@ -2458,11 +2618,11 @@ const harveyRowSchema = z
   .object({
     label: z.string(),
     /** 0–4 per column, in column order. Short rows read as "not assessed". */
-    ratings: z.array(z.number()),
+    ratings: z.array(num),
     /** What the row is actually measuring. */
     note: z.string().optional(),
     /** Relative importance, shown as a ×N chip. */
-    weight: z.number().optional(),
+    weight: num.optional(),
   })
   .strict();
 export const harveySchema = z
@@ -2628,9 +2788,9 @@ const slopegraphItemSchema = z
   .object({
     label: z.string(),
     /** Value in the left column. */
-    from: z.number(),
+    from: num,
     /** Value in the right column. */
-    to: z.number(),
+    to: num,
     accent: accentEnum.optional(),
   })
   .strict();
@@ -2662,14 +2822,14 @@ const spanSchema = z
     /** The service that executed the span — one lane per service. */
     service: z.string(),
     /** Offset from the trace start, in `unit`. */
-    start: z.number().min(0),
+    start: num.min(0),
     /** Length of the span, in `unit`. */
-    duration: z.number().min(0),
+    duration: num.min(0),
     /** The calling span's `id`. */
     parent: z.string().optional(),
     kind: spanKindEnum.optional(),
     error: z.boolean().optional(),
-    attrs: z.record(z.union([z.string(), z.number()])).optional(),
+    attrs: z.record(z.union([z.string(), num])).optional(),
     note: z.string().optional(),
   })
   .strict();
@@ -2722,7 +2882,7 @@ const rolloutStageSchema = z
   .object({
     name: z.string(),
     /** Share of traffic on the new version at this stage, 0–100. */
-    traffic: z.number().min(0).max(100).optional(),
+    traffic: num.min(0).max(100).optional(),
     /** How long the stage holds before the gate is judged (e.g. `30m`). */
     duration: z.string().optional(),
     /** The condition that must pass to advance (e.g. `error rate < 0.5%`). */

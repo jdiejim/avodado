@@ -4,7 +4,9 @@ subtitle: One erd for a 12-table shop — two schemas, a join table, a self-refe
 tag: Example
 ```
 
-The `erd` block accepts a full relational model and draws it: the aggregate root is centred, its neighbours fan out by relation depth, and schema groups become panels. Column flags use the terse grammar (`email citext unique !null`, `user_id uuid fk -> users.id`, `status enum(open,paid)`); a `..` body marks a non-identifying relation.
+The `erd` block accepts a full relational model. The aggregate root sits at the centre, and its neighbours fan out by relation depth. Schema groups become panels.
+
+Column flags use the terse grammar: `email citext unique !null`, `user_id uuid fk -> users.id`, `status enum(open,paid)`. A `..` body marks a relation as non-identifying.
 
 ## The schema
 

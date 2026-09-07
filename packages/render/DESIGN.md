@@ -21,7 +21,7 @@ Semantic roles. Renderers name the role (`var(--ink)`), never the value.
 | `soft` | sublabels, guards, legend text | `#646d7b` (4.5:1 on paper-2 — the floor for small text) |
 | `rule` | hairlines | `rgba(31,36,48,.14)` |
 | `rule-solid` | frame borders, baselines, secondary node and chip outlines | `#807b70` (3.6:1 on paper-2 — the floor for a line that carries meaning) |
-| `accent` | the one focal thing, 1–2 uses per diagram | `#b04a25` (4.7:1 on paper-2, so it may carry small text) |
+| `accent` | the one focal thing per diagram (see the rule below) | `#b04a25` (4.7:1 on paper-2, so it may carry small text) |
 | `accent-tint` | fill behind an accent-stroked shape | `rgba(176,74,37,.09)` |
 | `link` | HTTP calls, external arrows, links in prose | `#2f5c8f` |
 | `negative` | real errors only, desaturated | `#9a3f34` |
@@ -37,17 +37,51 @@ once, in `css.ts`, on `[data-theme="dark"]` and `prefers-color-scheme`.
 
 ## The one-accent rule
 
-A diagram uses `accent` for at most two elements, and the renderer decides
-which from the data, deterministically:
+A diagram spends `accent` on **one focal thing**, and the renderer decides
+which from the data, deterministically. One thing: a renderer never accents
+two unrelated things in the same diagram.
+
+One thing is not always one mark. It is one answer to one question, and the
+answer is drawn at whatever size it is:
+
+- **a path** is a chain of marks. `spans` accents the critical path, so a
+  trace whose critical path runs through eight spans carries eight accented
+  bars. Capping it at two would cut the chain and misstate the trace.
+- **an arrival** is a node plus the edge into it. `flow` accents each `end`
+  node that is not an error exit, and the edge that reaches it. Two success
+  exits are two arrivals of the same one answer — "where does this end well?"
+  — and accenting one of two equal exits would claim a difference the data
+  does not carry.
+- **a per-item state the author wrote** is the author's count, not the
+  renderer's: `tone: active` / `tone: target` (`array`, `linkedlist`,
+  `bintree`) and `status: current` (`timeline`, `rollout`). The renderer
+  paints exactly what the data says and adds nothing of its own — strip the
+  marks and the accent goes to zero. Twelve stages marked `current` is an
+  authoring mistake; the skin renders it rather than hiding it.
+
+Everywhere else, the accent holds at one or two marks whatever the data size.
+A mark inside an accented shape — its label, its chip — is part of that mark,
+not a second one.
 
 | Block | What gets the accent |
 |---|---|
 | `sequence` | the last `response` message that reaches the first actor (the answer the caller gets); the `endpoint` tag |
 | `flow` | the `end` node(s) that are not error exits, and the edge into them |
+| `spans` | the critical path: from the root, the longest child at each step |
 | `block` / `c4` | a node whose `kind` is `gateway` or whose `preset` names it the entry; otherwise none |
 | `erd` | the entity on the "one" side of the most relations (the aggregate root); its eyebrow reads `AGGREGATE ROOT` |
+| author-marked | the items the author toned `active` / `target`, or gave `status: current` |
 
 Zero accent is a valid outcome. Errors use `negative`, never `accent`.
+
+`src/__tests__/accent.test.ts` enforces this rule. It carries one declared row
+per block type — where the accent comes from, how many marks the catalog
+example may spend, and which one thing they compose — checks every catalog
+example against its row, checks that a renderer-chosen accent does not grow
+when the data grows to twelve items, checks that an author-marked accent is
+zero when the marks are absent, and checks structurally that the marks of a
+path or an arrival all belong to the same thing.
+
 Nothing else is colored. Node kinds are told apart by:
 
 - **stroke weight**: 1.5px `ink` for primary nodes, 1px `rule-solid` for secondary;

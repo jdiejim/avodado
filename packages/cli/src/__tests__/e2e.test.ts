@@ -608,6 +608,92 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
+  it('avo sync sql --out refuses to overwrite a hand-written doc (W-4)', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'schema.sql'), 'CREATE TABLE users (id uuid PRIMARY KEY);\n');
+    const precious = '# PRECIOUS\n\nHand-written content that must not vanish.\n';
+    writeFileSync(join(tmp, 'docs/precious.md'), precious);
+    try {
+      const refused = await runBin(['sync', 'sql', 'schema.sql', '--out', 'docs/precious.md'], tmp);
+      expect(refused.code).toBe(1);
+      expect(refused.stderr).toContain('docs/precious.md');
+      expect(refused.stderr).toContain('--force');
+      expect(readFileSync(join(tmp, 'docs/precious.md'), 'utf8')).toBe(precious);
+
+      const forced = await runBin(
+        ['sync', 'sql', 'schema.sql', '--out', 'docs/precious.md', '--force'],
+        tmp,
+      );
+      expect(forced.code).toBe(0);
+      expect(readFileSync(join(tmp, 'docs/precious.md'), 'utf8')).toContain('```erd');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo build prunes the pages of a deleted doc, keeping user files (W-5)', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'docs', 'keep.md'), '```meta\ntitle: Keep\n```\n');
+    writeFileSync(join(tmp, 'docs', 'goner.md'), '```meta\ntitle: Goner\n```\n');
+    try {
+      expect((await runBin(['build'], tmp)).code).toBe(0);
+      writeFileSync(join(tmp, 'dist', 'CNAME'), 'docs.example.com\n');
+      rmSync(join(tmp, 'docs', 'goner.md'));
+
+      const second = await runBin(['build'], tmp);
+      expect(second.code).toBe(0);
+      expect(second.stdout).toContain('2 stale file(s) removed');
+      expect(existsSync(join(tmp, 'dist', 'goner.html'))).toBe(false);
+      expect(existsSync(join(tmp, 'dist', 'goner.slides.html'))).toBe(false);
+      expect(existsSync(join(tmp, 'dist', 'keep.html'))).toBe(true);
+      expect(existsSync(join(tmp, 'dist', 'CNAME'))).toBe(true);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo check reports a non-UTF-8 file instead of calling it clean (B-2)', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'docs', 'ok.md'), '```meta\ntitle: OK\n```\n');
+    writeFileSync(
+      join(tmp, 'docs', 'badbytes.md'),
+      Buffer.concat([Buffer.from('# Bad\n\n'), Buffer.from([0xff, 0x80, 0xfe, 0x0a])]),
+    );
+    try {
+      const { code, stdout } = await runBin(['check'], tmp);
+      expect(code).toBe(1);
+      expect(stdout).toContain('E_ENCODING');
+      expect(stdout).toContain('badbytes.md');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it('avo build names the document and block behind a renderer crash (B-3)', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'docs', 'ok.md'), '```meta\ntitle: Fine\n```\n');
+    writeFileSync(
+      join(tmp, 'docs', 'boom.md'),
+      '```meta\ntitle: Boom\n```\n\n```saga\nsteps:\n  - { id: a, name: A }\n```\n',
+    );
+    try {
+      const { code, stderr } = await runBin(['build'], tmp);
+      expect(code).toBe(1);
+      expect(stderr).toContain('E_RENDER');
+      expect(stderr).toContain('docs/boom.md');
+      expect(stderr).toContain('saga');
+      // The rest of the build still ran.
+      expect(existsSync(join(tmp, 'dist', 'ok.html'))).toBe(true);
+      expect(existsSync(join(tmp, 'dist', 'index.html'))).toBe(true);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
+
   it('avo tour (non-TTY / AVO_PLAIN) prints the static 7-chapter walkthrough', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
     const { code, stdout } = await runBin(['tour'], repoRoot);

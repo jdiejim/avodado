@@ -18,10 +18,13 @@
 
 import {
   addForeignKey,
+  ambiguousMessage,
+  declareEntity,
   emptyModel,
   finalizeModel,
-  findEntity,
+  matchEntity,
   qualifiedName,
+  setEntitySchema,
   toErdData,
   touchColumn,
   touchEntity,
@@ -176,14 +179,23 @@ export function convertPrisma(text: string): DialectResult {
   const lines = meaningfulLines(text);
   const fail = (message: string, line: number): DialectResult => ({ ok: false, message, line });
 
-  // Pass 1: the names a field type may refer to.
+  // Pass 1: the names a field type may refer to. A name declared twice is
+  // the schema's error — Prisma model, view and enum names are unique.
   const modelNames = new Set<string>();
   const enumNames = new Set<string>();
   for (const l of lines) {
     const b = BLOCK_RE.exec(l.text);
     if (b === null) continue;
-    if (b[1] === 'model' || b[1] === 'view') modelNames.add(b[2] ?? '');
-    if (b[1] === 'enum') enumNames.add(b[2] ?? '');
+    const kind = b[1] ?? '';
+    const name = b[2] ?? '';
+    if (kind === 'model' || kind === 'view') {
+      if (modelNames.has(name)) return fail(`${kind} ${name} is declared twice`, l.line);
+      modelNames.add(name);
+    }
+    if (kind === 'enum') {
+      if (enumNames.has(name)) return fail(`enum ${name} is declared twice`, l.line);
+      enumNames.add(name);
+    }
   }
 
   const model = emptyModel();
@@ -247,7 +259,7 @@ export function convertPrisma(text: string): DialectResult {
               ...(name !== undefined ? { name } : {}),
             });
           }
-        } else if (attr === 'schema') entity.schema = unstr(first);
+        } else if (attr === 'schema') setEntitySchema(model, entity, unstr(first));
         // @@map, @@ignore, @@fulltext: dropped
         doc = [];
         continue;
@@ -301,7 +313,7 @@ export function convertPrisma(text: string): DialectResult {
       const kind = b[1];
       const name = b[2] ?? '';
       if (kind === 'model' || kind === 'view') {
-        entity = touchEntity(model, name, kind === 'view' ? 'view' : undefined);
+        entity = declareEntity(model, name, kind === 'view' ? 'view' : undefined).entity;
         if (doc.length > 0) entity.note = doc.join(' ');
         doc = [];
         mode = 'model';
@@ -324,7 +336,9 @@ export function convertPrisma(text: string): DialectResult {
   // Explicit relations: the side that names `fields` holds the foreign key.
   const seenNm = new Set<string>();
   for (const rf of relFields) {
-    const target = findEntity(model, rf.target) ?? touchEntity(model, rf.target, 'external');
+    const m = matchEntity(model, rf.target);
+    if (m.kind === 'ambiguous') return fail(ambiguousMessage(rf.target, m.candidates), rf.line);
+    const target = m.kind === 'one' ? m.entity : touchEntity(model, rf.target, 'external');
     if (rf.args.fields !== undefined && rf.args.fields.length > 0) {
       const refs = rf.args.references ?? target.columns.filter((c) => c.pk === true).map((c) => c.name);
       addForeignKey(model, rf.model, rf.args.fields, target, refs, {

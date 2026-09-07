@@ -24,6 +24,12 @@ export type DiagnosticCode =
   | 'E_DANGLING_REF'
   | 'E_BAD_REF_FORMAT'
   | 'E_UNKNOWN_BLOCK'
+  // The bytes on disk are not a UTF-8 document (emitted by the CLI, which is
+  // the layer that reads files). Reported instead of validating mojibake.
+  | 'E_ENCODING'
+  // A renderer threw while drawing a block (emitted by the CLI around
+  // `@avodado/render`). Names the document and the offending block.
+  | 'E_RENDER'
   | 'W_EMPTY_BLOCK'
   | 'W_SUSPECT_BLOCK'
   | 'W_ALIAS_TYPE'

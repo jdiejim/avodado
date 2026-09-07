@@ -248,6 +248,10 @@ export function permutationFor(n: number, from: number, gap: number): number[] |
  * with `''` to the column count before permuting (a cell that didn't exist
  * becomes an empty one), and cells beyond the column count keep their tail
  * positions. Returns null for a no-op move or non-array `columns`.
+ *
+ * A permutation is a whole-list write by nature — no per-index path expresses
+ * it — which is what core's terse-aware `setYamlPath` exists for: it moves the
+ * author's own YAML nodes rather than reserialising them.
  */
 export function tableColumnReorderSets(
   data: unknown,
@@ -286,6 +290,10 @@ function cardsOf(col: unknown): unknown[] | null {
  * across columns → remove from the source list + insert into the target list
  * at `gap` (clamped), two sets composed into one undo step. Returns null for
  * no-ops or unresolvable columns.
+ *
+ * The SOURCE write stays a whole-list set: a {@link PathSet} has no `remove`
+ * form, and the two writes must land as one undo step. A drop at the END of
+ * the target column is a plain append, so that half addresses one index.
  */
 export function kanbanCardMoveSets(
   data: unknown,
@@ -309,7 +317,9 @@ export function kanbanCardMoveSets(
   const g = Math.max(0, Math.min(gap, dst.length));
   return [
     { path: ['columns', fromCol, 'cards'], value: src.filter((_, i) => i !== fromIdx) },
-    { path: ['columns', toCol, 'cards'], value: [...dst.slice(0, g), card, ...dst.slice(g)] },
+    g === dst.length
+      ? { path: ['columns', toCol, 'cards', g], value: card }
+      : { path: ['columns', toCol, 'cards'], value: [...dst.slice(0, g), card, ...dst.slice(g)] },
   ];
 }
 

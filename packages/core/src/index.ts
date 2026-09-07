@@ -26,7 +26,15 @@ export {
   type BlockAlias,
 } from './blocks/aliases.js';
 
-export { normalizeBlockData, textBodyData, textBodyYaml } from './blocks/normalize.js';
+export {
+  normalizeBlockData,
+  textBodyData,
+  textBodyYaml,
+  contractTerseItems,
+  contractTerseValue,
+  canonicalTerseItem,
+  hasTerseGrammar,
+} from './blocks/normalize.js';
 
 export {
   MERMAID_SOURCE,
@@ -87,6 +95,7 @@ export {
   editableBodyYaml,
   setYamlPath,
   deleteYamlPath,
+  contractTerseAt,
   type SegmentSpan,
 } from './edit.js';
 export { resolveRefs, type RefGraph, type InputDocument } from './resolve.js';

@@ -15,10 +15,24 @@
  * pipeline does for *expected* conditions.
  */
 
-import { parseDocument as yamlParseDocument, stringify as yamlStringify } from 'yaml';
+import {
+  isMap,
+  isNode,
+  isSeq,
+  parseDocument as yamlParseDocument,
+  stringify as yamlStringify,
+  type Node as YamlNode,
+} from 'yaml';
 import type { BlockType, Document, Segment, TypedSegment } from './types.js';
 import { parseDocument } from './parser.js';
-import { textBodyYaml } from './blocks/normalize.js';
+import {
+  canonicalTerseItem,
+  contractTerseValue,
+  deepEqualData,
+  hasTerseGrammar,
+  terseSpelling,
+  textBodyYaml,
+} from './blocks/normalize.js';
 import { dialectBodyYaml, isDialectSource } from './dialects.js';
 
 /** Matches a closing fence line — kept in sync with `splitter.ts`. */
@@ -372,24 +386,168 @@ function yamlDocToRaw(doc: ReturnType<typeof yamlParseDocument>): string {
   return doc.toString({ lineWidth: 0 }).replace(/\n$/, '');
 }
 
+type YamlDoc = ReturnType<typeof yamlParseDocument>;
+
+/** The existing node at `path` (the whole body for the empty path). */
+function nodeAt(doc: YamlDoc, path: ReadonlyArray<string | number>): unknown {
+  return path.length === 0 ? doc.contents : doc.getIn(path, true);
+}
+
+/** True when `node` is written in the list's TERSE form, not as fields. */
+function isTerseNode(kind: BlockType, path: ReadonlyArray<string | number>, node: unknown): boolean {
+  if (!isNode(node)) return false;
+  const raw = node.toJSON();
+  return !deepEqualData(raw, canonicalTerseItem(kind, path, raw));
+}
+
+/** A terse item as a node: the sugar spelling the surrounding lines use. */
+function terseNode(
+  doc: YamlDoc,
+  kind: BlockType,
+  path: ReadonlyArray<string | number>,
+  value: unknown,
+): YamlNode {
+  const terse = contractTerseValue(kind, path, value);
+  if (terse === undefined) return doc.createNode(value) as YamlNode;
+  const pair = terseSpelling(kind, path, terse);
+  return doc.createNode(pair === null ? terse : { [pair.key]: pair.value }) as YamlNode;
+}
+
+/**
+ * The items a terse list should be written as, given what is already there.
+ * An item whose canonical value is unchanged reuses the AUTHOR'S OWN node —
+ * byte-identical output, comments and quoting included, whatever form they
+ * wrote it in — so a delete or a reorder touches only the lines it must.
+ * Anything new is contracted to the terse string when that is exactly
+ * faithful; a list the author wrote entirely in field form keeps field form.
+ */
+function terseItemNodes(
+  doc: YamlDoc,
+  kind: BlockType,
+  path: ReadonlyArray<string | number>,
+  value: readonly unknown[],
+  orig: unknown,
+): YamlNode[] {
+  const origItems: unknown[] = isSeq(orig) ? [...(orig.items as unknown[])] : [];
+  const canon = origItems.map((n) => canonicalTerseItem(kind, path, isNode(n) ? n.toJSON() : n));
+  const terseHere = origItems.length === 0 || origItems.some((n) => isTerseNode(kind, path, n));
+  const used = new Set<number>();
+  return value.map((v, i) => {
+    // Prefer the item that sat at this index (a reorder then keeps every node).
+    let j = !used.has(i) && i < canon.length && deepEqualData(canon[i], v) ? i : -1;
+    if (j < 0) j = canon.findIndex((c, k) => !used.has(k) && deepEqualData(c, v));
+    if (j >= 0) {
+      used.add(j);
+      return origItems[j] as YamlNode;
+    }
+    return terseHere ? terseNode(doc, kind, path, v) : (doc.createNode(v) as YamlNode);
+  });
+}
+
+/**
+ * The value to write at `path`: unchanged subtrees keep their existing node
+ * (formatting and comments intact), terse lists contract, and everything else
+ * is plain data for `yaml` to serialise.
+ */
+function preservingValue(
+  doc: YamlDoc,
+  kind: BlockType,
+  path: ReadonlyArray<string | number>,
+  value: unknown,
+  orig: unknown,
+): unknown {
+  if (isNode(orig) && deepEqualData(orig.toJSON(), value)) return orig;
+  // ONE item of a terse list, addressed by index. Contract it only where the
+  // author already writes terse items — never rewrite a mapping they typed.
+  const last = path[path.length - 1];
+  if (
+    typeof last === 'number' &&
+    !Array.isArray(value) &&
+    hasTerseGrammar(kind, path.slice(0, -1)) &&
+    (orig === undefined || isTerseNode(kind, path.slice(0, -1), orig))
+  ) {
+    return terseNode(doc, kind, path.slice(0, -1), value);
+  }
+  if (Array.isArray(value)) {
+    if (hasTerseGrammar(kind, path)) {
+      const items = terseItemNodes(doc, kind, path, value, orig);
+      if (isSeq(orig)) {
+        // Keep the sequence's own style (flow vs block) and comments.
+        orig.items = items;
+        return orig;
+      }
+      return items;
+    }
+    // A list with no terse grammar: recurse so nested terse lists still
+    // contract. Indices shift under a splice, so no node is reused by index.
+    return value.map((v, i) => preservingValue(doc, kind, [...path, i], v, undefined));
+  }
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = preservingValue(doc, kind, [...path, k], v, isMap(orig) ? orig.get(k, true) : undefined);
+    }
+    return out;
+  }
+  return value;
+}
+
 /**
  * Sets the value at `path` inside a YAML block body, preserving the rest of
  * the body byte-for-byte where possible (comments, key order, quoting style of
  * untouched nodes) via the `yaml` document API. Missing intermediate
  * collections are created.
  *
+ * With `kind`, the write also stays faithful to the AUTHOR'S FORM inside the
+ * value: a list written as terse sugar (`- App -> Auth: POST /token`) survives
+ * a whole-list write — untouched items keep their exact source node, and a new
+ * item is contracted back to the terse string whenever that is exactly
+ * faithful (see `contractTerseValue`). Without `kind` the write is the plain
+ * `yaml` `setIn`, which reserialises the value from plain data.
+ *
  * @param raw - The block body (between the fences; must parse as YAML).
  * @param path - Object keys and array indices, e.g. `['messages', 2, 'label']`.
  * @param value - The new value (plain JS; serialised by `yaml`).
+ * @param kind - The block's canonical type, when terse forms must be kept.
  * @returns The edited body, without a trailing newline.
  */
 export function setYamlPath(
   raw: string,
   path: ReadonlyArray<string | number>,
   value: unknown,
+  kind?: BlockType,
 ): string {
   const doc = parseYamlForEdit(raw);
-  doc.setIn(path, value);
+  doc.setIn(path, kind === undefined ? value : preservingValue(doc, kind, path, value, nodeAt(doc, path)));
+  return yamlDocToRaw(doc);
+}
+
+/**
+ * Rewrites the list item at `path` in its terse form, when the grammar has an
+ * exactly faithful one. This is the way back from an expansion: a deep edit
+ * (`['messages', 1, 'summary']`) needs the item as a mapping for the write to
+ * land, and this puts it back on one line afterwards if it still fits.
+ *
+ * A no-op — the body unchanged — when `path` does not name an item of a terse
+ * list, or when the item now carries something the grammar cannot say.
+ *
+ * @param raw - The block body (must parse as YAML).
+ * @param path - The item's path, e.g. `['messages', 1]`.
+ * @param kind - The block's canonical type.
+ */
+export function contractTerseAt(
+  raw: string,
+  path: ReadonlyArray<string | number>,
+  kind: BlockType,
+): string {
+  const list = path.slice(0, -1);
+  if (typeof path[path.length - 1] !== 'number' || !hasTerseGrammar(kind, list)) return raw;
+  const doc = parseYamlForEdit(raw);
+  const node = nodeAt(doc, path);
+  if (!isNode(node)) return raw;
+  const canon = canonicalTerseItem(kind, list, node.toJSON());
+  if (contractTerseValue(kind, list, canon) === undefined) return raw;
+  doc.setIn(path, terseNode(doc, kind, list, canon));
   return yamlDocToRaw(doc);
 }
 

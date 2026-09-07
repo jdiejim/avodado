@@ -3373,6 +3373,8 @@ export async function runDesignGallery(opts: {
   readonly format?: SingleFormat;
   readonly output?: string;
   readonly preview?: boolean;
+  /** With `output`, replace a file that is not already an HTML export. */
+  readonly force?: boolean;
 }): Promise<SingleResult> {
   const format = opts.format ?? 'html';
   const dir = join(tmpdir(), 'avodado-design');
@@ -3384,5 +3386,6 @@ export async function runDesignGallery(opts: {
     input,
     format,
     ...(opts.output !== undefined ? { output: opts.output } : { preview: opts.preview ?? true }),
+    ...(opts.force === true ? { force: true } : {}),
   });
 }

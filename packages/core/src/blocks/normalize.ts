@@ -184,32 +184,158 @@ function timelineItemFromString(s: string): unknown {
   };
 }
 
-/** One sugar grammar: the string expander + its "this key is terse" signature. */
+/**
+ * One sugar grammar: the string expander, its "this key is terse" signature,
+ * and — the inverse — a {@link Grammar.contract} that writes the canonical
+ * object back as the terse string.
+ *
+ * `contract` is a BEST GUESS. It never has to be careful: every contraction is
+ * accepted only when `expand(contract(v))` deep-equals `v`
+ * ({@link contractTerseValue}), so an item carrying anything the grammar
+ * cannot say — a `summary`, a `note`, a `kind` no arrow spells, an id the
+ * grammar would re-split — falls back to the object form on its own.
+ */
 interface Grammar {
   /** Expands a terse string; returns the input unchanged when it doesn't match. */
   readonly expand: (s: string) => unknown;
   /** True when a single-pair mapping KEY carries this grammar's operators. */
   readonly signature: (key: string) => boolean;
+  /**
+   * The terse string for a canonical item, or `undefined` when the grammar
+   * has no spelling for it. Never trusted on its own — see the note above.
+   */
+  readonly contract?: (value: Record<string, unknown>) => string | undefined;
+}
+
+/** True when `v` has no keys outside `allowed`. */
+function onlyKeys(v: Record<string, unknown>, allowed: readonly string[]): boolean {
+  return Object.keys(v).every((k) => allowed.includes(k));
+}
+
+/** A defined string field, or `undefined` (a non-string kills the contraction). */
+function str(v: unknown): string | undefined {
+  return typeof v === 'string' ? v : undefined;
+}
+
+/** `head` plus `: label` when there is a label. */
+function withLabel(head: string, label: unknown): string | undefined {
+  if (label === undefined) return head;
+  const s = str(label);
+  return s === undefined ? undefined : `${head}: ${s}`;
+}
+
+const MESSAGE_KEYS = ['from', 'to', 'label', 'kind', 'activate', 'deactivate'];
+const ARROW_FOR_MESSAGE: Readonly<Record<string, string>> = { response: '-->', error: '-x->' };
+
+/** The inverse of {@link messageFromString}. */
+function messageToString(v: Record<string, unknown>): string | undefined {
+  if (v['end'] === true) return onlyKeys(v, ['end']) ? 'end' : undefined;
+  if (v['else'] !== undefined) {
+    return onlyKeys(v, ['else']) ? withLabel('else', v['else']) : undefined;
+  }
+  const frame = str(v['frame']);
+  if (frame !== undefined) {
+    return onlyKeys(v, ['frame', 'label']) ? withLabel(frame, v['label']) : undefined;
+  }
+  const from = str(v['from']);
+  const to = str(v['to']);
+  if (from === undefined || to === undefined || !onlyKeys(v, MESSAGE_KEYS)) return undefined;
+  const kind = v['kind'];
+  const arrow = kind === undefined ? '->' : ARROW_FOR_MESSAGE[String(kind)];
+  if (arrow === undefined) return undefined; // sync / async / note have no arrow
+  if (v['activate'] === true && v['deactivate'] === true) return undefined;
+  const sign = v['activate'] === true ? '+' : v['deactivate'] === true ? '-' : '';
+  return withLabel(`${from} ${arrow} ${sign}${to}`, v['label']);
+}
+
+const ARROW_FOR_EDGE: Readonly<Record<string, string>> = { dashed: '-->', error: '-x->' };
+
+/** The inverse of {@link edgeFromString}. */
+function edgeToString(v: Record<string, unknown>): string | undefined {
+  const from = str(v['from']);
+  const to = str(v['to']);
+  if (from === undefined || to === undefined) return undefined;
+  if (!onlyKeys(v, ['from', 'to', 'label', 'kind'])) return undefined;
+  const kind = v['kind'];
+  const arrow = kind === undefined ? '->' : ARROW_FOR_EDGE[String(kind)];
+  if (arrow === undefined) return undefined;
+  return withLabel(`${from} ${arrow} ${to}`, v['label']);
 }
 
 const arrowGrammar = (expand: (s: string) => unknown): Grammar => ({
   expand,
   signature: (key) => ARROW_RE.test(key),
+  contract: edgeToString,
 });
 const messageGrammar: Grammar = {
   expand: messageFromString,
   // `- alt: token valid` / `- else: expired` / `- end: true` are single-pair
   // maps too — their key is the frame keyword.
   signature: (key) => SEQ_ARROW_RE.test(key) || FRAME_HEAD_RE.test(key),
+  contract: messageToString,
 };
 const edgeGrammar: Grammar = arrowGrammar(edgeFromString);
+
+/** Cardinality → the crow's-foot operator that {@link cardOf} reads back. */
+const CARD_OPS: Readonly<Record<string, string>> = {
+  '1:1': '||--||',
+  '1:N': '||--o{',
+  'N:1': '}o--||',
+  'N:M': '}o--o{',
+  '0..1': '||--o|',
+};
+
 const relationGrammar: Grammar = {
   expand: relationFromString,
   signature: (key) => ERD_RE.test(key),
+  contract: (v) => {
+    const from = str(v['from']);
+    const to = str(v['to']);
+    if (from === undefined || to === undefined) return undefined;
+    if (!onlyKeys(v, ['from', 'to', 'label', 'card', 'identifying'])) return undefined;
+    const card = v['card'];
+    const ident = v['identifying'];
+    let op: string;
+    if (card === undefined) {
+      if (ident !== undefined) return undefined; // `->` says nothing about it
+      op = '->';
+    } else {
+      const base = CARD_OPS[String(card)];
+      if (base === undefined) return undefined;
+      if (ident === true) return undefined; // `--` leaves `identifying` unset
+      op = ident === false ? base.replace('--', '..') : base;
+    }
+    return withLabel(`${from} ${op} ${to}`, v['label']);
+  },
 };
+
+/** `parts` joined with the ` · ` separator every dot grammar reads. */
+function dotJoin(parts: ReadonlyArray<string | undefined>): string | undefined {
+  return parts.some((p) => p === undefined) ? undefined : (parts as string[]).join(' · ');
+}
+
+/** `[status] ` when there is one. */
+function bracket(status: unknown): string | undefined {
+  if (status === undefined) return '';
+  const s = str(status);
+  return s === undefined ? undefined : `[${s}] `;
+}
+
 const timelineGrammar: Grammar = {
   expand: timelineItemFromString,
   signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
+  contract: (v) => {
+    if (!onlyKeys(v, ['date', 'label', 'desc', 'status'])) return undefined;
+    const label = str(v['label']);
+    const head = bracket(v['status']);
+    if (label === undefined || head === undefined) return undefined;
+    const parts: Array<string | undefined> = [];
+    if (v['date'] !== undefined) parts.push(str(v['date']));
+    parts.push(label);
+    if (v['desc'] !== undefined) parts.push(str(v['desc']));
+    const body = dotJoin(parts);
+    return body === undefined ? undefined : head + body;
+  },
 };
 
 /** Span head: `service/id` — the first `/` splits the lane from the id. */
@@ -253,6 +379,20 @@ function spanFromString(s: string): unknown {
 const spanGrammar: Grammar = {
   expand: spanFromString,
   signature: (key) => SPAN_HEAD_RE.test(key),
+  contract: (v) => {
+    if (!onlyKeys(v, ['id', 'service', 'name', 'start', 'duration', 'parent'])) return undefined;
+    const id = str(v['id']);
+    const service = str(v['service']);
+    const name = str(v['name']);
+    const start = v['start'];
+    const duration = v['duration'];
+    if (id === undefined || service === undefined || name === undefined) return undefined;
+    if (typeof start !== 'number' || typeof duration !== 'number') return undefined;
+    const parts: Array<string | undefined> = [name, String(start), String(duration)];
+    if (v['parent'] !== undefined) parts.push(str(v['parent']));
+    const body = dotJoin(parts);
+    return body === undefined ? undefined : `${service}/${id}: ${body}`;
+  },
 };
 
 /** A traffic share token: `10%`, `2.5%`. */
@@ -301,6 +441,23 @@ function rolloutStageFromString(s: string): unknown {
 const rolloutGrammar: Grammar = {
   expand: rolloutStageFromString,
   signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
+  contract: (v) => {
+    if (!onlyKeys(v, ['name', 'traffic', 'duration', 'gate', 'status'])) return undefined;
+    const name = str(v['name']);
+    const head = bracket(v['status']);
+    if (name === undefined || head === undefined) return undefined;
+    const traffic = v['traffic'];
+    if (traffic !== undefined && typeof traffic !== 'number') return undefined;
+    const parts: Array<string | undefined> = [];
+    if (traffic !== undefined) parts.push(`${traffic}%`);
+    parts.push(name);
+    if (v['duration'] !== undefined) parts.push(str(v['duration']));
+    const body = dotJoin(parts);
+    if (body === undefined) return undefined;
+    if (v['gate'] === undefined) return head + body;
+    const gate = str(v['gate']);
+    return gate === undefined ? undefined : `${head}${body} — ${gate}`;
+  },
 };
 
 /**
@@ -343,7 +500,15 @@ function textPairGrammar(
     if (lead.length === 0) return s;
     return { [leadField]: lead, ...(rest.length > 0 ? { [restField]: rest } : {}) };
   };
-  return { expand, signature: (key) => !knownKeys.includes(key) };
+  const contract = (v: Record<string, unknown>): string | undefined => {
+    if (!onlyKeys(v, [leadField, restField])) return undefined;
+    const lead = str(v[leadField]);
+    if (lead === undefined) return undefined;
+    if (v[restField] === undefined) return restRequired ? undefined : lead;
+    const rest = str(v[restField]);
+    return rest === undefined ? undefined : `${lead} — ${rest}`;
+  };
+  return { expand, contract, signature: (key) => !knownKeys.includes(key) };
 }
 
 const glossaryGrammar = textPairGrammar('term', 'def', true, ['term', 'def', 'avoid', 'id'], true);
@@ -378,6 +543,14 @@ const kanbanCardGrammar: Grammar = {
     return { title: parts[0], tag: parts.slice(1).join(' · ') };
   },
   signature: (key) => !['title', 'tag', 'id'].includes(key),
+  contract: (v) => {
+    if (!onlyKeys(v, ['title', 'tag'])) return undefined;
+    const title = str(v['title']);
+    if (title === undefined) return undefined;
+    if (v['tag'] === undefined) return title;
+    const tag = str(v['tag']);
+    return tag === undefined ? undefined : `${title} · ${tag}`;
+  },
 };
 
 /** Splits on `·`, trimming and dropping empties. */
@@ -414,7 +587,14 @@ function nodeGrammar(kind: BlockType, nodesField: string, labelField: 'label' | 
     return { id, [labelField]: label };
   };
   const isField = notAField(kind, [nodesField]);
-  return { expand, signature: (key) => !/\s/.test(key) && isField(key) };
+  const contract = (v: Record<string, unknown>): string | undefined => {
+    if (!onlyKeys(v, ['id', labelField])) return undefined;
+    const id = str(v['id']);
+    const label = str(v[labelField]);
+    if (id === undefined || label === undefined) return undefined;
+    return id === label ? id : `${id}: ${label}`;
+  };
+  return { expand, contract, signature: (key) => !/\s/.test(key) && isField(key) };
 }
 
 /** `'a -> b: label'` with NO kind field on the target — plain from/to/label. */
@@ -426,6 +606,7 @@ const linkGrammar: Grammar = {
     return rest;
   },
   signature: (key) => ARROW_RE.test(key),
+  contract: (v) => (onlyKeys(v, ['from', 'to', 'label']) ? edgeToString(v) : undefined),
 };
 
 /** `'idle -> active: submit'` → a state transition (the label is the EVENT). */
@@ -438,6 +619,14 @@ const transitionGrammar: Grammar = {
     return { from: o.from, to: o.to, event: o.label ?? '' };
   },
   signature: (key) => ARROW_RE.test(key),
+  contract: (v) => {
+    if (!onlyKeys(v, ['from', 'to', 'event'])) return undefined;
+    const from = str(v['from']);
+    const to = str(v['to']);
+    const event = str(v['event']);
+    if (from === undefined || to === undefined || event === undefined) return undefined;
+    return event === '' ? `${from} -> ${to}` : `${from} -> ${to}: ${event}`;
+  },
 };
 
 /** The erd column fields — a single-pair map whose key is one of these is a real object form. */
@@ -454,10 +643,68 @@ const ERD_COLUMN_FIELDS = ['name', 'type', 'pk', 'fk', 'unique', 'nullable', 'de
  * `'email text unique !null default=now()'` and `'user_id uuid fk -> users.id'`
  * are the documented shapes.
  */
+/**
+ * The single-pair rescue reconstructs `'id: uuid pk'` from `{ id: 'uuid pk' }`,
+ * so a leading `name:` is a separator, not data. It is the ONLY colon the
+ * grammar may touch: `default=12:00`, `0::numeric` and `enum(a:b,c)` all carry
+ * meaningful colons further in. Matches only a colon that closes the first
+ * token and is followed by whitespace.
+ */
+const ERD_RESCUE_HEAD = /^([^\s:]+):(?=\s|$)/;
+
+/** Flag tokens the grammar reads; anything else after `default=` belongs to the default. */
+const ERD_FLAGS = new Set([
+  'pk', 'fk', 'unique', 'uk', '!null', 'notnull', 'not-null', 'null', '?', 'index', 'idx',
+]);
+
+/**
+ * Splits an ERD column string into tokens on whitespace, keeping quoted runs
+ * and parenthesised runs whole — so `default="hello world"`, `numeric(10, 2)`
+ * and `enum(a, b)` each stay one token.
+ */
+function erdColumnTokens(s: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let quote: string | undefined;
+  let depth = 0;
+  for (const ch of s) {
+    if (quote !== undefined) {
+      cur += ch;
+      if (ch === quote) quote = undefined;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      cur += ch;
+      continue;
+    }
+    if (ch === '(') depth += 1;
+    else if (ch === ')' && depth > 0) depth -= 1;
+    if (/\s/.test(ch) && depth === 0) {
+      if (cur.length > 0) out.push(cur);
+      cur = '';
+      continue;
+    }
+    cur += ch;
+  }
+  if (cur.length > 0) out.push(cur);
+  return out;
+}
+
+/** Strips one matching pair of surrounding quotes, if the value carries them. */
+function unquote(v: string): string {
+  const q = v[0];
+  return v.length >= 2 && (q === '"' || q === "'") && v.endsWith(q) ? v.slice(1, -1) : v;
+}
+
+/** True when the value needs quoting to survive `erdColumnTokens` unchanged. */
+function needsQuoting(v: string): boolean {
+  return /\s/.test(v);
+}
+
 const erdColumnGrammar: Grammar = {
   expand: (s: string): unknown => {
-    // The single-pair rescue reconstructs `'id: uuid pk'` — treat ':' as space.
-    const tokens = s.replace(':', ' ').split(/\s+/).filter((t) => t.length > 0);
+    const tokens = erdColumnTokens(s.replace(ERD_RESCUE_HEAD, '$1 '));
     const name = tokens.shift();
     if (name === undefined) return s;
     const out: Record<string, unknown> = { name };
@@ -471,8 +718,22 @@ const erdColumnGrammar: Grammar = {
       else if (lower === '!null' || lower === 'notnull' || lower === 'not-null') out['nullable'] = false;
       else if (lower === 'null' || lower === '?') out['nullable'] = true;
       else if (lower === 'index' || lower === 'idx') out['index'] = true;
-      else if (lower.startsWith('default=')) out['default'] = t.slice('default='.length);
-      else if (t === '->') {
+      else if (lower.startsWith('default=')) {
+        // `default=` runs to the end of a quoted value, or to the next flag —
+        // a SQL default is often several words (`CURRENT TIMESTAMP`). Only
+        // `->` and the flag words above end an unquoted one.
+        const head = t.slice('default='.length);
+        const parts = [unquote(head)];
+        if (head === unquote(head)) {
+          while (i + 1 < tokens.length) {
+            const nxt = tokens[i + 1] ?? '';
+            if (nxt === '->' || ERD_FLAGS.has(nxt.toLowerCase())) break;
+            parts.push(nxt);
+            i += 1;
+          }
+        }
+        out['default'] = parts.join(' ');
+      } else if (t === '->') {
         const target = tokens[i + 1];
         if (target !== undefined) {
           out['fk'] = true;
@@ -483,7 +744,7 @@ const erdColumnGrammar: Grammar = {
         out['enum'] = t
           .slice(5, -1)
           .split(',')
-          .map((v) => v.trim())
+          .map((v) => unquote(v.trim()))
           .filter((v) => v.length > 0);
         typeParts.push('enum');
       } else typeParts.push(t);
@@ -492,6 +753,40 @@ const erdColumnGrammar: Grammar = {
     return out;
   },
   signature: (key) => !/\s/.test(key) && !ERD_COLUMN_FIELDS.includes(key),
+  contract: (v) => {
+    const name = str(v['name']);
+    if (name === undefined || !onlyKeys(v, ERD_COLUMN_FIELDS)) return undefined;
+    const tokens: string[] = [name];
+    const enumVals = v['enum'];
+    if (enumVals !== undefined) {
+      if (!Array.isArray(enumVals) || !enumVals.every((e) => typeof e === 'string')) return undefined;
+      tokens.push(`enum(${(enumVals as string[]).join(',')})`);
+    } else if (v['type'] !== undefined) {
+      const type = str(v['type']);
+      if (type === undefined) return undefined;
+      tokens.push(type);
+    }
+    if (v['pk'] === true) tokens.push('pk');
+    // `-> target` already implies `fk`, so a standalone `fk` would be noise.
+    if (v['fk'] === true && v['ref'] === undefined) tokens.push('fk');
+    if (v['unique'] === true) tokens.push('unique');
+    if (v['nullable'] === false) tokens.push('!null');
+    else if (v['nullable'] === true) tokens.push('null');
+    if (v['index'] === true) tokens.push('index');
+    if (v['default'] !== undefined) {
+      const d = str(v['default']);
+      // A default with a quote in it has no unambiguous terse spelling — the
+      // contraction declines and the item stays in object form.
+      if (d === undefined || d.includes('"') || d.includes("'")) return undefined;
+      tokens.push(needsQuoting(d) ? `default="${d}"` : `default=${d}`);
+    }
+    if (v['ref'] !== undefined) {
+      const ref = str(v['ref']);
+      if (ref === undefined) return undefined;
+      tokens.push('->', ref);
+    }
+    return tokens.join(' ');
+  },
 };
 
 /** Stat: `'label · value · delta'` — trend inferred from the delta's sign. */
@@ -509,6 +804,14 @@ const statGrammar: Grammar = {
     return out;
   },
   signature: (key) => key.includes('·'),
+  contract: (v) => {
+    // `trend` is inferred from the delta's sign — an explicit one the sign
+    // does not produce is exactly what the round-trip guard rejects.
+    if (!onlyKeys(v, ['label', 'value', 'delta', 'trend'])) return undefined;
+    const parts: Array<string | undefined> = [str(v['label']), str(v['value'])];
+    if (v['delta'] !== undefined) parts.push(str(v['delta']));
+    return dotJoin(parts);
+  },
 };
 
 /** Team member: `'Name · role · focus'`. */
@@ -524,6 +827,13 @@ const teamGrammar: Grammar = {
     };
   },
   signature: (key) => key.includes('·'),
+  contract: (v) => {
+    if (!onlyKeys(v, ['name', 'role', 'focus'])) return undefined;
+    const parts: Array<string | undefined> = [str(v['name'])];
+    if (v['role'] !== undefined) parts.push(str(v['role']));
+    if (v['focus'] !== undefined) parts.push(str(v['focus']));
+    return dotJoin(parts);
+  },
 };
 
 const TIME_RE = /^~?\d{1,2}:\d{2}$/;
@@ -547,6 +857,18 @@ const agendaGrammar: Grammar = {
     return out;
   },
   signature: (key) => key.includes('·') || TIME_RE.test(key),
+  contract: (v) => {
+    if (!onlyKeys(v, ['time', 'duration', 'title', 'desc'])) return undefined;
+    const parts: Array<string | undefined> = [];
+    if (v['time'] !== undefined) parts.push(str(v['time']));
+    if (v['duration'] !== undefined) parts.push(str(v['duration']));
+    parts.push(str(v['title']));
+    const body = dotJoin(parts);
+    if (body === undefined) return undefined;
+    if (v['desc'] === undefined) return body;
+    const desc = str(v['desc']);
+    return desc === undefined ? undefined : `${body} — ${desc}`;
+  },
 };
 
 /** OKR key result: `'[status] Text · 60'` — bracket status, trailing `· progress`. */
@@ -573,6 +895,18 @@ const krGrammar: Grammar = {
     };
   },
   signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
+  contract: (v) => {
+    if (!onlyKeys(v, ['kr', 'progress', 'status'])) return undefined;
+    const kr = str(v['kr']);
+    const head = bracket(v['status']);
+    const progress = v['progress'];
+    if (kr === undefined || head === undefined || typeof progress !== 'number') return undefined;
+    // The terse form reads as a percentage; `0.6 * 100` is 60.000000000000004
+    // in binary floating point, so round the product back to a clean decimal
+    // (the round-trip guard rejects it if this ever drifts).
+    const pct = progress <= 1 ? Number((progress * 100).toPrecision(12)) : progress;
+    return `${head}${kr} · ${pct}`;
+  },
 };
 
 /**
@@ -611,6 +945,18 @@ const eventFieldGrammar: Grammar = {
     };
   },
   signature: (key) => !/\s/.test(key) && !EVENT_FIELD_KEYS.includes(key),
+  contract: (v) => {
+    if (!onlyKeys(v, EVENT_FIELD_KEYS)) return undefined; // `example` has no spelling
+    const name = str(v['name']);
+    const type = str(v['type']);
+    if (name === undefined || type === undefined) return undefined;
+    let out = `${name} ${type}`;
+    if (v['required'] === true) out += ' required';
+    else if (v['required'] !== undefined) return undefined;
+    if (v['desc'] === undefined) return out;
+    const desc = str(v['desc']);
+    return desc === undefined ? undefined : `${out} — ${desc}`;
+  },
 };
 
 /** Event error: `Name — when the consumer sees it`. */
@@ -642,6 +988,22 @@ const sagaStepGrammar: Grammar = {
     return out;
   },
   signature: (key) => !/\s/.test(key) && !SAGA_STEP_KEYS.includes(key),
+  contract: (v) => {
+    if (!onlyKeys(v, SAGA_STEP_KEYS)) return undefined;
+    const id = str(v['id']);
+    const parts: Array<string | undefined> = [str(v['name']), str(v['service'])];
+    const action = v['action'];
+    const compensate = v['compensate'];
+    // Three parts read as `name · service · compensate`, so an `action`
+    // without a `compensate` has no spelling.
+    if (action !== undefined) {
+      if (compensate === undefined) return undefined;
+      parts.push(str(action));
+    }
+    if (compensate !== undefined) parts.push(str(compensate));
+    const body = dotJoin(parts);
+    return id === undefined || body === undefined ? undefined : `${id}: ${body}`;
+  },
 };
 
 /**
@@ -654,6 +1016,29 @@ const sagaStepGrammar: Grammar = {
  *
  * Anything else (real object forms, non-arrays) passes through untouched.
  */
+function expandItem(grammar: Grammar, item: unknown): unknown {
+  if (typeof item === 'string') return grammar.expand(item);
+  if (isPlainObject(item)) {
+    const entries = Object.entries(item);
+    if (entries.length !== 1) return item;
+    const [k, v] = entries[0] as [string, unknown];
+    // `A -> B: 200` — YAML types a bare numeric/boolean label; it is still
+    // the label. Only nested structures mean "this is a real object form".
+    const label =
+      typeof v === 'string'
+        ? v
+        : v === null
+          ? ''
+          : typeof v === 'number' || typeof v === 'boolean'
+            ? String(v)
+            : undefined;
+    if (label === undefined || !grammar.signature(k)) return item;
+    const out = grammar.expand(label.length > 0 ? `${k}: ${label}` : k);
+    return typeof out === 'string' ? item : out; // no match — keep the original
+  }
+  return item;
+}
+
 function mapArrayField(
   data: Record<string, unknown>,
   key: string,
@@ -663,124 +1048,112 @@ function mapArrayField(
   if (!Array.isArray(arr)) return data;
   let changed = false;
   const next = arr.map((item) => {
-    if (typeof item === 'string') {
-      const out = grammar.expand(item);
-      if (out !== item) changed = true;
-      return out;
-    }
-    if (isPlainObject(item)) {
-      const entries = Object.entries(item);
-      if (entries.length !== 1) return item;
-      const [k, v] = entries[0] as [string, unknown];
-      // `A -> B: 200` — YAML types a bare numeric/boolean label; it is still
-      // the label. Only nested structures mean "this is a real object form".
-      const label =
-        typeof v === 'string'
-          ? v
-          : v === null
-            ? ''
-            : typeof v === 'number' || typeof v === 'boolean'
-              ? String(v)
-              : undefined;
-      if (label === undefined || !grammar.signature(k)) return item;
-      const out = grammar.expand(label.length > 0 ? `${k}: ${label}` : k);
-      if (typeof out === 'string') return item; // no match — keep the original
-      changed = true;
-      return out;
-    }
-    return item;
+    const out = expandItem(grammar, item);
+    if (out !== item) changed = true;
+    return out;
   });
   return changed ? { ...data, [key]: next } : data;
 }
 
-/** Per-type sugar expanders (aliases are covered: they map to these kinds). */
-const SUGAR: Partial<
-  Record<BlockType, (data: Record<string, unknown>) => Record<string, unknown>>
-> = {
-  sequence: (d) => mapArrayField(d, 'messages', messageGrammar),
-  erd: (d) => {
-    // Relations get the crow's-foot grammar; each entity's columns get the
-    // `'id uuid pk'` token grammar (nested, like kanban cards).
-    let out = mapArrayField(d, 'relations', relationGrammar);
-    const ents = out['entities'];
-    if (Array.isArray(ents)) {
-      let changed = false;
-      const next = ents.map((e) => {
-        if (!isPlainObject(e)) return e;
-        const c = mapArrayField(e, 'columns', erdColumnGrammar);
-        if (c !== e) changed = true;
-        return c;
-      });
-      if (changed) out = { ...out, entities: next };
-    }
-    return out;
-  },
-  flow: (d) =>
-    mapArrayField(mapArrayField(d, 'edges', edgeGrammar), 'nodes', nodeGrammar('flow', 'nodes', 'label')),
-  graph: (d) =>
-    mapArrayField(mapArrayField(d, 'edges', edgeGrammar), 'nodes', nodeGrammar('graph', 'nodes', 'label')),
-  block: (d) =>
-    mapArrayField(mapArrayField(d, 'edges', edgeGrammar), 'nodes', nodeGrammar('block', 'nodes', 'name')),
-  state: (d) =>
-    mapArrayField(
-      mapArrayField(d, 'transitions', transitionGrammar),
-      'states',
-      nodeGrammar('state', 'states', 'name'),
-    ),
-  dfd: (d) =>
-    mapArrayField(mapArrayField(d, 'edges', linkGrammar), 'nodes', nodeGrammar('dfd', 'nodes', 'name')),
-  swimlane: (d) =>
-    mapArrayField(mapArrayField(d, 'links', linkGrammar), 'lanes', {
-      // A lane is just its label: `lanes: [Dev, QA, Ops]`.
-      expand: (s) => ({ label: s.trim() }),
-      signature: () => false, // single-pair lanes have no terse form
-    }),
-  c4: (d) => mapArrayField(d, 'edges', edgeGrammar),
-  cluster: (d) => mapArrayField(d, 'links', edgeGrammar),
-  stats: (d) => mapArrayField(d, 'stats', statGrammar),
-  team: (d) => mapArrayField(d, 'members', teamGrammar),
-  agenda: (d) => mapArrayField(d, 'items', agendaGrammar),
-  okr: (d) => {
-    const items = d['items'];
-    if (!Array.isArray(items)) return d;
-    let changed = false;
-    const next = items.map((it) => {
-      if (!isPlainObject(it)) return it;
-      const out = mapArrayField(it, 'krs', krGrammar);
-      if (out !== it) changed = true;
-      return out;
-    });
-    return changed ? { ...d, items: next } : d;
-  },
-  timeline: (d) => mapArrayField(d, 'items', timelineGrammar),
-  eventcontract: (d) =>
-    mapArrayField(
-      mapArrayField(mapArrayField(d, 'schema', eventFieldGrammar), 'headers', eventFieldGrammar),
-      'errors',
-      eventErrorGrammar,
-    ),
-  saga: (d) => mapArrayField(d, 'steps', sagaStepGrammar),
-  spans: (d) => mapArrayField(d, 'spans', spanGrammar),
-  rollout: (d) => mapArrayField(d, 'stages', rolloutGrammar),
-  glossary: (d) => mapArrayField(d, 'terms', glossaryGrammar),
-  faq: (d) => mapArrayField(d, 'items', faqGrammar),
-  takeaways: (d) => mapArrayField(d, 'items', takeawaysGrammar),
-  list: (d) => mapArrayField(d, 'items', listGrammar),
-  steps: (d) => mapArrayField(d, 'items', stepsGrammar),
-  kanban: (d) => {
-    // Cards nest one level down: expand each column's `cards` in place.
-    const cols = d['columns'];
-    if (!Array.isArray(cols)) return d;
-    let changed = false;
-    const next = cols.map((col) => {
-      if (!isPlainObject(col)) return col;
-      const out = mapArrayField(col, 'cards', kanbanCardGrammar);
-      if (out !== col) changed = true;
-      return out;
-    });
-    return changed ? { ...d, columns: next } : d;
-  },
+/** A lane is just its label: `lanes: [Dev, QA, Ops]`. */
+const laneGrammar: Grammar = {
+  expand: (s) => ({ label: s.trim() }),
+  signature: () => false, // single-pair lanes have no terse form
+  contract: (v) => (onlyKeys(v, ['label']) ? str(v['label']) : undefined),
 };
+
+/**
+ * Every terse list field, keyed by block type then by FIELD KEY — the array's
+ * path with its indices dropped, so a nested list reads `entities.columns`.
+ * This is the single source of truth for the sugar: parsing expands through it
+ * ({@link applySugar}) and editing contracts through it
+ * ({@link contractTerseItems}), so the two can never drift.
+ *
+ * Aliases are covered — they map to these canonical kinds.
+ */
+const TERSE_FIELDS: Partial<Record<BlockType, Readonly<Record<string, Grammar>>>> = {
+  sequence: { messages: messageGrammar },
+  // Relations get the crow's-foot grammar; each entity's columns get the
+  // `'id uuid pk'` token grammar (nested, like kanban cards).
+  erd: { relations: relationGrammar, 'entities.columns': erdColumnGrammar },
+  flow: { edges: edgeGrammar, nodes: nodeGrammar('flow', 'nodes', 'label') },
+  graph: { edges: edgeGrammar, nodes: nodeGrammar('graph', 'nodes', 'label') },
+  block: { edges: edgeGrammar, nodes: nodeGrammar('block', 'nodes', 'name') },
+  state: { transitions: transitionGrammar, states: nodeGrammar('state', 'states', 'name') },
+  dfd: { edges: linkGrammar, nodes: nodeGrammar('dfd', 'nodes', 'name') },
+  swimlane: { links: linkGrammar, lanes: laneGrammar },
+  c4: { edges: edgeGrammar },
+  // A cluster's edge list is `edges` (the schema's own name) — the sugar used
+  // to be registered under `links`, which no cluster body has, so the terse
+  // form never expanded there. Registering the real field fixes that.
+  cluster: { edges: edgeGrammar },
+  stats: { stats: statGrammar },
+  team: { members: teamGrammar },
+  agenda: { items: agendaGrammar },
+  okr: { 'items.krs': krGrammar },
+  timeline: { items: timelineGrammar },
+  eventcontract: {
+    schema: eventFieldGrammar,
+    headers: eventFieldGrammar,
+    errors: eventErrorGrammar,
+  },
+  saga: { steps: sagaStepGrammar },
+  spans: { spans: spanGrammar },
+  rollout: { stages: rolloutGrammar },
+  glossary: { terms: glossaryGrammar },
+  faq: { items: faqGrammar },
+  takeaways: { items: takeawaysGrammar },
+  list: { items: listGrammar },
+  steps: { items: stepsGrammar },
+  kanban: { 'columns.cards': kanbanCardGrammar },
+};
+
+/**
+ * The {@link TERSE_FIELDS} key an array PATH names: the string segments joined
+ * by `.` (indices dropped). `['entities', 0, 'columns']` → `entities.columns`.
+ */
+function fieldKey(path: ReadonlyArray<string | number>): string {
+  return path.filter((s): s is string => typeof s === 'string').join('.');
+}
+
+/** The grammar for the list at `path` in a `kind` block, if it has one. */
+function grammarFor(kind: BlockType, path: ReadonlyArray<string | number>): Grammar | undefined {
+  return TERSE_FIELDS[kind]?.[fieldKey(path)];
+}
+
+/** Expands `data[parent][*][child]` (or `data[key]` for a one-segment key). */
+function mapNestedField(
+  data: Record<string, unknown>,
+  parent: string,
+  child: string,
+  grammar: Grammar,
+): Record<string, unknown> {
+  const arr = data[parent];
+  if (!Array.isArray(arr)) return data;
+  let changed = false;
+  const next = arr.map((el) => {
+    if (!isPlainObject(el)) return el;
+    const out = mapArrayField(el, child, grammar);
+    if (out !== el) changed = true;
+    return out;
+  });
+  return changed ? { ...data, [parent]: next } : data;
+}
+
+/** Runs every terse grammar registered for `kind` over `data`. */
+function applySugar(kind: BlockType, data: Record<string, unknown>): Record<string, unknown> {
+  const fields = TERSE_FIELDS[kind];
+  if (fields === undefined) return data;
+  let out = data;
+  for (const [key, grammar] of Object.entries(fields)) {
+    const [parent, child] = key.split('.') as [string, string | undefined];
+    out =
+      child === undefined
+        ? mapArrayField(out, parent, grammar)
+        : mapNestedField(out, parent, child, grammar);
+  }
+  return out;
+}
 
 /** Recursively coerces number/boolean scalars to strings at string-only positions. */
 function coerce(kind: BlockType, value: unknown, path: ReadonlyArray<string | number>): unknown {
@@ -808,10 +1181,123 @@ function coerce(kind: BlockType, value: unknown, path: ReadonlyArray<string | nu
  */
 export function normalizeBlockData(kind: BlockType, data: unknown): unknown {
   if (!isPlainObject(data)) return data;
-  const sugar = SUGAR[kind];
-  const sugared = sugar !== undefined ? sugar(data) : data;
-  return coerce(kind, sugared, []);
+  return coerce(kind, applySugar(kind, data), []);
 }
+
+/* ── Contraction: the inverse of the sugar ──────────────────────────────────
+ * An edit writes canonical OBJECTS, so a whole-list write would rewrite every
+ * terse line the author typed as three lines of fields — one deleted item
+ * turning into a rewrite of the block. Contraction writes the terse string
+ * back, and is trusted only when it is exactly faithful.
+ */
+
+/** Structural equality, key order insensitive (`undefined` values ignored). */
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((v, i) => deepEqual(v, b[i]));
+  }
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const ka = Object.keys(a).filter((k) => a[k] !== undefined);
+    const kb = Object.keys(b).filter((k) => b[k] !== undefined);
+    return ka.length === kb.length && ka.every((k) => k in b && deepEqual(a[k], b[k]));
+  }
+  return false;
+}
+
+/**
+ * The canonical (sugar-expanded, coerced) value of ONE raw list item — what
+ * `normalizeBlockData` would have produced for it. Used to recognise an
+ * unchanged item across a rewrite, whichever form the author wrote it in.
+ *
+ * @param kind - The block's canonical type.
+ * @param path - The path of the LIST (e.g. `['messages']`).
+ * @param raw - The item as it appears in the YAML body.
+ */
+export function canonicalTerseItem(
+  kind: BlockType,
+  path: ReadonlyArray<string | number>,
+  raw: unknown,
+): unknown {
+  const grammar = grammarFor(kind, path);
+  const expanded = grammar === undefined ? raw : expandItem(grammar, raw);
+  return coerce(kind, expanded, [...path, 0]);
+}
+
+/**
+ * The terse string for `value` at a terse list path, or `undefined` when the
+ * grammar has no exactly faithful spelling for it.
+ *
+ * Faithfulness is checked mechanically, never by eye: the candidate is kept
+ * only when `expand(candidate)` deep-equals `value`. Anything the grammar
+ * cannot say — an extra field, an id it would re-split, a kind no arrow
+ * spells — fails that check and stays an object.
+ */
+export function contractTerseValue(
+  kind: BlockType,
+  path: ReadonlyArray<string | number>,
+  value: unknown,
+): string | undefined {
+  if (!isPlainObject(value)) return undefined; // already terse, or not an item
+  const grammar = grammarFor(kind, path);
+  if (grammar?.contract === undefined) return undefined;
+  const candidate = grammar.contract(value);
+  if (candidate === undefined) return undefined;
+  return deepEqual(canonicalTerseItem(kind, path, candidate), value) ? candidate : undefined;
+}
+
+/**
+ * `items` with every contractible entry replaced by its terse string; entries
+ * with no faithful spelling are returned untouched.
+ *
+ * @param kind - The block's canonical type.
+ * @param path - The list's field name, or its path for a nested list
+ *   (`'messages'`, `['entities', 0, 'columns']`).
+ * @param items - The canonical item array about to be written.
+ */
+export function contractTerseItems(
+  kind: BlockType,
+  path: string | ReadonlyArray<string | number>,
+  items: readonly unknown[],
+): unknown[] {
+  const p = typeof path === 'string' ? [path] : path;
+  return items.map((item) => contractTerseValue(kind, p, item) ?? item);
+}
+
+/**
+ * How a contracted string should be SPELLED in YAML. The unquoted author form
+ * of a `head: label` grammar is a single-pair mapping (`- api -> pay: charge`),
+ * which is what the sugar's single-pair rescue reads back; returning that pair
+ * keeps a freshly written item looking like the lines around it. `null` means
+ * "write it as a plain scalar".
+ */
+export function terseSpelling(
+  kind: BlockType,
+  path: ReadonlyArray<string | number>,
+  terse: string,
+): { readonly key: string; readonly value: string } | null {
+  const grammar = grammarFor(kind, path);
+  if (grammar === undefined) return null;
+  const i = terse.indexOf(': ');
+  if (i <= 0) return null;
+  const key = terse.slice(0, i);
+  const value = terse.slice(i + 2);
+  // The rescue reconstructs exactly `${key}: ${value}` — the string the
+  // round-trip guard already accepted — so the two spellings cannot diverge.
+  return value.length > 0 && grammar.signature(key) ? { key, value } : null;
+}
+
+/** True when the list at `path` in a `kind` block has a terse grammar. */
+export function hasTerseGrammar(
+  kind: BlockType,
+  path: ReadonlyArray<string | number>,
+): boolean {
+  return grammarFor(kind, path) !== undefined;
+}
+
+/** Structural equality for edit-time comparisons (re-exported for `edit.ts`). */
+export { deepEqual as deepEqualData };
 
 /* ── Bare-text bodies ───────────────────────────────────────────────────────
  * Text-first blocks accept their body as PLAIN TEXT — no YAML at all:

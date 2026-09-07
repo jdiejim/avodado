@@ -824,9 +824,12 @@ describe('list-ordered kinds', () => {
     expect((ops[0] as { value: unknown[] }).value[1]).toEqual({ name: 'New member' });
     expect(before.then).toEqual({ select: 'members.1', edit: 'name' });
     expect(errorsOf(apply(f, ops))).toEqual([]);
+    // `Insert after` on the LAST item is an append — one index, not a rewrite.
     const after = must(items.find((i) => i.label === 'Insert after'));
     expect(after.then).toEqual({ select: 'members.2', edit: 'name' });
-    expect((must(after.op)()[0] as { value: unknown[] }).value[2]).toEqual({ name: 'New member' });
+    const afterOps = must(after.op)();
+    expect(afterOps).toEqual([{ path: ['members', 2], value: { name: 'New member' } }]);
+    expect(errorsOf(apply(f, afterOps))).toEqual([]);
   });
 
   it('saga: the failure point toggles, and Status ▸ checks the derived one', () => {

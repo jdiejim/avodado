@@ -94,7 +94,10 @@ describe('erd column and relation grammar', () => {
       'enums:\n  - { name: status, values: [open, paid] }\n```\n';
     expect(clean(md)).toEqual([]);
     expect(clean(BLOCK_TEMPLATES.erd)).toEqual([]);
-    const legacy = '```erd\nentities:\n  - name: a\n    columns:\n      - { name: id, type: uuid, pk: true }\nrelations:\n  - { from: a, to: b, card: "1:N" }\n```\n';
+    // The pre-overhaul field shape, with both relation ends declared — a
+    // relation naming an entity that does not exist is now `E_SCHEMA`.
+    const legacy =
+      '```erd\nentities:\n  - name: a\n    columns:\n      - { name: id, type: uuid, pk: true }\n  - name: b\nrelations:\n  - { from: a, to: b, card: "1:N" }\n```\n';
     expect(clean(legacy)).toEqual([]);
   });
 

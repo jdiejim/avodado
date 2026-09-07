@@ -28,9 +28,11 @@ import {
   houseCss,
   htmlRenderers,
   renderDocumentParts,
+  type DocumentParts,
   type DocumentSection,
   toSlides,
 } from '@avodado/render';
+import { guardRender } from './renderGuard.js';
 
 /** A loaded document ready for site rendering. */
 export interface SiteDoc {
@@ -519,10 +521,37 @@ function richIndexMain(
   return `<style>${RICH_INDEX_CSS}</style>` + head + body + crossRefGraphSection(docs, refEdges);
 }
 
+/** The body of a placeholder page for a document whose render threw. */
+function failedBody(d: SiteDoc, message: string): string {
+  return (
+    `<div class="idx-head">` +
+    `<div class="idx-eyebrow site-eyebrow">Render failed</div>` +
+    `<h1 class="idx-title">${escapeHtml(d.doc.meta?.title ?? d.slug)}</h1>` +
+    `</div>` +
+    `<p>${escapeHtml(d.file)} could not be rendered.</p>` +
+    `<pre><code>${escapeHtml(message)}</code></pre>`
+  );
+}
+
+/** Stand-in parts for a document whose render threw — same shape, no content. */
+function failedParts(d: SiteDoc, message: string): DocumentParts {
+  return {
+    css: houseCss,
+    themeVars: '',
+    body: failedBody(d, message),
+    title: d.doc.meta?.title ?? d.slug,
+    sections: [],
+  };
+}
+
 /**
  * Builds the whole site in memory: `index.html` plus, per doc, one page and
  * one slide deck, with the sidebar nav and cross-doc ref links resolved.
  * Pure — no file writes.
+ *
+ * A renderer that throws is contained: that document gets a placeholder page
+ * and an `E_RENDER` diagnostic naming the block, and every other document
+ * still builds.
  */
 export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): SiteResult {
   const diagnostics: Diagnostic[] = [];
@@ -533,7 +562,18 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
   const themeOpts = opts.themeVars !== undefined ? { themeVars: opts.themeVars } : {};
   const liveReload = opts.liveReload === true;
 
-  const rendered = docs.map((d) => ({ doc: d, parts: renderDocumentParts(d.doc, themeOpts) }));
+  // A renderer that throws takes down its own document, not the build. The
+  // diagnostic names the file and the offending block; the page it would have
+  // produced becomes a placeholder carrying the same message, so the site keeps
+  // the same URLs and nothing 404s while the author fixes the block.
+  const rendered = docs.map((d) => {
+    const guarded = guardRender(d.doc, d.file, 'page', () =>
+      renderDocumentParts(d.doc, themeOpts),
+    );
+    if (guarded.ok) return { doc: d, parts: guarded.value, failed: false };
+    diagnostics.push(guarded.diagnostic);
+    return { doc: d, parts: failedParts(d, guarded.diagnostic.message), failed: true };
+  });
   const navDocs: NavDoc[] = rendered.map((r) => ({
     slug: r.doc.slug,
     title: r.doc.doc.meta?.title ?? r.doc.slug,
@@ -561,7 +601,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
     }),
   });
 
-  for (const { doc, parts } of rendered) {
+  for (const { doc, parts, failed } of rendered) {
     const shell = pageShell({
       title: parts.title,
       css: parts.css,
@@ -576,11 +616,34 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
       title: parts.title,
       html: rewriteRefs(shell, doc.slug, resolved.graph.nodes),
     });
-    // Every doc also ships as a slide deck, linked from the page's toggle.
+    // Every doc also ships as a slide deck, linked from the page's toggle. A
+    // document whose page already failed is not re-rendered as slides — the
+    // deck would fail the same way, slowly, and say nothing new.
+    let deckHtml: string | undefined;
+    let deckError = 'The page could not be rendered.';
+    if (!failed) {
+      const deck = guardRender(doc.doc, doc.file, 'slide deck', () =>
+        deckWithChrome(toSlides(doc.doc, themeOpts), doc.slug, liveReload),
+      );
+      if (deck.ok) deckHtml = deck.value;
+      else {
+        diagnostics.push(deck.diagnostic);
+        deckError = deck.diagnostic.message;
+      }
+    }
     pages.push({
       path: `${doc.slug}.slides.html`,
       title: `${parts.title} — Slides`,
-      html: deckWithChrome(toSlides(doc.doc, themeOpts), doc.slug, liveReload),
+      html:
+        deckHtml ??
+        pageShell({
+          title: `${parts.title} — Slides`,
+          css: parts.css,
+          themeVars: parts.themeVars,
+          nav: sidebar(navDocs, doc.slug, []),
+          main: failedBody(doc, deckError),
+          liveReload,
+        }),
     });
   }
 

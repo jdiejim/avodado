@@ -117,27 +117,35 @@ describe('addColumnSets — header + one cell per aligned row, one commit', () =
     });
   }
 
-  it('table: the compound shape is header append + full-row rewrites', () => {
+  it('table: a full-width row gains ONE cell, addressed by index', () => {
     const f = fixture('table');
     const r = must(addColumnSets('table', f.data));
     expect(r.sets).toEqual([
       { path: ['columns', 2], value: 'New column' },
-      { path: ['rows', 0], value: ['Ada', 'Engineer', ''] },
-      { path: ['rows', 1], value: ['Grace', 'PM', ''] },
+      { path: ['rows', 0, 2], value: '' },
+      { path: ['rows', 1, 2], value: '' },
+    ]);
+  });
+
+  it('table: a RAGGED short row is rewritten whole (padded to the new width)', () => {
+    const r = must(addColumnSets('table', { columns: ['A', 'B'], rows: [['1']] }));
+    expect(r.sets).toEqual([
+      { path: ['columns', 2], value: 'New column' },
+      { path: ['rows', 0], value: ['1', '', ''] },
     ]);
   });
 
   it('statustable: subtask cell rows grow too', () => {
     const f = fixture('statustable');
     const r = must(addColumnSets('statustable', f.data));
-    expect(r.sets.some((s) => s.path.join('.') === 'rows.0.subtasks.0.cells')).toBe(true);
+    expect(r.sets.some((s) => s.path.join('.').startsWith('rows.0.subtasks.0.cells'))).toBe(true);
   });
 
   it('journey: the emotion curve stays one value per stage', () => {
     const f = fixture('journey');
     const r = must(addColumnSets('journey', f.data));
-    const emotion = r.sets.find((s) => s.path.join('.') === 'emotion');
-    expect(emotion?.value).toEqual([3, 4, 3]);
+    const emotion = r.sets.find((s) => s.path.join('.') === 'emotion.2');
+    expect(emotion?.value).toBe(3);
   });
 });
 

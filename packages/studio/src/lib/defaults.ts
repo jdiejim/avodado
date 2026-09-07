@@ -12,7 +12,10 @@ export function defaultValue(node: FieldNode): unknown {
     case 'string':
       return '';
     case 'number':
-      return 0;
+      // Zero is not a legal value everywhere: a grid coordinate starts at 1,
+      // and a `+ Add group` chip that seeded `col: 0` drew the group off the
+      // canvas. Seed the schema's floor when it declares one.
+      return Math.max(0, node.min ?? 0);
     case 'boolean':
       return false;
     case 'enum':

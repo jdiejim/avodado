@@ -12,6 +12,7 @@
  */
 
 import {
+  contractTerseAt,
   deleteYamlPath,
   parseBlockBody,
   replaceBlockBody,
@@ -30,16 +31,20 @@ import { valueAt, type PathSeg } from './paths.js';
  * land. Wherever the raw item differs from its canonical (sugar-expanded)
  * parsed form, the item is rewritten as the canonical object first — then the
  * edit applies normally. Items already in object form pass through untouched.
+ *
+ * The write here deliberately passes NO block kind: this is the one place that
+ * WANTS the expanded object form, and a kind-aware write would contract the
+ * item straight back to its terse string, leaving the deep path nowhere to
+ * land. The edit that follows passes the kind and re-contracts if it can.
  */
 function materializeTerse(
   raw: string,
   data: unknown,
   path: ReadonlyArray<PathSeg>,
-): string {
-  if (path.length < 2) return raw;
+): { readonly raw: string; readonly expanded: ReadonlyArray<PathSeg> | null } {
+  if (path.length < 2) return { raw, expanded: null };
   const parsed = parseBlockBody(raw);
-  if (!parsed.ok) return raw;
-  let out = raw;
+  if (!parsed.ok) return { raw, expanded: null };
   for (let i = 0; i < path.length - 1; i++) {
     if (typeof path[i] !== 'number') continue;
     const prefix = path.slice(0, i + 1);
@@ -47,9 +52,22 @@ function materializeTerse(
     const canonV = valueAt(data, prefix);
     if (rawV === undefined || canonV === undefined) continue;
     if (JSON.stringify(rawV) !== JSON.stringify(canonV)) {
-      out = setYamlPath(out, prefix, canonV);
-      break; // the canonical subtree is fully object-shaped below this point
+      // The canonical subtree is fully object-shaped below this point.
+      return { raw: setYamlPath(raw, prefix, canonV), expanded: prefix };
     }
+  }
+  return { raw, expanded: null };
+}
+
+/** Folds every item this edit had to expand back onto its terse line. */
+function refold(raw: string, kind: BlockType, expanded: ReadonlyArray<ReadonlyArray<PathSeg>>): string {
+  let out = raw;
+  const seen = new Set<string>();
+  for (const path of expanded) {
+    const key = path.join('\u0000');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out = contractTerseAt(out, path, kind);
   }
   return out;
 }
@@ -89,8 +107,9 @@ export function setPathInSegment(
   // instead of throwing (a Mermaid fence is then rewritten to its canonical
   // tag by replaceBlockBody); terse sugar items along the path materialize
   // the same way.
-  const raw0 = materializeTerse(editableBodyYaml(seg), seg.data, path);
-  return replaceBlockBody(source, doc, index, setYamlPath(raw0, path, value));
+  const m = materializeTerse(editableBodyYaml(seg), seg.data, path);
+  const edited = setYamlPath(m.raw, path, value, seg.kind);
+  return replaceBlockBody(source, doc, index, refold(edited, seg.kind, m.expanded === null ? [] : [m.expanded]));
 }
 
 /**
@@ -112,9 +131,14 @@ export function setPathsInSegment(
   // Materialize BEFORE any write: materializeTerse compares against the
   // segment's parsed data, so running it mid-batch would see earlier writes
   // as "terse drift" and clobber them back to the pre-edit values.
-  for (const s of sets) raw = materializeTerse(raw, seg.data, s.path);
-  for (const s of sets) raw = setYamlPath(raw, s.path, s.value);
-  return replaceBlockBody(source, doc, index, raw);
+  const expanded: Array<ReadonlyArray<PathSeg>> = [];
+  for (const s of sets) {
+    const m = materializeTerse(raw, seg.data, s.path);
+    raw = m.raw;
+    if (m.expanded !== null) expanded.push(m.expanded);
+  }
+  for (const s of sets) raw = setYamlPath(raw, s.path, s.value, seg.kind);
+  return replaceBlockBody(source, doc, index, refold(raw, seg.kind, expanded));
 }
 
 /** Pure: new SOURCE with the node at `path` deleted inside segment `index`'s body. */
@@ -128,8 +152,9 @@ export function deletePathInSegment(
   if (seg === undefined || seg.kind === 'markdown') {
     throw new TypeError(`segment ${index} is not a typed block`);
   }
-  const raw0 = materializeTerse(editableBodyYaml(seg), seg.data, path);
-  return replaceBlockBody(source, doc, index, deleteYamlPath(raw0, path));
+  const m = materializeTerse(editableBodyYaml(seg), seg.data, path);
+  const edited = deleteYamlPath(m.raw, path);
+  return replaceBlockBody(source, doc, index, refold(edited, seg.kind, m.expanded === null ? [] : [m.expanded]));
 }
 
 /** Canvas host for the block at `index`: each commit is one applyOp/undo step. */

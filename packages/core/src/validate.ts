@@ -13,6 +13,7 @@ import type { z } from 'zod';
 import type { Diagnostic } from './diagnostics.js';
 import type { Document } from './types.js';
 import { blockRegistry } from './blocks/registry.js';
+import { NOT_FINITE_MESSAGE } from './blocks/schemas.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
 import { DIALECT_PARSE_CODE, DIALECT_PARSE_HINT, isDialectSource } from './dialects.js';
 import { fieldNamesAt } from './blocks/schema-walk.js';
@@ -67,6 +68,14 @@ function renderIssue(kind: BlockType, issue: z.ZodIssue): IssueRender {
         hint: 'Quote the value to keep it a string (e.g. tech: "16").',
       };
     }
+    // Grid coordinates, cell spans and draw counts are whole numbers: a
+    // fraction of a cell has no position and half a row cannot be drawn.
+    if (issue.expected === 'integer') {
+      return {
+        message: `${kind}: ${at}expected a whole number, got ${issue.received === 'float' ? 'a fraction' : String(issue.received)}`,
+        hint: 'Coordinates, spans and counts are whole numbers. Round the value.',
+      };
+    }
     return {
       message: `${kind}: ${at}expected ${issue.expected}, got ${issue.received}`,
     };
@@ -96,6 +105,23 @@ function flattenIssues(issues: readonly z.ZodIssue[]): z.ZodIssue[] {
     out.push(...(best ?? [issue]));
   }
   return out;
+}
+
+/**
+ * Drops the consequences of a non-finite number, keeping the cause.
+ *
+ * `.inf` fails `.finite()`, `.int()` and every `.max()` at once, so one typo
+ * would report three times on one line. When a path carries the non-finite
+ * issue, it is the only issue reported for that path.
+ */
+function dropNonFiniteFollowOns(issues: readonly z.ZodIssue[]): z.ZodIssue[] {
+  const nonFinite = new Set(
+    issues.filter((i) => i.message === NOT_FINITE_MESSAGE).map((i) => i.path.join('.')),
+  );
+  if (nonFinite.size === 0) return [...issues];
+  return issues.filter(
+    (i) => i.message === NOT_FINITE_MESSAGE || !nonFinite.has(i.path.join('.')),
+  );
 }
 
 /** True when a sequence `messages` item is a frame marker of the given key. */
@@ -453,7 +479,7 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
       diagnostics.push(...lintGroupNesting(seg, file, !isMermaid));
     }
     if (!result.success) {
-      for (const issue of flattenIssues(result.error.issues)) {
+      for (const issue of dropNonFiniteFollowOns(flattenIssues(result.error.issues))) {
         const rendered = renderIssue(seg.kind, issue);
         // Point at the offending token. For a missing required field the exact
         // path won't resolve, so fall back to the containing object/array. A

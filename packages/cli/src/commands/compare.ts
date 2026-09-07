@@ -19,6 +19,7 @@ import { templatesDir } from './init.js';
 import { filterDemoSource } from './demo.js';
 import { DEMO_FAMILIES, familyBlocks, type DemoFamily } from './catalog.js';
 import type { SingleResult } from './single.js';
+import { assertWritable } from '../io/write.js';
 
 interface Example {
   readonly kind: string;
@@ -140,6 +141,8 @@ export async function runCompare(opts: {
   /** Absolute output path — disables preview. */
   readonly output?: string;
   readonly preview?: boolean;
+  /** With `output`, replace a file that is not already an HTML export. */
+  readonly force?: boolean;
 }): Promise<SingleResult> {
   const source = await readFile(join(templatesDir(), 'demo.md'), 'utf8');
   const html = buildComparePage(source, opts.family);
@@ -147,6 +150,11 @@ export async function runCompare(opts: {
   let outputAbs: string;
   if (opts.output !== undefined) {
     outputAbs = opts.output;
+    // A path the user named: never write an HTML page over something else.
+    assertWritable(outputAbs, {
+      ...(opts.force === true ? { force: true } : {}),
+      regenerates: ['.html', '.htm'],
+    });
   } else {
     const dir = join(tmpdir(), 'avodado-compare');
     await mkdir(dir, { recursive: true });

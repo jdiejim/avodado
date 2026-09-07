@@ -474,18 +474,22 @@ function edgesTouching(ctx: MenuCtx, spec: ConnectSpec, id: string): number[] {
   return out;
 }
 
-/** Node `index` and every edge touching it, as two whole-list sets. */
+/**
+ * Node `index` and every edge touching it. A leaf node — nothing points at it
+ * — is ONE targeted remove, so the diff is the node's own lines and nothing
+ * else. With edges to drop the op must stay homogeneous (a remove plus a set
+ * is two commits), so both lists are rewritten as sets; core's terse-aware
+ * write keeps the surviving lines byte-identical.
+ */
 function deleteNodeOps(ctx: MenuCtx, spec: ConnectSpec, index: number, id: string): Op[] {
   const nodes = listOf(ctx.data, spec.nodesField);
   const edges = records(ctx.data, spec.edgesField);
-  const ops: Op[] = [{ path: [spec.nodesField], value: nodes.filter((_, i) => i !== index) }];
-  if (edges.length > 0) {
-    ops.push({
-      path: [spec.edgesField],
-      value: edges.filter((e) => e['from'] !== id && e['to'] !== id),
-    });
-  }
-  return ops;
+  const touched = edges.filter((e) => e['from'] === id || e['to'] === id);
+  if (touched.length === 0) return [{ path: [spec.nodesField, index], remove: true }];
+  return [
+    { path: [spec.nodesField], value: nodes.filter((_, i) => i !== index) },
+    { path: [spec.edgesField], value: edges.filter((e) => e['from'] !== id && e['to'] !== id) },
+  ];
 }
 
 /**
@@ -754,16 +758,21 @@ function sequenceMenu(target: MenuTarget, ctx: MenuCtx): MenuItem[] {
             return r !== null && (r['from'] === id || r['to'] === id) ? [`messages.${i}`] : [];
           }),
         ],
-        op: () => [
-          { path: ['actors'], value: actors.filter((_, i) => i !== target.index) },
-          {
-            path: ['messages'],
-            value: messages.filter((m) => {
-              const r = asRecord(m);
-              return r === null || (r['from'] !== id && r['to'] !== id);
-            }),
-          },
-        ],
+        // An actor no message mentions is one targeted remove; otherwise the
+        // messages must be filtered too, and one op can carry only one remove.
+        op: (): Op[] => {
+          const kept = messages.filter((m) => {
+            const r = asRecord(m);
+            return r === null || (r['from'] !== id && r['to'] !== id);
+          });
+          if (kept.length === messages.length) {
+            return [{ path: ['actors', target.index], remove: true }];
+          }
+          return [
+            { path: ['actors'], value: actors.filter((_, i) => i !== target.index) },
+            { path: ['messages'], value: kept },
+          ];
+        },
       },
     ];
   }
@@ -843,7 +852,13 @@ function sequenceMenu(target: MenuTarget, ctx: MenuCtx): MenuItem[] {
   ];
 }
 
-/** `messages` with `{frame}` before `lo` and `{end: true}` after `hi`. */
+/**
+ * `messages` with `{frame}` before `lo` and `{end: true}` after `hi`.
+ *
+ * Two insertions in the middle of the list: no per-index path expresses that,
+ * so this is a whole-list set by nature. The wrapped messages keep their exact
+ * source lines through core's terse-aware write.
+ */
 export function wrapRange(messages: readonly unknown[], lo: number, hi: number, frame: string): unknown[] {
   return [
     ...messages.slice(0, lo),
@@ -902,12 +917,17 @@ function erdMenu(target: MenuTarget, ctx: MenuCtx): MenuItem[] {
           path,
           ...relations.flatMap((r, i) => (r['from'] === name || r['to'] === name ? [`relations.${i}`] : [])),
         ],
-        op: () => [
-          { path: ['entities'], value: entities.filter((_, i) => i !== target.index) },
-          ...(relations.length > 0
-            ? [{ path: ['relations'], value: relations.filter((r) => r['from'] !== name && r['to'] !== name) }]
-            : []),
-        ],
+        // Same rule as a node: no relation touches it → one targeted remove.
+        op: (): Op[] => {
+          const kept = relations.filter((r) => r['from'] !== name && r['to'] !== name);
+          if (kept.length === relations.length) {
+            return [{ path: ['entities', target.index], remove: true }];
+          }
+          return [
+            { path: ['entities'], value: entities.filter((_, i) => i !== target.index) },
+            { path: ['relations'], value: kept },
+          ];
+        },
       },
     ];
   }
@@ -1015,9 +1035,11 @@ function listMenu(target: MenuTarget, ctx: MenuCtx, field: string): MenuItem[] {
   const n = items.length;
   const full = shape.max !== undefined && n >= shape.max;
   const seed = (): unknown => blankListItem(ctx.kind, items) ?? {};
-  const insertAt = (k: number): Op[] => [
-    { path: [field], value: [...items.slice(0, k), seed(), ...items.slice(k)] },
-  ];
+  /** One new item at position `k`: an APPEND addresses the new index alone. */
+  const insertAt = (k: number): Op[] =>
+    k >= n
+      ? [{ path: [field, n], value: seed() }]
+      : [{ path: [field], value: [...items.slice(0, k), seed(), ...items.slice(k)] }];
   const extras = listExtras(i, item, ctx, field, items);
   return [
     ...extras,
@@ -1039,12 +1061,15 @@ function listMenu(target: MenuTarget, ctx: MenuCtx, field: string): MenuItem[] {
     {
       label: 'Duplicate',
       disabled: full,
-      op: (): Op[] => [
-        {
-          path: [field],
-          value: [...items.slice(0, i + 1), withUniqueId(item, items), ...items.slice(i + 1)],
-        },
-      ],
+      op: (): Op[] =>
+        i === n - 1
+          ? [{ path: [field, n], value: withUniqueId(item, items) }]
+          : [
+              {
+                path: [field],
+                value: [...items.slice(0, i + 1), withUniqueId(item, items), ...items.slice(i + 1)],
+              },
+            ],
       then: { select: `${field}.${i + 1}` },
     },
     {
@@ -1091,7 +1116,13 @@ function listBackgroundMenu(
   ];
 }
 
-/** The whole-list set a from→gap move commits (the drag layer's own splice). */
+/**
+ * The whole-list set a from→gap move commits (the drag layer's own splice).
+ * A reorder legitimately rewrites the list — position IS array order here, and
+ * no per-index path can express a splice. The diff stays small because core's
+ * terse-aware write moves the author's own YAML nodes instead of reserialising
+ * them (`setYamlPath(…, kind)`).
+ */
 function reorderOps(field: string, items: readonly unknown[], from: number, gap: number): Op[] {
   const next = applyReorder(items, from, gap);
   return next === null ? [] : [{ path: [field], value: next }];

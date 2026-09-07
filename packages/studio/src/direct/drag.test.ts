@@ -283,10 +283,11 @@ describe('kanbanCardMoveSets', () => {
   });
 
   it('clamps the insertion gap and tolerates a column without cards', () => {
+    // A drop at the END of the target column is an append — one index.
     const sets = kanbanCardMoveSets(data, 0, 0, 2, 99);
     expect(sets).toEqual([
       { path: ['columns', 0, 'cards'], value: [{ title: 'b' }] },
-      { path: ['columns', 2, 'cards'], value: [{ title: 'a' }] },
+      { path: ['columns', 2, 'cards', 0], value: { title: 'a' } },
     ]);
   });
 

@@ -20,9 +20,12 @@
 
 import {
   addForeignKey,
+  ambiguousMessage,
+  declareEntity,
   emptyModel,
+  entityLabel,
   finalizeModel,
-  findEntity,
+  matchEntity,
   toErdData,
   touchColumn,
   touchEntity,
@@ -273,13 +276,37 @@ function render(tokens: readonly Token[]): string {
   return s;
 }
 
-/** `schema.table` → `{ schema?, name }`, dropping the default schema. */
-function tableRef(model: SchemaModel, qualified: string, kind?: SchemaEntity['kind']): SchemaEntity {
+/**
+ * The parse state: the model plus the first unresolvable table reference,
+ * which the statement loop turns into the failure.
+ */
+interface Ctx {
+  readonly model: SchemaModel;
+  problem?: { message: string; line: number };
+}
+
+/** `schema.table` with the default schema (`public` / `dbo`) dropped. */
+function normalizeRef(qualified: string): string {
   const parts = qualified.split('.');
   const name = parts[parts.length - 1] ?? qualified;
   const schema = parts.length >= 2 ? parts[parts.length - 2] : undefined;
-  const ref = schema !== undefined && !DEFAULT_SCHEMAS.has(schema.toLowerCase()) ? `${schema}.${name}` : name;
-  return findEntity(model, ref) ?? touchEntity(model, ref, kind);
+  return schema !== undefined && !DEFAULT_SCHEMAS.has(schema.toLowerCase()) ? `${schema}.${name}` : name;
+}
+
+/**
+ * Resolves a *reference* to a table (`REFERENCES`, `ALTER TABLE`, `CREATE
+ * INDEX ON`, `COMMENT ON`). An unknown table is created; an ambiguous bare
+ * name records the problem and resolves to nothing.
+ */
+function refTable(ctx: Ctx, qualified: string, line: number, kind?: SchemaEntity['kind']): SchemaEntity | undefined {
+  const ref = normalizeRef(qualified);
+  const m = matchEntity(ctx.model, ref);
+  if (m.kind === 'one') return m.entity;
+  if (m.kind === 'ambiguous') {
+    ctx.problem ??= { message: ambiguousMessage(ref, m.candidates), line };
+    return undefined;
+  }
+  return touchEntity(ctx.model, ref, kind);
 }
 
 const CONSTRAINT_STOP = new Set([
@@ -291,7 +318,7 @@ const CONSTRAINT_STOP = new Set([
 const FK_ACTIONS = new Set(['CASCADE', 'RESTRICT', 'NO', 'ACTION', 'SET', 'NULL', 'DEFAULT']);
 
 /** Parses one column definition (`name type constraints…`) into `entity`. */
-function parseColumn(model: SchemaModel, entity: SchemaEntity, c: Cur): string | undefined {
+function parseColumn(ctx: Ctx, entity: SchemaEntity, c: Cur): string | undefined {
   const nameTok = c.next();
   if (nameTok === undefined || (nameTok.kind !== 'ident' && nameTok.kind !== 'quoted')) return 'expected a column name';
   const col = touchColumn(entity, nameTok.text);
@@ -364,9 +391,10 @@ function parseColumn(model: SchemaModel, entity: SchemaEntity, c: Cur): string |
       const target = c.name();
       if (target === undefined) return `REFERENCES on ${entity.name}.${col.name} names no table`;
       const cols = columnList(c.parens());
-      const parent = tableRef(model, target, 'external');
+      const parent = refTable(ctx, target, nameTok.line, 'external');
+      if (parent === undefined) return ctx.problem?.message;
       const parentCols = cols.length > 0 ? cols : parent.columns.filter((x) => x.pk === true).map((x) => x.name);
-      addForeignKey(model, entity, [col.name], parent, parentCols.length > 0 ? parentCols : ['id']);
+      addForeignKey(ctx.model, entity, [col.name], parent, parentCols.length > 0 ? parentCols : ['id']);
       // MATCH … / ON DELETE … / ON UPDATE …
       while (c.isKw('MATCH') || c.isKw('ON')) {
         if (c.eatKw('MATCH')) c.next();
@@ -406,7 +434,7 @@ function parseColumn(model: SchemaModel, entity: SchemaEntity, c: Cur): string |
 }
 
 /** A table-level constraint item; returns false when the item is not one (a column follows). */
-function parseTableConstraint(model: SchemaModel, entity: SchemaEntity, c: Cur): boolean {
+function parseTableConstraint(ctx: Ctx, entity: SchemaEntity, c: Cur, line: number): boolean {
   if (c.eatKw('CONSTRAINT')) c.name();
   if (c.eatKw('PRIMARY', 'KEY')) {
     if (!c.isPunct('(')) c.name();
@@ -428,9 +456,10 @@ function parseTableConstraint(model: SchemaModel, entity: SchemaEntity, c: Cur):
     if (!c.eatKw('REFERENCES')) return true;
     const target = c.name();
     if (target === undefined) return true;
-    const parent = tableRef(model, target, 'external');
+    const parent = refTable(ctx, target, line, 'external');
+    if (parent === undefined) return true;
     const pcols = columnList(c.parens());
-    addForeignKey(model, entity, cols, parent, pcols.length > 0 ? pcols : parent.columns.filter((x) => x.pk === true).map((x) => x.name));
+    addForeignKey(ctx.model, entity, cols, parent, pcols.length > 0 ? pcols : parent.columns.filter((x) => x.pk === true).map((x) => x.name));
     return true;
   }
   if (c.isKw('KEY') || c.isKw('INDEX')) {
@@ -449,17 +478,24 @@ function parseTableConstraint(model: SchemaModel, entity: SchemaEntity, c: Cur):
 
 export function convertSqlDdl(text: string): DialectResult {
   const model = emptyModel();
+  const ctx: Ctx = { model };
   const fail = (message: string, line: number): DialectResult => ({ ok: false, message, line });
   const stmts = statements(tokenize(text));
 
   for (const toks of stmts) {
+    if (ctx.problem !== undefined) return fail(ctx.problem.message, ctx.problem.line);
     const c = new Cur(toks);
     const line = toks[0]?.line ?? 1;
     if (c.eatKw('CREATE')) {
       let unique = false;
       let view = false;
+      let orReplace = false;
       for (;;) {
-        if (c.eatKw('OR', 'REPLACE') || c.eatKw('TEMP') || c.eatKw('TEMPORARY') || c.eatKw('UNLOGGED') || c.eatKw('GLOBAL') || c.eatKw('LOCAL')) continue;
+        if (c.eatKw('OR', 'REPLACE')) {
+          orReplace = true;
+          continue;
+        }
+        if (c.eatKw('TEMP') || c.eatKw('TEMPORARY') || c.eatKw('UNLOGGED') || c.eatKw('GLOBAL') || c.eatKw('LOCAL')) continue;
         if (c.eatKw('MATERIALIZED')) {
           view = true;
           continue;
@@ -471,19 +507,21 @@ export function convertSqlDdl(text: string): DialectResult {
         break;
       }
       if (c.eatKw('TABLE')) {
-        c.eatKw('IF', 'NOT', 'EXISTS');
+        const ifNotExists = c.eatKw('IF', 'NOT', 'EXISTS');
         const name = c.name();
         if (name === undefined) return fail('CREATE TABLE without a table name', line);
-        const entity = tableRef(model, name);
+        const { entity, duplicate } = declareEntity(model, normalizeRef(name));
+        if (duplicate && !ifNotExists && !orReplace) return fail(`table ${entityLabel(entity)} is created twice`, line);
         if (entity.kind === 'external') delete entity.kind;
         const body = c.parens();
         if (body === undefined) return fail(`CREATE TABLE ${name}: expected \`(\` after the table name`, line);
         for (const item of splitCommas(body)) {
           if (item.length === 0) continue;
+          const itemLine = item[0]?.line ?? line;
           const ic = new Cur(item);
-          if (parseTableConstraint(model, entity, ic)) continue;
-          const err = parseColumn(model, entity, new Cur(item));
-          if (err !== undefined) return fail(`CREATE TABLE ${name}: ${err}`, item[0]?.line ?? line);
+          if (parseTableConstraint(ctx, entity, ic, itemLine)) continue;
+          const err = parseColumn(ctx, entity, new Cur(item));
+          if (err !== undefined) return fail(`CREATE TABLE ${name}: ${err}`, itemLine);
         }
         // Table options: `COMMENT [=] '…'` (MySQL) becomes the note.
         while (!c.done()) {
@@ -506,8 +544,9 @@ export function convertSqlDdl(text: string): DialectResult {
         if (table === undefined) continue;
         if (c.eatKw('USING')) c.next();
         const cols = columnList(c.parens());
-        const entity = tableRef(model, table);
-        if (cols.length === 1 && cols[0] !== undefined && findEntity(model, table) !== undefined && !/[()]/.test(cols[0])) {
+        const entity = refTable(ctx, table, line);
+        if (entity === undefined) continue;
+        if (cols.length === 1 && cols[0] !== undefined && !/[()]/.test(cols[0])) {
           const col = touchColumn(entity, cols[0]);
           if (unique) col.unique = true;
           else col.index = true;
@@ -518,10 +557,11 @@ export function convertSqlDdl(text: string): DialectResult {
       }
       if (c.eatKw('VIEW') || view) {
         if (!view) view = true;
-        c.eatKw('IF', 'NOT', 'EXISTS');
+        const ifNotExists = c.eatKw('IF', 'NOT', 'EXISTS');
         const name = c.name();
         if (name === undefined) continue;
-        const entity = tableRef(model, name, 'view');
+        const { entity, duplicate } = declareEntity(model, normalizeRef(name), 'view');
+        if (duplicate && !ifNotExists && !orReplace) return fail(`view ${entityLabel(entity)} is created twice`, line);
         entity.kind = 'view';
         const explicit = c.isPunct('(') ? columnList(c.parens()) : [];
         for (const col of explicit) touchColumn(entity, col);
@@ -561,15 +601,16 @@ export function convertSqlDdl(text: string): DialectResult {
       c.eatKw('IF', 'EXISTS');
       const name = c.name();
       if (name === undefined) continue;
-      const entity = tableRef(model, name);
+      const entity = refTable(ctx, name, line);
+      if (entity === undefined) continue;
       const rest = toks.slice(c.i);
       for (const clause of splitCommas(rest)) {
         const cc = new Cur(clause);
         if (!cc.eatKw('ADD')) continue;
-        if (parseTableConstraint(model, entity, cc)) continue;
+        if (parseTableConstraint(ctx, entity, cc, clause[0]?.line ?? line)) continue;
         cc.eatKw('COLUMN');
         cc.eatKw('IF', 'NOT', 'EXISTS');
-        parseColumn(model, entity, cc);
+        parseColumn(ctx, entity, cc);
       }
       continue;
     }
@@ -579,18 +620,21 @@ export function convertSqlDdl(text: string): DialectResult {
       if (name === undefined || !c.eatKw('IS')) continue;
       const v = c.next();
       if (v === undefined || v.kind !== 'string') continue;
-      if (what === 'TABLE') tableRef(model, name).note = v.text;
-      else if (what === 'COLUMN') {
+      if (what === 'TABLE') {
+        const e = refTable(ctx, name, line);
+        if (e !== undefined) e.note = v.text;
+      } else if (what === 'COLUMN') {
         const parts = name.split('.');
         const col = parts.pop() ?? '';
-        const e = tableRef(model, parts.join('.'));
-        touchColumn(e, col).note = v.text;
+        const e = refTable(ctx, parts.join('.'), line);
+        if (e !== undefined) touchColumn(e, col).note = v.text;
       }
       continue;
     }
     // Anything else (INSERT, SET, GRANT, CREATE FUNCTION …) is not schema.
   }
 
+  if (ctx.problem !== undefined) return fail(ctx.problem.message, ctx.problem.line);
   finalizeModel(model);
   return { ok: true, data: toErdData(model) };
 }

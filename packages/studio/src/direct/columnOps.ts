@@ -160,6 +160,12 @@ export function addColumnSets(
     { path: [spec.colsPath, cols.length], value: spec.newHeader(cols.length) },
   ];
   for (const arr of spec.cellArrays(data)) {
+    // A full-width row only gains ONE cell — address it directly, so the row's
+    // existing cells keep their exact source text.
+    if (arr.cells.length === cols.length) {
+      sets.push({ path: [...arr.path, cols.length], value: arr.pad });
+      continue;
+    }
     // Pad short rows up to the NEW width so the fresh column always exists.
     const padded = arr.cells.slice();
     while (padded.length < cols.length + 1) padded.push(arr.pad);
@@ -174,6 +180,11 @@ export function addColumnSets(
  * the same ragged-row tolerance as the compound reorder). Null when the kind
  * has no column structure, the index is out of range, or the deletion would
  * drop below the schema's minimum.
+ *
+ * These stay whole-list sets: a column deletion is one splice per aligned
+ * array, and the caller commits {@link PathSet}s (which have no `remove`
+ * form) as ONE undo step. Splitting them into per-index removes would be one
+ * commit per array, and the arrays would fall out of alignment in between.
  */
 export function deleteColumnSets(kind: string, data: unknown, index: number): PathSet[] | null {
   const spec = SPECS[kind];

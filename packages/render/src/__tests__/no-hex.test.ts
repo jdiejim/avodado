@@ -10,6 +10,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+/** Directories under `src` the sweep skips: tests are not renderers. */
+const SKIP_DIRS = new Set(['__tests__', '__fixtures__']);
+
 const SRC = resolve(import.meta.dirname, '..');
 
 /** The pilot: these files (and the helpers below) must be hex-free. */
@@ -35,10 +38,18 @@ const SKINNED = [
 ];
 
 /**
- * Not restyled yet — still carry the pre-skin hex palette. Remove an entry
- * when its renderer moves to the skin; the test then enforces it.
+ * The two files that may carry a hex value, each for a stated reason. Remove
+ * an entry when the reason goes away; the test then enforces the rule on it.
+ *
+ * - `svg/dsTone.ts` — not restyled yet: still the pre-skin hex palette.
+ * - `brand.ts` — the Avodado mark (favicon / logo artwork), not a renderer.
+ *   Its colours are the brand's, fixed in both themes, and no role token
+ *   names them.
+ *
+ * `css.ts` is not here: it is where the tokens are defined, and its own test
+ * below confines its hex to the token blocks.
  */
-const LEGACY_HEX_ALLOWLIST = new Set(['svg/dsTone.ts']);
+const LEGACY_HEX_ALLOWLIST = new Set(['svg/dsTone.ts', 'brand.ts']);
 
 /**
  * The stylesheet is where the tokens are DEFINED, so it may carry hex — but
@@ -55,15 +66,30 @@ const TOKEN_BLOCKS = [
 /** A hex colour literal; `url(#id)` marker references are stripped first. */
 const HEX_RE = /#[0-9a-fA-F]{3,8}\b/;
 
+/**
+ * Drops block comments and whole-line `//` comments. A hex inside a comment
+ * paints nothing — it documents an example value (`--accent:#0f766e`) — and a
+ * whole-line match cannot be the tail of a URL in a string.
+ */
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+}
+
 function hexLiterals(rel: string): string[] {
-  const src = readFileSync(resolve(SRC, rel), 'utf8').replace(/url\(#[A-Za-z0-9_-]+\)/g, '');
+  const src = stripComments(readFileSync(resolve(SRC, rel), 'utf8')).replace(/url\(#[A-Za-z0-9_-]+\)/g, '');
   return src.match(new RegExp(HEX_RE.source, 'g')) ?? [];
 }
 
-function listSources(dir: string): string[] {
-  return readdirSync(resolve(SRC, dir))
-    .filter((f) => f.endsWith('.ts'))
-    .map((f) => `${dir}/${f}`);
+/** Every `.ts` under `src`, at any depth, except the test tree. */
+function listSources(dir = ''): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(resolve(SRC, dir), { withFileTypes: true })) {
+    const rel = dir === '' ? entry.name : `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      if (!SKIP_DIRS.has(entry.name)) out.push(...listSources(rel));
+    } else if (entry.name.endsWith('.ts')) out.push(rel);
+  }
+  return out.sort();
 }
 
 describe('no hex colours in skinned renderers', () => {
@@ -73,10 +99,12 @@ describe('no hex colours in skinned renderers', () => {
     });
   }
 
-  it('every block / svg source is either hex-free or on the legacy allowlist', () => {
-    const offenders = [...listSources('blocks'), ...listSources('svg')].filter(
-      (rel) => !LEGACY_HEX_ALLOWLIST.has(rel) && hexLiterals(rel).length > 0,
-    );
+  it('every source under src is hex-free or allowlisted — the whole package, not just blocks/ and svg/', () => {
+    const files = listSources().filter((rel) => rel !== 'css.ts');
+    // The sweep must actually reach the top level (deck.ts, document.ts, …).
+    expect(files).toContain('deck.ts');
+    expect(files).toContain('blocks/spans.ts');
+    const offenders = files.filter((rel) => !LEGACY_HEX_ALLOWLIST.has(rel) && hexLiterals(rel).length > 0);
     expect(offenders).toEqual([]);
   });
 

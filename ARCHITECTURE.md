@@ -132,6 +132,8 @@ Stable codes that the CLI can sort, filter, and format:
 | `E_DANGLING_REF` | error | Ref target not found |
 | `E_BAD_REF_FORMAT` | error | Ref doesn't match `doc#id` or `#id` |
 | `E_UNKNOWN_BLOCK` | error | Defensive (splitter should prevent) |
+| `E_ENCODING` | error | The file on disk is not UTF-8 (CLI-only — it is the layer that reads files) |
+| `E_RENDER` | error | A renderer threw while drawing a block; names the document and the block (CLI-only, around `@avodado/render`) |
 | `W_EMPTY_BLOCK` | warn | Typed block with empty body |
 | `W_SUSPECT_BLOCK` | warn | Fence tag looks like a typo of a real block type (rendered as plain text; carries a did-you-mean suggestion) |
 | `W_ALIAS_TYPE` | warn | Fence uses one of the 12 permanent alias names (e.g. `waterfall`) — parsed and rendered as its canonical type; informational only |

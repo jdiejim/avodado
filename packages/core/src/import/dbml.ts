@@ -16,10 +16,15 @@
 
 import {
   addForeignKey,
+  ambiguousMessage,
+  declareEntity,
   emptyModel,
+  entityLabel,
   finalizeModel,
   findEntity,
+  matchEntity,
   qualifiedName,
+  setEntityAlias,
   splitQualified,
   toErdData,
   touchColumn,
@@ -151,10 +156,20 @@ interface PendingRef {
   readonly line: number;
 }
 
+/** Resolves one endpoint of a `Ref`; an ambiguous bare name is the failure. */
+function refSide(model: SchemaModel, ref: string): SchemaEntity | string {
+  const m = matchEntity(model, ref);
+  if (m.kind === 'one') return m.entity;
+  if (m.kind === 'ambiguous') return ambiguousMessage(ref, m.candidates);
+  return touchEntity(model, ref, 'external');
+}
+
 /** Resolves a `Ref` into the model once every table is known. */
-function applyRef(model: SchemaModel, p: PendingRef): void {
-  const left = findEntity(model, p.left.table) ?? touchEntity(model, p.left.table, 'external');
-  const right = findEntity(model, p.right.table) ?? touchEntity(model, p.right.table, 'external');
+function applyRef(model: SchemaModel, p: PendingRef): DialectResult | undefined {
+  const left = refSide(model, p.left.table);
+  if (typeof left === 'string') return { ok: false, message: left, line: p.line };
+  const right = refSide(model, p.right.table);
+  if (typeof right === 'string') return { ok: false, message: right, line: p.line };
   if (p.op === '>') {
     addForeignKey(model, left, p.left.cols, right, p.right.cols);
   } else if (p.op === '<') {
@@ -172,6 +187,7 @@ function applyRef(model: SchemaModel, p: PendingRef): void {
   } else {
     model.relations.push({ from: qualifiedName(left), to: qualifiedName(right), card: 'N:M' });
   }
+  return undefined;
 }
 
 export function convertDbml(text: string): DialectResult {
@@ -328,7 +344,7 @@ export function convertDbml(text: string): DialectResult {
       }
       if (NOTE_RE.test(t)) continue;
       const parts = splitQualified(t);
-      group.entities.push(parts[parts.length - 1] ?? t);
+      group.entities.push(parts.join('.'));
       continue;
     }
     if (mode === 'ref') {
@@ -344,9 +360,11 @@ export function convertDbml(text: string): DialectResult {
     // top level
     const tm = TABLE_RE.exec(t);
     if (tm !== null) {
-      table = touchEntity(model, tm[1] ?? '');
+      const decl = declareEntity(model, tm[1] ?? '');
+      if (decl.duplicate) return fail(`table ${entityLabel(decl.entity)} is declared twice`, line);
+      table = decl.entity;
       if (table.kind === 'external') delete table.kind;
-      if (tm[2] !== undefined) table.alias = tm[2];
+      if (tm[2] !== undefined) setEntityAlias(model, table, tm[2]);
       mode = 'table';
       continue;
     }
@@ -391,7 +409,10 @@ export function convertDbml(text: string): DialectResult {
 
   // Every table is known now: fix the reference names before relations are built.
   finalizeModel(model);
-  for (const p of pending) applyRef(model, p);
+  for (const p of pending) {
+    const err = applyRef(model, p);
+    if (err !== undefined) return err;
+  }
   // A group may name a table by alias or `schema.table` — normalise to entity names.
   for (const g of model.groups) {
     g.entities = g.entities.map((n) => {

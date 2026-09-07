@@ -28,6 +28,7 @@ import {
   type ImportDiagnostic,
 } from '@avodado/core';
 import { runCheck, type CheckResult } from './check.js';
+import { overwriteRefusal } from '../io/write.js';
 
 /** Inputs for {@link runSyncOpenApi}. */
 export interface SyncOpenApiOptions {
@@ -40,6 +41,8 @@ export interface SyncOpenApiOptions {
   readonly check?: string;
   /** Slug used to namespace generated block ids. Defaults to the output basename. */
   readonly slug?: string;
+  /** Replace an existing file at `out`. Without it, an existing file is kept. */
+  readonly force?: boolean;
 }
 
 /** Result of `avo sync openapi`. */
@@ -91,6 +94,8 @@ export async function runSyncOpenApi(opts: SyncOpenApiOptions): Promise<SyncOpen
 
   if (opts.out !== undefined) {
     const outAbs = resolve(opts.cwd, opts.out);
+    const refusal = overwriteRefusal(outAbs, { force: opts.force });
+    if (refusal !== undefined) return { exitCode: 1, message: refusal };
     await mkdir(dirname(outAbs), { recursive: true });
     await writeFile(outAbs, generated, 'utf8');
     return {
@@ -159,6 +164,8 @@ export interface SyncCsvOptions {
   readonly title?: string;
   /** Delimiter override: `,` `;` `tab` (or a literal tab / `\t`). */
   readonly delimiter?: string;
+  /** Replace an existing file at `out`. Without it, an existing file is kept. */
+  readonly force?: boolean;
 }
 
 /** Result of `avo sync csv`. */
@@ -197,6 +204,8 @@ export interface SyncSchemaOptions {
   readonly title?: string;
   /** Block id; defaults to the file stem as a slug. */
   readonly id?: string;
+  /** Replace an existing file at `out`. Without it, an existing file is kept. */
+  readonly force?: boolean;
 }
 
 /** Result of `avo sync sql | dbml | prisma`. */
@@ -252,6 +261,10 @@ export async function runSyncSchema(opts: SyncSchemaOptions): Promise<SyncSchema
   const title = opts.title ?? titleFromFile(opts.file);
   const doc = '```meta\ntitle: ' + JSON.stringify(title) + '\n```\n\n' + fence;
   const outAbs = resolve(opts.cwd, opts.out);
+  const refusal = overwriteRefusal(outAbs, { force: opts.force });
+  if (refusal !== undefined) {
+    return { exitCode: 1, entities, relations, message: refusal };
+  }
   await mkdir(dirname(outAbs), { recursive: true });
   await writeFile(outAbs, doc, 'utf8');
   const check = await runCheck({
@@ -365,6 +378,16 @@ export async function runSyncCsv(opts: SyncCsvOptions): Promise<SyncCsvResult> {
   const title = opts.title ?? titleFromFile(opts.file);
   const doc = '```meta\ntitle: ' + JSON.stringify(title) + '\n```\n\n' + result.fence;
   const outAbs = resolve(opts.cwd, opts.out);
+  const refusal = overwriteRefusal(outAbs, { force: opts.force });
+  if (refusal !== undefined) {
+    return {
+      exitCode: 1,
+      block,
+      ...(reason !== undefined ? { reason } : {}),
+      warnings,
+      message: refusal,
+    };
+  }
   await mkdir(dirname(outAbs), { recursive: true });
   await writeFile(outAbs, doc, 'utf8');
   const check = await runCheck({

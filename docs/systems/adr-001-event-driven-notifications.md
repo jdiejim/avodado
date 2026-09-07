@@ -132,7 +132,7 @@ edges:
     to: n10
 groups:
   - col: 2
-    row: 0
+    row: 1
     label: New group
   - col: 4
     row: 1

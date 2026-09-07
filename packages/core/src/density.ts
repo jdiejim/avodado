@@ -16,9 +16,9 @@ import type { Diagnostic } from './diagnostics.js';
 import type { BlockType, Document, Segment } from './types.js';
 import { locateYamlPath } from './yaml.js';
 
-/** One budget: an array field, its cap, and how to split past it. */
+/** One budget: a field, its cap, and how to split past it. */
 export interface DensityBudget {
-  /** Top-level array field that is counted (e.g. `messages`). */
+  /** Top-level field that is counted (e.g. `messages`). */
   readonly field: string;
   /** Highest count that passes. Strictly greater warns. */
   readonly cap: number;
@@ -30,6 +30,13 @@ export interface DensityBudget {
   readonly counts?: (item: unknown) => boolean;
   /** A custom total over the array (e.g. columns across every erd entity). Wins over `counts`. */
   readonly measure?: (items: readonly unknown[]) => number;
+  /**
+   * Reads a NUMBER field instead of counting an array — for a field whose
+   * value is itself the drawing's size (`packet.width` is bits per row). The
+   * schema caps what the renderer can draw at all; this warns well below it,
+   * where the picture is still drawn but stops being readable.
+   */
+  readonly scalar?: true;
 }
 
 /** Columns across every erd entity. */
@@ -41,6 +48,22 @@ function erdColumns(items: readonly unknown[]): number {
     if (Array.isArray(cols)) n += cols.length;
   }
   return n;
+}
+
+/** The largest `rows` on any element of any wireframe screen. */
+function wireframeRows(screens: readonly unknown[]): number {
+  let max = 0;
+  for (const s of screens) {
+    if (typeof s !== 'object' || s === null) continue;
+    const elements = (s as { elements?: unknown }).elements;
+    if (!Array.isArray(elements)) continue;
+    for (const el of elements) {
+      if (typeof el !== 'object' || el === null) continue;
+      const rows = (el as { rows?: unknown }).rows;
+      if (typeof rows === 'number' && Number.isFinite(rows)) max = Math.max(max, rows);
+    }
+  }
+  return max;
 }
 
 /** True for a real message; false for a frame marker (`frame` / `else` / `end`). */
@@ -88,20 +111,39 @@ export const DENSITY_BUDGETS: Partial<Record<BlockType, readonly DensityBudget[]
   saga: [{ field: 'steps', cap: 12, unit: 'steps', split: 'Split the saga into one diagram per phase.' }],
   slopegraph: [{ field: 'items', cap: 20, unit: 'items', split: 'Keep the items that move, or split the list into one slopegraph per group.' }],
   spans: [{ field: 'spans', cap: 40, unit: 'spans', split: 'Collapse leaf spans into their parent, or draw one spans block per service hop.' }],
+  // Not a count of items — the value IS the drawing's size. The schema stops
+  // what the renderer cannot draw (128 bits per row); this stops well short of
+  // it, where a reader can no longer count the cells.
+  packet: [
+    {
+      field: 'width',
+      cap: 64,
+      unit: 'bits per row',
+      split: 'Use 32 or 64 bits per row — the widths an RFC header diagram reads at.',
+      scalar: true,
+    },
+  ],
+  wireframe: [
+    {
+      field: 'screens',
+      cap: 12,
+      unit: 'rows in one element',
+      split: 'Show the first few rows and describe the rest — a wireframe is a sketch, not the data.',
+      measure: wireframeRows,
+    },
+  ],
 };
 
-/** Length of `data[field]` when it is an array; 0 for anything else. */
-function countArray(
-  data: unknown,
-  field: string,
-  counts?: (item: unknown) => boolean,
-  measure?: (items: readonly unknown[]) => number,
-): number {
+/** The budgeted amount in `data`: a scalar field's value, or a count over its array. */
+function amountOf(data: unknown, budget: DensityBudget): number {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) return 0;
-  const value = (data as Record<string, unknown>)[field];
+  const value = (data as Record<string, unknown>)[budget.field];
+  if (budget.scalar === true) {
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  }
   if (!Array.isArray(value)) return 0;
-  if (measure !== undefined) return measure(value);
-  return counts === undefined ? value.length : value.filter(counts).length;
+  if (budget.measure !== undefined) return budget.measure(value);
+  return budget.counts === undefined ? value.length : value.filter(budget.counts).length;
 }
 
 /**
@@ -121,7 +163,7 @@ export function lintDensity(doc: Document, file: string): Diagnostic[] {
     if (budgets === undefined) continue;
 
     for (const budget of budgets) {
-      const count = countArray(seg.data, budget.field, budget.counts, budget.measure);
+      const count = amountOf(seg.data, budget);
       if (count <= budget.cap) continue;
 
       const loc = locateYamlPath(seg.raw, [budget.field]);

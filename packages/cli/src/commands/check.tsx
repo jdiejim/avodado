@@ -21,7 +21,7 @@ import {
   type Diagnostic,
   type Document,
 } from '@avodado/core';
-import { loadDocs, type DocFile } from '../io/files.js';
+import { encodingDiagnostics, loadDocs, type DocFile } from '../io/files.js';
 import { lintConventions } from './conventions.js';
 
 /** The prose-lint codes, as a set for the strict-prose escalation. */
@@ -59,12 +59,16 @@ export interface CheckResult {
  */
 export async function runCheck(opts: CheckOptions): Promise<CheckResult> {
   const docs = await loadDocs(opts.patterns, opts.cwd, opts.docsRoot);
-  const parsed: { doc: Document; file: string }[] = docs.map((d) => ({
-    doc: parseDocument(d.source, d.slug),
-    file: d.file,
-  }));
+  // A file that is not UTF-8 is reported, not parsed: validating the
+  // replacement characters it decodes to would call mojibake a clean document.
+  const parsed: { doc: Document; file: string }[] = docs
+    .filter((d) => d.encodingError === undefined)
+    .map((d) => ({
+      doc: parseDocument(d.source, d.slug),
+      file: d.file,
+    }));
 
-  const diagnostics: Diagnostic[] = [];
+  const diagnostics: Diagnostic[] = [...encodingDiagnostics(docs)];
 
   for (const { doc, file } of parsed) {
     diagnostics.push(...validateDocument(doc, file));
@@ -100,7 +104,10 @@ export async function runCheck(opts: CheckOptions): Promise<CheckResult> {
   const exitCode = escalated.some((d) => d.level === 'error') ? 1 : 0;
 
   const sources = new Map<string, readonly string[]>();
-  for (const d of docs) sources.set(d.file, d.source.split(/\r\n|\r|\n/));
+  for (const d of docs) {
+    if (d.encodingError !== undefined) continue; // no readable text to frame
+    sources.set(d.file, d.source.split(/\r\n|\r|\n/));
+  }
 
   return {
     diagnostics: escalated,

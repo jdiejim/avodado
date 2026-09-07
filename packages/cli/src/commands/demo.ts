@@ -64,6 +64,8 @@ export async function runDemo(opts: {
   readonly output?: string;
   /** Restrict the showcase to one block family. */
   readonly family?: DemoFamily;
+  /** With `output`, replace a file that is not already an HTML export. */
+  readonly force?: boolean;
 }): Promise<SingleResult> {
   const format = opts.format ?? 'html';
   let source = await readFile(join(templatesDir(), 'demo.md'), 'utf8');
@@ -81,5 +83,6 @@ export async function runDemo(opts: {
     input,
     format,
     ...(opts.output !== undefined ? { output: opts.output } : { preview: opts.preview ?? true }),
+    ...(opts.force === true ? { force: true } : {}),
   });
 }

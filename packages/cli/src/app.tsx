@@ -48,8 +48,8 @@ import { InitApp } from './commands/InitApp.js';
 import { copyToClipboard } from './io/clipboard.js';
 import { systemPrompt } from './commands/skill.js';
 import { mcpInstructions, runMcpStdio } from './commands/mcp.js';
-import { writeFile } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
+import { writeFileSafe } from './io/write.js';
 import { runSyncCsv, runSyncOpenApi, runSyncSchema, type CsvBlockKind, type SchemaDialect } from './commands/sync.js';
 import {
   templateFor,
@@ -297,7 +297,8 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('new [name]')
     .description('Create from a template — a full doc (adr, runbook, …) or a single block (sequence, erd, …)')
     .option('-o, --output <path>', 'write to a file instead of printing to stdout')
-    .action(async (nameArg: string | undefined, opts: { output?: string }) => {
+    .option('--force', 'with -o, replace the file if it already exists')
+    .action(async (nameArg: string | undefined, opts: { output?: string; force?: boolean }) => {
       const cwd = process.cwd();
 
       // Resolve a name: doc template → block type → permanent alias.
@@ -318,7 +319,12 @@ export async function main(argv: readonly string[]): Promise<number> {
 
       const emit = async (type: string): Promise<void> => {
         if (opts.output !== undefined) {
-          const p = await writeNewDoc({ cwd, type, out: opts.output });
+          const p = await writeNewDoc({
+            cwd,
+            type,
+            out: opts.output,
+            ...(opts.force === true ? { force: true } : {}),
+          });
           console.log(`${pc.green('✓')} Wrote ${p}`);
           return;
         }
@@ -378,14 +384,27 @@ export async function main(argv: readonly string[]): Promise<number> {
         ...(opts.out !== undefined ? { out: opts.out } : {}),
         ...(opts.richIndex !== undefined ? { richIndex: opts.richIndex } : {}),
       });
-      // Diagnostics are warnings here — `avo check` stays the gate.
+      // Schema/ref findings are warnings here — `avo check` stays the gate.
+      // A render failure (E_RENDER) is an error: it names the document and the
+      // block, the rest of the build still ran, and the exit code is 1.
       if (result.diagnostics.length > 0) {
         for (const d of result.diagnostics) {
           const loc = d.line !== undefined ? `${d.file}:${d.line}` : d.file;
-          console.error(pc.yellow(`warn  ${loc}  ${d.code}  ${d.message}`));
+          const fatal = d.code === 'E_RENDER' || d.code === 'E_ENCODING';
+          const line = `${fatal ? 'error' : 'warn '}  ${loc}  ${d.code}  ${d.message}`;
+          console.error(fatal ? pc.red(line) : pc.yellow(line));
         }
+        const errors = result.diagnostics.filter(
+          (d) => d.code === 'E_RENDER' || d.code === 'E_ENCODING',
+        ).length;
+        const warnings = result.diagnostics.length - errors;
+        const parts: string[] = [];
+        if (errors > 0) parts.push(`${errors} error(s)`);
+        if (warnings > 0) parts.push(`${warnings} warning(s)`);
         console.error(
-          pc.yellow(`${result.diagnostics.length} warning(s) — run \`avo check\` for details`),
+          (errors > 0 ? pc.red : pc.yellow)(
+            `${parts.join(', ')} — run \`avo check\` for details`,
+          ),
         );
       }
       const bytes = result.pages.reduce((sum, p) => sum + p.bytes, 0);
@@ -396,6 +415,20 @@ export async function main(argv: readonly string[]): Promise<number> {
       console.log(
         `${pc.green('✓')} ${result.pages.length - decks} page(s)${deckPart} → ${result.outDirRel}/ ${pc.dim(`(${bytes} bytes)`)}`,
       );
+      // Pruning: only files the previous build recorded as its own are removed.
+      if (result.removed.length > 0) {
+        for (const p of result.removed) console.log(pc.dim(`  removed ${p}`));
+        console.log(
+          `${pc.green('✓')} ${result.removed.length} stale file(s) removed ${pc.dim('(no longer generated)')}`,
+        );
+      }
+      if (result.pruneDeferred) {
+        console.log(
+          pc.dim(
+            `Note: ${result.outDirRel}/ had no build manifest, so nothing was pruned. The next build prunes what this one generated.`,
+          ),
+        );
+      }
       exitCode = result.exitCode;
     });
 
@@ -443,10 +476,11 @@ export async function main(argv: readonly string[]): Promise<number> {
     .option('-o, --out <path>', 'write generated markdown to this path')
     .option('--check <path>', 'compare against an existing doc and fail on drift')
     .option('--slug <slug>', 'block-id namespace (defaults to the output basename)')
+    .option('--force', 'with --out, replace the file if it already exists')
     .action(
       async (
         spec: string,
-        opts: { out?: string; check?: string; slug?: string },
+        opts: { out?: string; check?: string; slug?: string; force?: boolean },
       ) => {
         const result = await runSyncOpenApi({
           cwd: process.cwd(),
@@ -454,6 +488,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           ...(opts.out !== undefined ? { out: opts.out } : {}),
           ...(opts.check !== undefined ? { check: opts.check } : {}),
           ...(opts.slug !== undefined ? { slug: opts.slug } : {}),
+          ...(opts.force === true ? { force: true } : {}),
         });
         if (result.exitCode === 0) {
           console.log(pc.green('✓ ') + result.message);
@@ -471,10 +506,11 @@ export async function main(argv: readonly string[]): Promise<number> {
     .option('--block <type>', 'target block: table | statustable | chart (default: auto-suggest)')
     .option('--title <title>', 'doc title with --out (default: prettified file name)')
     .option('--delimiter <d>', 'field delimiter: "," ";" or "tab" (default: auto-detect)')
+    .option('--force', 'with --out, replace the file if it already exists')
     .action(
       async (
         file: string,
-        opts: { out?: string; block?: string; title?: string; delimiter?: string },
+        opts: { out?: string; block?: string; title?: string; delimiter?: string; force?: boolean },
       ) => {
         if (
           opts.block !== undefined &&
@@ -493,6 +529,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           ...(opts.block !== undefined ? { block: opts.block as CsvBlockKind } : {}),
           ...(opts.title !== undefined ? { title: opts.title } : {}),
           ...(opts.delimiter !== undefined ? { delimiter: opts.delimiter } : {}),
+          ...(opts.force === true ? { force: true } : {}),
         });
         // Auto-picked block: say why, on stderr so piped stdout stays a clean fence.
         if (result.reason !== undefined) {
@@ -535,7 +572,8 @@ export async function main(argv: readonly string[]): Promise<number> {
       .option('-o, --out <path>', 'write a minimal doc (meta + erd) to this path and validate it')
       .option('--title <title>', 'doc title with --out (default: prettified file name)')
       .option('--id <id>', 'block id (default: the file stem as a slug)')
-      .action(async (file: string, opts: { out?: string; title?: string; id?: string }) => {
+      .option('--force', 'with --out, replace the file if it already exists')
+      .action(async (file: string, opts: { out?: string; title?: string; id?: string; force?: boolean }) => {
         const result = await runSyncSchema({
           cwd: process.cwd(),
           file,
@@ -543,6 +581,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           ...(opts.out !== undefined ? { out: opts.out } : {}),
           ...(opts.title !== undefined ? { title: opts.title } : {}),
           ...(opts.id !== undefined ? { id: opts.id } : {}),
+          ...(opts.force === true ? { force: true } : {}),
         });
         if (result.message !== undefined) {
           console.error(pc.red(result.message));
@@ -584,7 +623,8 @@ export async function main(argv: readonly string[]): Promise<number> {
       .command(`${name} <input>`)
       .description(desc)
       .option('-o, --output <path>', 'output file path')
-      .option('-p, --preview', 'render to a temp file and open it in the browser');
+      .option('-p, --preview', 'render to a temp file and open it in the browser')
+      .option('--force', `with -o, replace a file that is not already a .${name === 'slides' ? 'html' : name} file`);
     if (name === 'pptx') {
       cmd.option(
         '-e, --editable',
@@ -600,7 +640,13 @@ export async function main(argv: readonly string[]): Promise<number> {
     cmd.action(
       async (
         input: string,
-        opts: { output?: string; preview?: boolean; editable?: boolean; size?: string },
+        opts: {
+          output?: string;
+          preview?: boolean;
+          editable?: boolean;
+          size?: string;
+          force?: boolean;
+        },
       ) => {
         let size: ExportSize | undefined;
         if (opts.size !== undefined) {
@@ -624,6 +670,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           ...(opts.preview === true ? { preview: true } : {}),
           ...(opts.editable === true ? { editable: true } : {}),
           ...(size !== undefined ? { size } : {}),
+          ...(opts.force === true ? { force: true } : {}),
         });
         const verb = result.opened ? 'Opened' : 'Wrote';
         console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
@@ -640,7 +687,7 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   // `demo [family] [-s]` — render the bundled showcase doc (all blocks, or
   // one family) and open it (-s = slides). Bare TTY invocation shows a picker.
-  const demoAction = async (familyArg: string | undefined, opts: { slides?: boolean; open?: boolean; output?: string }): Promise<void> => {
+  const demoAction = async (familyArg: string | undefined, opts: { slides?: boolean; open?: boolean; output?: string; force?: boolean }): Promise<void> => {
       let family: DemoFamily | undefined;
       if (familyArg !== undefined) {
         if (!isDemoFamily(familyArg)) {
@@ -665,6 +712,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         ...(opts.output !== undefined
           ? { output: resolvePath(process.cwd(), opts.output) }
           : { preview: opts.open !== false }),
+        ...(opts.force === true ? { force: true } : {}),
       });
       const verb = result.opened ? 'Opened' : 'Wrote';
       console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
@@ -678,12 +726,13 @@ export async function main(argv: readonly string[]): Promise<number> {
       .option('-s, --slides', 'render as a slide deck')
       .option('-o, --output <path>', 'write the rendered file to a path (implies --no-open)')
       .option('--no-open', "write the file but don't open it")
+      .option('--force', 'with -o, replace a file that is not already an .html file')
       .action(demoAction);
   };
 
   // `catalog` — print the block catalog in the terminal; `-p` opens an HTML
   // gallery of live samples, `-s` a slide deck.
-  const catalogAction = async (opts: { preview?: boolean; slides?: boolean; output?: string }): Promise<void> => {
+  const catalogAction = async (opts: { preview?: boolean; slides?: boolean; output?: string; force?: boolean }): Promise<void> => {
       const wantRender = opts.preview === true || opts.slides === true || opts.output !== undefined;
       if (!wantRender) {
         console.log(pc.bold(`${BLOCK_TYPES.length} block types in ${DEMO_FAMILIES.length} families:`));
@@ -701,6 +750,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       const result = await runCatalog({
         format: opts.slides === true ? 'slides' : 'html',
         ...(opts.output !== undefined ? { output: opts.output } : {}),
+        ...(opts.force === true ? { force: true } : {}),
       });
       const verb = result.opened ? 'Opened' : 'Wrote';
       console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
@@ -712,6 +762,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       .option('-p, --preview', 'render an HTML gallery of every block and open it')
       .option('-s, --slides', 'render the gallery as a slide deck (implies -p)')
       .option('-o, --output <path>', 'write the rendered gallery to a file')
+      .option('--force', 'with -o, replace a file that is not already an .html file')
       .action(catalogAction);
   };
 
@@ -719,7 +770,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   // side (with a Doc / Slide / Both toggle), from the showcase examples.
   const compareAction = async (
     familyArg: string | undefined,
-    opts: { output?: string; open?: boolean },
+    opts: { output?: string; open?: boolean; force?: boolean },
   ): Promise<void> => {
     let family: DemoFamily | undefined;
     if (familyArg !== undefined) {
@@ -737,6 +788,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       ...(opts.output !== undefined
         ? { output: resolvePath(process.cwd(), opts.output) }
         : { preview: opts.open !== false }),
+      ...(opts.force === true ? { force: true } : {}),
     });
     const verb = result.opened ? 'Opened' : 'Wrote';
     console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
@@ -747,6 +799,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       .description('See every block in DOC and SLIDE mode side by side (all blocks or one family)')
       .option('-o, --output <path>', "write the page to a path (implies --no-open)")
       .option('--no-open', "write the file but don't open it")
+      .option('--force', 'with -o, replace a file that is not already an .html file')
       .action(compareAction);
   };
 
@@ -754,7 +807,15 @@ export async function main(argv: readonly string[]): Promise<number> {
   // (<slug>), or render a gallery (`-p` HTML, `-s` slides).
   const designAction = async (
     name: string | undefined,
-    opts: { output?: string; preview?: boolean; slides?: boolean; system?: boolean; ai?: boolean; code?: boolean },
+    opts: {
+      output?: string;
+      preview?: boolean;
+      slides?: boolean;
+      system?: boolean;
+      ai?: boolean;
+      code?: boolean;
+      force?: boolean;
+    },
   ): Promise<void> => {
         const filter =
           opts.system === true ? 'system' : opts.ai === true ? 'ai' : opts.code === true ? 'code' : undefined;
@@ -766,6 +827,7 @@ export async function main(argv: readonly string[]): Promise<number> {
             ...(filter !== undefined ? { filter } : {}),
             format: opts.slides === true ? 'slides' : 'html',
             ...(opts.output !== undefined ? { output: opts.output } : {}),
+            ...(opts.force === true ? { force: true } : {}),
           });
           const verb = result.opened ? 'Opened' : 'Wrote';
           console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
@@ -783,7 +845,12 @@ export async function main(argv: readonly string[]): Promise<number> {
           }
           const doc = patternDoc(hit);
           if (opts.output !== undefined) {
-            await writeFile(resolvePath(process.cwd(), opts.output), doc, 'utf8');
+            // A pattern template is a document — never write it over one.
+            await writeFileSafe(
+              resolvePath(process.cwd(), opts.output),
+              doc,
+              opts.force === true ? { force: true } : {},
+            );
             console.log(`${pc.green('✓')} Wrote ${opts.output} ${pc.dim(`(${hit.name})`)}`);
             return;
           }
@@ -826,6 +893,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       .option('--system', 'only system-design patterns')
       .option('--ai', 'only AI / agent patterns')
       .option('--code', 'only code (GoF + architecture) design patterns')
+      .option('--force', 'with -o, replace the file if it already exists')
       .action(designAction);
   };
 
@@ -921,10 +989,15 @@ export async function main(argv: readonly string[]): Promise<number> {
     .description('Print the Avodado authoring grammar as a copy-paste system prompt (for Copilot / custom GPTs / any AI)')
     .option('-o, --output <path>', 'write the system prompt to a file instead of printing it')
     .option('--raw', 'emit the raw skill file verbatim (with frontmatter) instead of the wrapped prompt')
-    .action(async (opts: { output?: string; raw?: boolean }) => {
+    .option('--force', 'with -o, replace the file if it already exists')
+    .action(async (opts: { output?: string; raw?: boolean; force?: boolean }) => {
       const text = await systemPrompt({ ...(opts.raw === true ? { raw: true } : {}) });
       if (opts.output !== undefined) {
-        await writeFile(resolvePath(process.cwd(), opts.output), text, 'utf8');
+        await writeFileSafe(
+          resolvePath(process.cwd(), opts.output),
+          text,
+          opts.force === true ? { force: true } : {},
+        );
         console.log(`${pc.green('✓')} Wrote ${opts.output} ${pc.dim(`(${text.length} chars)`)}`);
         return;
       }
@@ -957,7 +1030,8 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('block [name]', { hidden: true })
     .description('List block types (no arg), or print a block template (-o to write a file)')
     .option('-o, --output <path>', 'write the template to a file')
-    .action(async (name: string | undefined, opts: { output?: string }) => {
+    .option('--force', 'with -o, replace the file if it already exists')
+    .action(async (name: string | undefined, opts: { output?: string; force?: boolean }) => {
       if (name === undefined || name === 'list') {
         console.log(pc.bold(`${BLOCK_TYPES.length} block types:`));
         console.log('  ' + BLOCK_TYPES.join('  '));
@@ -969,7 +1043,12 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
       if (opts.output !== undefined) {
-        const p = await writeNewDoc({ cwd: process.cwd(), type: name, out: opts.output });
+        const p = await writeNewDoc({
+          cwd: process.cwd(),
+          type: name,
+          out: opts.output,
+          ...(opts.force === true ? { force: true } : {}),
+        });
         console.log(`${pc.green('✓')} Wrote ${p}`);
       } else {
         process.stdout.write(templateFor(name as BlockType));
@@ -980,7 +1059,8 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('template [name]', { hidden: true })
     .description('List doc templates (no arg), or print one like `adr` (-o to write a file)')
     .option('-o, --output <path>', 'write the template to a file')
-    .action(async (name: string | undefined, opts: { output?: string }) => {
+    .option('--force', 'with -o, replace the file if it already exists')
+    .action(async (name: string | undefined, opts: { output?: string; force?: boolean }) => {
       if (name === undefined || name === 'list') {
         console.log(pc.bold('Doc templates:'));
         console.log('  ' + Object.keys(DOC_TEMPLATES).join('  '));
@@ -992,7 +1072,12 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
       if (opts.output !== undefined) {
-        const p = await writeNewDoc({ cwd: process.cwd(), type: name, out: opts.output });
+        const p = await writeNewDoc({
+          cwd: process.cwd(),
+          type: name,
+          out: opts.output,
+          ...(opts.force === true ? { force: true } : {}),
+        });
         console.log(`${pc.green('✓')} Wrote ${p}`);
       } else {
         process.stdout.write(DOC_TEMPLATES[name] ?? '');
