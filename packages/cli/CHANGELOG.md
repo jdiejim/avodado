@@ -1,5 +1,12 @@
 # @avodado/cli
 
+## 0.45.1
+
+### Patch Changes
+
+- Updated dependencies [ee53ca2]
+  - @avodado/studio@0.15.1
+
 ## 0.45.0
 
 ### Minor Changes

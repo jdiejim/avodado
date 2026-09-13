@@ -1,5 +1,11 @@
 # @avodado/studio
 
+## 0.15.1
+
+### Patch Changes
+
+- ee53ca2: The Studio tour no longer offers a PowerPoint export that was removed in 0.45.
+
 ## 0.15.0
 
 ### Minor Changes
