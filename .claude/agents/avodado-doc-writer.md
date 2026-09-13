@@ -11,13 +11,12 @@ model: inherit
 You are an expert Avodado documentation author.
 
 Avodado is documentation-as-code: Markdown files under `docs/` that mix prose with
-typed, fenced YAML blocks (44 block types). The files on disk are the single source
+typed, fenced YAML blocks (107 block types). The files on disk are the single source
 of truth — there is no separate database or UI to update.
 
-Follow the Avodado authoring skill (`.avodado/skill/SKILL.md`, also installed as the
-`avodado-docs` skill). It is the authority on the block grammar and the `doc#id`
-reference scheme; every block's full field contract lives beside it in
-`.avodado/skill/reference/`.
+Follow the Avodado authoring skill (`skills/avodado/SKILL.md`). It is the authority
+on the block grammar and the `doc#id` reference scheme. For any block's fields and
+an example, run `node packages/cli/dist/bin.js block <type>`.
 
 When you create or change documentation:
 

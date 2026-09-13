@@ -7,18 +7,19 @@
  * @packageDocumentation
  */
 
-export { houseCss } from './css.js';
+export { houseCss, LIGHT_SET, DARK_SET, systemSchemeCss } from './css.js';
 export { FAVICON_SVG, FAVICON_DATA_URI, FAVICON_LINK } from './brand.js';
 export { escapeHtml } from './escape.js';
 export { safeColor, safeUrl } from './sanitize.js';
 export { renderProse } from './markdown.js';
-export { renderDocument, type RenderOptions } from './document.js';
+export { schemeMarkup, renderDocument, type RenderOptions } from './document.js';
 export {
   renderDocumentParts,
   renderDocumentSegments,
   renderSlides,
   buildThemeVars,
   type RenderPartsOptions,
+  type ColorScheme,
   type DocumentParts,
   type DocumentSection,
   type RenderedSegment,

@@ -4,8 +4,8 @@
  * - Inlines the house CSS in `<style>` so the output is self-contained.
  * - Wraps the body in `<div class="docskin">` so the CSS rules apply.
  * - Emits internal `themeVars` overrides (if any) as CSS variables on `:root`.
- *   The page never stamps `data-theme`: the look follows the reader's system
- *   dark mode, and a host page can still force it with `data-theme="dark"`.
+ * - Dark is the look. `colorScheme: 'light'` stamps `data-theme="light"` on
+ *   `<html>`; `'system'` adds the media rule that lets the OS choose.
  *
  * The actual rendering is done by {@link renderDocumentParts} (in `parts.ts`);
  * this function just wraps those parts into a full HTML page. Embedding
@@ -24,6 +24,14 @@ import type { Document } from '@avodado/core';
 import { FAVICON_LINK } from './brand.js';
 import { escapeHtml } from './escape.js';
 import { renderDocumentParts, type RenderPartsOptions } from './parts.js';
+import { systemSchemeCss } from './css.js';
+
+/** The `<html>` attribute and extra `<style>` a colour scheme needs. */
+export function schemeMarkup(scheme: RenderPartsOptions['colorScheme']): { stamp: string; style: string } {
+  if (scheme === 'light') return { stamp: ' data-theme="light"', style: '' };
+  if (scheme === 'system') return { stamp: '', style: `<style>${systemSchemeCss}</style>` };
+  return { stamp: '', style: '' };
+}
 
 /** Options for {@link renderDocument}. */
 export type RenderOptions = RenderPartsOptions;
@@ -39,9 +47,10 @@ export function renderDocument(doc: Document, opts: RenderOptions = {}): string 
   const parts = renderDocumentParts(doc, opts);
   const themeBlock =
     parts.themeVars.length > 0 ? `\n<style>:root{${parts.themeVars}}</style>` : '';
+  const scheme = schemeMarkup(opts.colorScheme);
   return (
     `<!doctype html>\n` +
-    `<html lang="en">\n` +
+    `<html lang="en"${scheme.stamp}>\n` +
     `<head>\n` +
     `<meta charset="utf-8">\n` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">\n` +
@@ -49,6 +58,7 @@ export function renderDocument(doc: Document, opts: RenderOptions = {}): string 
     `${FAVICON_LINK}\n` +
     `<style>${parts.css}</style>` +
     themeBlock +
+    scheme.style +
     `\n</head>\n` +
     `<body>\n` +
     `<div class="docskin">\n` +

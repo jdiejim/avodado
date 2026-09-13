@@ -20,7 +20,7 @@ export function buildBlockSource(kind: BlockType, raw: string): string {
 }
 
 /** Everything the sheet needs about a draft: parse, render, diagnostics. */
-export interface BlockPreview {
+interface BlockPreview {
   /** The draft parsed as a segment (carries `data` + `parseError`). */
   readonly seg: TypedSegment | undefined;
   /** Rendered HTML (defs + block; the cover for `meta`), `''` when unrenderable. */
@@ -50,7 +50,7 @@ export function previewBlock(kind: BlockType, raw: string): BlockPreview {
 }
 
 /** Diagnostics split into per-top-level-field buckets plus the unmappable rest. */
-export interface FieldDiagnostics {
+interface FieldDiagnostics {
   readonly byField: ReadonlyMap<string, readonly Diagnostic[]>;
   readonly rest: readonly Diagnostic[];
 }

@@ -22,10 +22,18 @@ function clamp01(v: number | undefined): number {
 }
 
 export function renderQuadrant(data: BlockDataMap['quadrant']): string {
-  const W = 580;
   const H = 440;
   const pad = 56;
-  const x0 = pad;
+  const yA0 = data.yAxis ?? {};
+  // The y-axis endpoint labels sit end-anchored left of the plot; the gutter
+  // grows to hold the longest one (10px mono, ~6.2px per character) so a long
+  // label is never cut at the viewBox edge.
+  const gutter = Math.max(
+    pad,
+    10 + 8 + Math.ceil(Math.max(0, ...[yA0.high, yA0.low].map((t) => (t ?? '').length * 6.2))),
+  );
+  const W = 580 + (gutter - pad);
+  const x0 = gutter;
   const x1 = W - pad;
   const y0 = pad - 16;
   const y1 = H - pad;

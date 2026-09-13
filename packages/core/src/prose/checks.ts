@@ -13,7 +13,7 @@
  */
 
 import type { ProseContext } from './surfaces.js';
-import { countWords, maskInline, quoteSpan, splitSentences } from './text.js';
+import { maskInline, quoteSpan, splitSentences } from './text.js';
 
 /* ── Limits ────────────────────────────────────────────────────────────── */
 
@@ -78,7 +78,7 @@ export const messages = {
 /* ── Tokenization ──────────────────────────────────────────────────────── */
 
 /** Lowercased word tokens of a sentence, code/URLs/refs masked away. */
-export function tokens(sentence: string): string[] {
+function tokens(sentence: string): string[] {
   return maskInline(sentence)
     .toLowerCase()
     .split(/\s+/)
@@ -208,7 +208,7 @@ export function findTense(sentence: string): TenseForm | undefined {
 /* ── Filler openers ────────────────────────────────────────────────────── */
 
 /** Banned sentence openers — exact prefix match, case-insensitive. */
-export const FILLER_OPENERS = [
+const FILLER_OPENERS = [
   'In this section',
   "It's important to note",
   'It is important to note',
@@ -279,4 +279,4 @@ export function findDrift(text: string, avoided: readonly AvoidedTerm[]): DriftM
 
 /* ── Shared helpers for lint.ts ────────────────────────────────────────── */
 
-export { countWords, quoteSpan, splitSentences };
+export { quoteSpan, splitSentences };

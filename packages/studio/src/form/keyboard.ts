@@ -89,7 +89,7 @@ export function nextPrimaryField(
 /* ─── enter semantics in array rows ───────────────────────────────────────── */
 
 /** What ⏎ does inside an array item row. */
-export type RowEnterAction = 'advance' | 'append' | 'exit';
+type RowEnterAction = 'advance' | 'append' | 'exit';
 
 /**
  * The Enter-per-row rhythm:
@@ -161,7 +161,7 @@ export function filterComboOptions(
 export type ShortcutContext = 'canvas' | 'canvas-selected' | 'part' | 'sheet' | 'home' | 'present';
 
 /** One footer hint: the key chord and what it does. */
-export interface ShortcutHint {
+interface ShortcutHint {
   readonly keys: string;
   readonly label: string;
 }

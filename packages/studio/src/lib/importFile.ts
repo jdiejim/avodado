@@ -81,7 +81,7 @@ export function dropGapIndex(
 }
 
 /** What a file import should do, decided from the name + contents alone. */
-export type ImportPlan =
+type ImportPlan =
   | {
       /** Insert a ready-filled block at the drop gap. */
       readonly kind: 'block';

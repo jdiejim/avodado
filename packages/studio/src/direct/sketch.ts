@@ -56,7 +56,7 @@ export type SketchShape = 'rect' | 'diamond' | 'pill' | 'ellipse' | 'cylinder' |
 /** Everything a stroke can resolve to. */
 export type Stroke = SketchShape | 'line' | 'scribble';
 
-export interface Recognition {
+interface Recognition {
   /** The read shape — `undefined` when two shapes tie ({@link Recognition.ambiguous}). */
   readonly shape: Stroke | undefined;
   /** 0..1 — $1 score for shapes, straightness for a line, turn ratio for a scribble. */
@@ -105,7 +105,7 @@ const ROT_BOUND = (15 * Math.PI) / 180;
 const ROT_STOP = (2 * Math.PI) / 180;
 const PHI = 0.5 * (-1 + Math.sqrt(5));
 /** A line: endpoint distance over path length. */
-export const LINE_STRAIGHTNESS = 0.92;
+const LINE_STRAIGHTNESS = 0.92;
 /** A scribble: total absolute turning on a coarse resample (2.5 turns). */
 const SCRIBBLE_TURN = 5 * Math.PI;
 const TURN_SAMPLES = 20;
@@ -124,7 +124,7 @@ function dist(a: Pt, b: Pt): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-export function pathLength(pts: readonly Pt[]): number {
+function pathLength(pts: readonly Pt[]): number {
   let d = 0;
   for (let i = 1; i < pts.length; i++) d += dist(pts[i - 1] as Pt, pts[i] as Pt);
   return d;
@@ -155,7 +155,7 @@ function bbox(pts: readonly Pt[]): { minX: number; minY: number; maxX: number; m
 }
 
 /** `n` points evenly spaced along the polyline (the $1 resample). */
-export function resample(points: readonly Pt[], n: number): Pt[] {
+function resample(points: readonly Pt[], n: number): Pt[] {
   const pts = points.map((p) => ({ x: p.x, y: p.y }));
   const interval = pathLength(pts) / (n - 1);
   if (interval <= 0) return Array.from({ length: n }, () => ({ ...(pts[0] as Pt) }));
@@ -236,7 +236,7 @@ function normalize(pts: readonly Pt[], n: number): Pt[] {
  * (uniform spacing) and run a short moving average so a wobbly edge reads
  * as the edge it meant to be. Endpoints stay put.
  */
-export function smooth(pts: readonly Pt[], window = SMOOTH_WINDOW): Pt[] {
+function smooth(pts: readonly Pt[], window = SMOOTH_WINDOW): Pt[] {
   if (pts.length < 3) return [...pts];
   const dense = resample(pts, DENSE);
   const half = Math.floor(window / 2);
@@ -334,7 +334,7 @@ function arc(cx: number, cy: number, rx: number, ry: number, from: number, to: n
 }
 
 /** The canonical outline of `shape` in a `w`×1 box (y grows downward). */
-export function outline(shape: SketchShape, w: number): Pt[] {
+function outline(shape: SketchShape, w: number): Pt[] {
   const h = 1;
   switch (shape) {
     case 'rect':
@@ -406,7 +406,7 @@ const PILL_MIN_ASPECT = 1.25;
  * The template set at a width/height `aspect` (rounded to 0.05 and cached):
  * every shape, both windings.
  */
-export function templatesAt(aspect: number): readonly Template[] {
+function templatesAt(aspect: number): readonly Template[] {
   const key = Math.round(Math.min(ASPECT_MAX, Math.max(ASPECT_MIN, aspect)) * 20) / 20;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
@@ -572,7 +572,7 @@ export function rankShapes(points: readonly Pt[]): Array<{ shape: SketchShape; s
 /* ─── mapping ─────────────────────────────────────────────────────────────── */
 
 /** What the caller measured around the stroke (all DOM-derived, none required). */
-export interface SketchCtx {
+interface SketchCtx {
   readonly data: unknown;
   /** Effective cells of every node (renderer `data-col`/`data-row`) — lets an auto-laid-out diagram pin. */
   readonly placements?: readonly Placement[] | undefined;
@@ -591,7 +591,7 @@ export interface SketchCtx {
   readonly candidates?: readonly SketchShape[];
 }
 
-export type SketchResult =
+type SketchResult =
   | {
       readonly type: 'node';
       readonly sets: PathSet[];

@@ -21,12 +21,6 @@ import {
 import { DOC_TEMPLATES, DOC_TEMPLATE_INFO, isDocTemplate } from './docTemplates.js';
 import { assertWritable } from '../io/write.js';
 
-export interface NewOptions {
-  readonly cwd: string;
-  readonly type?: BlockType;
-  readonly out?: string;
-}
-
 /**
  * Returns the template string for a block type. No scaffold `## <type>`
  * heading: the skill's authoring rule is that headings state what the reader
@@ -39,7 +33,7 @@ export function templateFor(type: BlockType): string {
 }
 
 // Full-document templates (adr, design-doc, deck, …) live in @avodado/core;
-// re-exported here so `avo new` and the hidden `avo template` share one import site.
+// re-exported here so `avo new` has one import site.
 export { DOC_TEMPLATES, DOC_TEMPLATE_INFO, isDocTemplate };
 
 /**

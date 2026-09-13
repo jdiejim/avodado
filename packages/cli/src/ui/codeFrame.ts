@@ -9,7 +9,7 @@
 import pc from 'picocolors';
 
 /** Inputs for {@link renderCodeFrame}. */
-export interface CodeFrameInput {
+interface CodeFrameInput {
   /** The file's source split into lines (no trailing newline per line). */
   readonly lines: readonly string[];
   /** 1-based line of the offending token. */

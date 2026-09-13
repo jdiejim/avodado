@@ -7,7 +7,7 @@
 import type { DocListItem } from '../api/client.js';
 
 /** One rail group: a folder under docsDir (or docsDir itself) and its docs. */
-export interface DocGroup {
+interface DocGroup {
   /** Grouping key: `''` for docsDir-level docs, else the top-level folder. */
   readonly key: string;
   /** Display label, e.g. `docs` or `docs / guides`. */

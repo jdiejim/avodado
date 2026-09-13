@@ -314,7 +314,7 @@ function columnIndex(e: SchemaEntity): { size: number; byName: Map<string, Schem
   return fresh;
 }
 
-export function findColumn(e: SchemaEntity, name: string): SchemaColumn | undefined {
+function findColumn(e: SchemaEntity, name: string): SchemaColumn | undefined {
   return columnIndex(e).byName.get(name);
 }
 

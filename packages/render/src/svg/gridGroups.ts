@@ -240,8 +240,12 @@ export function gridGroupsSvg(groups: readonly GridGroup[], geo: GridGroupGeom):
     const nested = nest.declared ? depth % 2 === 1 : depth > 0;
     if (geo.skin === true) {
       const tint = safeColor(g.color, '');
-      const stroke = tint.length > 0 ? tint : 'var(--rule-solid)';
-      const text = tint.length > 0 ? tint : 'var(--soft)';
+      // An authored colour is pulled toward `ink` before it strokes or labels
+      // anything, so it clears the surface in both sets: darker on paper,
+      // lighter on the dark well. The fill keeps the authored hue, faint.
+      const onSurface = tint.length > 0 ? `color-mix(in srgb, ${tint} 62%, var(--ink))` : '';
+      const stroke = tint.length > 0 ? onSurface : 'var(--rule-solid)';
+      const text = tint.length > 0 ? onSurface : 'var(--soft)';
       // A plain `.t-eyebrow` tab (mono), like a sequence frame's `ALT` / `OPT`.
       const lbl = nested
         ? `<text x="${r.x + r.w - 12}" y="${r.y + 16}" class="t-eyebrow" fill="${text}" text-anchor="end">${escapeHtml(g.label)}</text>`

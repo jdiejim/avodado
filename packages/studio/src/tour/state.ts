@@ -21,15 +21,6 @@ import {
 
 const TOUR_KEY = 'avodado-studio-tour';
 
-/** True once the user has finished OR dismissed the tour (hint-bar copy). */
-export function tourSeen(): boolean {
-  try {
-    return window.localStorage.getItem(TOUR_KEY) !== null;
-  } catch {
-    return true;
-  }
-}
-
 function markTour(value: 'done' | 'dismissed'): void {
   try {
     window.localStorage.setItem(TOUR_KEY, value);

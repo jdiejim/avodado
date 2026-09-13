@@ -166,10 +166,16 @@ describe('describeBlockSchema', () => {
         'area',
         'scatter',
         'donut',
+        'pie',
         'gauge',
         'radar',
         'waterfall',
         'funnel',
+        'histogram',
+        'bell',
+        'boxplot',
+        'pareto',
+        'bullet',
       ],
     });
     const preset = field(describeBlockSchema('block'), 'preset');
@@ -179,7 +185,7 @@ describe('describeBlockSchema', () => {
       options: ['infra', 'event', 'ddd', 'network', 'k8s'],
     });
     const codeKind = field(describeBlockSchema('code'), 'kind');
-    expect(codeKind).toEqual({ kind: 'enum', optional: true, options: ['diff', 'terminal'] });
+    expect(codeKind).toEqual({ kind: 'enum', optional: true, options: ['compare', 'diff', 'terminal'] });
     expect(field(describeBlockSchema('code'), 'session')).toEqual({
       kind: 'string',
       optional: true,

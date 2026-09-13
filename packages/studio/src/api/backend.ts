@@ -21,6 +21,8 @@
 export interface StudioMeta {
   readonly version: string;
   readonly docsDir: string;
+  /** The project's colour scheme (`avodado.config` › `colorScheme`); absent on older servers = dark. */
+  readonly colorScheme?: 'dark' | 'light' | 'system';
 }
 
 /** One entry of the document list. */

@@ -28,7 +28,7 @@ import { lintConventions } from './conventions.js';
 const PROSE_CODES: ReadonlySet<string> = new Set(PROSE_CHECK_CODES);
 
 /** Inputs to {@link runCheck}. */
-export interface CheckOptions {
+interface CheckOptions {
   /** Glob patterns to expand. */
   readonly patterns: readonly string[];
   /** Working directory. */

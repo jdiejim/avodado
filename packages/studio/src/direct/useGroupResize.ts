@@ -31,7 +31,7 @@ import type { DirectHost } from './host.js';
 import { readGeom } from './useDrag.js';
 
 /** What DirectLayer renders while a corner resize is live. */
-export interface GroupResizeVisuals {
+interface GroupResizeVisuals {
   /** The snapped cell range the release would commit, wrapper-relative. */
   readonly snap: Box | null;
 }

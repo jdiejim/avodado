@@ -40,6 +40,9 @@ interface FrameOptions {
   readonly footerHtml?: string;
 }
 
+/** Drawings wider than this (in viewBox units) scroll instead of shrinking. */
+const WIDE_STAGE = 1600;
+
 const VIEWBOX_RE = /<svg\b[^>]*\bviewBox="-?[\d.]+ -?[\d.]+ ([\d.]+) [\d.]+"[^>]*>/;
 
 /**
@@ -58,11 +61,18 @@ function stageSvg(inner: string): string {
   if (!Number.isFinite(w) || w <= 0) return inner;
   const close = inner.indexOf('</svg>', m.index + tag.length);
   if (close < 0) return inner;
-  const capped = `${tag.slice(0, -1)} style="max-width:min(100%,calc(${w}px * var(--scale,1)))">`;
+  // A drawing wider than the column would otherwise shrink to fit — past
+  // ~1600 units that means 10px labels at half size, unreadable. Such a
+  // drawing keeps its natural width and the stage scrolls sideways instead;
+  // print falls back to fit-to-page (see the print rules in css.ts).
+  const wide = w > WIDE_STAGE;
+  const capped = wide
+    ? `${tag.slice(0, -1)} style="width:calc(${w}px * var(--scale,1));max-width:none">`
+    : `${tag.slice(0, -1)} style="max-width:min(100%,calc(${w}px * var(--scale,1)))">`;
   const end = close + '</svg>'.length;
   return (
     inner.slice(0, m.index) +
-    `<div class="diagram-stage">` +
+    `<div class="diagram-stage${wide ? ' diagram-stage--wide' : ''}">` +
     capped +
     inner.slice(m.index + tag.length, end) +
     `</div>` +
@@ -223,6 +233,19 @@ export const SECTION_LABEL: Record<BlockType, string> = {
   slopegraph: 'Before / after',
   spans: 'Trace',
   rollout: 'Rollout',
+  perfbudget: 'Performance budget',
+  percentiles: 'Latency percentiles',
+  timing: 'Timing diagram',
+  threatmodel: 'Threat model',
+  neuralnet: 'Neural net',
+  mindmap: 'Mind map',
+  usecase: 'Use cases',
+  pkg: 'Packages',
+  audit: 'Audit findings',
+  checklist: 'Checklist',
+  modelcard: 'Model card',
+  chevrons: 'Process',
+  roadmap: 'Roadmap',
 };
 
 /**

@@ -12,12 +12,11 @@ import open from 'open';
 import { parseDocument } from '@avodado/core';
 import { renderDocument, toSlides } from '@avodado/render';
 import { toPdf } from '../io/pdf.js';
-import { toPptx } from '../io/pptx.js';
-import { toPptxEditable } from '../io/pptxEditable.js';
 import { assertWritable } from '../io/write.js';
+import { loadConfig } from '../io/config.js';
 import { renderFailure } from './renderGuard.js';
 
-export type SingleFormat = 'html' | 'slides' | 'pdf' | 'pptx';
+export type SingleFormat = 'html' | 'slides' | 'pdf';
 
 /** Page-width preset for the page-shaped exports (`html`, `pdf`). */
 export type ExportSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -44,7 +43,6 @@ const EXT: Readonly<Record<SingleFormat, string>> = {
   html: 'html',
   slides: 'slides.html',
   pdf: 'pdf',
-  pptx: 'pptx',
 };
 
 /**
@@ -56,7 +54,6 @@ const REGENERATES: Readonly<Record<SingleFormat, readonly string[]>> = {
   html: ['.html', '.htm'],
   slides: ['.html', '.htm'],
   pdf: ['.pdf'],
-  pptx: ['.pptx'],
 };
 
 export interface SingleResult {
@@ -78,12 +75,6 @@ export async function runSingle(opts: {
    * `avo <file.md>`).
    */
   readonly open?: boolean;
-  /**
-   * `pptx` only: emit native, editable PowerPoint elements (text boxes,
-   * bullets, tables, charts) with screenshots only for diagram blocks —
-   * instead of the default one-image-per-slide export.
-   */
-  readonly editable?: boolean;
   /**
    * `html` and `pdf` only: page-width preset. Sets the content width
    * (`--page-max`) and, for PDF, the page width. Unset keeps the defaults
@@ -108,8 +99,11 @@ export async function runSingle(opts: {
     opts.size !== undefined && (opts.format === 'html' || opts.format === 'pdf')
       ? SIZE_WIDTHS[opts.size]
       : undefined;
-  const themeOpts =
-    sizePx !== undefined ? { themeVars: { '--page-max': `${String(sizePx)}px` } } : {};
+  const config = await loadConfig(opts.cwd);
+  const themeOpts = {
+    colorScheme: config.colorScheme,
+    ...(sizePx !== undefined ? { themeVars: { '--page-max': `${String(sizePx)}px` } } : {}),
+  };
 
   // Preview → a temp file keyed by the *content* (source + format + size), so an
   // edit produces a new filename and the browser opens a fresh tab instead of
@@ -164,19 +158,6 @@ export async function runSingle(opts: {
     });
     await writeFile(outputAbs, pdf);
     bytes = pdf.byteLength;
-  } else if (opts.format === 'pptx') {
-    // PowerPoint rides the same Chromium. Default: each deck slide is
-    // photographed and placed as a full-bleed 16:9 image (titles become
-    // speaker notes). `--editable`: native text/tables/charts, screenshots
-    // only for diagram blocks.
-    const chromium = { autoInstallBrowser: true, log: (m: string) => console.error(m) } as const;
-    const pptx = await named('PowerPoint deck', async () =>
-      opts.editable === true
-        ? await toPptxEditable(doc, themeOpts, chromium)
-        : await toPptx(toSlides(doc, themeOpts), chromium),
-    );
-    await writeFile(outputAbs, pptx);
-    bytes = pptx.byteLength;
   } else {
     const html = await named(opts.format === 'slides' ? 'slide deck' : 'page', () =>
       opts.format === 'slides' ? toSlides(doc, themeOpts) : renderDocument(doc, themeOpts),

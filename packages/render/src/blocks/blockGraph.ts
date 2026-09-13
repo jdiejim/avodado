@@ -191,10 +191,27 @@ type Rect = { readonly x: number; readonly y: number; readonly w: number; readon
  * the instance stack's back cards overhang the cell top-right (they'd be drawn
  * over incoming arrowheads). Boxless shapes anchor to their visible core.
  */
+/**
+ * The visible bar inside a gateway / load-balancer cell: half the cell wide
+ * (never under 84 units, so a two-line name fits), the full cell height —
+ * and, with a row span, the full height of every row it fronts.
+ */
+export function barRect(r: Rect): Rect {
+  const w = Math.min(r.w, Math.max(84, Math.round(r.w * 0.5)));
+  return { x: Math.round(r.x + (r.w - w) / 2), y: r.y, w, h: r.h };
+}
+
+/** True for the kinds drawn as a vertical bar. */
+export function isBarKind(kind: string | undefined): boolean {
+  return shapeFor(kind) === 'bar';
+}
+
 export function edgeAnchorRect(kind: string | undefined, r: Rect, replicas?: number): Rect {
   const shape = shapeFor(kind);
   const base = ((): Rect => {
     switch (shape) {
+      case 'bar':
+        return barRect(r);
       case 'cloud':
         return { x: r.x + r.w * 0.07, y: r.y + r.h * 0.3, w: r.w * 0.86, h: r.h * 0.7 - 4 };
       case 'stack':
@@ -237,10 +254,6 @@ function hasReplicaStack(replicas: number | undefined, shape: Shape): boolean {
 /** Where the `×N` chip sits: top-right, pulled in from a shape's slanted or rounded corner. */
 function replicaChipPos(shape: Shape, r: Rect): { x: number; y: number; end: boolean } {
   switch (shape) {
-    case 'hex':
-      return { x: r.x + r.w - Math.min(26, r.w * 0.16) - 4, y: r.y + 13, end: true };
-    case 'octagon':
-      return { x: r.x + r.w - Math.min(24, r.w * 0.15) - 4, y: r.y + 13, end: true };
     case 'pipe':
       return { x: r.x + r.w - Math.min(15, r.w * 0.11) * 2 - 4, y: r.y + 13, end: true };
     case 'cylinder':
@@ -277,14 +290,15 @@ function wrapBody(body: string, back: string, tail: string): string {
 /**
  * The canonical system-design shapes, chosen by node kind: data stores render
  * as cylinders, queues/streams as pipes (stadiums), CDN/external as clouds,
- * gateways/load-balancers as hexagons. Everything else keeps the accent card.
+ * gateways/load-balancers as the tall vertical bar of system-design diagrams
+ * (it spans the rows of the services it fronts). Everything else keeps the
+ * accent card.
  */
 type Shape =
   | 'cylinder'
   | 'pipe'
   | 'cloud'
-  | 'hex'
-  | 'octagon'
+  | 'bar'
   | 'stack'
   | 'pail'
   | 'tiered'
@@ -339,9 +353,8 @@ function shapeFor(kind: string | undefined): Shape {
     case 'gateway':
     case 'proxy':
     case 'ingress':
-      return 'hex';
     case 'lb':
-      return 'octagon';
+      return 'bar';
     case 'cache':
     case 'redis':
     case 'memcached':
@@ -444,13 +457,10 @@ function chipFor(shape: Shape, sk: NodeSkin, r: Rect): string {
       x = r.x + Math.min(15, r.w * 0.11) + 6;
       y = r.y + 12;
       break;
-    case 'hex':
-      x = r.x + Math.min(26, r.w * 0.16) + 4;
+    case 'bar':
+      x = cx;
       y = r.y + 12;
-      break;
-    case 'octagon':
-      x = r.x + Math.min(24, r.w * 0.15) + 4;
-      y = r.y + 12;
+      anchor = ' text-anchor="middle"';
       break;
     case 'fn': {
       const rad = Math.min(r.h / 2, r.w * 0.32);
@@ -504,7 +514,7 @@ export function renderShapedNode(
       ? { ...legacy, legacy: true, sw: 1.2, dashed: false, focal: false }
       : skinPaint(sk, accent);
   const shape = shapeFor(n.kind);
-  const rr = st.legacy ? r : pileRect(n.replicas, shape, r);
+  const rr = st.legacy ? r : shape === 'bar' ? barRect(r) : pileRect(n.replicas, shape, r);
   const body = shapedBody(n, rr, st, shape);
   if (st.legacy) return body;
   const rep = replicaMarks(n.replicas, shape, rr, st);
@@ -631,125 +641,20 @@ function shapedBody(
       `</g>`
     );
   }
-  if (shape === 'hex') {
-    const inset = Math.min(26, r.w * 0.16);
-    const p =
-      `M${r.x + inset} ${r.y} L ${r.x + r.w - inset} ${r.y} L ${r.x + r.w} ${r.y + r.h / 2} ` +
-      `L ${r.x + r.w - inset} ${r.y + r.h} L ${r.x + inset} ${r.y + r.h} L ${r.x} ${r.y + r.h / 2} Z`;
+  if (shape === 'bar') {
+    // The gateway / load-balancer bar of system-design diagrams: a tall,
+    // narrow rectangle with square corners, standing between the callers and
+    // the services it fronts. `r` is already the bar (see `barRect`).
     return (
       `<g${shadow}>` +
-      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA} stroke-linejoin="round"/>` +
+      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="2" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
       nodeLabels({
         name: n.name,
         ...tech,
         x: cx,
-        boxY: r.y,
-        boxH: r.h,
-        textW: r.w - inset * 2 - 6,
-        nameFill: st.text,
-        techFill: techTok,
-        ...skinOpts,
-        anchor: 'middle',
-      }) +
-      `</g>`
-    );
-  }
-
-  if (shape === 'pail') {
-    // An S3-style pail: elliptical rim, tapered sides.
-    const ry = Math.min(11, r.h * 0.13);
-    const tp = r.w * 0.12;
-    return (
-      `<g${shadow}>` +
-      `<path d="M${r.x} ${r.y + ry} A ${r.w / 2} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} L ${r.x + r.w - tp} ${r.y + r.h - 6} A ${(r.w - tp * 2) / 2} 6 0 0 1 ${r.x + tp} ${r.y + r.h - 6} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
-      `<path d="M${r.x} ${r.y + ry} A ${r.w / 2} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
-      nodeLabels({
-        name: n.name,
-        ...tech,
-        x: cx,
-        boxY: r.y + ry * 2,
-        boxH: r.h - ry * 2.6,
-        textW: r.w - tp * 2 - 16,
-        nameFill: st.text,
-        techFill: techTok,
-        ...skinOpts,
-        anchor: 'middle',
-      }) +
-      `</g>`
-    );
-  }
-  if (shape === 'tiered') {
-    // A warehouse/lake: cylinder with extra tier rims — visibly "more data".
-    const ry = Math.min(12, r.h * 0.14);
-    const rx = r.w / 2;
-    const rim = (dy: number): string =>
-      `<path d="M${r.x} ${r.y + dy} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + dy}" fill="none" stroke="${st.accent}" stroke-width="1" stroke-opacity="0.55"${DECORATIVE}/>`;
-    return (
-      `<g${shadow}>` +
-      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 1 ${r.x + r.w} ${r.y + ry} V ${r.y + r.h - ry} A ${rx} ${ry} 0 0 1 ${r.x} ${r.y + r.h - ry} Z" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
-      `<path d="M${r.x} ${r.y + ry} A ${rx} ${ry} 0 0 0 ${r.x + r.w} ${r.y + ry}" fill="none" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
-      rim(ry + (r.h - ry * 2) * 0.42) +
-      nodeLabels({
-        name: n.name,
-        ...tech,
-        x: cx,
-        boxY: r.y + ry * 2 + (r.h - ry * 2) * 0.3,
-        boxH: r.h - ry * 2.6 - (r.h - ry * 2) * 0.3,
-        textW: r.w - 30,
-        nameFill: st.text,
-        techFill: techTok,
-        ...skinOpts,
-        anchor: 'middle',
-      }) +
-      `</g>`
-    );
-  }
-  if (shape === 'rack') {
-    // A server rack: three stacked slabs with indicator ticks.
-    const gap = 5;
-    const slabH = (r.h - gap * 2) / 3;
-    let slabs = '';
-    for (let i = 0; i < 3; i++) {
-      const sy = r.y + i * (slabH + gap);
-      slabs +=
-        `<rect x="${r.x}" y="${sy.toFixed(1)}" width="${r.w}" height="${slabH.toFixed(1)}" rx="6" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA}/>` +
-        `<circle cx="${r.x + 12}" cy="${(sy + slabH / 2).toFixed(1)}" r="2.4" fill="${gc}" opacity="0.8"/>` +
-        `<path d="M${r.x + 20} ${(sy + slabH / 2).toFixed(1)} H ${r.x + 32}" stroke="${st.accent}" stroke-width="1.4" stroke-opacity="0.5"${DECORATIVE}/>`;
-    }
-    return (
-      `<g${shadow}>` +
-      slabs +
-      nodeLabels({
-        name: n.name,
-        ...tech,
-        x: r.x + r.w / 2 + 10,
-        boxY: r.y,
-        boxH: r.h,
-        textW: r.w - 84,
-        nameFill: st.text,
-        techFill: techTok,
-        ...skinOpts,
-        anchor: 'middle',
-      }) +
-      `</g>`
-    );
-  }
-  if (shape === 'shield') {
-    // A true shield silhouette for WAF / firewall.
-    const p =
-      `M${cx} ${r.y} L ${r.x + r.w * 0.9} ${r.y + r.h * 0.14} V ${r.y + r.h * 0.5} ` +
-      `Q ${r.x + r.w * 0.9} ${r.y + r.h * 0.82} ${cx} ${r.y + r.h} ` +
-      `Q ${r.x + r.w * 0.1} ${r.y + r.h * 0.82} ${r.x + r.w * 0.1} ${r.y + r.h * 0.5} V ${r.y + r.h * 0.14} Z`;
-    return (
-      `<g${shadow}>` +
-      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA} stroke-linejoin="round"/>` +
-      nodeLabels({
-        name: n.name,
-        ...tech,
-        x: cx,
-        boxY: r.y + r.h * 0.14,
-        boxH: r.h * 0.62,
-        textW: r.w * 0.6,
+        boxY: r.y + 18,
+        boxH: r.h - 24,
+        textW: r.w - 14,
         nameFill: st.text,
         techFill: techTok,
         ...skinOpts,
@@ -774,31 +679,6 @@ function shapedBody(
         boxY: shoulderY + 2,
         boxH: r.y + r.h - shoulderY - 2,
         textW: r.w - 12,
-        nameFill: st.text,
-        techFill: techTok,
-        ...skinOpts,
-        anchor: 'middle',
-      }) +
-      `</g>`
-    );
-  }
-  if (shape === 'octagon') {
-    // A load balancer: octagon (distinct from the gateway hexagon).
-    const ic = Math.min(24, r.w * 0.15);
-    const ich = Math.min(24, r.h * 0.3);
-    const p =
-      `M${r.x + ic} ${r.y} H ${r.x + r.w - ic} L ${r.x + r.w} ${r.y + ich} V ${r.y + r.h - ich} ` +
-      `L ${r.x + r.w - ic} ${r.y + r.h} H ${r.x + ic} L ${r.x} ${r.y + r.h - ich} V ${r.y + ich} Z`;
-    return (
-      `<g${shadow}>` +
-      `<path d="${p}" fill="${st.fill}" stroke="${st.accent}" stroke-width="${sw}"${dashA} stroke-linejoin="round"/>` +
-      nodeLabels({
-        name: n.name,
-        ...tech,
-        x: cx,
-        boxY: r.y,
-        boxH: r.h,
-        textW: r.w - ic * 2 - 6,
         nameFill: st.text,
         techFill: techTok,
         ...skinOpts,
@@ -1126,6 +1006,43 @@ function cardBody(
   );
 }
 
+/**
+ * A gateway / load balancer with no explicit `h` stretches over the rows of
+ * the services it fronts: the neighbours in the adjacent column with the most
+ * of them, when they sit in consecutive rows and no other node occupies the
+ * bar's column across that range. The bar then reads the way system-design
+ * diagrams draw it — one tall rectangle the fan-out hangs off. Explicit
+ * coordinates are never moved for any other node.
+ */
+function spanBars<N extends { readonly id: string; readonly kind?: string | undefined; col: number; row: number; readonly w?: number | undefined; readonly h?: number | undefined }>(
+  nodes: readonly N[],
+  edges: ReadonlyArray<{ readonly from: string; readonly to: string }>,
+): N[] {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  return nodes.map((n) => {
+    if (!isBarKind(n.kind) || n.h !== undefined) return n;
+    const neighbours = edges
+      .filter((e) => e.from === n.id || e.to === n.id)
+      .map((e) => byId.get(e.from === n.id ? e.to : e.from))
+      .filter((m): m is N => m !== undefined && m.id !== n.id);
+    // Group neighbours by which column they sit in; the fan-out side wins.
+    const sides = new Map<number, N[]>();
+    for (const m of neighbours) sides.set(m.col, [...(sides.get(m.col) ?? []), m]);
+    const fan = [...sides.values()].sort((a, b) => b.length - a.length)[0];
+    if (fan === undefined || fan.length < 2) return n;
+    const rowsOf = [...new Set(fan.map((m) => m.row))].sort((a, b) => a - b);
+    const r1 = rowsOf[0] ?? n.row;
+    const r2 = rowsOf[rowsOf.length - 1] ?? n.row;
+    if (r2 <= r1) return n;
+    // The bar's own column must be free across the span (other than itself).
+    const blocked = nodes.some(
+      (m) => m.id !== n.id && m.col <= n.col + ((n.w ?? 1) - 1) && m.col + ((m.w ?? 1) - 1) >= n.col && m.row + ((m.h ?? 1) - 1) >= r1 && m.row <= r2,
+    );
+    if (blocked) return n;
+    return { ...n, row: r1, h: r2 - r1 + 1 };
+  });
+}
+
 function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend: string } {
   const groups = data.groups ?? [];
   const edges = data.edges ?? [];
@@ -1136,10 +1053,11 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
   const quick =
     groups.length === 0 &&
     !(rawNodes.length > 0 && rawNodes.every((n) => n.col !== undefined && n.row !== undefined));
-  const nodes =
+  const placed =
     groups.length === 0
       ? ensureGrid(rawNodes, edges, data.dir ?? 'LR')
       : rawNodes.map((n) => ({ ...n, col: n.col ?? 1, row: n.row ?? 1 }));
+  const nodes = spanBars(placed, edges);
   const cellW = 178;
   const cellH = 88;
   const gapX = 64;
@@ -1156,7 +1074,7 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
   );
   const rows = Math.max(
     1,
-    ...nodes.map((n) => n.row ?? 1),
+    ...nodes.map((n) => (n.row ?? 1) + ((n.h ?? 1) - 1)),
     ...groups.map((g) => g.row + (g.rows ?? 1) - 1),
   );
   const xOf = (c: number): number => padX + (c - 1) * (cellW + gapX);
@@ -1165,7 +1083,7 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
     x: xOf(n.col ?? 1),
     y: yOf(n.row ?? 1),
     w: (n.w ?? 1) * cellW + ((n.w ?? 1) - 1) * gapX,
-    h: cellH,
+    h: (n.h ?? 1) * cellH + ((n.h ?? 1) - 1) * gapY,
   });
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const width = padX * 2 + cols * cellW + (cols - 1) * gapX;

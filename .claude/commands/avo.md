@@ -37,7 +37,7 @@ the selection with the picker.
 
 ### Step 3 — author each selected doc
 
-Follow the avodado-docs skill's seven-step selection procedure for each doc.
+Follow the avodado skill's seven-step selection procedure for each doc.
 The recommendation's `citations` are the mandatory reading list: read every
 cited file before you write. Never guess what an evidence file contains.
 Place each doc under `docs/`, where the skill's organizing rules say.
@@ -56,7 +56,7 @@ List the docs you wrote. Give one summary line for each doc.
 `<target>` is a path, a module, or a feature name.
 
 1. Read the target's code first.
-2. Author one doc about the target. Follow the avodado-docs skill's
+2. Author one doc about the target. Follow the avodado skill's
    seven-step selection procedure.
 3. Run `avo check` before you finish. Fix every diagnostic.
 

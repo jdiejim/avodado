@@ -16,7 +16,7 @@ import { watch, readdirSync, existsSync, type FSWatcher } from 'node:fs';
 import { join } from 'node:path';
 
 /** A running docs watcher. */
-export interface DocsWatcher {
+interface DocsWatcher {
   /** Stops all underlying watchers. Idempotent. */
   close(): void;
   /**

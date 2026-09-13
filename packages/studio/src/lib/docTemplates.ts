@@ -13,7 +13,7 @@ import {
 } from '@avodado/core';
 
 /** One picker card: a doc template plus its derived mini block-type list. */
-export interface DocTemplateCard {
+interface DocTemplateCard {
   /** The template name (`adr`, `design-doc`, …) — also the default slug. */
   readonly id: string;
   readonly title: string;

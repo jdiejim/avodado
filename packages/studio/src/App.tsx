@@ -8,6 +8,7 @@
  */
 
 import { useEffect } from 'react';
+import { useApplyColorScheme } from './lib/colorScheme.js';
 import { removeSegment } from '@avodado/core';
 import { hasServer } from './api/client.js';
 import { useServerEvents } from './api/events.js';
@@ -34,6 +35,7 @@ import { TopBar } from './components/TopBar.js';
 import { TourOverlay } from './tour/TourOverlay.js';
 
 export function App(): JSX.Element {
+  useApplyColorScheme();
   const init = useStudio((s) => s.init);
   const handleServerEvent = useStudio((s) => s.handleServerEvent);
 

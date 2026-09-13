@@ -67,7 +67,7 @@ export function unionArmFor(node: UnionNode, value: unknown): ObjectNode | null 
 }
 
 /** True when one of the union's arms has this scalar kind. */
-export function unionAllows(node: UnionNode, kind: 'string' | 'number' | 'boolean'): boolean {
+function unionAllows(node: UnionNode, kind: 'string' | 'number' | 'boolean'): boolean {
   return node.arms.some((a) => a.kind === kind);
 }
 

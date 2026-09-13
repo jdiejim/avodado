@@ -156,7 +156,7 @@ const TEST_FILE_RE = /\.(test|spec)\./i;
  * but the audit never harvests evidence from them — a route literal inside
  * a test fixture is not a route the repo serves.
  */
-export function isTestPath(rel: string): boolean {
+function isTestPath(rel: string): boolean {
   return TEST_SEGMENT_RE.test(rel) || TEST_FILE_RE.test(posix.basename(rel));
 }
 

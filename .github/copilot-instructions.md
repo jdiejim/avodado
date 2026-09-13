@@ -6,8 +6,9 @@ This project uses **Avodado**: documentation-as-code where a doc is Markdown wit
 typed, fenced YAML blocks, and the files on disk are the single source of truth.
 
 When creating or changing any document under `docs/**/*.md`, follow the authoring
-skill at `.avodado/skill/SKILL.md`. It defines the block grammar, every block's
-fields, and the `doc#id` reference scheme. In short:
+skill at `skills/avodado/SKILL.md`. It defines the block grammar and the `doc#id`
+reference scheme; run `node packages/cli/dist/bin.js block <type>` for any block's
+fields and an example. In short:
 
 - Prose is plain Markdown; structure goes in typed blocks (e.g. `sequence`, `erd`,
   `table`, `callout`, `c4`, `flow`, `timeline`, `userstory`). Never paste raw HTML

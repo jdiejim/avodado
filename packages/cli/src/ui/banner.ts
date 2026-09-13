@@ -1,9 +1,8 @@
 /**
- * The CLI's brand marks — a big cfonts wordmark for the `avo init` wizard and a
- * compact one-line banner for `avo` / `avo --help` — plus the per-command
- * action banners and the grouped help epilogue.
+ * The CLI's brand marks — a compact one-line banner for `avo` / `avo --help`
+ * — plus the per-command action banners and the grouped help epilogue.
  *
- * Both marks respect non-TTY stdout and `AVO_PLAIN=1`: piped output gets one
+ * Both respect non-TTY stdout and `AVO_PLAIN=1`: piped output gets one
  * plain, uncolored line (no ANSI escapes, no cfonts art).
  */
 
@@ -12,8 +11,8 @@ import cfonts from 'cfonts'; // CJS module — default import, then `.render`
 
 const TAGLINE = 'Documentation-as-code — Markdown with typed, fenced YAML blocks.';
 
-/** Avocado green — the same flesh→skin gradient the per-command action
- *  banners (studio, check, …) use, so all cfonts art matches. */
+/** Avocado green — the flesh→skin gradient the per-command action
+ *  banners (studio, check, …) render in. */
 const BRAND_GRADIENT = ['#a5d76e', '#2e7d32'];
 
 /** True when output must stay plain: piped/redirected stdout or AVO_PLAIN=1. */
@@ -23,52 +22,6 @@ const plainOutput = (): boolean =>
 /** The one-line plain (uncolored) banner used whenever ANSI isn't welcome. */
 const plainLine = (version: string): string => `avodado v${version} — ${TAGLINE}`;
 
-/** Strips ANSI escapes so rendered art can be measured in visible columns. */
-const stripAnsi = (s: string): string =>
-  // eslint-disable-next-line no-control-regex
-  s.replace(/\u001b\[[0-9;]*m/g, '');
-
-/** Widest visible line of a rendered block of art. */
-const artWidth = (art: string): number =>
-  Math.max(0, ...stripAnsi(art).split('\n').map((l) => l.length));
-
-/** Renders "avodado" via cfonts in `font`, or `''` if cfonts can't. */
-function renderWordmark(font: 'block' | 'tiny'): string {
-  try {
-    const out = cfonts.render('avodado', {
-      font,
-      gradient: BRAND_GRADIENT,
-      independentGradient: false,
-      transitionGradient: true,
-      letterSpacing: 1,
-      space: false,
-      env: 'node',
-    });
-    if (out !== false && typeof out === 'object') return out.string ?? '';
-  } catch {
-    /* fall through */
-  }
-  return '';
-}
-
-/**
- * The big "avodado" wordmark (via cfonts), shown at the top of the interactive
- * `avo init` wizard. Uses the chunky `block` face (Minecraft-style) in the
- * avocado gradient; falls back to `tiny` when it renders wider than ~78
- * columns, and to the compact {@link banner} if cfonts can't render at all.
- * Plain (uncolored, one line) when stdout isn't a TTY or `AVO_PLAIN=1`.
- */
-export function wordmark(version = '0.0.2'): string {
-  if (plainOutput()) return `\n${plainLine(version)}\n`;
-  let art = renderWordmark('block');
-  if (art === '' || artWidth(art) > 78) {
-    const tiny = renderWordmark('tiny');
-    if (tiny !== '') art = tiny;
-  }
-  if (art === '') return banner(version);
-  return `\n${art}\n  ${pc.green(pc.bold(`v${version}`))} ${pc.dim(`— ${TAGLINE}`)}\n`;
-}
-
 /**
  * A fun per-command header: the action word rendered big in avocado-green via
  * cfonts (e.g. "slides", "preview", "check").
@@ -77,7 +30,7 @@ export function actionBanner(word: string): string {
   try {
     const out = cfonts.render(word, {
       font: 'tiny',
-      gradient: ['#a5d76e', '#2e7d32'],
+      gradient: BRAND_GRADIENT,
       transitionGradient: true,
       space: false,
       env: 'node',
@@ -98,13 +51,10 @@ const FUN_LINES: Readonly<Record<string, string>> = {
   preview: 'Previewing the avocado…',
   check: 'Checking for bad avocados…',
   new: 'Planting a fresh doc…',
-  install: 'Planting the Avodado skill…',
   demo: 'Serving up the avocado demo…',
   build: 'Pressing the whole grove into a site…',
   serve: 'Serving fresh docs — reloads on save…',
   studio: 'Opening the studio — the grove goes visual…',
-  tour: 'A quick walk through the grove…',
-  explore: 'Wandering the grove…',
 };
 
 /** A fun, action-themed avocado status line. */
@@ -128,8 +78,8 @@ export function banner(version = '0.0.2'): string {
 const HELP_GROUPS: ReadonlyArray<{ readonly header: string; readonly commands: readonly string[] }> = [
   { header: 'WORK', commands: ['init', 'new', 'check', 'studio'] },
   { header: 'OUTPUT', commands: ['html', 'slides', 'pdf', 'build'] },
-  { header: 'DISCOVER', commands: ['explore'] },
-  { header: 'SETUP', commands: ['install', 'mcp', 'sync'] },
+  { header: 'REFERENCE', commands: ['block', 'demo'] },
+  { header: 'SETUP', commands: ['mcp', 'sync'] },
 ];
 
 /** The grouped command epilogue, shown after top-level help. Uncolored when
@@ -147,7 +97,8 @@ export function examples(): string {
     ...rows,
     '',
     `  ${cyan('avo <file.md>')} ${dim('renders + opens a doc — the fastest preview')}`,
-    `  ${dim('New here?')} avo ${cyan('explore tour')} ${dim('· docs:')} https://github.com/jdiejim/avodado`,
+    `  ${cyan('npx skills add jdiejim/avodado')} ${dim('installs the authoring skill into your AI agent')}`,
+    `  ${dim('Docs:')} https://github.com/jdiejim/avodado`,
     '',
   ].join('\n');
 }
@@ -158,8 +109,8 @@ export function examples(): string {
  */
 const COMMAND_EXAMPLES: Readonly<Record<string, ReadonlyArray<readonly [cmd: string, note: string]>>> = {
   init: [
-    ['avo init', 'scaffold a project (interactive wizard)'],
-    ['avo init -y', 'skip the wizard — defaults: all tools, full suite'],
+    ['avo init', 'scaffold docs/ and avodado.config.json'],
+    ['avo init --force', 'overwrite the starter files'],
   ],
   new: [
     ['avo new', 'pick a doc template or block scaffold interactively'],
@@ -191,14 +142,14 @@ const COMMAND_EXAMPLES: Readonly<Record<string, ReadonlyArray<readonly [cmd: str
     ['avo build', 'build the whole site into dist/'],
     ['avo build --out site', 'build into a different directory'],
   ],
-  explore: [
-    ['avo explore', 'pick interactively — demo · catalog · design · tour'],
-    ['avo explore tour', 'the guided, hands-on walkthrough'],
-    ['avo explore demo charts', 'showcase one block family'],
+  block: [
+    ['avo block', 'every block type, one line each, by family'],
+    ['avo block sequence', 'fields, enums, terse forms, and a validating example'],
+    ['avo block erd --json', 'the same contract as JSON'],
   ],
-  install: [
-    ['avo install claude', 'install/refresh the skill + Claude Code adapter'],
-    ['avo install cursor', 'install/refresh the skill + Cursor rule'],
+  demo: [
+    ['avo demo', 'render the built-in showcase of every block and open it'],
+    ['avo demo charts -s', 'one family, as a slide deck'],
   ],
   mcp: [
     ['avo mcp', 'print MCP client setup snippets'],

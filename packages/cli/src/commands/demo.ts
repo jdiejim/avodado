@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { parseDocument } from '@avodado/core';
 import { runSingle, type SingleFormat, type SingleResult } from './single.js';
 import { templatesDir } from './init.js';
-import { BLOCK_FAMILY, DEMO_FAMILIES, type DemoFamily } from './catalog.js';
+import { BLOCK_FAMILY, BLOCK_FAMILIES as DEMO_FAMILIES, type BlockFamily as DemoFamily } from '@avodado/core';
 
 /**
  * Filters the demo source down to one family of blocks.
@@ -23,7 +23,7 @@ import { BLOCK_FAMILY, DEMO_FAMILIES, type DemoFamily } from './catalog.js';
  * only when the typed block *immediately after it* is kept, so orphan headings
  * for filtered-out blocks are dropped.
  */
-export function filterDemoSource(source: string, family: DemoFamily): string {
+function filterDemoSource(source: string, family: DemoFamily): string {
   const doc = parseDocument(source, 'demo');
   const label = DEMO_FAMILIES.find((f) => f.id === family)?.label ?? family;
   const out: string[] = [];

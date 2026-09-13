@@ -4,10 +4,10 @@
  * The rule, applied identically everywhere:
  *
  * - A command that writes a **document** (`avo sync … --out`, `avo new -o`,
- *   `avo block -o`, `avo template -o`, `avo design <slug> -o`, `avo skill -o`)
+ *   `avo new -o`, `avo skill -o`)
  *   never replaces an existing file. Those paths point into `docs/`, and the
  *   file there is usually hand-written.
- * - A command that writes an **export** (`avo html|slides|pdf|pptx`, and the
+ * - A command that writes an **export** (`avo html|slides|pdf`, and the
  *   gallery writers `demo` / `catalog` / `compare` / `design -p -o`, which all
  *   route through the same writer) replaces a file only when the path already
  *   carries the extension that command produces. Re-exporting `report.html`
@@ -24,7 +24,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
 /** Inputs to {@link overwriteRefusal}. */
-export interface OverwriteGuard {
+interface OverwriteGuard {
   /** The user asked for the overwrite explicitly — never refuse. */
   readonly force?: boolean | undefined;
   /**

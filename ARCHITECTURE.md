@@ -32,7 +32,7 @@ The block registry in `@avodado/core` is the architectural backbone:
 ```ts
 export const blockSchemas = {
   meta, callout, table, sequence, erd, userstory, timeline, kanban, statustable,
-  // … one entry per block type — 87 in total, across 12 families.
+  // … one entry per block type — 107 in total, across 13 families.
   // The full list is `BLOCK_TYPES` in `core/src/types.ts`.
 } as const satisfies Record<BlockType, ZodTypeAny>;
 
@@ -67,22 +67,23 @@ A ```` ```mermaid ```` fence is a second input syntax for five block types, not 
 
 ## Block families
 
-Block types are grouped into 12 families (`BLOCK_FAMILIES` / `BLOCK_FAMILY` in the core catalog), but the runtime treats them all uniformly through the registry:
+Block types are grouped into 13 families (`BLOCK_FAMILIES` / `BLOCK_FAMILY` in the core catalog), but the runtime treats them all uniformly through the registry:
 
 | Family | Blocks |
 | --- | --- |
-| Narrative & prose (9) | `meta` `callout` `prose` `glossary` `figure` `faq` `divider` `bignumber` `takeaways` |
-| Tables & code (4) | `table` `stats` `code` `slo` |
-| API (3) | `endpoint` `pullquote` `layers` |
-| Architecture (7) | `c4` `uml` `frontend` `cluster` `block` `felogic` `archmap` |
-| Flows & state (6) | `sequence` `flow` `state` `dfd` `swimlane` `steps` |
+| Narrative & prose (11) | `meta` `callout` `prose` `glossary` `pullquote` `layers` `figure` `faq` `divider` `bignumber` `takeaways` |
+| Tables & code (5) | `table` `stats` `code` `slo` `benchmark` |
+| API (3) | `endpoint` `packet` `eventcontract` |
+| Architecture (9) | `c4` `uml` `frontend` `cluster` `block` `felogic` `archmap` `usecase` `pkg` |
+| Flows & state (11) | `sequence` `flow` `state` `dfd` `swimlane` `steps` `cycle` `gitgraph` `saga` `spans` `timing` |
 | Data model (1) | `erd` |
-| Charts & overviews (8) | `tree` `pyramid` `journey` `gantt` `graph` `quadrant` `chart` `heatmap` |
-| Planning & backlogs (13) | `userstory` `timeline` `kanban` `proscons` `cvt` `agenda` `list` `stories` `pattern` `gallery` `changelog` `risk` `statustable` |
-| Business & decisions (12) | `matrix` `anatomy` `composition` `drivers` `options` `spec` `envelope` `swot` `okr` `persona` `team` `scorecard` |
+| Charts & overviews (14) | `tree` `pyramid` `journey` `gantt` `graph` `quadrant` `chart` `heatmap` `sankey` `treemap` `venn` `fishbone` `slopegraph` `mindmap` |
+| Planning & backlogs (17) | `userstory` `timeline` `kanban` `proscons` `cvt` `agenda` `list` `stories` `pattern` `gallery` `changelog` `risk` `statustable` `storymap` `rollout` `chevrons` `roadmap` |
+| Business & decisions (16) | `matrix` `anatomy` `composition` `drivers` `options` `spec` `envelope` `swot` `okr` `persona` `team` `scorecard` `wardley` `harvey` `scqa` `scenarios` |
 | Design system (5) | `wireframe` `palette` `typescale` `dodont` `inventory` |
 | Algorithms (4) | `array` `linkedlist` `bintree` `hashmap` |
-| AI & agents (4) | `agentloop` `trace` `prompt` `context` |
+| AI & agents (6) | `agentloop` `trace` `prompt` `context` `neuralnet` `modelcard` |
+| Quality & audits (5) | `audit` `checklist` `perfbudget` `percentiles` `threatmodel` |
 
 ## Renderer fidelity
 
@@ -130,6 +131,7 @@ Stable codes that the CLI can sort, filter, and format:
 | `E_SCHEMA` | error | Zod validation issue |
 | `E_DUP_ID` | error | Same id used twice |
 | `E_DANGLING_REF` | error | Ref target not found |
+| `E_SWIMLANE_LANE` | error | A `swimlane` step's `lane` names no lane (unknown label/id, or an index past the last lane) |
 | `E_BAD_REF_FORMAT` | error | Ref doesn't match `doc#id` or `#id` |
 | `E_UNKNOWN_BLOCK` | error | Defensive (splitter should prevent) |
 | `E_ENCODING` | error | The file on disk is not UTF-8 (CLI-only — it is the layer that reads files) |
@@ -137,6 +139,7 @@ Stable codes that the CLI can sort, filter, and format:
 | `W_EMPTY_BLOCK` | warn | Typed block with empty body |
 | `W_SUSPECT_BLOCK` | warn | Fence tag looks like a typo of a real block type (rendered as plain text; carries a did-you-mean suggestion) |
 | `W_ALIAS_TYPE` | warn | Fence uses one of the 12 permanent alias names (e.g. `waterfall`) — parsed and rendered as its canonical type; informational only |
+| `W_EDGE_LABEL` | warn | A `c4` relationship has no `label` (the C4 notation asks every line to name its intent) |
 
 Uniform shape: `{ file, line?, level, code, message, value? }`.
 
@@ -154,6 +157,7 @@ The top-level always `process.exit(code)` after `waitUntilExit()`.
 
 The 87-block renderer is complete. Several of the original post-v1 seams have since shipped as workspace packages:
 
+- **The authoring skill** — one copy, at `skills/avodado/` (SKILL.md + reference/), laid out so `npx skills add jdiejim/avodado` installs it into any agent. The CLI build copies it to `packages/cli/templates/skill/` (gitignored) for `avo skill`; the MCP build stitches it into `skill.generated.ts`. The block field contract is not written by hand: `avo block <type>` prints it from the zod schema (`core/src/blocks/contract.ts`), plus one hand-kept table of terse-form hints that a test pins to the grammar table in `normalize.ts`.
 - **`@avodado/mcp`** — Model Context Protocol server (published). Tools: `check_document`, `render_document`, `list_block_types`, `get_block_schema`, `resolve_refs`, `sync_openapi`, `get_authoring_guide`. The OpenAPI generator it uses comes straight from `@avodado/core` (`core/src/import/openapi/`) — no vendored copies.
 - **`@avodado/studio`** — the visual editor served by `avo studio` (see the layering rules above).
 - **Importers** — `packages/core/src/import/`: pure external-source importers (OpenAPI → whole docs, CSV → `table`/`statustable`/`chart` fences) plus the small importer registry (`IMPORTERS` / `importerForFile`). Exposed as `avo sync openapi` / `avo sync csv`, the MCP `sync_openapi` tool, and the studio’s drag-drop / “Import…” flow.

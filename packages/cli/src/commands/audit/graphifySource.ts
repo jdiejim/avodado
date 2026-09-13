@@ -36,7 +36,7 @@ import { join } from 'node:path';
 import type { AuditStats, GodNodeEvidence } from './types.js';
 
 /** The node fields we read (all others ignored). */
-export interface GraphifyNode {
+interface GraphifyNode {
   readonly id: string;
   readonly label: string;
   readonly source_file?: string;
@@ -45,7 +45,7 @@ export interface GraphifyNode {
 }
 
 /** The link fields we read (all others ignored). */
-export interface GraphifyLink {
+interface GraphifyLink {
   readonly source: string;
   readonly target: string;
   readonly relation?: string;
@@ -53,19 +53,19 @@ export interface GraphifyLink {
 }
 
 /** The validated slice of graph.json the audit consumes. */
-export interface GraphifyGraph {
+interface GraphifyGraph {
   readonly nodes: readonly GraphifyNode[];
   readonly links: readonly GraphifyLink[];
 }
 
 /** Result of trying to load graph.json. */
-export type GraphifyLoad =
+type GraphifyLoad =
   | { readonly ok: true; readonly graph: GraphifyGraph }
   | { readonly ok: false; readonly missing: true }
   | { readonly ok: false; readonly missing: false; readonly reason: string };
 
 /** Relative location graphify writes its export to. */
-export const GRAPH_PATH = 'graphify-out/graph.json';
+const GRAPH_PATH = 'graphify-out/graph.json';
 
 /**
  * Loads + minimally validates `<root>/graphify-out/graph.json`.

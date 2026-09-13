@@ -145,6 +145,24 @@ export const BLOCK_TYPES = [
   // a progressive-delivery rollout strip.
   'spans',
   'rollout',
+  // Phase 31 — coverage sweep: ML (a layered network, a model card), a
+  // radial mind map, quality & audits (findings, checklist, performance
+  // budgets, latency percentiles), the UML shapes still missing (use case,
+  // package, timing), a STRIDE threat model, and two deck shapes (process
+  // chevrons, a themes × periods roadmap).
+  'neuralnet',
+  'modelcard',
+  'mindmap',
+  'audit',
+  'checklist',
+  'perfbudget',
+  'percentiles',
+  'usecase',
+  'pkg',
+  'timing',
+  'threatmodel',
+  'chevrons',
+  'roadmap',
 ] as const;
 
 /** A block type literal. Adding a new type here is a one-place change. */

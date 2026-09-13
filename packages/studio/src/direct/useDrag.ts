@@ -64,7 +64,7 @@ import {
 } from './partSelect.js';
 
 /** What DirectLayer renders while a drag is live. */
-export interface DragVisuals {
+interface DragVisuals {
   readonly ghost: { readonly box: Box; readonly label: string } | null;
   /** Insertion indicator (order-based reorder), wrapper-relative. */
   readonly drop: Box | null;

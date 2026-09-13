@@ -24,6 +24,10 @@ export type DiagnosticCode =
   | 'E_DANGLING_REF'
   | 'E_BAD_REF_FORMAT'
   | 'E_UNKNOWN_BLOCK'
+  // A `swimlane` step names a lane that does not exist: a `lane:` label or
+  // id with no match, or an index past the last lane (see `validate.ts`).
+  // An error, like E_SCHEMA — the step has nowhere to be drawn.
+  | 'E_SWIMLANE_LANE'
   // The bytes on disk are not a UTF-8 document (emitted by the CLI, which is
   // the layer that reads files). Reported instead of validating mojibake.
   | 'E_ENCODING'
@@ -44,6 +48,14 @@ export type DiagnosticCode =
   // not inside its parent's (see `validate.ts`). A warning — the renderer
   // still draws both panels; the author moves the cells.
   | 'W_GROUP_NESTING'
+  // A `c4` relationship with no `label`. The C4 notation asks every line to
+  // name its intent (and container-level lines their technology); an
+  // unlabelled arrow leaves the reader to guess what crosses it. A warning.
+  | 'W_EDGE_LABEL'
+  // The same structural block type used three or more times in one document
+  // (tables and code excepted). One lens repeated is usually the writer
+  // reaching for the familiar shape; the warning names alternatives.
+  | 'W_LENS_REPEAT'
   // On-disk convention (checked by the CLI — it is path-based, not
   // content-based): kebab-case filenames, at most `docs/<area>/<doc>.md`
   // under the docs root. Always a warning; no flag escalates it.

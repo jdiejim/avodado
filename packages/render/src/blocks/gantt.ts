@@ -48,15 +48,30 @@ const KIND_LEGEND: Record<Kind, LegendItem> = {
   milestone: { swatch: 'node-dashed', label: 'milestone' },
 };
 
+/** One period head: cut to `max` characters (full text in a <title>) when it cannot fit. */
+function periodHead(text: string, x: number, y: number, max: number): string {
+  const shown = text.length > max ? `${text.slice(0, Math.max(1, max - 1))}…` : text;
+  const title = shown === text ? '' : `<title>${escapeHtml(text)}</title>`;
+  return `<text x="${x}" y="${y}" class="t-eyebrow" text-anchor="middle">${title}${escapeHtml(shown)}</text>`;
+}
+
 export function renderGantt(data: BlockDataMap['gantt']): string {
   const periods = data.periods ?? [];
   const tasks = data.tasks ?? [];
   const P = Math.max(periods.length, 1);
   const labelW = 156;
   const padX = 20;
-  const padTop = 34;
   const barH = 18;
   const colW = 64;
+  // Period heads are 10px eyebrow caps (~6.6px per character). When they do
+  // not fit their column they alternate between two rows; when even a
+  // double-width column is too narrow they are cut with the full text in a
+  // <title>. Never let neighbouring heads print over each other.
+  const HEAD_CH = 6.6;
+  const headW = (t: string): number => t.length * HEAD_CH;
+  const staggered = periods.some((t) => headW(t) > colW - 6);
+  const headMax = Math.max(1, Math.floor(((staggered ? colW * 2 : colW) - 6) / HEAD_CH));
+  const padTop = staggered ? 48 : 34;
   const padBot = 14;
   // Long task labels wrap (≤3 lines) inside the label gutter instead of
   // running under the bars; every row grows uniformly when any label wraps.
@@ -73,7 +88,7 @@ export function renderGantt(data: BlockDataMap['gantt']): string {
     s +=
       `<g${bp(`periods.${i}`)}>` +
       `<line x1="${xCol(i)}" y1="${padTop - 6}" x2="${xCol(i)}" y2="${height - padBot}" stroke="var(--rule)" stroke-width="1"${DECORATIVE}/>` +
-      `<text x="${xCol(i) + colW / 2}" y="${padTop - 12}" class="t-eyebrow" text-anchor="middle">${escapeHtml(periods[i] ?? '')}</text>` +
+      periodHead(periods[i] ?? '', xCol(i) + colW / 2, padTop - 12 - (staggered && i % 2 === 0 ? 14 : 0), headMax) +
       `</g>`;
   }
   s += `</g>`;

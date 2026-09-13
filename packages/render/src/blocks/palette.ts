@@ -61,7 +61,7 @@ function relativeLuminance(rgb: readonly [number, number, number]): number {
 }
 
 /** Auto-contrast label colour for a swatch: dark text on light, white on dark. */
-export function contrastFor(swatch: string): string {
+function contrastFor(swatch: string): string {
   const rgb = parseHex(swatch);
   if (rgb === null) return DARK_TEXT;
   return relativeLuminance(rgb) > 0.6 ? DARK_TEXT : LIGHT_TEXT;

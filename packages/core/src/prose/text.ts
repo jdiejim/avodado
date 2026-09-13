@@ -70,7 +70,7 @@ function isWordToken(token: string): boolean {
  * letter or digit. Masked regions (code, URLs, refs) are spaces, so they
  * count as zero words.
  */
-export function countWords(maskedSlice: string): number {
+function countWords(maskedSlice: string): number {
   return maskedSlice.split(/\s+/).filter(isWordToken).length;
 }
 

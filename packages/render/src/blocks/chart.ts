@@ -1,7 +1,9 @@
 /**
  * Renders a `chart` block — a declarative data chart in pure SVG (no deps).
  * Kinds: `bar` (grouped), `stacked`, `line`, `area`, `scatter` (ordinal, or
- * numeric with `points`), `donut`, `gauge`, `radar`, `waterfall`, `funnel`.
+ * numeric with `points`), `donut`, `pie`, `gauge`, `radar`, `waterfall`,
+ * `funnel`, and the statistical kinds in `chartKinds.ts` — `histogram`,
+ * `bell`, `boxplot`, `pareto`, `bullet`.
  *
  * Skin (`DESIGN.md`, `svg/dsTone.ts`): axes are `rule` hairlines on a
  * `rule-solid` baseline, tick labels `.t-sub` in `soft`, category labels
@@ -21,19 +23,12 @@ import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { inkTone, marksOf, seriesColor, sliceTone, type Mark } from '../svg/dsTone.js';
 import { diagramFrame } from './frame.js';
 import { DECORATIVE } from '../svg/decorative.js';
+import { fmt, niceTicks, numScale, pos, svgOpenSize } from './chartScale.js';
+import { renderBell, renderBoxplot, renderBullet, renderHistogram, renderPareto } from './chartKinds.js';
 
 type ChartData = BlockDataMap['chart'];
 type Series = NonNullable<ChartData['series']>[number];
 type DonutItem = NonNullable<ChartData['items']>[number];
-
-/** Clamps negatives to 0 (charts render the non-negative range only). */
-const pos = (v: number): number => (Number.isFinite(v) && v > 0 ? v : 0);
-
-/** Formats a value with the optional unit suffix, trimming float noise. */
-function fmt(v: number, unit: string | undefined): string {
-  const n = Math.round(v * 100) / 100;
-  return `${n}${unit ?? ''}`;
-}
 
 /** Text drawn ON a dark fill: `paper`, and no paper halo (it would blur). */
 const ON_DARK = ' style="fill:var(--paper);stroke:none"';
@@ -50,34 +45,6 @@ interface Frame {
   readonly yMax: number;
   /** Nice tick values, 0 first, `yMax` last. */
   readonly ticks: readonly number[];
-}
-
-/**
- * A nice tick step (1 / 2 / 2.5 / 5 × 10^n) for a span, choosing the step
- * whose tick count over `span` lands in 4–6 (closest to 5).
- */
-function niceStep(span: number): number {
-  if (!(span > 0)) return 1;
-  const mag = Math.pow(10, Math.floor(Math.log10(span / 5)));
-  const candidates = [1, 2, 2.5, 5, 10].map((m) => m * mag);
-  let best = candidates[0] ?? 1;
-  let bestScore = Infinity;
-  for (const c of candidates) {
-    const n = Math.ceil(span / c - 1e-9);
-    const score = n >= 4 && n <= 6 ? Math.abs(n - 5) : 10 + Math.abs(n - 5);
-    if (score < bestScore) {
-      best = c;
-      bestScore = score;
-    }
-  }
-  return best;
-}
-
-/** Nice ticks from 0 to the first step multiple at or above `max`. */
-function niceTicks(max: number): number[] {
-  const step = niceStep(max);
-  const n = Math.max(1, Math.ceil(max / step - 1e-9));
-  return Array.from({ length: n + 1 }, (_v, i) => Math.round(i * step * 1e6) / 1e6);
 }
 
 function frameFor(data: ChartData, cats: number, stacked = false): Frame {
@@ -212,35 +179,45 @@ function renderLineArea(
 }
 
 /** A drawing plus the legend strip the frame shows under it. */
-interface Drawn {
+export interface Drawn {
   readonly svg: string;
   readonly legend: string;
 }
 
-function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
+/**
+ * `kind: donut`, and `kind: pie` when `pie` is set — the same ring of slices,
+ * legend and callouts, but a pie fills the centre (wedges instead of a
+ * stroked ring, seams from the centre) and carries no centre total.
+ */
+function renderDonut(data: ChartData, items: readonly DonutItem[], pie = false): Drawn {
   const width = 480;
   const height = 236;
   const cx = Math.round(width / 2);
   const cy = Math.round(height / 2);
   const r = 74;
   const sw = 26;
+  // A pie's rim sits where the donut's outer edge is; its "hole" radius is 0.
+  const rim = r + sw / 2;
+  const hole = pie ? 0 : r - sw / 2;
   const total = items.reduce((acc, it) => acc + pos(it.value), 0);
   let s = svgOpenSize(width, height);
   const ringEdges =
-    `<circle cx="${cx}" cy="${cy}" r="${r + sw / 2}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>` +
-    `<circle cx="${cx}" cy="${cy}" r="${r - sw / 2}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>`;
+    `<circle cx="${cx}" cy="${cy}" r="${rim}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>` +
+    (pie ? '' : `<circle cx="${cx}" cy="${cy}" r="${hole}" fill="none" stroke="var(--rule-solid)" stroke-width="1"/>`);
   if (total <= 0) {
-    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--paper)" stroke-width="${sw}"${DECORATIVE}/>` + ringEdges;
+    s += pie
+      ? `<circle cx="${cx}" cy="${cy}" r="${rim}" fill="var(--paper)"${DECORATIVE}/>` + ringEdges
+      : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--paper)" stroke-width="${sw}"${DECORATIVE}/>` + ringEdges;
   } else {
     let angle = -90;
     const marks = marksOf(items.map((it) => it.accent));
     const seams: string[] = [];
     const seam = (deg: number): void => {
       const a = (deg * Math.PI) / 180;
-      const x0 = Math.round((cx + (r - sw / 2 - 1) * Math.cos(a)) * 10) / 10;
-      const y0 = Math.round((cy + (r - sw / 2 - 1) * Math.sin(a)) * 10) / 10;
-      const x1 = Math.round((cx + (r + sw / 2 + 1) * Math.cos(a)) * 10) / 10;
-      const y1 = Math.round((cy + (r + sw / 2 + 1) * Math.sin(a)) * 10) / 10;
+      const x0 = Math.round((cx + (pie ? 0 : hole - 1) * Math.cos(a)) * 10) / 10;
+      const y0 = Math.round((cy + (pie ? 0 : hole - 1) * Math.sin(a)) * 10) / 10;
+      const x1 = Math.round((cx + (rim + 1) * Math.cos(a)) * 10) / 10;
+      const y1 = Math.round((cy + (rim + 1) * Math.sin(a)) * 10) / 10;
       seams.push(`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="var(--paper-2)" stroke-width="2"${DECORATIVE}/>`);
     };
     // Every slice worth ≥ 8% is named beside the ring, with a leader from
@@ -256,9 +233,22 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
       if (v === 0) return;
       const sweep = (v / total) * 360;
       const color = sliceTone(i, marks[i]).fill;
+      const tip = `<title>${escapeHtml(`${it.label} — ${fmt(v, data.unit)} (${Math.round((v / total) * 1000) / 10}%)`)}</title>`;
       if (sweep >= 359.999) {
-        // A full circle can't be a single arc — draw a ring.
-        s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"${bp(`items.${i}`)}/>`;
+        // A full circle can't be a single arc — draw a ring (or a disc).
+        s += pie
+          ? `<circle cx="${cx}" cy="${cy}" r="${rim}" fill="${color}"${bp(`items.${i}`)}>${tip}</circle>`
+          : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"${bp(`items.${i}`)}/>`;
+      } else if (pie) {
+        const a0 = (angle * Math.PI) / 180;
+        const a1 = ((angle + sweep) * Math.PI) / 180;
+        const x0 = Math.round((cx + rim * Math.cos(a0)) * 10) / 10;
+        const y0 = Math.round((cy + rim * Math.sin(a0)) * 10) / 10;
+        const x1 = Math.round((cx + rim * Math.cos(a1)) * 10) / 10;
+        const y1 = Math.round((cy + rim * Math.sin(a1)) * 10) / 10;
+        const large = sweep > 180 ? 1 : 0;
+        s += `<path d="M ${cx} ${cy} L ${x0} ${y0} A ${rim} ${rim} 0 ${large} 1 ${x1} ${y1} Z" fill="${color}" stroke="none"${bp(`items.${i}`)}>${tip}</path>`;
+        seam(angle);
       } else {
         const a0 = (angle * Math.PI) / 180;
         const a1 = ((angle + sweep) * Math.PI) / 180;
@@ -277,10 +267,12 @@ function renderDonut(data: ChartData, items: readonly DonutItem[]): Drawn {
     s += ringEdges;
     // Ground-coloured seams between slices, so pale steps stay separable.
     if (seams.length > 1) s += seams.join('');
-    s += donutCallouts(callouts, cx, cy, r + sw / 2);
+    s += donutCallouts(callouts, cx, cy, rim);
   }
-  s += `<text x="${cx}" y="${cy + 2}" class="chart-total">${escapeHtml(fmt(total, data.unit))}</text>`;
-  s += `<text x="${cx}" y="${cy + 20}" class="t-eyebrow" text-anchor="middle">TOTAL</text>`;
+  if (!pie) {
+    s += `<text x="${cx}" y="${cy + 2}" class="chart-total">${escapeHtml(fmt(total, data.unit))}</text>`;
+    s += `<text x="${cx}" y="${cy + 20}" class="t-eyebrow" text-anchor="middle">TOTAL</text>`;
+  }
   s += `</svg>`;
   return { svg: s, legend: itemsLegend(items, data.unit) };
 }
@@ -403,35 +395,6 @@ function renderScatter(
 // quadrant labels in the plot corners (TL, TR, BL, BR order).
 
 type ScatterPoint = NonNullable<ChartData['points']>[number];
-
-interface NumScale {
-  readonly min: number;
-  readonly max: number;
-  readonly ticks: readonly number[];
-}
-
-/** Pads a data extent, snaps it to nice tick multiples, and lists the ticks. */
-function numScale(values: readonly number[]): NumScale {
-  let lo = Math.min(...values);
-  let hi = Math.max(...values);
-  if (lo === hi) {
-    // A flat extent can't scale — open a symmetric window around the value.
-    const pad = lo === 0 ? 1 : Math.abs(lo) * 0.2;
-    lo -= pad;
-    hi += pad;
-  } else {
-    const pad = (hi - lo) * 0.06;
-    lo -= pad;
-    hi += pad;
-  }
-  const step = niceStep(hi - lo);
-  const min = Math.floor(lo / step) * step;
-  const max = Math.ceil(hi / step) * step;
-  const ticks: number[] = [];
-  // Guard float drift so the last tick always lands on `max`.
-  for (let t = min; t <= max + step / 2; t += step) ticks.push(Math.round(t * 1e6) / 1e6);
-  return { min, max, ticks };
-}
 
 /** Truncation cap for point labels — the full text still ships in <title>. */
 const SC_LABEL_CHARS = 40;
@@ -793,9 +756,6 @@ function renderRadar(data: ChartData, labels: readonly string[], series: readonl
 function svgOpen(f: Frame): string {
   return svgOpenSize(f.width, f.height);
 }
-function svgOpenSize(w: number, h: number): string {
-  return `<svg viewBox="0 0 ${w} ${h}" role="img"><title>Chart</title>`;
-}
 
 // ─── kind: waterfall (a budget cascade — the former `waterfall` type) ────────
 // Horizontal cascading bars: each bar starts at the running total of the
@@ -1058,8 +1018,18 @@ export function renderChart(data: ChartData): string {
   const labels = data.labels ?? [];
   const series = data.series ?? [];
   let drawn: Drawn;
-  if (kind === 'donut') {
-    drawn = renderDonut(data, data.items ?? []);
+  if (kind === 'donut' || kind === 'pie') {
+    drawn = renderDonut(data, data.items ?? [], kind === 'pie');
+  } else if (kind === 'histogram') {
+    drawn = renderHistogram(data);
+  } else if (kind === 'bell') {
+    drawn = renderBell(data);
+  } else if (kind === 'boxplot') {
+    drawn = renderBoxplot(data);
+  } else if (kind === 'pareto') {
+    drawn = renderPareto(data);
+  } else if (kind === 'bullet') {
+    drawn = renderBullet(data);
   } else if (kind === 'gauge') {
     drawn = renderGauge(data, data.items ?? []);
   } else if (kind === 'scatter' && data.points !== undefined && data.points.length > 0) {

@@ -19,7 +19,7 @@ import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { SKIN_EDGE } from '../svg/blockStyle.js';
-import { blockLegend, renderShapedNode } from './blockGraph.js';
+import { blockLegend, renderShapedNode, edgeAnchorRect } from './blockGraph.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 
@@ -113,10 +113,17 @@ export function renderCluster(data: BlockDataMap['cluster']): string {
   const edgeKinds = new Set<string>();
   s += `<g${bl('edges')}>`;
   const lanes = edgeLanes(edges);
-  const entries = entryPortOffsets(edges, (id) => rects.get(id));
+  // Arrows meet the shape a kind draws (a gateway's bar, a cloud's outline),
+  // not the cell around it.
+  const kindOf = new Map(services.map((sv) => [sv.id, sv.kind]));
+  const anchor = (id: string): Rect | undefined => {
+    const r = rects.get(id);
+    return r === undefined ? undefined : edgeAnchorRect(kindOf.get(id), r);
+  };
+  const entries = entryPortOffsets(edges, anchor);
   edges.forEach((e, ei) => {
-    const A = rects.get(e.from);
-    const B = rects.get(e.to);
+    const A = anchor(e.from);
+    const B = anchor(e.to);
     if (!A || !B) return;
     const p = ortho(A, B, lanes[ei] ?? 0, entries[ei] ?? 0);
     const kind = e.kind ?? 'solid';

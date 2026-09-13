@@ -19,9 +19,11 @@ stats:
 This slide has prose **and** two blocks, so it auto **top-aligns** — dense content
 reads better flowing from the top than floating in the middle.
 
-```callout
-tone: note
-body: No marker here either — alignment is chosen by how heavy the slide is.
+```list
+style: accent
+items:
+  - { lead: No marker here either, text: Alignment is chosen by how heavy the slide is. }
+  - { lead: Two blocks plus prose, text: "Heavy, so the slide top-aligns." }
 ```
 
 ```table

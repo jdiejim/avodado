@@ -438,6 +438,36 @@ function rolloutStageFromString(s: string): unknown {
     ...(status !== undefined && status.length > 0 ? { status } : {}),
   };
 }
+/**
+ * Checklist item: `'[pass] Dashboards exist — grafana/svc'` →
+ * `{ status: 'pass', item: 'Dashboards exist', evidence: 'grafana/svc' }`.
+ * The bracket is required (it is the verdict); the evidence is optional.
+ */
+function checklistItemFromString(s: string): unknown {
+  const b = STATUS_BRACKET_RE.exec(s.trim());
+  if (b === null) return s;
+  const status = (b[1] ?? '').trim();
+  const rest = s.trim().slice(b[0].length);
+  const i = rest.indexOf(' — ');
+  const item = (i === -1 ? rest : rest.slice(0, i)).trim();
+  const evidence = i === -1 ? undefined : rest.slice(i + 3).trim();
+  if (item.length === 0) return s;
+  return { status, item, ...(evidence !== undefined && evidence.length > 0 ? { evidence } : {}) };
+}
+const checklistGrammar: Grammar = {
+  expand: checklistItemFromString,
+  signature: (key) => STATUS_BRACKET_RE.test(key),
+  contract: (v) => {
+    if (!onlyKeys(v, ['status', 'item', 'evidence'])) return undefined;
+    const item = str(v['item']);
+    const head = bracket(v['status']);
+    if (item === undefined || head === undefined || head.length === 0) return undefined;
+    if (v['evidence'] === undefined) return head + item;
+    const ev = str(v['evidence']);
+    return ev === undefined ? undefined : `${head}${item} — ${ev}`;
+  },
+};
+
 const rolloutGrammar: Grammar = {
   expand: rolloutStageFromString,
   signature: (key) => STATUS_BRACKET_RE.test(key) || key.includes('·'),
@@ -1032,7 +1062,11 @@ function expandItem(grammar: Grammar, item: unknown): unknown {
           : typeof v === 'number' || typeof v === 'boolean'
             ? String(v)
             : undefined;
-    if (label === undefined || !grammar.signature(k)) return item;
+    // A key with whitespace can never be a real field name, so a single-pair
+    // map whose key carries spaces is a terse line that YAML split at its
+    // colon (`- order_id uuid required — Total: sum of lines` → key
+    // `order_id uuid required — Total`, value `sum of lines`). Reconstruct it.
+    if (label === undefined || !(grammar.signature(k) || /\s/.test(k))) return item;
     const out = grammar.expand(label.length > 0 ? `${k}: ${label}` : k);
     return typeof out === 'string' ? item : out; // no match — keep the original
   }
@@ -1063,6 +1097,43 @@ const laneGrammar: Grammar = {
 };
 
 /**
+ * `id: Label · Lane` or `id: Label · Lane · kind` → a swimlane step whose
+ * `lane` is the lane's label. The id carries no spaces. A bare `id: Label`
+ * names no lane and stays a string, so the schema reports the missing field.
+ */
+function swimlaneStepFromString(s: string): unknown {
+  const t = s.trim();
+  const i = t.indexOf(': ');
+  if (i === -1) return s;
+  const id = t.slice(0, i).trim();
+  if (id.length === 0 || /\s/.test(id)) return s;
+  const parts = t
+    .slice(i + 2)
+    .split('·')
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+  if (parts.length < 2 || parts.length > 3) return s;
+  const [label, lane, kind] = parts as [string, string, string | undefined];
+  return { id, label, lane, ...(kind !== undefined ? { kind } : {}) };
+}
+const swimlaneStepGrammar: Grammar = {
+  expand: swimlaneStepFromString,
+  signature: (key) => !/\s/.test(key) && notAField('swimlane', ['steps'])(key),
+  contract: (v) => {
+    if (!onlyKeys(v, ['id', 'label', 'lane', 'kind'])) return undefined;
+    const id = str(v['id']);
+    const label = str(v['label']);
+    const lane = str(v['lane']); // a numeric lane has no terse spelling
+    if (id === undefined || label === undefined || lane === undefined) return undefined;
+    if (id.length === 0 || /\s/.test(id) || label.includes('·') || lane.includes('·')) return undefined;
+    const parts: Array<string | undefined> = [label, lane];
+    if (v['kind'] !== undefined) parts.push(str(v['kind']));
+    const body = dotJoin(parts);
+    return body === undefined ? undefined : `${id}: ${body}`;
+  },
+};
+
+/**
  * Every terse list field, keyed by block type then by FIELD KEY — the array's
  * path with its indices dropped, so a nested list reads `entities.columns`.
  * This is the single source of truth for the sugar: parsing expands through it
@@ -1081,7 +1152,7 @@ const TERSE_FIELDS: Partial<Record<BlockType, Readonly<Record<string, Grammar>>>
   block: { edges: edgeGrammar, nodes: nodeGrammar('block', 'nodes', 'name') },
   state: { transitions: transitionGrammar, states: nodeGrammar('state', 'states', 'name') },
   dfd: { edges: linkGrammar, nodes: nodeGrammar('dfd', 'nodes', 'name') },
-  swimlane: { links: linkGrammar, lanes: laneGrammar },
+  swimlane: { links: edgeGrammar, lanes: laneGrammar, steps: swimlaneStepGrammar },
   c4: { edges: edgeGrammar },
   // A cluster's edge list is `edges` (the schema's own name) — the sugar used
   // to be registered under `links`, which no cluster body has, so the terse
@@ -1106,6 +1177,11 @@ const TERSE_FIELDS: Partial<Record<BlockType, Readonly<Record<string, Grammar>>>
   list: { items: listGrammar },
   steps: { items: stepsGrammar },
   kanban: { 'columns.cards': kanbanCardGrammar },
+  checklist: { items: checklistGrammar, 'groups.items': checklistGrammar },
+  usecase: { links: edgeGrammar },
+  pkg: { deps: edgeGrammar },
+  threatmodel: { edges: edgeGrammar, nodes: nodeGrammar('threatmodel', 'nodes', 'name') },
+  mindmap: { nodes: nodeGrammar('mindmap', 'nodes', 'label') },
 };
 
 /**

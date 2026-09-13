@@ -25,10 +25,10 @@
  * `paper-2` in light mode. `css.ts` defines the properties themselves (and
  * their dark-mode values); these only apply when a host stylesheet lacks them.
  */
-export const SERIES_FALLBACK: readonly string[] = ['#3d4656', '#8a5a3c', '#5f7f6e', '#6b6f9c', '#8a7a48'];
+const SERIES_FALLBACK: readonly string[] = ['#3d4656', '#8a5a3c', '#5f7f6e', '#6b6f9c', '#8a7a48'];
 
 /** How many distinct series steps the ramp has before it cycles. */
-export const SERIES_STEPS = SERIES_FALLBACK.length;
+const SERIES_STEPS = SERIES_FALLBACK.length;
 
 /**
  * Label colours for a swatch whose fill is author DATA (the `palette` block):
@@ -78,9 +78,9 @@ const INK_RAMP: readonly InkTone[] = [INK, INK_2, INK_3, PAPER_2];
 const SLICE_ORDER: readonly InkTone[] = [INK, INK_3, MUTED, PAPER_2];
 
 /** How many distinct steps the ink ramp has before it cycles. */
-export const INK_STEPS = INK_RAMP.length;
+const INK_STEPS = INK_RAMP.length;
 
-/** What an item's legacy `accent` name means under the skin — see {@link markOf}. */
+/** What an item's legacy `accent` name means under the skin — see {@link marksOf}. */
 export type Mark = 'focal' | 'negative' | undefined;
 
 /**
@@ -92,11 +92,6 @@ export type Mark = 'focal' | 'negative' | undefined;
 export function marksOf(accents: ReadonlyArray<string | undefined>): Mark[] {
   const flagged = accents.filter((a) => a !== undefined && a !== 'red').length;
   return accents.map((a) => (a === 'red' ? 'negative' : a !== undefined && flagged === 1 ? 'focal' : undefined));
-}
-
-/** {@link marksOf} for one item in its list. */
-export function markOf(accents: ReadonlyArray<string | undefined>, i: number): Mark {
-  return marksOf(accents)[i];
 }
 
 /**

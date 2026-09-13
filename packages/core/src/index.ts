@@ -37,6 +37,16 @@ export {
 } from './blocks/normalize.js';
 
 export {
+  resolveSwimlaneLane,
+  swimlaneColumns,
+  swimlanePlacements,
+  type SwimlanePlacement,
+  type SwimlaneStepInput,
+  type SwimlaneLaneInput,
+  type SwimlaneLinkInput,
+} from './blocks/swimlaneLayout.js';
+
+export {
   MERMAID_SOURCE,
   MERMAID_KEYWORDS,
   detectMermaidKind,
@@ -158,6 +168,15 @@ export {
 export { blockRegistry, type BlockDef, type BlockRegistry } from './blocks/registry.js';
 
 export { describeBlockSchema, type FieldNode } from './blocks/introspect.js';
+export { rescueInlineCommas } from './blocks/rescue.js';
+
+export {
+  blockContract,
+  formatBlockContract,
+  terseFieldsOf,
+  TERSE_HINTS,
+  type BlockContract,
+} from './blocks/contract.js';
 
 export { stringOnlyAt } from './blocks/schema-walk.js';
 

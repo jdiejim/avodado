@@ -30,8 +30,17 @@ import { htmlRenderers } from './registry.js';
 import { globalDefsSvg } from './svg/defs.js';
 import { DEFAULT_THEME, themeStyle, type ThemeName } from './themes.js';
 
+/**
+ * Which token set a page shows. `dark` (the default) stamps nothing: the
+ * stylesheet's own root is dark. `light` stamps `data-theme="light"` on the
+ * page root. `system` lets the reader's OS choose, light or dark.
+ */
+export type ColorScheme = 'dark' | 'light' | 'system';
+
 /** Options shared by {@link renderDocumentParts} and the page renderer. */
 export interface RenderPartsOptions {
+  /** The page's colour scheme; the parts renderer ignores it (a page-level stamp). */
+  readonly colorScheme?: ColorScheme;
   /** The look. Only `textbook` (the editorial skin) exists; defaults to it. */
   readonly theme?: ThemeName;
   /**
@@ -487,6 +496,19 @@ const ITEM_WEIGHT: Partial<Record<BlockType, number>> = {
   saga: 1.6, // each step is a card with a compensation card under it
   spans: 0.7, // one thin bar row per span; lanes add nothing on their own
   rollout: 1.6, // each stage is a card in one horizontal strip
+  perfbudget: 0.8, // one bar row per metric
+  percentiles: 0.8, // one dot-and-whisker row per series
+  timing: 1.2, // each lane stacks its state levels
+  threatmodel: 1.6, // grid nodes plus a threats table under the drawing
+  neuralnet: 0.7, // layers are columns side by side; height is the tallest column
+  mindmap: 0.7, // nodes split across two sides; each is one text row
+  usecase: 1.0, // cases stack in one column of ellipses
+  pkg: 1.2, // folders on a grid, members printed inside
+  audit: 1.0, // one table row per finding, four cells of text
+  checklist: 0.8, // one row per item: chip, text, mono evidence
+  modelcard: 1.4, // a card of lists and a metrics table, like endpoint
+  chevrons: 0.7, // one chevron per step in a single strip; wraps past eight
+  roadmap: 0.9, // one chip per item in a theme row; overlaps add a lane
 };
 
 /**

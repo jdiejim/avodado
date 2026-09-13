@@ -2,19 +2,25 @@
  * The house CSS — ported verbatim from `resources/doc-studio.jsx`.
  *
  * All output is namespaced under `.docskin` so the stylesheet can coexist with
- * a host page's own styles. Every colour is a CSS variable on `:root`; dark
- * mode flips them on `prefers-color-scheme` or `data-theme="dark"`.
+ * a host page's own styles. Every colour is a CSS variable on `:root`. Dark is
+ * the default look; `data-theme="light"` (or print) switches to the light set.
  *
  * Exported as a single string so it can be inlined into a `<style>` tag in the
  * standalone HTML produced by {@link renderDocument} (or copied verbatim into
  * a static stylesheet).
  */
-export const houseCss = `*{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-/* Design tokens live on :root so an override (applied on :root) reaches
-   the whole page — body chrome included, not just .docskin content. */
-:root{
-  /* The skin's role tokens (packages/render/DESIGN.md). Renderers name the
+/**
+ * The two token sets. Dark is the look: the bare `:root` carries it, so every
+ * page, deck, site page, and Studio canvas is dark unless something says
+ * otherwise. Light is the explicit choice — `data-theme="light"` on the root
+ * (or on a `.docskin`), `colorScheme: light` in the config — and the print
+ * look, always. `systemSchemeCss` is appended only when a page asks to follow
+ * the reader's OS (`colorScheme: system`).
+ *
+ * Hex lives only in these two constants and the base block below; every rule
+ * after them names a role (`var(--ink)`), never a value (`no-hex.test.ts`).
+ */
+export const LIGHT_SET = `  /* The skin's role tokens (packages/render/DESIGN.md). Renderers name the
      role, never the value; the dark set overrides these on :root. */
   --paper:#f7f6f2; --paper-2:#efede8; --ink:#1f2430; --muted:#4f5868; --soft:#5f6876;
   --rule:rgba(31,36,48,.14); --rule-solid:#807b70;
@@ -28,6 +34,29 @@ html{scroll-behavior:smooth;}
   --code-bg:#1f2430; --code-fg:#f7f6f2; --code-muted:#9aa3b5; --code-rule:rgba(247,246,242,.12);
   --code-kw:#d7a8e8; --code-str:#b5cfa6; --code-num:#e8c58f; --code-fn:#8fbde6; --code-ty:#e6cf8f; --code-com:#9aa3b5;
   --code-add:#b5cfa6; --code-add-bg:rgba(181,207,166,.14); --code-del:#e6b3ab; --code-del-bg:rgba(230,179,171,.14);
+  --stage:#f3f1ec; --stage-glow:rgba(255,255,255,.6);
+`;
+
+export const DARK_SET = `  --paper:#15171d; --paper-2:#1d2028; --ink:#eceae4; --muted:#b4bac6; --soft:#9da5b3;
+  --rule:rgba(236,234,228,.13); --rule-solid:#7d8499;
+  --accent:#e4744c; --accent-tint:rgba(228,116,76,.14); --link:#93b7e8;
+  --negative:#f5a39b; --negative-tint:rgba(245,163,155,.14);
+  --ink-2:#adadab; --ink-3:#62646a;
+  --series-1:#9db08f; --series-2:#8aa6c6; --series-3:#d1ac72; --series-4:#c48c72; --series-5:#a094ab;
+  --code-bg:#0e1015; --code-fg:#eceae4;
+  /* The drawing well: a step below the panel, with a faint lift at the centre. */
+  --stage:#121419; --stage-glow:rgba(236,234,228,.05);
+`;
+
+/** The reader's OS picks the set — used only for `colorScheme: system`. */
+export const systemSchemeCss = `@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){${LIGHT_SET}  color-scheme:light;}}`;
+
+export const houseCss = `*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+/* Design tokens live on :root so an override (applied on :root) reaches
+   the whole page — body chrome included, not just .docskin content. */
+:root{
+${LIGHT_SET}${DARK_SET}  color-scheme:dark;
   /* Figure scale: decks set it on the slide root to enlarge small diagrams. */
   --scale:1;
   /* Legacy token names — aliases of the roles above so the renderers that
@@ -40,28 +69,17 @@ html{scroll-behavior:smooth;}
   --radius:6px;
   --font-display:"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
   --font-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
-  --font-mono:"SF Mono",ui-monospace,Menlo,Consolas,"Courier New",monospace;
+  --font-mono:"SF Mono",ui-monospace,Menlo,Consolas,"Courier New",monospace;}
+/* Light: the explicit choice (a root or docskin stamp) and the print look. */
+:root[data-theme="light"],[data-theme="light"] .docskin,.docskin[data-theme="light"]{
+${LIGHT_SET}  color-scheme:light;
 }
-/* Dark: the neutrals invert, accent lifts one step. Once, here — a page opts
-   in with data-theme="dark", or follows the system unless it says "light". */
 :root[data-theme="dark"],[data-theme="dark"] .docskin,.docskin[data-theme="dark"]{
-  --paper:#1b1e26; --paper-2:#232732; --ink:#e8e6df; --muted:#aeb5c3; --soft:#9aa3b3;
-  --rule:rgba(232,230,223,.14); --rule-solid:#787f95;
-  --accent:#e0714a; --accent-tint:rgba(224,113,74,.14); --link:#8fb4e6;
-  --negative:#f5a39b; --negative-tint:rgba(245,163,155,.14);
-  --ink-2:#adadab; --ink-3:#727377;
-  --series-1:#9db08f; --series-2:#8aa6c6; --series-3:#d1ac72; --series-4:#c48c72; --series-5:#a094ab;
-  --code-bg:#12141a; --code-fg:#e8e6df;
+${DARK_SET}  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#1b1e26; --paper-2:#232732; --ink:#e8e6df; --muted:#aeb5c3; --soft:#9aa3b3;
-    --rule:rgba(232,230,223,.14); --rule-solid:#787f95;
-    --accent:#e0714a; --accent-tint:rgba(224,113,74,.14); --link:#8fb4e6;
-    --negative:#f5a39b; --negative-tint:rgba(245,163,155,.14);
-    --ink-2:#adadab; --ink-3:#727377;
-    --series-1:#9db08f; --series-2:#8aa6c6; --series-3:#d1ac72; --series-4:#c48c72; --series-5:#a094ab;
-    --code-bg:#12141a; --code-fg:#e8e6df;
+@media print{
+  :root{
+${LIGHT_SET}    color-scheme:light;
   }
 }
 body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);font-size:15px;line-height:1.6;}
@@ -90,7 +108,7 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .block-anchor{position:relative;display:block;height:0;scroll-margin-top:16px;}
 .docskin .diagram{margin:28px 0 36px;border:1px solid var(--rule-solid);background:var(--paper-2);padding:20px 24px 18px;border-radius:6px;box-shadow:none;}
 /* The dot grid sits only behind the drawing, never under the text around it. */
-.docskin .diagram-stage{background-image:radial-gradient(var(--rule) 1px,transparent 1px);background-size:24px 24px;background-position:center;padding:10px 0;border-radius:4px;}
+.docskin .diagram-stage{background-color:var(--stage);background-image:radial-gradient(var(--rule) 1px,transparent 1px),radial-gradient(ellipse 65% 55% at 50% 42%,var(--stage-glow),transparent 100%);background-size:24px 24px,100% 100%;background-repeat:repeat,no-repeat;background-position:center,center;padding:12px 0;border-radius:4px;box-shadow:inset 0 0 0 1px var(--rule);}
 .docskin .diagram-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--rule);}
 .docskin .diagram-eyebrow{display:inline-flex;align-items:baseline;gap:6px;color:var(--soft);}
 .docskin .diagram-tag{color:var(--soft);}
@@ -101,6 +119,10 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .diagram-fignum{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
 .docskin .diagram-desc{font-size:14px;color:var(--muted);margin:0 0 12px;}
 .docskin .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+.docskin .diagram-stage--wide{overflow-x:auto;overscroll-behavior-x:contain;}
+.docskin .diagram-stage--wide svg{margin:0;}
+@media print{.docskin .diagram-stage--wide{overflow:visible;}.docskin .diagram-stage--wide svg{width:auto!important;max-width:100%!important;}}
+.docskin.slide .diagram-stage--wide{overflow:visible;}.docskin.slide .diagram-stage--wide svg{width:auto!important;max-width:100%!important;}
 /* Type roles (DESIGN.md › Type roles). Fixed figure sizes; usable on SVG
    <text> (fill) and HTML (color). Every SVG text gets the paper halo so it
    survives crossing a line. */
@@ -1259,4 +1281,108 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .gg-branch{font-family:var(--font-mono);font-size:11px;font-weight:700;text-anchor:end;}
 .docskin .gg-msg{font-family:var(--font-body);font-size:11px;fill:var(--slate);text-anchor:middle;}
 .docskin .gg-tag{font-family:var(--font-mono);font-size:10px;font-weight:700;fill:var(--highlight);text-anchor:middle;}
-.docskin .bm-foot{font-size:12px;color:var(--gray);margin:12px 0 0;line-height:1.5;}`;
+.docskin .bm-foot{font-size:12px;color:var(--gray);margin:12px 0 0;line-height:1.5;}
+/* ── audit (findings register) — the risk chip encoding for severity; open = negative, fixing = the accent ── */
+.docskin .audit{margin:22px 0;}
+.docskin .au-head{display:flex;align-items:baseline;gap:8px 18px;flex-wrap:wrap;margin-bottom:2px;}
+.docskin .au-title{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);}
+.docskin .au-meta{display:inline-flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);}
+.docskin .au-k{font-size:8.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-right:6px;}
+.docskin .au-desc{font-size:13px;color:var(--muted);margin:2px 0 10px;line-height:1.5;}
+.docskin .au-counts{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0 10px;}
+.docskin .au-total{margin-right:6px;}
+.docskin .au-sev{display:inline-block;line-height:1.5;}
+.docskin .au-count .au-n{font-weight:700;}
+.docskin .au-sev.rk-sev-info{background:var(--paper);border-color:var(--rule-solid);color:var(--soft);}
+.docskin .au-scroll{overflow-x:auto;border:1px solid var(--rule-solid);border-radius:6px;background:var(--paper);}
+.docskin .au-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.docskin .au-table thead th{background:var(--paper-2);color:var(--muted);padding:8px 10px;text-align:left;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;border-bottom:1px solid var(--rule-solid);white-space:nowrap;}
+.docskin .au-table td{padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink);line-height:1.45;}
+.docskin .au-table tbody tr:last-child td{border-bottom:none;}
+.docskin .au-id{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;}
+.docskin .au-c-sev,.docskin .au-c-status{white-space:nowrap;}
+.docskin .au-ftitle{display:block;font-weight:600;color:var(--ink);}
+.docskin .au-area{display:inline-block;margin-top:3px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--rule-solid);border-radius:2px;padding:0 5px;line-height:1.5;}
+.docskin .au-ref{display:inline-block;margin:3px 0 0 6px;font-family:var(--font-mono);font-size:10px;color:var(--link);}
+.docskin .au-evidence{font-family:var(--font-mono);font-size:11px;color:var(--muted);min-width:140px;}
+.docskin .au-fix{min-width:150px;}
+.docskin .au-owner{font-family:var(--font-mono);font-size:11px;color:var(--muted);white-space:nowrap;}
+.docskin .au-st-open{border-color:var(--negative);color:var(--negative);}
+.docskin .au-st-fixing{border-color:var(--accent);color:var(--accent);}
+.docskin .au-st-fixed{background:var(--paper-2);border-color:var(--paper-2);color:var(--muted);}
+.docskin .au-st-accepted,.docskin .au-st-wontfix{border-color:var(--rule-solid);color:var(--soft);}
+/* ── checklist (pass / fail with evidence) — verdict chips, mono evidence, the derived pass rate ── */
+.docskin .checklist{margin:22px 0;}
+.docskin .cl-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:2px;}
+.docskin .cl-title{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);}
+.docskin .cl-standard{font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--paper);border:1px solid var(--rule-solid);border-radius:3px;padding:2px 7px;line-height:1.5;}
+.docskin .cl-desc{font-size:13px;color:var(--muted);margin:2px 0 10px;line-height:1.5;}
+.docskin .cl-groups{display:flex;flex-direction:column;gap:14px;margin-top:8px;}
+.docskin .cl-group-label{display:block;margin-bottom:4px;}
+.docskin .cl-items{display:flex;flex-direction:column;border-top:1px solid var(--rule);}
+.docskin .cl-item{display:flex;align-items:flex-start;gap:12px;padding:8px 2px;border-bottom:1px solid var(--rule);}
+.docskin .cl-verdict{flex:none;display:inline-flex;align-items:center;gap:5px;min-width:64px;font-family:var(--font-mono);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;border-radius:3px;padding:2px 7px;line-height:1.5;color:var(--ink);background:var(--paper);border:1px solid var(--ink);margin-top:1px;}
+.docskin .cl-glyph{font-size:11px;line-height:1;}
+.docskin .cl-v-pass{background:var(--paper-2);border-color:var(--paper-2);color:var(--ink);}
+.docskin .cl-v-fail{color:var(--negative);border-color:var(--negative);background:var(--negative-tint);}
+.docskin .cl-v-partial{color:var(--accent);border-color:var(--accent);}
+.docskin .cl-v-na,.docskin .cl-v-pending{color:var(--soft);border-color:var(--rule-solid);}
+.docskin .cl-body{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;min-width:0;font-size:13px;line-height:1.5;}
+.docskin .cl-text{color:var(--ink);font-weight:500;}
+.docskin .cl-s-na .cl-text{color:var(--muted);font-weight:400;}
+.docskin .cl-evidence{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+.docskin .cl-note{font-size:12px;color:var(--muted);font-style:italic;}
+.docskin .cl-ref{font-family:var(--font-mono);font-size:10px;color:var(--link);}
+.docskin .cl-foot{display:flex;justify-content:space-between;align-items:baseline;gap:10px 18px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);letter-spacing:.03em;}
+.docskin .cl-rate b{color:var(--ink);font-weight:700;font-size:12px;}
+/* ── modelcard (ML model card) — the eventcontract card chrome plus a spec strip and a metrics table ── */
+.docskin .modelcard{border:1px solid var(--rule-solid);border-radius:6px;margin:18px 0;overflow:hidden;background:var(--paper);}
+.docskin .mc-task{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-family:var(--font-body);font-size:12px;color:var(--ink);background:var(--paper);border:1px solid var(--rule-solid);padding:3px 8px;border-radius:3px;}
+.docskin .mc-task .t-eyebrow{color:var(--muted);}
+.docskin .mc-spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;margin:14px 0 0;background:var(--rule-solid);border:1px solid var(--rule-solid);border-radius:4px;overflow:hidden;}
+.docskin .mc-cell{display:flex;flex-direction:column;gap:3px;padding:8px 10px;background:var(--paper-2);}
+.docskin .mc-k{color:var(--muted);}
+.docskin .mc-v{font-family:var(--font-mono);font-size:11.5px;color:var(--ink);line-height:1.4;}
+.docskin .mc-list{margin:0;padding-left:18px;font-size:13px;line-height:1.55;color:var(--ink);}
+.docskin .mc-list li{margin:2px 0;}
+.docskin .mc-metrics th.mc-value,.docskin .mc-metrics td.mc-value{text-align:right;}
+.docskin .mc-metrics td.mc-value{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);white-space:nowrap;}
+/* ── chevrons (process chevron strip) — paper text on the one accent-filled step ── */
+.docskin svg .t-name.ch-on-accent{fill:var(--paper);stroke:none;}
+/* ── roadmap (themes × periods) — the current chip's label is bold ── */
+.docskin svg .rm-label{font-size:10.5px;}
+.docskin svg .rm-current{font-weight:600;}
+/* perfbudget — metric names in the label column and the measured value at the bar end */
+.docskin .pb-label{font-family:var(--font-mono);font-size:11px;font-weight:600;fill:var(--ink);}
+.docskin .pb-val{font-weight:600;}
+/* percentiles — the row label */
+.docskin .pc-label{font-family:var(--font-mono);font-size:11px;font-weight:600;fill:var(--ink);}
+/* threatmodel — trust boundaries restyle the shared group panel; the STRIDE table under the drawing */
+.docskin .tm-bounds rect{fill:var(--negative-tint);fill-opacity:1;stroke:var(--negative);stroke-dasharray:4 3;}
+.docskin .tm-bounds text{fill:var(--negative);}
+.docskin .tm-scroll{overflow-x:auto;margin-top:14px;}
+.docskin .tm-table{margin:0;font-size:12.5px;}
+.docskin .tm-table td{vertical-align:top;color:var(--ink);}
+.docskin .tm-id,.docskin .tm-target{font-family:var(--font-mono);font-size:11px;white-space:nowrap;}
+.docskin .tm-id{color:var(--muted);font-weight:600;}
+.docskin .tm-threat{font-weight:600;}
+.docskin .tm-mit{color:var(--muted);}
+.docskin .tm-none{color:var(--soft);}
+.docskin .tm-cat{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:3px;border:1px solid var(--ink);color:var(--ink);background:var(--paper);font-family:var(--font-mono);font-size:10.5px;font-weight:700;text-decoration:none;cursor:help;}
+.docskin .tm-st-open{color:var(--negative);border-color:var(--negative);}
+.docskin .tm-st-accepted{background:var(--paper-2);border-color:var(--paper-2);color:var(--muted);}
+/* ── code (refined) — accent bands for highlight, a counter gutter for lines, the cols / compare grid, wrap, captions ── */
+.docskin .cb>pre{padding:14px 0;}
+.docskin .cb .cl{display:block;padding:0 20px;}
+.docskin .cb .cl-hl{background:color-mix(in srgb,var(--accent) 16%,transparent);box-shadow:inset 2px 0 0 var(--accent);}
+.docskin .cb-lines>pre{counter-reset:line var(--code-start,0);}
+.docskin .cb-lines .cl{padding-left:calc(20px + var(--code-gutter,2ch) + 14px);text-indent:calc(-1 * (var(--code-gutter,2ch) + 14px));}
+.docskin .cb-lines .cl::before{counter-increment:line;content:counter(line);display:inline-block;width:var(--code-gutter,2ch);margin-right:14px;text-align:right;text-indent:0;color:var(--code-muted);opacity:.7;user-select:none;-webkit-user-select:none;}
+.docskin .cb-wrap>pre{white-space:pre-wrap;overflow-wrap:anywhere;}
+.docskin .code-grid{display:grid;grid-template-columns:repeat(var(--code-cols,1),minmax(0,1fr));gap:14px;margin:14px 0 18px;}
+.docskin .code-grid>.code-block{margin:0;display:flex;flex-direction:column;background:var(--code-bg);}
+.docskin .code-grid>.code-block>pre{flex:1 1 auto;}
+@media(max-width:720px){.docskin .code-grid{grid-template-columns:1fr;}}
+.docskin .code-eyebrow{font-size:8.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--code-muted);}
+.docskin .code-cap{font-size:12px;color:var(--muted);line-height:1.45;padding:8px 16px 9px;background:var(--paper);border-top:1px solid var(--rule-solid);}
+.docskin .code-cap-group{border:0;background:none;padding:0 2px;margin:-10px 0 18px;}`;

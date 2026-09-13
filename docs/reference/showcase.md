@@ -120,7 +120,7 @@ title: Engineering priorities
 levels:
   - { label: Vision, desc: Documentation as a navigable typed model }
   - { label: Strategy, desc: Files on disk are the source of truth }
-  - { label: This quarter, desc: "94 blocks, one look, agent skill" }
+  - { label: This quarter, desc: "107 blocks, one look, agent skill" }
   - { label: This week, desc: Phase 2 blocks shipped }
 ```
 
@@ -224,24 +224,24 @@ items:
 
 ```swimlane
 title: Cross-functional handoff
-lanes:
-  - { label: Customer }
-  - { label: Sales }
-  - { label: Engineering }
-  - { label: Ops }
+lanes: [Customer, Sales, Engineering, Ops]
+phases:
+  - { label: Intake, from: 1, to: 2 }
+  - { label: Build, from: 3, to: 4 }
+  - { label: Ship, from: 5 }
 steps:
-  - { id: req, col: 1, lane: 0, kind: start, label: Submit request }
-  - { id: triage, col: 2, lane: 1, kind: decision, label: Qualify? }
-  - { id: scope, col: 3, lane: 2, label: Scope work }
-  - { id: build, col: 4, lane: 2, label: Build }
-  - { id: deploy, col: 5, lane: 3, label: Deploy }
-  - { id: done, col: 6, lane: 0, kind: end, label: Receive }
+  - req: Submit request · Customer · start
+  - triage: Qualify? · Sales · decision
+  - scope: Scope work · Engineering
+  - build: Build · Engineering
+  - { id: deploy, lane: Ops, label: Deploy, note: blue/green, accent: true }
+  - done: Receive · Customer · end
 links:
-  - { from: req, to: triage }
-  - { from: triage, to: scope }
-  - { from: scope, to: build }
-  - { from: build, to: deploy }
-  - { from: deploy, to: done }
+  - req -> triage
+  - triage -> scope: approved
+  - scope -> build
+  - build -> deploy
+  - deploy --> done: notified
 ```
 
 ```gitgraph
@@ -1179,6 +1179,77 @@ items:
   - { label: Traffic cut over, value: 41, accent: teal }
 ```
 
+```chart
+title: Incident causes last quarter
+description: "A pie is the donut with the centre filled — use it when there is no total worth printing."
+kind: pie
+unit: "%"
+items:
+  - { label: Config change, value: 41 }
+  - { label: Deploy, value: 27 }
+  - { label: Capacity, value: 18, accent: teal }
+  - { label: Third party, value: 14 }
+```
+
+```chart
+title: Checkout latency distribution
+description: "Sampled requests, binned by the renderer (Sturges); the dashed rule is the mean."
+kind: histogram
+unit: ms
+values: [112, 118, 121, 124, 127, 129, 131, 133, 134, 136, 138, 139, 141, 142, 143, 145,
+  146, 148, 149, 151, 152, 154, 155, 157, 158, 160, 162, 164, 166, 168, 171, 174,
+  177, 181, 185, 189, 194, 199, 205, 212, 220, 231, 244, 258, 275, 296, 322, 358]
+```
+
+```chart
+title: Response time against the SLO
+description: "Where the p95 target sits on the fitted curve — the z-score under each marker says how far out it is."
+kind: bell
+unit: ms
+mean: 180
+sd: 35
+markers:
+  - { at: 250, label: SLO p95, accent: amber }
+  - { at: 120, label: Cache hit }
+```
+
+```chart
+title: Build time by pipeline
+description: "Five-number summaries over the last 200 runs; the accent box is the pipeline under repair."
+kind: boxplot
+unit: min
+boxes:
+  - { label: Web, min: 4.1, q1: 5.2, median: 5.9, q3: 6.8, max: 8.3, outliers: [11.4] }
+  - { label: API, min: 2.8, q1: 3.4, median: 3.9, q3: 4.6, max: 5.7 }
+  - { label: Mobile, min: 9.5, q1: 12.1, median: 14.2, q3: 16.8, max: 21, outliers: [26.5, 28.1], accent: amber }
+  - { label: Data, min: 6, q1: 7.7, median: 8.4, q3: 9.9, max: 12.2 }
+```
+
+```chart
+title: Support tickets by root cause
+description: "The accent bars are the vital few — fix those and 80% of the volume is gone."
+kind: pareto
+items:
+  - { label: Login, value: 142 }
+  - { label: Billing, value: 96 }
+  - { label: Export, value: 41 }
+  - { label: Search, value: 23 }
+  - { label: Mobile, value: 14 }
+  - { label: Other, value: 9 }
+```
+
+```chart
+title: Q3 engineering targets
+description: "Measure against target inside poor / ok / good ranges, one row per metric."
+kind: bullet
+unit: "%"
+bullets:
+  - { label: Uptime, value: 99.7, target: 99.9, ranges: [99, 99.5, 100] }
+  - { label: Test coverage, value: 72, target: 80, ranges: [50, 70, 100] }
+  - { label: Cache hit rate, value: 91, target: 85, ranges: [60, 80, 100] }
+  - { label: Error budget used, value: 64, target: 50, ranges: [50, 80, 100], accent: red }
+```
+
 ```sankey
 title: Where the cloud bill goes
 description: "Node height and ribbon thickness are the same scale — the widest ribbon is where the money actually goes."
@@ -1317,6 +1388,27 @@ code: |
    }
 ```
 
+## Before / after
+
+```code
+kind: compare
+lines: true
+caption: Backoff grows without bound on the left; the right caps it at 30 s.
+blocks:
+  - lang: TypeScript
+    highlight: "2"
+    code: |
+      function backoff(attempt: number): number {
+        return 100 * attempt ** 2;
+      }
+  - lang: TypeScript
+    highlight: "2"
+    code: |
+      function backoff(attempt: number): number {
+        return Math.min(30_000, 100 * attempt ** 2);
+      }
+```
+
 ## Runbook steps
 
 ```steps
@@ -1403,7 +1495,7 @@ title: Taking Avodado to the enterprise
 description: Where we stand before the enterprise push.
 strengths:
   - Docs-as-code fits existing review workflows
-  - 94 typed blocks cover most technical stories
+  - 107 typed blocks cover most technical stories
   - Renders to HTML, slides, and PDF from one file
 weaknesses:
   - No SSO / SCIM integration yet
@@ -1769,6 +1861,258 @@ items:
     detail: "+0.4pp against the pre-regression baseline."
   - text: The pattern generalises
     detail: Audit every synchronous third-party call on the hot path.
+```
+
+## Quality, UML, ML, and deck shapes
+
+Thirteen blocks added in the September coverage sweep. Each is the example `avo block <type>` prints.
+
+### Audit findings
+
+What a review found, worst first, with the evidence and the fix.
+
+```audit
+title: Security review — payments service
+scope: payments-api, payments-worker
+date: 2026-09-01
+auditor: AppSec
+findings:
+  - { id: F1, title: Refund endpoint has no rate limit, severity: high, area: API, evidence: "POST /refunds accepted 500 req/s in the load test", fix: Add the shared limiter at 20 req/min per key, owner: payments, status: fixing }
+  - { id: F2, title: Card BIN logged at INFO, severity: critical, area: Logging, evidence: "worker.log line 2231", fix: Mask to first 2 digits; add the log-scrub test, owner: payments, status: open }
+  - { id: F3, title: Dependency openssl 3.0.8 has a known CVE, severity: medium, area: Supply chain, fix: Bump to 3.0.14, owner: platform, status: fixed }
+  - { id: F4, title: Health endpoint leaks build SHA, severity: info, area: API, status: accepted }
+```
+
+### Readiness checklist
+
+A standard applied once: each item a verdict with its proof, the pass rate derived.
+
+```checklist
+title: Production readiness — search-indexer
+standard: PRR v4
+groups:
+  - label: Observability
+    items:
+      - "[pass] Dashboards for the four golden signals — grafana/search-indexer"
+      - "[pass] Alerts route to the on-call — pagerduty svc P4"
+      - "[partial] Traces sampled at 10% — target is 100% on errors"
+  - label: Resilience
+    items:
+      - "[fail] Load test at 2× peak — not run since the Kafka move"
+      - "[na] Multi-region failover — single-region service by design"
+```
+
+### Performance budget
+
+Measured against budget; over, near, and ok are derived, not typed.
+
+```perfbudget
+title: Product page — web vitals
+context: p75, mobile, 4G, 30-day field data
+metrics:
+  - { metric: LCP, budget: 2500, measured: 2140, unit: ms }
+  - { metric: INP, budget: 200, measured: 260, unit: ms }
+  - { metric: CLS, budget: 0.1, measured: 0.04 }
+  - { metric: JS transferred, budget: 300, measured: 285, unit: KB }
+  - { metric: Lighthouse perf, budget: 90, measured: 84, lowerIsBetter: false }
+```
+
+### Latency percentiles
+
+The tail per endpoint on one axis, with the SLO drawn.
+
+```percentiles
+title: Checkout API latency — last 7 days
+unit: ms
+slo: 300
+rows:
+  - { label: POST /checkout, p50: 120, p90: 210, p95: 260, p99: 420, max: 1900 }
+  - { label: GET /cart, p50: 18, p90: 35, p95: 48, p99: 90, max: 410 }
+  - { label: POST /payments, p50: 240, p90: 380, p95: 470, p99: 900, max: 3100, accent: red }
+```
+
+### Threat model
+
+STRIDE over a data flow with trust boundaries and the mitigations in a table.
+
+```threatmodel
+title: Login — STRIDE
+boundaries:
+  - { id: inet, col: 1, row: 1, cols: 1, rows: 1, label: Internet }
+  - { id: dmz, col: 2, row: 1, cols: 2, rows: 1, label: Trusted network }
+nodes:
+  - { id: browser, col: 1, row: 1, name: Browser, kind: external }
+  - { id: auth, col: 2, row: 1, name: Auth service }
+  - { id: users, col: 3, row: 1, name: Users DB, kind: store }
+edges:
+  - { from: browser, to: auth, label: "POST /login", channel: tls }
+  - { from: auth, to: users, label: SELECT by email, channel: internal }
+threats:
+  - { id: T1, target: browser, category: S, threat: Credential stuffing, mitigation: Rate limit + breached-password check, severity: high, status: mitigated }
+  - { id: T2, target: auth, category: I, threat: Verbose error reveals whether the email exists, mitigation: One generic message, severity: medium, status: open }
+  - { id: T3, target: users, category: T, threat: Password hash column altered by an admin, mitigation: Audit log + Argon2id, severity: high, status: accepted }
+```
+
+### Use cases
+
+Who uses the system for what, and which cases include or extend others.
+
+```usecase
+system: Ticketing
+actors:
+  - { id: cust, name: Customer }
+  - { id: agent, name: Support agent }
+  - { id: pay, name: Payment gateway, kind: system, side: right }
+cases:
+  - { id: buy, name: Buy ticket }
+  - { id: pay1, name: Pay by card }
+  - { id: refund, name: Request refund }
+  - { id: approve, name: Approve refund }
+links:
+  - cust -> buy
+  - cust -> refund
+  - agent -> approve
+  - pay -> pay1
+relations:
+  - { from: buy, to: pay1, kind: include }
+  - { from: refund, to: approve, kind: extend }
+```
+
+### Package diagram
+
+Which module may depend on which.
+
+```pkg
+title: Backend module layout
+packages:
+  - { id: api, col: 1, row: 1, name: api, contains: [routes, middleware] }
+  - { id: domain, col: 2, row: 1, name: domain, contains: [orders, payments, inventory] }
+  - { id: infra, col: 3, row: 1, name: infra, contains: [postgres, kafka, stripe] }
+  - { id: shared, col: 2, row: 2, name: shared, contains: [ids, money, clock] }
+deps:
+  - { from: api, to: domain, kind: use }
+  - { from: domain, to: infra, kind: import, label: ports only }
+  - { from: domain, to: shared }
+  - { from: infra, to: shared }
+```
+
+### Timing diagram
+
+Two lifelines stepping through states over the same sixty seconds.
+
+```timing
+title: Circuit breaker under a downstream outage
+unit: s
+lanes:
+  - label: Breaker
+    states:
+      - { state: closed, from: 0, to: 12 }
+      - { state: open, from: 12, to: 42, accent: red }
+      - { state: half-open, from: 42, to: 46, accent: amber }
+      - { state: closed, from: 46, to: 60 }
+  - label: Downstream
+    states:
+      - { state: healthy, from: 0, to: 10 }
+      - { state: down, from: 10, to: 44, accent: red }
+      - { state: healthy, from: 44, to: 60 }
+events:
+  - { at: 12, label: 5 failures in 10 s }
+  - { at: 46, label: probe ok }
+constraints:
+  - { from: 12, to: 42, label: open 30 s }
+```
+
+### Neural network
+
+The shape of a model, one column per layer.
+
+```neuralnet
+title: Digit classifier
+params: 1.2M
+layers:
+  - { label: Input, units: 784, kind: input, note: 28×28 pixels }
+  - { label: Conv 3×3, units: 32, kind: conv, activation: ReLU }
+  - { label: Max pool, units: 32, kind: pool }
+  - { label: Dense, units: 128, kind: dense, activation: ReLU }
+  - { label: Dropout 0.3, units: 128, kind: dropout }
+  - { label: Output, units: 10, kind: output, activation: softmax }
+```
+
+### Model card
+
+The handoff card for a deployed model.
+
+```modelcard
+name: support-intent-v3
+version: 3.2.0
+task: Text classification (support ticket intent)
+architecture: DistilBERT fine-tune, 6 layers
+params: 66M
+owner: ML platform
+license: Internal
+intendedUse:
+  - Route inbound tickets to one of 14 queues
+  - Suggest a queue to an agent; never auto-close
+outOfScope:
+  - Any language other than English and Spanish
+trainingData:
+  - 410k tickets, 2024-01 to 2025-06, PII scrubbed
+metrics:
+  - { name: Macro F1, value: 0.91, split: test }
+  - { name: Latency p95, value: 38 ms, split: prod, note: CPU, batch 1 }
+limitations:
+  - Confuses billing and refund intents on short tickets
+```
+
+### Mind map
+
+Unordered ideas around one centre.
+
+```mindmap
+center: Onboarding v2
+nodes:
+  - { id: acct, label: Account, accent: blue }
+  - { id: sso, parent: acct, label: SSO first }
+  - { id: invite, parent: acct, label: Team invites }
+  - { id: data, label: Data import, accent: teal }
+  - { id: csv, parent: data, label: CSV }
+  - { id: api, parent: data, label: API sync }
+  - { id: learn, label: Learning, accent: amber }
+  - { id: tour, parent: learn, label: Product tour }
+  - { id: tmpl, parent: learn, label: Templates }
+```
+
+### Process chevrons
+
+The phases of a process and where we are.
+
+```chevrons
+title: Incident lifecycle
+current: 3
+steps:
+  - { label: Detect, desc: alert fires }
+  - { label: Triage, desc: severity + owner }
+  - { label: Mitigate, desc: stop the bleeding }
+  - { label: Resolve, desc: root cause fixed }
+  - { label: Review, desc: postmortem in 5 days }
+```
+
+### Roadmap
+
+Themes by quarter with a now rule.
+
+```roadmap
+title: Platform roadmap 2026
+periods: [Q1, Q2, Q3, Q4]
+now: Q3
+themes: [Reliability, Developer experience, Cost]
+items:
+  - { label: Multi-region Postgres, theme: Reliability, from: Q1, to: Q2, status: done }
+  - { label: Chaos game days, theme: Reliability, from: Q3, status: current }
+  - { label: Preview envs per PR, theme: Developer experience, from: Q2, to: Q3, status: current }
+  - { label: Golden-path templates, theme: Developer experience, from: Q4, status: next }
+  - { label: Spot instances for batch, theme: Cost, from: Q2, status: done }
+  - { label: Egress cut 30%, theme: Cost, from: Q3, to: Q4, status: risk }
 ```
 
 ## Older spellings still work

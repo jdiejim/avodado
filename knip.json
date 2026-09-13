@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["evals/**/*.mjs"],
+      "ignoreDependencies": ["yaml"]
+    },
+    "packages/render": {
+      "entry": ["scripts/*.mjs"],
+      "ignoreDependencies": ["playwright"]
+    }
+  }
+}

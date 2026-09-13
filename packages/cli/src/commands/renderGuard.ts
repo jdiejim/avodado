@@ -17,7 +17,7 @@ import type { Diagnostic, Document, TypedSegment } from '@avodado/core';
 import { htmlRenderers } from '@avodado/render';
 
 /** The message of a thrown value, whatever it was. */
-export function errorMessage(err: unknown): string {
+function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
 }
@@ -85,7 +85,7 @@ export function renderFailure(
 }
 
 /** Result of {@link guardRender}: the value, or the diagnostic that replaced it. */
-export type GuardedRender<T> =
+type GuardedRender<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly diagnostic: Diagnostic };
 

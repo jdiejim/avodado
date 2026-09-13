@@ -15,13 +15,13 @@
 
 import type { Box } from './drag.js';
 
-export const MOVE_MS = 140;
-export const POP_MS = 140;
-export const FADE_MS = 120;
-export const EASE_OUT = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
+const MOVE_MS = 140;
+const POP_MS = 140;
+const FADE_MS = 120;
+const EASE_OUT = 'cubic-bezier(0.2, 0.7, 0.2, 1)';
 
 /** How each surviving/new/removed key animates. */
-export interface FlipPlan {
+interface FlipPlan {
   /** Survivors whose box changed: translate (+ scale on a size change). */
   readonly moves: ReadonlyArray<{ readonly key: string; readonly from: Box; readonly to: Box }>;
   /** New parts: scale .92 → 1 + opacity. */

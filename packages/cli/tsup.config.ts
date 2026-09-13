@@ -16,7 +16,6 @@ export default defineConfig({
     '@avodado/studio', // optional at runtime — `avo studio` imports it lazily
     'ink',
     'ink-select-input',
-    'ink-table',
     'react',
     'commander',
     'fast-glob',
@@ -24,7 +23,6 @@ export default defineConfig({
     'open',
     'picocolors',
     'yaml',
-    'zod',
     'playwright',
   ],
 });

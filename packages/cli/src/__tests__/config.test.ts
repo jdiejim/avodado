@@ -16,7 +16,7 @@ describe('loadConfig', () => {
     const { root, cleanup } = await tempDir();
     try {
       const cfg = await loadConfig(root);
-      expect(cfg).toEqual({ docsDir: 'docs', outDir: 'dist', richIndex: true });
+      expect(cfg).toEqual({ docsDir: 'docs', outDir: 'dist', richIndex: true, colorScheme: 'dark' });
     } finally {
       await cleanup();
     }
@@ -27,7 +27,7 @@ describe('loadConfig', () => {
     try {
       await writeFile(join(root, 'avodado.config.json'), JSON.stringify({ docsDir: 'pages' }));
       const cfg = await loadConfig(root);
-      expect(cfg).toEqual({ docsDir: 'pages', outDir: 'dist', richIndex: true });
+      expect(cfg).toEqual({ docsDir: 'pages', outDir: 'dist', richIndex: true, colorScheme: 'dark' });
     } finally {
       await cleanup();
     }
@@ -38,7 +38,7 @@ describe('loadConfig', () => {
     try {
       await writeFile(join(root, 'avodado.config.json'), JSON.stringify({ richIndex: false }));
       const cfg = await loadConfig(root);
-      expect(cfg).toEqual({ docsDir: 'docs', outDir: 'dist', richIndex: false });
+      expect(cfg).toEqual({ docsDir: 'docs', outDir: 'dist', richIndex: false, colorScheme: 'dark' });
     } finally {
       await cleanup();
     }
@@ -49,7 +49,7 @@ describe('loadConfig', () => {
     try {
       await writeFile(join(root, 'avodado.config.yml'), 'docsDir: site\noutDir: build\n');
       const cfg = await loadConfig(root);
-      expect(cfg).toEqual({ docsDir: 'site', outDir: 'build', richIndex: true });
+      expect(cfg).toEqual({ docsDir: 'site', outDir: 'build', richIndex: true, colorScheme: 'dark' });
     } finally {
       await cleanup();
     }

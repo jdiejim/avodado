@@ -14,7 +14,7 @@ import {
 import { renderDocumentSegments, type DocumentSegmentsResult } from '@avodado/render';
 
 /** Everything derivable from the current source. */
-export interface Derived {
+interface Derived {
   readonly doc: Document;
   readonly diagnostics: readonly Diagnostic[];
   /** `null` only if the renderer itself threw (a renderer bug, not user error). */

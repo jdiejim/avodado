@@ -20,7 +20,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 export const MANIFEST_FILE = '.avodado-build.json';
 
 /** On-disk shape. `files` are output-relative POSIX paths. */
-export interface BuildManifest {
+interface BuildManifest {
   readonly version: 1;
   /** CLI version that wrote it — informational. */
   readonly generator: string;

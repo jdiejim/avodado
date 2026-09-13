@@ -45,17 +45,32 @@ describe('renderDocument', () => {
     expect(root.querySelector('.diagram-tag-method.post')?.text).toBe('POST');
   });
 
-  it('renders the single editorial look with no data-theme stamp (the OS decides)', () => {
+  it('is dark by default: no stamp, the root carries the dark set, light is the explicit choice', () => {
     const doc = parseDocument(roadmap(), 'avodado-roadmap');
     const html = renderDocument(doc);
-    // The <html> tag carries no stamp — the reader's OS setting picks light or dark.
     expect(html).toContain('<html lang="en">\n');
     expect(html).not.toMatch(/<html[^>]*data-theme/);
-    // No override block: the editorial skin is the stylesheet's own :root.
+    // No override block: the skin is the stylesheet's own :root.
     expect(html).not.toContain('<style>:root{');
-    // The stylesheet still carries both dark paths — OS preference and a host stamp.
-    expect(html).toContain('@media (prefers-color-scheme: dark)');
-    expect(html).toContain(':root[data-theme="dark"]');
+    // The root resolves dark (the dark set is declared last in :root).
+    const root = html.slice(html.indexOf(':root{'), html.indexOf('color-scheme:dark;'));
+    expect(root.lastIndexOf('--paper:#15171d')).toBeGreaterThan(root.lastIndexOf('--paper:#f7f6f2'));
+    expect(html.indexOf('color-scheme:dark;')).toBeLessThan(html.indexOf(':root[data-theme="light"]'));
+    // Light stays reachable: the explicit stamp and print.
+    expect(html).toContain(':root[data-theme="light"]');
+    expect(html).toContain('@media print{');
+    // Nothing follows the OS unless asked.
+    expect(html).not.toContain('prefers-color-scheme');
+  });
+
+  it('colorScheme: light stamps the root; system adds the OS media rule', () => {
+    const doc = parseDocument(roadmap(), 'avodado-roadmap');
+    const light = renderDocument(doc, { colorScheme: 'light' });
+    expect(light).toContain('<html lang="en" data-theme="light">');
+    expect(light).not.toContain('prefers-color-scheme');
+    const system = renderDocument(doc, { colorScheme: 'system' });
+    expect(system).not.toMatch(/<html[^>]*data-theme/);
+    expect(system).toContain('@media (prefers-color-scheme: light){:root:not([data-theme="dark"])');
   });
 
   it('emits internal themeVars overrides as a :root style block', () => {

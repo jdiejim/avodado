@@ -11,46 +11,31 @@ import { render as inkRender } from 'ink';
 import { findConfig, loadConfig } from './io/config.js';
 import { cliVersion } from './io/version.js';
 import { runCheck } from './commands/check.js';
-import { parseExportSize, runSingle, type ExportSize, type SingleFormat } from './commands/single.js';
+import {
+  parseExportSize,
+  runSingle,
+  type ExportSize,
+  type SingleFormat,
+} from './commands/single.js';
 import { runDemo } from './commands/demo.js';
-import { runCompare } from './commands/compare.js';
-import {
-  runCatalog,
-  BLOCK_DESCRIPTIONS,
-  DEMO_FAMILIES,
-  familyBlocks,
-  isDemoFamily,
-  type DemoFamily,
-} from './commands/catalog.js';
 import { DemoApp, type DemoPick } from './commands/DemoApp.js';
-import { ExploreApp, EXPLORE_ENTRIES, type ExplorePick } from './commands/ExploreApp.js';
-import { TourApp, staticTour } from './commands/TourApp.js';
-import {
-  DESIGN_PATTERNS,
-  findPattern,
-  patternDoc,
-  runDesignGallery,
-  type DesignCategory,
-} from './commands/design.js';
 import { runBuild } from './commands/build.js';
 import { runServe } from './commands/serve.js';
 import { runStudio } from './commands/studio.js';
-import {
-  runInit,
-  installTool,
-  AI_TOOLS,
-  SKILL_SCOPES,
-  type InitResult,
-  type AiTool,
-  type SkillScope,
-} from './commands/init.js';
-import { InitApp } from './commands/InitApp.js';
+import { runInit, type InitResult } from './commands/init.js';
+import { blockIndex, blockReference, resolveBlockName } from './commands/block.js';
 import { copyToClipboard } from './io/clipboard.js';
 import { systemPrompt } from './commands/skill.js';
 import { mcpInstructions, runMcpStdio } from './commands/mcp.js';
 import { resolve as resolvePath } from 'node:path';
 import { writeFileSafe } from './io/write.js';
-import { runSyncCsv, runSyncOpenApi, runSyncSchema, type CsvBlockKind, type SchemaDialect } from './commands/sync.js';
+import {
+  runSyncCsv,
+  runSyncOpenApi,
+  runSyncSchema,
+  type CsvBlockKind,
+  type SchemaDialect,
+} from './commands/sync.js';
 import {
   templateFor,
   writeNewDoc,
@@ -62,7 +47,7 @@ import {
 import { projectStatus, formatStatus } from './commands/status.js';
 import { runAudit, formatAudit } from './commands/audit/run.js';
 import { DiagnosticsTable, formatDiagnosticsPlain } from './ui/DiagnosticsTable.js';
-import { banner, examples, commandExamples, wordmark, actionBanner, funLine } from './ui/banner.js';
+import { banner, examples, commandExamples, actionBanner, funLine } from './ui/banner.js';
 import { isInteractive } from './tty.js';
 
 /** Prints the cfonts action banner + a fun line for a command (interactive only). */
@@ -72,18 +57,32 @@ function flourish(word: string, lineKey: string = word): void {
   console.log(funLine(lineKey) + '\n');
 }
 import type { BlockType } from '@avodado/core';
-import { BLOCK_TYPES, BLOCK_ALIASES } from '@avodado/core';
+import {
+  BLOCK_TYPES,
+  BLOCK_ALIASES,
+  BLOCK_FAMILIES,
+  familyBlocks,
+  isBlockFamily,
+  type BlockFamily,
+} from '@avodado/core';
 
 /** Prints the created/skipped files and next-step hints after `avo init`. */
 function printInitSummary(result: InitResult): void {
   for (const f of result.created) console.log(pc.green('+ ') + f);
   for (const f of result.skipped) console.log(pc.dim('  skip ') + f + pc.dim(' (exists)'));
-  console.log(pc.bold(`\nCreated ${result.created.length} file(s), skipped ${result.skipped.length}.`));
   console.log(
-    pc.dim('Layout: docs/<area>/<doc>.md, kebab-case names · output goes to dist/ — do not commit it.'),
+    pc.bold(`\nCreated ${result.created.length} file(s), skipped ${result.skipped.length}.`),
   );
   console.log(
-    `Next: ${pc.cyan('avo check')} ${pc.dim('·')} ${pc.cyan('avo docs/getting-started.md')} ${pc.dim('(render + open)')} ${pc.dim('·')} ${pc.cyan('avo explore tour')} ${pc.dim('(guided walkthrough)')}`,
+    pc.dim(
+      'Layout: docs/<area>/<doc>.md, kebab-case names · output goes to dist/ — do not commit it.',
+    ),
+  );
+  console.log(
+    `Next: ${pc.cyan('avo check')} ${pc.dim('·')} ${pc.cyan('avo docs/getting-started.md')} ${pc.dim('(render + open)')}`,
+  );
+  console.log(
+    `AI:   ${pc.cyan('npx skills add jdiejim/avodado')} ${pc.dim('installs the authoring skill into Claude Code, Cursor, Codex, and 70+ agents')}`,
   );
 }
 
@@ -145,7 +144,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       if (findConfig(cwd) === undefined) {
         console.log(`  Not an Avodado project yet — run ${pc.cyan('avo init')} to scaffold one.`);
         console.log(
-          `  ${pc.dim('Curious first?')} ${pc.cyan('avo explore')} ${pc.dim('— demos, the block catalog, a guided tour.')}`,
+          `  ${pc.dim('Curious first?')} ${pc.cyan('avo demo')} ${pc.dim('renders every block · ')}${pc.cyan('avo block')} ${pc.dim('lists them.')}`,
         );
         console.log('');
         return;
@@ -158,54 +157,14 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('init')
     .description('Scaffold a new Avodado project in the current directory')
     .option('--force', 'overwrite existing files')
-    .option('-y, --yes', 'skip the wizard — scaffold with defaults (all tools, full suite)')
-    .option(
-      '--scope <type>',
-      `tailor the installed skill to a project type (${SKILL_SCOPES.join(' | ')})`,
-    )
-    .action(async (opts: { force?: boolean; yes?: boolean; scope?: string }) => {
-      const cwd = process.cwd();
-      const force = opts.force === true;
-
-      let scope: SkillScope | undefined;
-      if (opts.scope !== undefined) {
-        if (!(SKILL_SCOPES as readonly string[]).includes(opts.scope)) {
-          console.error(pc.red(`Unknown scope: ${opts.scope}. Try one of: ${SKILL_SCOPES.join(' | ')}`));
-          exitCode = 2;
-          return;
-        }
-        scope = opts.scope as SkillScope;
-      }
-
-      // Interactive wizard: pick AI-tool adapters + a project type.
-      if (isInteractive && opts.yes !== true) {
-        console.log(wordmark(version));
-        let captured: InitResult | undefined;
-        const { waitUntilExit } = inkRender(
-          <InitApp
-            cwd={cwd}
-            {...(force ? { force: true } : {})}
-            {...(scope !== undefined ? { scope } : {})}
-            onComplete={(result) => {
-              captured = result;
-            }}
-          />,
-        );
-        await waitUntilExit();
-        if (captured !== undefined) printInitSummary(captured);
-        return;
-      }
-
-      // Non-interactive (CI) or --yes: scaffold with defaults (full suite
-      // unless --scope says otherwise).
+    .option('-y, --yes', 'accepted for compatibility (init has no prompts)', undefined)
+    .action(async (opts: { force?: boolean }) => {
       const result = await runInit({
-        cwd,
-        ...(force ? { force: true } : {}),
-        ...(scope !== undefined ? { scope } : {}),
+        cwd: process.cwd(),
+        ...(opts.force === true ? { force: true } : {}),
       });
       printInitSummary(result);
     });
-
 
   program
     .command('check [globs...]')
@@ -295,7 +254,9 @@ export async function main(argv: readonly string[]): Promise<number> {
   // Bare + TTY → two-section Ink picker; bare + non-TTY → list the names.
   program
     .command('new [name]')
-    .description('Create from a template — a full doc (adr, runbook, …) or a single block (sequence, erd, …)')
+    .description(
+      'Create from a template — a full doc (adr, runbook, …) or a single block (sequence, erd, …)',
+    )
     .option('-o, --output <path>', 'write to a file instead of printing to stdout')
     .option('--force', 'with -o, replace the file if it already exists')
     .action(async (nameArg: string | undefined, opts: { output?: string; force?: boolean }) => {
@@ -328,16 +289,22 @@ export async function main(argv: readonly string[]): Promise<number> {
           console.log(`${pc.green('✓')} Wrote ${p}`);
           return;
         }
-        const content = isDocTemplate(type) ? (DOC_TEMPLATES[type] as string) : templateFor(type as BlockType);
-        if (isInteractive) console.log(pc.dim(`# ${type} — paste into a docs/*.md (or re-run with -o <path>)\n`));
+        const content = isDocTemplate(type)
+          ? (DOC_TEMPLATES[type] as string)
+          : templateFor(type as BlockType);
+        if (isInteractive)
+          console.log(pc.dim(`# ${type} — paste into a docs/*.md (or re-run with -o <path>)\n`));
         process.stdout.write(content);
-        if (isInteractive && copyToClipboard(content)) console.log(pc.green('\n✓ copied to clipboard'));
+        if (isInteractive && copyToClipboard(content))
+          console.log(pc.green('\n✓ copied to clipboard'));
       };
 
       if (nameArg !== undefined) {
         const hit = resolveName(nameArg);
         if (hit === undefined) {
-          console.error(pc.red(`Unknown template or block: ${nameArg}. Run \`avo new\` to list them.`));
+          console.error(
+            pc.red(`Unknown template or block: ${nameArg}. Run \`avo new\` to list them.`),
+          );
           exitCode = 2;
           return;
         }
@@ -354,7 +321,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           console.log(`  ${name.padEnd(14)}${info.description}`);
         }
         console.log('\nBlocks:');
-        for (const fam of DEMO_FAMILIES) {
+        for (const fam of BLOCK_FAMILIES) {
           console.log(`  ${fam.label}: ${familyBlocks(fam.id).join('  ')}`);
         }
         console.log('\nUsage: avo new <name> [-o <path>]');
@@ -364,7 +331,13 @@ export async function main(argv: readonly string[]): Promise<number> {
       // Bare `avo new`, TTY: two-section picker (Doc templates | Blocks by family).
       flourish('new');
       let picked: string | undefined;
-      const { waitUntilExit } = inkRender(<NewPickerApp onPick={(n) => { picked = n; }} />);
+      const { waitUntilExit } = inkRender(
+        <NewPickerApp
+          onPick={(n) => {
+            picked = n;
+          }}
+        />,
+      );
       await waitUntilExit();
       if (picked === undefined) return; // cancelled with q / escape
       await emit(picked);
@@ -375,7 +348,10 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command('build')
     .description('Build a static HTML site from all docs — index, sidebar nav, cross-doc links')
     .option('--out <dir>', 'output directory (default: config outDir, "dist")')
-    .option('--rich-index', 'build the rich index page — project TLDR, doc map by tag, cross-reference graph (default)')
+    .option(
+      '--rich-index',
+      'build the rich index page — project TLDR, doc map by tag, cross-reference graph (default)',
+    )
     .option('--no-rich-index', 'build the plain card-grid index instead')
     .action(async (opts: { out?: string; richIndex?: boolean }) => {
       flourish('build');
@@ -402,9 +378,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         if (errors > 0) parts.push(`${errors} error(s)`);
         if (warnings > 0) parts.push(`${warnings} warning(s)`);
         console.error(
-          (errors > 0 ? pc.red : pc.yellow)(
-            `${parts.join(', ')} — run \`avo check\` for details`,
-          ),
+          (errors > 0 ? pc.red : pc.yellow)(`${parts.join(', ')} — run \`avo check\` for details`),
         );
       }
       const bytes = result.pages.reduce((sum, p) => sum + p.bytes, 0);
@@ -436,10 +410,15 @@ export async function main(argv: readonly string[]): Promise<number> {
   // the one local surface — it mounts the same live-reloading site at /site/.
   program
     .command('serve', { hidden: true })
-    .description('Serve the docs site locally with live reload (compat — `avo studio` includes this as Site mode)')
+    .description(
+      'Serve the docs site locally with live reload (compat — `avo studio` includes this as Site mode)',
+    )
     .option('--port <n>', 'port to listen on (0 = pick a free port)', '4173')
     .option('--no-open', "don't open the browser")
-    .option('--rich-index', 'serve the rich index page — project TLDR, doc map by tag, cross-reference graph (default)')
+    .option(
+      '--rich-index',
+      'serve the rich index page — project TLDR, doc map by tag, cross-reference graph (default)',
+    )
     .option('--no-rich-index', 'serve the plain card-grid index instead')
     .action(async (opts: { port: string; open: boolean; richIndex?: boolean }) => {
       flourish('serve');
@@ -456,7 +435,9 @@ export async function main(argv: readonly string[]): Promise<number> {
   // (files stay canonical) with Edit | Site | Present modes in one server.
   program
     .command('studio')
-    .description('open the local studio — a Home page of your docs, edit in place, present as slides; the built site is one click away; files stay the source of truth')
+    .description(
+      'open the local studio — a Home page of your docs, edit in place, present as slides; the built site is one click away; files stay the source of truth',
+    )
     .option('--port <n>', 'port to listen on (0 = pick a free port)', '4174')
     .option('--no-open', "don't open the browser")
     .action(async (opts: { port: string; open: boolean }) => {
@@ -469,7 +450,11 @@ export async function main(argv: readonly string[]): Promise<number> {
       });
     });
 
-  const syncCmd = program.command('sync').description('Generate Avodado docs from external sources (OpenAPI, CSV, SQL / DBML / Prisma schemas)');
+  const syncCmd = program
+    .command('sync')
+    .description(
+      'Generate Avodado docs from external sources (OpenAPI, CSV, SQL / DBML / Prisma schemas)',
+    );
   syncCmd
     .command('openapi <spec>')
     .description('Generate (or drift-check) a doc from an OpenAPI 3.x spec')
@@ -573,45 +558,50 @@ export async function main(argv: readonly string[]): Promise<number> {
       .option('--title <title>', 'doc title with --out (default: prettified file name)')
       .option('--id <id>', 'block id (default: the file stem as a slug)')
       .option('--force', 'with --out, replace the file if it already exists')
-      .action(async (file: string, opts: { out?: string; title?: string; id?: string; force?: boolean }) => {
-        const result = await runSyncSchema({
-          cwd: process.cwd(),
-          file,
-          dialect,
-          ...(opts.out !== undefined ? { out: opts.out } : {}),
-          ...(opts.title !== undefined ? { title: opts.title } : {}),
-          ...(opts.id !== undefined ? { id: opts.id } : {}),
-          ...(opts.force === true ? { force: true } : {}),
-        });
-        if (result.message !== undefined) {
-          console.error(pc.red(result.message));
-          exitCode = result.exitCode;
-          return;
-        }
-        if (result.fence !== undefined) {
-          process.stdout.write(result.fence);
-          if (isInteractive && copyToClipboard(result.fence)) {
-            console.log(pc.green('\n✓ copied to clipboard'));
+      .action(
+        async (
+          file: string,
+          opts: { out?: string; title?: string; id?: string; force?: boolean },
+        ) => {
+          const result = await runSyncSchema({
+            cwd: process.cwd(),
+            file,
+            dialect,
+            ...(opts.out !== undefined ? { out: opts.out } : {}),
+            ...(opts.title !== undefined ? { title: opts.title } : {}),
+            ...(opts.id !== undefined ? { id: opts.id } : {}),
+            ...(opts.force === true ? { force: true } : {}),
+          });
+          if (result.message !== undefined) {
+            console.error(pc.red(result.message));
+            exitCode = result.exitCode;
+            return;
           }
-        }
-        if (result.outPath !== undefined) {
-          console.log(
-            `${pc.green('✓')} Wrote ${result.outPath} ${pc.dim(`(erd · ${result.entities} entities · ${result.relations} relations)`)}`,
-          );
-          const diags = result.check?.diagnostics ?? [];
-          if (diags.length === 0) {
-            console.log(`${pc.green('✓')} avo check: clean`);
-          } else {
-            for (const d of diags) {
-              const loc = d.line !== undefined ? `${d.file}:${d.line}` : d.file;
-              const paint = d.level === 'error' ? pc.red : pc.yellow;
-              console.error(paint(`${d.level}  ${loc}  ${d.code}  ${d.message}`));
+          if (result.fence !== undefined) {
+            process.stdout.write(result.fence);
+            if (isInteractive && copyToClipboard(result.fence)) {
+              console.log(pc.green('\n✓ copied to clipboard'));
             }
-            console.error(pc.dim(`avo check: ${diags.length} diagnostic(s)`));
           }
-        }
-        exitCode = result.exitCode;
-      });
+          if (result.outPath !== undefined) {
+            console.log(
+              `${pc.green('✓')} Wrote ${result.outPath} ${pc.dim(`(erd · ${result.entities} entities · ${result.relations} relations)`)}`,
+            );
+            const diags = result.check?.diagnostics ?? [];
+            if (diags.length === 0) {
+              console.log(`${pc.green('✓')} avo check: clean`);
+            } else {
+              for (const d of diags) {
+                const loc = d.line !== undefined ? `${d.file}:${d.line}` : d.file;
+                const paint = d.level === 'error' ? pc.red : pc.yellow;
+                console.error(paint(`${d.level}  ${loc}  ${d.code}  ${d.message}`));
+              }
+              console.error(pc.dim(`avo check: ${diags.length} diagnostic(s)`));
+            }
+          }
+          exitCode = result.exitCode;
+        },
+      );
   };
   schemaSync('sql', 'SQL DDL (CREATE TABLE …)');
   schemaSync('dbml', 'a DBML schema');
@@ -624,13 +614,10 @@ export async function main(argv: readonly string[]): Promise<number> {
       .description(desc)
       .option('-o, --output <path>', 'output file path')
       .option('-p, --preview', 'render to a temp file and open it in the browser')
-      .option('--force', `with -o, replace a file that is not already a .${name === 'slides' ? 'html' : name} file`);
-    if (name === 'pptx') {
-      cmd.option(
-        '-e, --editable',
-        'native PowerPoint text/tables/charts (editable); diagrams stay images',
+      .option(
+        '--force',
+        `with -o, replace a file that is not already a .${name === 'slides' ? 'html' : name} file`,
       );
-    }
     if (name === 'html' || name === 'pdf') {
       cmd.option(
         '--size <preset>',
@@ -643,7 +630,6 @@ export async function main(argv: readonly string[]): Promise<number> {
         opts: {
           output?: string;
           preview?: boolean;
-          editable?: boolean;
           size?: string;
           force?: boolean;
         },
@@ -668,316 +654,100 @@ export async function main(argv: readonly string[]): Promise<number> {
           format: name,
           ...(opts.output !== undefined ? { output: opts.output } : {}),
           ...(opts.preview === true ? { preview: true } : {}),
-          ...(opts.editable === true ? { editable: true } : {}),
           ...(size !== undefined ? { size } : {}),
           ...(opts.force === true ? { force: true } : {}),
         });
         const verb = result.opened ? 'Opened' : 'Wrote';
         console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
-      });
+      },
+    );
   };
   single('html', 'Render one document to a standalone HTML file');
   single('slides', 'Render one document to a self-contained slide deck');
   single('pdf', 'Render one document to a PDF (needs Chromium once)');
-  single('pptx', 'Render one document to a PowerPoint deck (needs Chromium once)');
 
-  // ——— Discover: demo · catalog · design · tour ———————————————————————————
-  // One action per discovery flow, registered twice: as a visible subcommand
-  // of `avo explore` and as a hidden-but-working top-level compat command.
-
-  // `demo [family] [-s]` — render the bundled showcase doc (all blocks, or
+  // `avo demo [family] [-s]` — render the bundled showcase doc (all blocks, or
   // one family) and open it (-s = slides). Bare TTY invocation shows a picker.
-  const demoAction = async (familyArg: string | undefined, opts: { slides?: boolean; open?: boolean; output?: string; force?: boolean }): Promise<void> => {
-      let family: DemoFamily | undefined;
-      if (familyArg !== undefined) {
-        if (!isDemoFamily(familyArg)) {
-          const choices = DEMO_FAMILIES.map((f) => f.id).join(' | ');
-          console.error(pc.red(`Unknown family: ${familyArg}. Try one of: ${choices}`));
-          exitCode = 2;
-          return;
-        }
-        family = familyArg;
-      } else if (isInteractive) {
-        // Bare `avo demo` in a TTY: pick a family (or everything) interactively.
-        let picked: DemoPick | undefined;
-        const { waitUntilExit } = inkRender(<DemoApp onPick={(p) => { picked = p; }} />);
-        await waitUntilExit();
-        if (picked === undefined) return; // cancelled with q / escape
-        family = picked.family;
-      }
-      flourish('demo');
-      const result = await runDemo({
-        format: opts.slides === true ? 'slides' : 'html',
-        ...(family !== undefined ? { family } : {}),
-        ...(opts.output !== undefined
-          ? { output: resolvePath(process.cwd(), opts.output) }
-          : { preview: opts.open !== false }),
-        ...(opts.force === true ? { force: true } : {}),
-      });
-      const verb = result.opened ? 'Opened' : 'Wrote';
-      console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
-    };
-  const registerDemo = (parent: Command, hidden: boolean): void => {
-    parent
-      .command('demo [family]', hidden ? { hidden: true } : {})
-      .description(
-        `Render the built-in showcase and open it — all blocks or one family (${DEMO_FAMILIES.map((f) => f.id).join(' | ')}); -s for a slide deck`,
-      )
-      .option('-s, --slides', 'render as a slide deck')
-      .option('-o, --output <path>', 'write the rendered file to a path (implies --no-open)')
-      .option('--no-open', "write the file but don't open it")
-      .option('--force', 'with -o, replace a file that is not already an .html file')
-      .action(demoAction);
-  };
-
-  // `catalog` — print the block catalog in the terminal; `-p` opens an HTML
-  // gallery of live samples, `-s` a slide deck.
-  const catalogAction = async (opts: { preview?: boolean; slides?: boolean; output?: string; force?: boolean }): Promise<void> => {
-      const wantRender = opts.preview === true || opts.slides === true || opts.output !== undefined;
-      if (!wantRender) {
-        console.log(pc.bold(`${BLOCK_TYPES.length} block types in ${DEMO_FAMILIES.length} families:`));
-        for (const fam of DEMO_FAMILIES) {
-          const types = familyBlocks(fam.id);
-          console.log('\n' + pc.bold(`${fam.label} (${types.length})`) + pc.dim(` · avo demo ${fam.id}`));
-          for (const t of types) {
-            console.log(`  ${pc.cyan(t.padEnd(13))}${pc.dim(BLOCK_DESCRIPTIONS[t])}`);
-          }
-        }
-        console.log(pc.dim('\n-p opens an HTML gallery of live samples · -s a slide deck'));
-        return;
-      }
-      flourish('catalog', 'demo');
-      const result = await runCatalog({
-        format: opts.slides === true ? 'slides' : 'html',
-        ...(opts.output !== undefined ? { output: opts.output } : {}),
-        ...(opts.force === true ? { force: true } : {}),
-      });
-      const verb = result.opened ? 'Opened' : 'Wrote';
-      console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
-    };
-  const registerCatalog = (parent: Command, hidden: boolean): void => {
-    parent
-      .command('catalog', hidden ? { hidden: true } : {})
-      .description('List every block + description in the terminal (-p opens an HTML gallery, -s a slide deck)')
-      .option('-p, --preview', 'render an HTML gallery of every block and open it')
-      .option('-s, --slides', 'render the gallery as a slide deck (implies -p)')
-      .option('-o, --output <path>', 'write the rendered gallery to a file')
-      .option('--force', 'with -o, replace a file that is not already an .html file')
-      .action(catalogAction);
-  };
-
-  // `compare [family]` — every block rendered doc-mode AND slide-mode side by
-  // side (with a Doc / Slide / Both toggle), from the showcase examples.
-  const compareAction = async (
-    familyArg: string | undefined,
-    opts: { output?: string; open?: boolean; force?: boolean },
-  ): Promise<void> => {
-    let family: DemoFamily | undefined;
-    if (familyArg !== undefined) {
-      if (!isDemoFamily(familyArg)) {
-        const choices = DEMO_FAMILIES.map((f) => f.id).join(' | ');
-        console.error(pc.red(`Unknown family: ${familyArg}. Try one of: ${choices}`));
-        exitCode = 2;
-        return;
-      }
-      family = familyArg;
-    }
-    flourish('compare', 'demo');
-    const result = await runCompare({
-      ...(family !== undefined ? { family } : {}),
-      ...(opts.output !== undefined
-        ? { output: resolvePath(process.cwd(), opts.output) }
-        : { preview: opts.open !== false }),
-      ...(opts.force === true ? { force: true } : {}),
-    });
-    const verb = result.opened ? 'Opened' : 'Wrote';
-    console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
-  };
-  const registerCompare = (parent: Command, hidden: boolean): void => {
-    parent
-      .command('compare [family]', hidden ? { hidden: true } : {})
-      .description('See every block in DOC and SLIDE mode side by side (all blocks or one family)')
-      .option('-o, --output <path>', "write the page to a path (implies --no-open)")
-      .option('--no-open', "write the file but don't open it")
-      .option('--force', 'with -o, replace a file that is not already an .html file')
-      .action(compareAction);
-  };
-
-  // `design [name]` — list patterns in the terminal, print a template
-  // (<slug>), or render a gallery (`-p` HTML, `-s` slides).
-  const designAction = async (
-    name: string | undefined,
-    opts: {
-      output?: string;
-      preview?: boolean;
-      slides?: boolean;
-      system?: boolean;
-      ai?: boolean;
-      code?: boolean;
-      force?: boolean;
-    },
-  ): Promise<void> => {
-        const filter =
-          opts.system === true ? 'system' : opts.ai === true ? 'ai' : opts.code === true ? 'code' : undefined;
-
-        // No slug + a render flag → render the gallery (optionally filtered).
-        if (name === undefined && (opts.preview === true || opts.slides === true || opts.output !== undefined)) {
-          flourish('design', 'demo');
-          const result = await runDesignGallery({
-            ...(filter !== undefined ? { filter } : {}),
-            format: opts.slides === true ? 'slides' : 'html',
-            ...(opts.output !== undefined ? { output: opts.output } : {}),
-            ...(opts.force === true ? { force: true } : {}),
-          });
-          const verb = result.opened ? 'Opened' : 'Wrote';
-          console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
-          return;
-        }
-
-        // `avo design <slug>` — print the ready template (or write it with -o).
-        if (name !== undefined) {
-          const hit = findPattern(name);
-          if (hit === undefined) {
-            const choices = DESIGN_PATTERNS.map((p) => p.slug).join(', ');
-            console.error(pc.red(`Unknown pattern: ${name}. Try one of: ${choices}`));
+  program
+    .command('demo [family]')
+    .description(
+      `Render the built-in showcase and open it — all blocks or one family (${BLOCK_FAMILIES.map((f) => f.id).join(' | ')}); -s for a slide deck`,
+    )
+    .option('-s, --slides', 'render as a slide deck')
+    .option('-o, --output <path>', 'write the rendered file to a path (implies --no-open)')
+    .option('--no-open', "write the file but don't open it")
+    .option('--force', 'with -o, replace a file that is not already an .html file')
+    .action(
+      async (
+        familyArg: string | undefined,
+        opts: { slides?: boolean; open?: boolean; output?: string; force?: boolean },
+      ) => {
+        let family: BlockFamily | undefined;
+        if (familyArg !== undefined) {
+          if (!isBlockFamily(familyArg)) {
+            const choices = BLOCK_FAMILIES.map((f) => f.id).join(' | ');
+            console.error(pc.red(`Unknown family: ${familyArg}. Try one of: ${choices}`));
             exitCode = 2;
             return;
           }
-          const doc = patternDoc(hit);
-          if (opts.output !== undefined) {
-            // A pattern template is a document — never write it over one.
-            await writeFileSafe(
-              resolvePath(process.cwd(), opts.output),
-              doc,
-              opts.force === true ? { force: true } : {},
-            );
-            console.log(`${pc.green('✓')} Wrote ${opts.output} ${pc.dim(`(${hit.name})`)}`);
-            return;
-          }
-          if (isInteractive) console.log(pc.dim(`# ${hit.name} — ${hit.category} · paste into a docs/*.md\n`));
-          console.log(doc);
-          if (isInteractive && copyToClipboard(doc)) console.log(pc.green('\n✓ copied to clipboard'));
-          return;
+          family = familyArg;
+        } else if (isInteractive) {
+          // Bare `avo demo` in a TTY: pick a family (or everything) interactively.
+          let picked: DemoPick | undefined;
+          const { waitUntilExit } = inkRender(
+            <DemoApp
+              onPick={(p) => {
+                picked = p;
+              }}
+            />,
+          );
+          await waitUntilExit();
+          if (picked === undefined) return; // cancelled with q / escape
+          family = picked.family;
         }
+        flourish('demo');
+        const result = await runDemo({
+          format: opts.slides === true ? 'slides' : 'html',
+          ...(family !== undefined ? { family } : {}),
+          ...(opts.output !== undefined
+            ? { output: resolvePath(process.cwd(), opts.output) }
+            : { preview: opts.open !== false }),
+          ...(opts.force === true ? { force: true } : {}),
+        });
+        const verb = result.opened ? 'Opened' : 'Wrote';
+        console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
+      },
+    );
 
-        // `avo design` (optionally --system/--ai/--code) — list patterns by category.
-        const cats: DesignCategory[] = ['System design', 'AI / agents', 'Creational', 'Structural', 'Behavioral', 'Architecture'];
-        const code = (c: DesignCategory): boolean =>
-          c === 'Creational' || c === 'Structural' || c === 'Behavioral' || c === 'Architecture';
-        const show = (c: DesignCategory): boolean =>
-          filter === undefined
-            ? true
-            : filter === 'system'
-              ? c === 'System design'
-              : filter === 'ai'
-                ? c === 'AI / agents'
-                : code(c);
-        console.log(
-          pc.bold('Design patterns') + pc.dim(' — avo design <slug> to grab a template, -p for the gallery'),
-        );
-        for (const c of cats) {
-          if (!show(c)) continue;
-          const items = DESIGN_PATTERNS.filter((p) => p.category === c);
-          if (items.length === 0) continue;
-          console.log(pc.bold(`\n${c}:`));
-          for (const p of items) console.log(`  ${pc.cyan(p.slug.padEnd(24))}${pc.dim(p.summary)}`);
-        }
-      };
-  const registerDesign = (parent: Command, hidden: boolean): void => {
-    parent
-      .command('design [name]', hidden ? { hidden: true } : {})
-      .description('Design patterns — list (default), print a template (<slug>), or render a gallery (-p / -s)')
-      .option('-o, --output <path>', 'write the template (with <slug>) or the gallery to a file')
-      .option('-p, --preview', 'render an HTML gallery of the patterns and open it')
-      .option('-s, --slides', 'render the gallery as a slide deck (implies -p)')
-      .option('--system', 'only system-design patterns')
-      .option('--ai', 'only AI / agent patterns')
-      .option('--code', 'only code (GoF + architecture) design patterns')
-      .option('--force', 'with -o, replace the file if it already exists')
-      .action(designAction);
-  };
-
-  // `tour` — a chaptered, hands-on onboarding walkthrough (Ink) in a scratch
-  // playground. Non-TTY / AVO_PLAIN prints a static text version (script-safe).
-  const tourAction = async (opts: { open: boolean }): Promise<void> => {
-    if (!isInteractive) {
-      process.stdout.write(staticTour());
-      return;
-    }
-    console.log(wordmark(version));
-    const { waitUntilExit } = inkRender(<TourApp open={opts.open} />);
-    await waitUntilExit();
-  };
-  const registerTour = (parent: Command, hidden: boolean): void => {
-    parent
-      .command('tour', hidden ? { hidden: true } : {})
-      .description('Take a guided, hands-on tour — blocks, validation, previews, decks (7 short chapters)')
-      .option('--no-open', "don't open the browser during the tour")
-      .action(tourAction);
-  };
-
-  // `avo explore [demo|catalog|design|tour]` — the one visible discovery
-  // command. Subcommands forward to the flows above (flags preserved); bare
-  // TTY invocation shows a picker, bare non-TTY prints the static list.
-  const exploreCmd = program
-    .command('explore')
-    .description('Discover Avodado — the demo showcase, block catalog, design patterns, and guided tour');
-  registerDemo(exploreCmd, false);
-  registerCatalog(exploreCmd, false);
-  registerCompare(exploreCmd, false);
-  registerDesign(exploreCmd, false);
-  registerTour(exploreCmd, false);
-  exploreCmd.action(async () => {
-    if (!isInteractive) {
-      console.log('Explore Avodado — avo explore <what>:');
-      for (const e of EXPLORE_ENTRIES) console.log(`  ${e.id.padEnd(9)}${e.blurb}`);
-      return;
-    }
-    let picked: ExplorePick | undefined;
-    const { waitUntilExit } = inkRender(<ExploreApp onPick={(p) => { picked = p; }} />);
-    await waitUntilExit();
-    if (picked === undefined) return; // cancelled with q / escape
-    if (picked === 'demo') await demoAction(undefined, {});
-    else if (picked === 'catalog') await catalogAction({});
-    else if (picked === 'compare') await compareAction(undefined, { open: true });
-    else if (picked === 'design') await designAction(undefined, {});
-    else await tourAction({ open: true });
-  });
-
-  // Hidden-but-working top-level compat spellings (pre-`explore` era).
-  registerDemo(program, true);
-  registerCatalog(program, true);
-  registerCompare(program, true);
-  registerDesign(program, true);
-  registerTour(program, true);
-
-  // `avo install <tool>` — install/update the skill + one AI-tool adapter.
-  const labelOf = (t: AiTool): string => AI_TOOLS.find((x) => x.id === t)?.label ?? t;
-  const runInstall = async (tool: AiTool, full?: boolean): Promise<void> => {
-    flourish('install');
-    const result = await installTool({
-      cwd: process.cwd(),
-      tool,
-      ...(full === true ? { full: true } : {}),
-    });
-    for (const f of result.created) console.log(pc.green('+ ') + f);
-    console.log(pc.bold(`\n${labelOf(tool)}: skill + adapter installed/updated.`));
-  };
+  // `avo block [type]` — the reference an agent reads: every block on one
+  // line (no argument), or one block's fields, terse forms, and a validating
+  // example, all derived from the schema. `--json` for the structured form.
   program
-    .command('install <tool>')
-    .description('Install/update the Avodado skill + an AI-tool adapter (claude | cursor | copilot | windsurf)')
-    .option('--full', 'install every block-family reference and clear a recorded project scope')
-    .action(async (toolArg: string, opts: { full?: boolean }) => {
-      // `github` kept as a back-compat spelling for the Copilot adapter.
-      const normalized = toolArg === 'github' ? 'copilot' : toolArg;
-      const hit = AI_TOOLS.find((t) => t.id === normalized);
+    .command('block [type]')
+    .description(
+      "Block reference — every type on one line, or one type's fields, enums, terse forms, and example",
+    )
+    .option('--json', 'emit the contract as JSON')
+    .action((typeArg: string | undefined, opts: { json?: boolean }) => {
+      if (typeArg === undefined) {
+        process.stdout.write(blockIndex());
+        return;
+      }
+      const hit = resolveBlockName(typeArg);
       if (hit === undefined) {
-        const choices = AI_TOOLS.map((t) => t.id).join(' | ');
-        console.error(pc.red(`Unknown tool: ${toolArg}. Try one of: ${choices}`));
+        console.error(pc.red(`Unknown block: ${typeArg}. Run \`avo block\` to list them.`));
         exitCode = 2;
         return;
       }
-      await runInstall(hit.id, opts.full);
+      // The alias note rides stderr so piped stdout stays the clean contract.
+      if (hit.alias !== undefined) {
+        console.error(
+          pc.yellow(
+            `\`${hit.alias}\` is an old spelling of \`${hit.type}\` — both work; showing \`${hit.type}\`.`,
+          ),
+        );
+      }
+      process.stdout.write(blockReference(hit.type, opts.json === true));
     });
 
   // `avo skill` — emit the authoring grammar as a copy-paste system prompt for
@@ -986,9 +756,14 @@ export async function main(argv: readonly string[]): Promise<number> {
   // a terminal, or writes to a file with -o.
   program
     .command('skill', { hidden: true })
-    .description('Print the Avodado authoring grammar as a copy-paste system prompt (for Copilot / custom GPTs / any AI)')
+    .description(
+      'Print the Avodado authoring grammar as a copy-paste system prompt (for Copilot / custom GPTs / any AI)',
+    )
     .option('-o, --output <path>', 'write the system prompt to a file instead of printing it')
-    .option('--raw', 'emit the raw skill file verbatim (with frontmatter) instead of the wrapped prompt')
+    .option(
+      '--raw',
+      'emit the raw skill file verbatim (with frontmatter) instead of the wrapped prompt',
+    )
     .option('--force', 'with -o, replace the file if it already exists')
     .action(async (opts: { output?: string; raw?: boolean; force?: boolean }) => {
       const text = await systemPrompt({ ...(opts.raw === true ? { raw: true } : {}) });
@@ -1002,7 +777,11 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
       if (isInteractive) {
-        console.log(pc.dim('# Avodado system prompt — paste into your tool\'s system / custom-instructions box\n'));
+        console.log(
+          pc.dim(
+            "# Avodado system prompt — paste into your tool's system / custom-instructions box\n",
+          ),
+        );
       }
       console.log(text);
       if (isInteractive && copyToClipboard(text)) {
@@ -1023,65 +802,6 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
       console.log(mcpInstructions());
-    });
-
-  // Hidden compat: `avo block` / `avo template` — both fronted by `avo new`.
-  program
-    .command('block [name]', { hidden: true })
-    .description('List block types (no arg), or print a block template (-o to write a file)')
-    .option('-o, --output <path>', 'write the template to a file')
-    .option('--force', 'with -o, replace the file if it already exists')
-    .action(async (name: string | undefined, opts: { output?: string; force?: boolean }) => {
-      if (name === undefined || name === 'list') {
-        console.log(pc.bold(`${BLOCK_TYPES.length} block types:`));
-        console.log('  ' + BLOCK_TYPES.join('  '));
-        return;
-      }
-      if (!BLOCK_TYPES.includes(name as BlockType)) {
-        console.error(pc.red(`Unknown block: ${name}. Run \`avo block list\`.`));
-        exitCode = 2;
-        return;
-      }
-      if (opts.output !== undefined) {
-        const p = await writeNewDoc({
-          cwd: process.cwd(),
-          type: name,
-          out: opts.output,
-          ...(opts.force === true ? { force: true } : {}),
-        });
-        console.log(`${pc.green('✓')} Wrote ${p}`);
-      } else {
-        process.stdout.write(templateFor(name as BlockType));
-      }
-    });
-
-  program
-    .command('template [name]', { hidden: true })
-    .description('List doc templates (no arg), or print one like `adr` (-o to write a file)')
-    .option('-o, --output <path>', 'write the template to a file')
-    .option('--force', 'with -o, replace the file if it already exists')
-    .action(async (name: string | undefined, opts: { output?: string; force?: boolean }) => {
-      if (name === undefined || name === 'list') {
-        console.log(pc.bold('Doc templates:'));
-        console.log('  ' + Object.keys(DOC_TEMPLATES).join('  '));
-        return;
-      }
-      if (!isDocTemplate(name)) {
-        console.error(pc.red(`Unknown template: ${name}. Run \`avo template list\`.`));
-        exitCode = 2;
-        return;
-      }
-      if (opts.output !== undefined) {
-        const p = await writeNewDoc({
-          cwd: process.cwd(),
-          type: name,
-          out: opts.output,
-          ...(opts.force === true ? { force: true } : {}),
-        });
-        console.log(`${pc.green('✓')} Wrote ${p}`);
-      } else {
-        process.stdout.write(DOC_TEMPLATES[name] ?? '');
-      }
     });
 
   // Per-command EXAMPLES epilogue — one data table in banner.ts drives them.
@@ -1110,5 +830,3 @@ export async function main(argv: readonly string[]): Promise<number> {
   return exitCode;
 }
 
-// Re-export the template helper for tests + downstream consumers.
-export { templateFor };

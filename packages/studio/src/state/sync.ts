@@ -5,7 +5,7 @@
  */
 
 /** What the store should do about the open doc when an `fs` event arrives. */
-export type FsDecision =
+type FsDecision =
   /** Event has no slug — refetch the current doc AND the doc list. */
   | 'refetch-all'
   /** A different doc changed — just refresh the doc list. */
@@ -18,7 +18,7 @@ export type FsDecision =
   | 'conflict';
 
 /** The slice of store state the decision depends on. */
-export interface FsDecisionState {
+interface FsDecisionState {
   readonly currentSlug: string | null;
   readonly baseHash: string | null;
   readonly dirty: boolean;

@@ -40,6 +40,6 @@ A ```` ```mermaid ```` fence whose first line is `sequenceDiagram`, `flowchart` 
 
 ## Block types
 
-**90 block types** across 12 families (prose, tables, API, architecture, flows, data model, charts, planning, business, design system, algorithms, AI/agents) — high-signal ones include `sequence`, `erd`, `c4`, `table`, `callout`, `flow`, `userstory`, `chart`, and `endpoint`. The full list is `BLOCK_TYPES`; `BLOCK_FAMILIES` groups them.
+**107 block types** across 13 families (prose, tables, API, architecture, flows, data model, charts, planning, business, design system, algorithms, AI/agents, quality & audits) — high-signal ones include `sequence`, `erd`, `c4`, `table`, `callout`, `flow`, `userstory`, `chart`, and `endpoint`. The full list is `BLOCK_TYPES`; `BLOCK_FAMILIES` groups them.
 
 Each block's field shape is a zod schema exported individually (e.g. `sequenceSchema`), and its data type is `BlockDataMap[K]`. See the full reference at **[avodado.dev](https://avodado.dev)**.

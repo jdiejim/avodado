@@ -20,17 +20,10 @@ import type {
 import { memoryVault } from './memoryVault.js';
 import { fileBridge } from './fileBridge.js';
 
-export type {
-  DocListItem,
-  DocPayload,
-  SaveConflict,
-  SaveResult,
-  StudioBackend,
-  StudioMeta,
-} from './backend.js';
+export type { DocListItem, SaveConflict, StudioMeta } from './backend.js';
 
 /** The active backend for this session. */
-export const backend: StudioBackend =
+const backend: StudioBackend =
   (import.meta.env?.['VITE_STUDIO_BACKEND'] as string | undefined) === 'vault'
     ? memoryVault
     : fileBridge;

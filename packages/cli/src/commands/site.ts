@@ -31,6 +31,8 @@ import {
   type DocumentParts,
   type DocumentSection,
   toSlides,
+  schemeMarkup,
+  type ColorScheme,
 } from '@avodado/render';
 import { guardRender } from './renderGuard.js';
 
@@ -56,9 +58,11 @@ export interface SitePage {
 }
 
 /** Options for {@link buildSite}. */
-export interface SiteOptions {
+interface SiteOptions {
   /** Internal escape hatch: CSS-variable overrides emitted on `:root`. */
   readonly themeVars?: Readonly<Record<string, string>>;
+  /** The pages' colour scheme (`dark` by default). */
+  readonly colorScheme?: ColorScheme;
   /** Inject the live-reload `EventSource` script (serve only, never build). */
   readonly liveReload?: boolean;
   /** Build the rich index page: project TLDR, doc map grouped by tag, and a
@@ -67,7 +71,7 @@ export interface SiteOptions {
 }
 
 /** Result of {@link buildSite}. */
-export interface SiteResult {
+interface SiteResult {
   /** All pages: `index.html` first, then per doc the page + its slide deck. */
   readonly pages: readonly SitePage[];
   /** Schema + reference diagnostics across the whole doc set. */
@@ -252,14 +256,16 @@ function pageShell(args: {
   readonly liveReload: boolean;
   /** Doc pages only: the Doc | Slides control, pinned to the main column. */
   readonly toggle?: string;
+  readonly colorScheme?: ColorScheme;
 }): string {
   const themeBlock = args.themeVars.length > 0 ? `<style>:root{${args.themeVars}}</style>` : '';
   const reload = args.liveReload ? LIVE_RELOAD_SCRIPT : '';
-  // No `data-theme` stamp: pages follow the reader's system dark mode, same
-  // as `renderDocument` in `@avodado/render`.
+  // Dark is the look; the config's `colorScheme` stamps light or lets the OS
+  // choose, the same way `renderDocument` does.
+  const scheme = schemeMarkup(args.colorScheme);
   return (
     `<!doctype html>\n` +
-    `<html lang="en">\n` +
+    `<html lang="en"${scheme.stamp}>\n` +
     `<head>\n` +
     `<meta charset="utf-8">\n` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">\n` +
@@ -267,6 +273,7 @@ function pageShell(args: {
     `${FAVICON_LINK}\n` +
     `<style>${args.css}</style>` +
     themeBlock +
+    scheme.style +
     `<style>${SITE_CSS}</style>\n` +
     `</head>\n` +
     `<body>\n` +
@@ -559,7 +566,10 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
   const resolved = resolveRefs(docs.map((d) => ({ doc: d.doc, file: d.file })));
   diagnostics.push(...resolved.diagnostics);
 
-  const themeOpts = opts.themeVars !== undefined ? { themeVars: opts.themeVars } : {};
+  const themeOpts = {
+    ...(opts.themeVars !== undefined ? { themeVars: opts.themeVars } : {}),
+    ...(opts.colorScheme !== undefined ? { colorScheme: opts.colorScheme } : {}),
+  };
   const liveReload = opts.liveReload === true;
 
   // A renderer that throws takes down its own document, not the build. The
@@ -598,6 +608,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
           ? richIndexMain(docs, resolved.graph.edges)
           : indexCards(docs),
       liveReload,
+      ...(opts.colorScheme !== undefined ? { colorScheme: opts.colorScheme } : {}),
     }),
   });
 
@@ -609,6 +620,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
       nav: sidebar(navDocs, doc.slug, parts.sections),
       main: parts.body,
       liveReload,
+      ...(opts.colorScheme !== undefined ? { colorScheme: opts.colorScheme } : {}),
       toggle: viewToggle(doc.slug),
     });
     pages.push({
@@ -643,6 +655,7 @@ export function buildSite(docs: readonly SiteDoc[], opts: SiteOptions = {}): Sit
           nav: sidebar(navDocs, doc.slug, []),
           main: failedBody(doc, deckError),
           liveReload,
+      ...(opts.colorScheme !== undefined ? { colorScheme: opts.colorScheme } : {}),
         }),
     });
   }

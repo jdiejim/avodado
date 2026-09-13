@@ -12,28 +12,42 @@ thing per diagram.
 
 Semantic roles. Renderers name the role (`var(--ink)`), never the value.
 
-| Role | Purpose | Light |
-|---|---|---|
-| `paper` | page and default node fill | `#f7f6f2` |
-| `paper-2` | diagram ground, secondary fill, frames | `#efede8` |
-| `ink` | primary text, primary stroke | `#1f2430` |
-| `muted` | secondary text, default arrow stroke, chips | `#4f5868` |
-| `soft` | sublabels, guards, legend text | `#646d7b` (4.5:1 on paper-2 — the floor for small text) |
-| `rule` | hairlines | `rgba(31,36,48,.14)` |
-| `rule-solid` | frame borders, baselines, secondary node and chip outlines | `#807b70` (3.6:1 on paper-2 — the floor for a line that carries meaning) |
-| `accent` | the one focal thing per diagram (see the rule below) | `#b04a25` (4.7:1 on paper-2, so it may carry small text) |
-| `accent-tint` | fill behind an accent-stroked shape | `rgba(176,74,37,.09)` |
-| `link` | HTTP calls, external arrows, links in prose | `#2f5c8f` |
-| `negative` | real errors only, desaturated | `#9a3f34` |
-| `negative-tint` | fill behind an error shape | `rgba(154,63,52,.08)` |
+| Role | Purpose | Dark (the look) | Light |
+|---|---|---|---|
+| `paper` | page and default node fill | `#15171d` | `#f7f6f2` |
+| `paper-2` | diagram frame, secondary fill, panels | `#1d2028` | `#efede8` |
+| `stage` | the drawing well inside the frame, a step below `paper-2` | `#121419` | `#f3f1ec` |
+| `stage-glow` | the faint lift at the centre of the well | `rgba(236,234,228,.05)` | `rgba(255,255,255,.6)` |
+| `ink` | primary text, primary stroke | `#eceae4` | `#1f2430` |
+| `muted` | secondary text, default arrow stroke, chips | `#b4bac6` | `#4f5868` |
+| `soft` | sublabels, guards, legend text | `#9da5b3` | `#646d7b` (4.5:1 on paper-2 — the floor for small text) |
+| `rule` | hairlines, the dot grid | `rgba(236,234,228,.13)` | `rgba(31,36,48,.14)` |
+| `rule-solid` | frame borders, baselines, secondary node and chip outlines | `#7d8499` | `#807b70` (3.6:1 on paper-2 — the floor for a line that carries meaning) |
+| `accent` | the one focal thing per diagram (see the rule below) | `#e4744c` | `#b04a25` (4.7:1 on paper-2, so it may carry small text) |
+| `accent-tint` | fill behind an accent-stroked shape | `rgba(228,116,76,.14)` | `rgba(176,74,37,.09)` |
+| `link` | HTTP calls, external arrows, links in prose | `#93b7e8` | `#2f5c8f` |
+| `negative` | real errors only, desaturated | `#f5a39b` | `#9a3f34` |
+| `negative-tint` | fill behind an error shape | `rgba(245,163,155,.14)` | `rgba(154,63,52,.08)` |
 
 Legacy names (`--navy`, `--charcoal`, `--gray`, `--light-gray`, `--blue`,
 `--highlight`, `--positive`, `--purple`, `--teal`, and their `-soft` tints)
 stay defined as aliases of the roles above so untouched renderers keep
 working while they migrate. New code never uses a legacy name.
 
-Dark mode inverts the neutrals and lifts `accent` one step; it is defined
-once, in `css.ts`, on `[data-theme="dark"]` and `prefers-color-scheme`.
+**Dark is the look.** The bare `:root` in `css.ts` carries the dark set, so
+every page, deck, site page, and the Studio canvas is dark unless told
+otherwise. Light is the explicit choice — `data-theme="light"` on the root
+(the config's `colorScheme: light` stamps it) — and the print look, always,
+so a PDF never spends ink on a black page. `colorScheme: system` adds the
+one media rule that lets the reader's OS choose. Both sets live in two
+constants (`LIGHT_SET`, `DARK_SET`); nothing else in the stylesheet carries
+a colour value.
+
+The drawing sits in a **well**: the stage paints `stage` a step below the
+frame's `paper-2`, with the dot grid in `rule` and a faint `stage-glow` at
+the centre, inside a hairline inset. Node fills are `paper`, one step below
+`paper-2` in dark and one step above in light, so nodes read as objects on
+the well in both.
 
 ## The one-accent rule
 

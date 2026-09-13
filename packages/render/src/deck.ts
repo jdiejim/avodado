@@ -10,6 +10,7 @@
 
 import type { Document } from '@avodado/core';
 import { renderSlides, type RenderPartsOptions } from './parts.js';
+import { schemeMarkup } from './document.js';
 
 const ESC: Readonly<Record<string, string>> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ESC[c] ?? c);
@@ -498,14 +499,16 @@ export function toSlides(doc: Document, opts: RenderPartsOptions = {}): string {
     `<span class="deck-live" id="deck-live" aria-live="polite" aria-atomic="true"></span>` +
     `</div>`;
 
-  // No `data-theme` stamp: the deck follows the reader's system dark mode,
-  // same as `renderDocument`. A host page can still force `data-theme="dark"`.
+  // Dark is the look; `colorScheme` stamps light or lets the OS choose, the
+  // same way `renderDocument` does.
+  const scheme = schemeMarkup(opts.colorScheme);
   return (
-    `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+    `<!doctype html><html lang="en"${scheme.stamp}><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${esc(title)}</title>` +
     `<style>${css}</style>` +
     `<style>:root{${themeVars}}</style>` +
+    scheme.style +
     `<style>${DECK_CSS}</style>` +
     `</head><body>` +
     defs + // shared SVG markers/filters at the root (always present, never display:none)

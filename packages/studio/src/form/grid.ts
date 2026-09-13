@@ -11,9 +11,9 @@
  */
 
 /** A cell value: string | number | detailed object — whatever the union allows. */
-export type GridCell = unknown;
+type GridCell = unknown;
 /** One row of cells. */
-export type GridRow = readonly GridCell[];
+type GridRow = readonly GridCell[];
 
 function asRows(v: unknown): readonly GridRow[] {
   return Array.isArray(v) ? v.map((r) => (Array.isArray(r) ? (r as GridRow) : [])) : [];
@@ -64,7 +64,7 @@ export function gridRemoveRow(rows: unknown, index: number): GridCell[][] {
 }
 
 /** The compound result of a column op: the new `columns` + the new `rows`. */
-export interface GridColumnsResult {
+interface GridColumnsResult {
   /** New `columns` value, or null when the block has no columns field/value. */
   readonly columns: unknown[] | null;
   readonly rows: GridCell[][];
@@ -116,7 +116,7 @@ export function gridRemoveColumn(columns: unknown, rows: unknown, at: number): G
  * - last cell of an all-empty LAST row → exit (drop the empty row, leave
  *   the grid toward the next field).
  */
-export type GridEnterAction =
+type GridEnterAction =
   | { readonly kind: 'advance'; readonly row: number; readonly col: number }
   | { readonly kind: 'append' }
   | { readonly kind: 'exit' };

@@ -1,4 +1,4 @@
-# Block-selection eval — 30 realistic doc requests that name NO block type.
+# Block-selection eval — realistic doc requests that name NO block type.
 #
 # Each request scores the PRIMARY block an agent picks (the block that carries
 # the main answer):
@@ -240,3 +240,83 @@
   expected: [steps]
   acceptable: [flow, checklist]
   wrong: [saga, rollout, timeline]
+
+# ── Added 2026-09-13 (night): the coverage-sweep blocks ─────────────────────
+
+- id: pentest-findings
+  request: Write up what the pentest found on the payments service, worst first, with what we do about each.
+  expected: [audit]
+  acceptable: [risk, table]
+  wrong: [statustable, list, timeline]
+
+- id: prod-readiness
+  request: Go through the production-readiness standard for the search indexer and show what passes and what doesn't, with proof.
+  expected: [checklist]
+  acceptable: [statustable, table]
+  wrong: [list, steps, matrix]
+
+- id: web-vitals
+  request: Show how the product page does against our web performance budgets.
+  expected: [perfbudget]
+  acceptable: [slo, stats, benchmark]
+  wrong: [chart, table, gantt]
+
+- id: api-tail
+  request: The median looks fine but people complain checkout is slow — show the latency picture per endpoint.
+  expected: [percentiles]
+  acceptable: [chart, spans, table]
+  wrong: [stats, timeline, gantt]
+
+- id: login-threats
+  request: Threat-model the login path — where can it be attacked and what stops each attack?
+  expected: [threatmodel]
+  acceptable: [dfd, audit, risk]
+  wrong: [sequence, flow, table]
+
+- id: ticketing-actors
+  request: Who does what with the ticketing system — customers, agents, the payment provider — and which features depend on others?
+  expected: [usecase]
+  acceptable: [matrix, userstory, c4]
+  wrong: [sequence, flow, swimlane]
+
+- id: module-rules
+  request: Document which backend modules are allowed to depend on which, so reviewers can enforce it.
+  expected: [pkg]
+  acceptable: [felogic, block, tree]
+  wrong: [c4, erd, table]
+
+- id: breaker-timing
+  request: Show what the circuit breaker and the downstream are doing over the sixty seconds of last week's outage.
+  expected: [timing]
+  acceptable: [state, sequence, timeline]
+  wrong: [gantt, spans, flow]
+
+- id: cnn-shape
+  request: Explain the shape of the image classifier we ship — what each layer does and how wide it is.
+  expected: [neuralnet]
+  acceptable: [flow, layers, table]
+  wrong: [c4, block, tree]
+
+- id: model-handoff
+  request: Write the one-page handoff for the ticket-routing model so another team can decide whether to reuse it.
+  expected: [modelcard]
+  acceptable: [spec, table]
+  wrong: [endpoint, prose, benchmark]
+
+- id: incident-phases
+  request: Deck opener for the incident process — the phases, and which one we are improving this quarter.
+  expected: [chevrons]
+  acceptable: [steps, cycle, timeline]
+  wrong: [flow, kanban, list]
+
+- id: platform-roadmap
+  request: The 2026 platform roadmap by theme and quarter, with where we are now.
+  expected: [roadmap]
+  acceptable: [gantt, timeline, kanban]
+  wrong: [table, storymap, steps]
+
+- id: onboarding-ideas
+  request: Lay out everything we brainstormed for onboarding v2, grouped around the main idea.
+  expected: [mindmap]
+  acceptable: [tree, list]
+  wrong: [flow, kanban, steps]

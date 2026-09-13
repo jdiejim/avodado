@@ -7,13 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const skillDir = resolve(here, '../../cli/templates/.avodado/skill');
+const skillDir = resolve(here, '../../../skills/avodado');
 // Keep this list in sync with SKILL_REFERENCE_FILES in
 // packages/cli/src/commands/init.ts (same files, same order, hub first).
 const FILES = [
   'SKILL.md',
   'reference/blocks/INDEX.md',
-  'reference/blocks/contract.md',
   'reference/blocks/narrative.md',
   'reference/blocks/tables-data.md',
   'reference/blocks/api.md',
@@ -26,7 +25,10 @@ const FILES = [
   'reference/blocks/design-system.md',
   'reference/blocks/algorithms.md',
   'reference/blocks/agentic.md',
+  'reference/blocks/quality.md',
   'reference/recipes.md',
+  'reference/patterns.md',
+  'reference/patterns-design.md',
   'reference/mermaid.md',
   'reference/writing.md',
   'reference/check.md',
@@ -45,7 +47,7 @@ const md = (
 const out = resolve(here, '../src/skill.generated.ts');
 writeFileSync(
   out,
-  `// AUTO-GENERATED from packages/cli/templates/.avodado/skill/ (SKILL.md + reference/*.md, stitched) — do not edit.\n` +
+  `// AUTO-GENERATED from skills/avodado/ (SKILL.md + reference/*.md, stitched) — do not edit.\n` +
     `export const SKILL_MD = ${JSON.stringify(md)};\n`,
 );
 console.log(`embedded stitched skill (${md.length} chars from ${FILES.length} files)`);

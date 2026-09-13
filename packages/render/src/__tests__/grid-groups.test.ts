@@ -104,8 +104,9 @@ describe('grid groups on flow / dfd / state / c4', () => {
         { col: 1, row: 1, label: 'Tinted', color: '#9c4a2f' },
       ],
     });
-    expect(html).toContain('stroke="#9c4a2f"');
-    expect(html).toContain('fill="#9c4a2f"');
+    // The authored colour is pulled toward ink so it clears the surface in both sets.
+    expect(html).toContain('stroke="color-mix(in srgb, #9c4a2f 62%, var(--ink))"');
+    expect(html).toContain('fill="color-mix(in srgb, #9c4a2f 62%, var(--ink))"');
   });
 
   it('group-less flow output is byte-identical to the pre-groups renderer (pin)', () => {

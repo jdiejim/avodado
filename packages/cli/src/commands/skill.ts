@@ -38,7 +38,7 @@ The complete block grammar, field contract, and authoring recipe follow.
  * separated by `---` rules — so consumers with no filesystem get the complete
  * grammar in a single paste.
  */
-export async function readSkill(): Promise<string> {
+async function readSkill(): Promise<string> {
   return stitchSkill();
 }
 

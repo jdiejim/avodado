@@ -401,17 +401,6 @@ export interface EdgeStyle {
 }
 
 /**
- * Legacy edge table (cluster / c4 still read it) — `solid | dashed |
- * forbidden | error` → SVG attributes, on the legacy token names.
- */
-export const GEDGE: Record<string, EdgeStyle> = {
-  solid: { stroke: 'var(--charcoal)', sw: 1.4, dash: '', marker: 'gArrow', err: false },
-  dashed: { stroke: 'var(--gray)', sw: 1.4, dash: '5 4', marker: 'gSoft', err: false },
-  forbidden: { stroke: 'var(--negative)', sw: 2, dash: '', marker: 'gErr', err: true },
-  error: { stroke: 'var(--negative)', sw: 1.6, dash: '', marker: 'gErr', err: true },
-};
-
-/**
  * The skin's edge table (`DESIGN.md` › Strokes and arrows): default 1.5px
  * `muted` with a small filled head; dashed = open head; forbidden / error =
  * `negative` (forbidden also dashed, so the "never" reads without hue).
@@ -421,13 +410,4 @@ export const SKIN_EDGE: Record<string, EdgeStyle> = {
   dashed: { stroke: 'var(--muted)', sw: 1.5, dash: '5 4', marker: 'skOpen', err: false },
   forbidden: { stroke: 'var(--negative)', sw: 1.5, dash: '4 3', marker: 'skErr', err: true },
   error: { stroke: 'var(--negative)', sw: 1.5, dash: '', marker: 'skErr', err: true },
-};
-
-/** The accent edge: 1.75px `accent`, filled head. */
-export const SKIN_EDGE_ACCENT: EdgeStyle = {
-  stroke: 'var(--accent)',
-  sw: 1.75,
-  dash: '',
-  marker: 'skAccent',
-  err: false,
 };

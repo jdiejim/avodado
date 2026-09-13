@@ -10,6 +10,7 @@ import { splitMarkdown, detectSuspectFences } from './splitter.js';
 import { parseBlockBody, type YamlParseResult } from './yaml.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
 import { normalizeBlockData, textBodyData } from './blocks/normalize.js';
+import { rescueInlineCommas } from './blocks/rescue.js';
 import { convertDialect, isDialectSource } from './dialects.js';
 import type { BlockType, Document, MetaData, Segment, TypedSegment } from './types.js';
 
@@ -37,7 +38,7 @@ function applyAliasPatch(data: unknown, patch: Readonly<Record<string, unknown>>
 function parseBody(kind: BlockType, sourceType: string | undefined, raw: string): YamlParseResult {
   if (isDialectSource(sourceType)) return convertDialect(sourceType, kind, raw);
   const textData = textBodyData(kind, raw);
-  return textData !== undefined ? { ok: true, data: textData } : parseBlockBody(raw);
+  return textData !== undefined ? { ok: true, data: textData } : parseBlockBody(rescueInlineCommas(raw));
 }
 
 function extractId(data: unknown): string | undefined {

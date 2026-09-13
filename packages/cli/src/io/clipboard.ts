@@ -1,6 +1,6 @@
 /**
  * OS clipboard helper for commands that print copy-paste text (`avo skill`,
- * `avo design <slug>`).
+ * `avo new <name>`).
  */
 
 import { spawnSync } from 'node:child_process';

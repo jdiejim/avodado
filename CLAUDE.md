@@ -8,15 +8,16 @@ fenced YAML blocks, and the files on disk are the single source of truth.
 ## Writing or editing documentation
 
 When creating or changing any document under `docs/**/*.md`, **follow the authoring
-skill at `.avodado/skill/SKILL.md`**. It defines the block grammar and the `doc#id`
-reference scheme; every block's full field contract lives beside it in
-`.avodado/skill/reference/` (read `reference/blocks/contract.md` + the family file you need — map in `reference/blocks/INDEX.md` — before writing a block).
+skill at `skills/avodado/SKILL.md`**. It defines the block grammar and the `doc#id`
+reference scheme. The field contract for any block comes from the CLI, generated from
+the schema: run `node packages/cli/dist/bin.js block <type>` (or `avo block <type>`)
+before writing a block; never look for a hand-written contract file.
 In short:
 
 - Prose is plain Markdown; structure goes in typed blocks (e.g. `sequence`, `erd`,
   `table`, `callout`, `c4`, `flow`, `timeline`, `userstory`). Never paste raw HTML
   or inline SVG.
-- Use only the documented block types (94 of them, plus 12 permanent aliases for
+- Use only the documented block types (107 of them, plus 12 permanent aliases for
   merged old names) and their documented fields —
   the schemas are strict. Bodies are YAML.
 - Give a block an `id:` when it needs to be referenced; reference it as `doc#id`.
@@ -40,7 +41,7 @@ In short:
 ## Avodado — what this repo is
 
 Documentation-as-code. A doc is plain Markdown; every visual thing is a **typed
-block** — a fenced section with a type and a YAML body. 94 block types across 12
+block** — a fenced section with a type and a YAML body. 107 block types across 13
 families (narrative, tables/code, API, architecture, flows/state, data model,
 charts, planning, business/decisions, design system, algorithms, AI/agents).
 `.md` files on disk are the only source of truth. Nothing else holds state.
@@ -56,9 +57,10 @@ charts, planning, business/decisions, design system, algorithms, AI/agents).
 - `avo` (CLI) — `check` (strict typed diagnostics; a change is not done until it
   passes), `build`, `serve`, `site`, slides/decks, `theme`, catalog/demo.
 - `@avodado/studio` — web canvas/editor bundling core + render.
-- MCP package + authoring skill (`.avodado/skill/SKILL.md` + reference files) —
-  teaches an agent to author docs. `avo init` installs it into CLAUDE.md /
-  Cursor rules / Copilot instructions.
+- MCP package + authoring skill (`skills/avodado/SKILL.md` + reference files, one
+  copy in the repo) — teaches an agent to author docs. It installs into any agent
+  with `npx skills add jdiejim/avodado`; the CLI build copies it into the package
+  for `avo skill` and the MCP embed.
 
 ### The invariant that matters most
 
@@ -83,7 +85,7 @@ delete it.
 
 Technical text in this repo follows **STE discipline** — the writing rules of
 ASD-STE100 Simplified Technical English, adapted for software docs. The rules
-live in `.avodado/skill/reference/style-ste.md`. Read that file before you write
+live in `skills/avodado/reference/style-ste.md`. Read that file before you write
 any prose block, CLI help string, diagnostic message, or skill instruction.
 
 Two hard constraints on how we use it:

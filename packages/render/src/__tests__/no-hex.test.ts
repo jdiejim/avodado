@@ -53,14 +53,14 @@ const LEGACY_HEX_ALLOWLIST = new Set(['svg/dsTone.ts', 'brand.ts']);
 
 /**
  * The stylesheet is where the tokens are DEFINED, so it may carry hex — but
- * only inside the token blocks: `:root{…}`, the `[data-theme="dark"]` block,
- * and the `prefers-color-scheme: dark` media block. Every rule after them
- * names a role (`var(--ink)`), never a value.
+ * only inside the token blocks: the `LIGHT_SET` and `DARK_SET` constants and
+ * the `:root{…}` base block. Every rule after them names a role
+ * (`var(--ink)`), never a value.
  */
 const TOKEN_BLOCKS = [
+  /^export const LIGHT_SET = `[\s\S]*?`;/m,
+  /^export const DARK_SET = `[\s\S]*?`;/m,
   /^:root\{[\s\S]*?^\}/m,
-  /^:root\[data-theme="dark"\][^\n]*\{[\s\S]*?^\}/m,
-  /^@media \(prefers-color-scheme: dark\)\{[\s\S]*?^\}/m,
 ];
 
 /** A hex colour literal; `url(#id)` marker references are stripped first. */

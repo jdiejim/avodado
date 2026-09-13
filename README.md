@@ -1,273 +1,202 @@
 <p align="center">
-  <img src="./avodado_logo.png" alt="Avodado" width="170" />
+  <img src="./avodado_logo.png" alt="Avodado" width="150" />
 </p>
 
 <h1 align="center">Avodado</h1>
 
+<p align="center"><strong>Docs your AI agent can write, and your CI can check.</strong><br/>Markdown with typed YAML blocks — 107 diagram, table, and card types — rendered by code, never drawn by the model.</p>
+
 <p align="center">
-  <a href="https://www.npmjs.com/package/avodado"><img src="https://img.shields.io/npm/v/avodado?label=avodado&color=4f46e5" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/avodado"><img src="https://img.shields.io/npm/v/avodado?label=avodado&color=e4744c" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/avodado"><img src="https://img.shields.io/npm/dm/avodado?color=555" alt="downloads" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license" /></a>
-  <a href="https://www.npmjs.com/package/@avodado/core"><img src="https://img.shields.io/npm/types/@avodado/core" alt="types" /></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/avodado" alt="node" /></a>
-  <a href="https://pnpm.io"><img src="https://img.shields.io/badge/maintained%20with-pnpm-f69220" alt="pnpm" /></a>
+  <a href="https://skills.sh"><img src="https://img.shields.io/badge/skills-npx%20skills%20add%20jdiejim%2Favodado-111" alt="skill" /></a>
 </p>
 
-<p align="center"><strong>Documentation-as-code.</strong> Write Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and every block validates like code. Your AI agent authors it, <a href="#-edit-visually--avo-studio">Studio</a> edits it, and one command turns it into a website, a slide deck, or a PDF.</p>
+<p align="center">
+  <img src="./assets/hero.png" alt="A runtime topology rendered by Avodado from 40 lines of YAML" width="880" />
+</p>
+
+```bash
+npx skills add jdiejim/avodado -g      # give your agent the skill (Claude Code, Cursor, Codex, Copilot, 70+ agents)
+```
+
+Then ask your agent, in plain words: *"Explain the shape of the platform to a new backend engineer: services, databases, third parties."* You get a `docs/platform.md` with a C4 context diagram, a runtime topology, a request sequence, a service catalog table, and the rule that must not break — every block validated by `avo check`, rendered into the page above.
 
 ---
 
-**Your documentation has a schema.** Anywhere prose belongs, it's plain Markdown. Anywhere _structure_ belongs — a sequence diagram, an ERD, a table, a user story, a chart — it's a fenced block whose info-string is the block type, with a YAML body that validates against a strict schema:
+## Why
 
-````
-docs/orders.md
-─────────────
+Diagrams-as-code tools make you write the diagram. Diagram-generating agents draw pixels and fix overlaps for four rounds. Avodado splits the job the other way round:
+
+- **The agent writes content.** Forty lines of YAML per diagram: nodes, edges, labels, the reader's nouns. Never a coordinate.
+- **The renderer owns geometry.** One block type → one deterministic renderer → one editorial look, dark by default. Labels dodge, edges route, stages grow.
+- **The check is the contract.** `avo check` fails on a bad field, a broken `doc#id` reference, an unlabelled arrow, a fourth callout in a row. Every diagnostic has a stable code, a line, and the fix.
+
+Measured on the [generation eval](./evals/generate) (38 plain-language requests, fresh agent each, no block named):
+
+| | Avodado |
+|---|---|
+| Right block picked from the reader's question | 37.5 / 38 |
+| First draft passes `avo check` | 32 / 38 |
+| Clean at handoff, rendered | 38 / 38 |
+| Tokens per document (≈ 7 blocks + prose) | ~54K |
+
+On the eight requests a coordinate-placing diagram skill can also express, Avodado used 13% fewer tokens, finished 21% faster, and passed its own validator on the first draft 8 of 8 times against 1 of 8, while producing a whole document instead of one diagram ([method and screenshots](./.scratch/evals/archify-vs-avodado-2026-09-13)).
+
+## What a doc looks like
+
+````markdown
 ## Request flow
 
 ```sequence
-id: seq-place-order
 title: Place order
-endpoint: { method: POST, path: /orders }
 actors:
   - { id: Client, name: Client }
   - { id: API, name: Orders API }
+  - { id: PSP, name: Payment provider }
 messages:
   - Client -> API: POST /orders
+  - API -> PSP: charge card
+  - alt: approved
+  - PSP --> API: 200 captured
   - API --> Client: 201 Created
+  - else: declined
+  - PSP --> API: 402 declined
+  - API --> Client: 402 PAYMENT_FAILED
+  - end
 ```
 ````
 
-`avo check` fails CI when a block is wrong — a bad field, a broken cross-reference, a duplicate id — with a precise, fixable diagnostic (line, column, "did you mean?"). The `.md` files on disk stay the **single source of truth**. The CLI, any AI agent, the [MCP server](./packages/mcp), and [Studio](#-edit-visually--avo-studio) are all just editors and consumers of those files.
-
-## What you can document
-
-One grammar covers the docs a software team actually writes:
-
-| For… | Use blocks like |
-|---|---|
-| **API references** | `endpoint` · `table` · `sequence` · `code` |
-| **Architecture & system design** | `c4` · `archmap` · `block` · `cluster` · `erd` · `dfd` |
-| **Sequence & state** | `sequence` · `state` · `flow` · `swimlane` |
-| **ADRs & decision records** | `drivers` · `options` · `scorecard` · `proscons` · `callout` |
-| **Frontend & design systems** | `palette` · `typescale` · `dodont` · `wireframe` · `frontend` |
-| **Planning & backlogs** | `userstory` · `kanban` · `timeline` · `gantt` · `risk` |
-| **Charts & overviews** | `chart` · `stats` · `heatmap` · `quadrant` · `journey` |
-| **Slide presentations** | any doc → `avo slides` (one slide per heading) |
-
-Full list: **[94 block types](#the-94-block-types)** across 12 families.
+Prose is plain Markdown. Anything structured is a fenced block: the info-string is the block type, the body is YAML (JSON works too) against a strict schema. Terse one-line forms cover the common items (`a -> b: label`, `Term — definition`, `[pass] item — evidence`). The `.md` files are the only source of truth; the CLI, Studio, the MCP server, and your agent are all editors of the same files.
 
 ## Quick start
 
-```bash
-pnpm add -D avodado             # or npm / yarn  ·  or run once: npx avodado demo
-
-avo demo                        # see it instantly — renders the showcase and opens it
-avo init                        # scaffold docs/, config, the AI skill, editor adapters
-avo check                       # validate everything (exits non-zero on any error)
-avo studio                      # open the visual editor — edit, preview, export
-```
-
-New here? `avo tour` is a guided, hands-on walkthrough in 7 short chapters.
-
----
-
-# Recipes
-
-## 🚀 Start a project — `avo init`
-
-`avo init` is an interactive wizard. It asks which AI tools you use and what kind of project this is, then scaffolds a ready-to-go project:
+**With an agent** (recommended):
 
 ```bash
-avo init            # interactive
-avo init --yes      # defaults, no prompts (great for CI)
+npx skills add jdiejim/avodado -g      # once, global
+# then ask for a doc; the agent runs `npx -y avodado block <type>` and `npx -y avodado check`
 ```
 
-You get:
-
-- **`docs/getting-started.md` + `docs/tutorial.md`** — an 80/20 quick start and a deck-first tour of every block (`avo slides docs/tutorial.md`).
-- **`.avodado/skill/SKILL.md`** — the authoring skill: the full block grammar with a worked example for all 94 blocks.
-- **Editor adapters** for the tools you picked — Claude Code (`CLAUDE.md`), Cursor (`.cursor/rules/avodado.mdc`), GitHub Copilot (`.github/copilot-instructions.md`), Windsurf (`.windsurfrules`).
-
-## 🤖 Write docs with AI — the skill + MCP
-
-This is the point: **let your AI agent write the blocks for you.** After `avo init`, every AI tool in your repo already knows the grammar (that's what the adapters install), so you can just ask:
-
-> "Document the checkout flow as a sequence diagram and add an ERD for the orders table."
-
-Three ways to wire AI in:
+**By hand:**
 
 ```bash
-# 1. In-repo agents (Claude Code, Cursor, Copilot, Windsurf) — installed by `avo init`,
-#    or add/update one anytime:
-avo install claude       # · cursor · copilot · windsurf
-
-# 2. Any AI with no repo convention (ChatGPT, a custom GPT, Gemini, M365 Copilot):
-avo skill                # prints the whole grammar as a system prompt (also copies to clipboard)
-                         # → paste it into the tool's system / custom-instructions box
-
-# 3. Any MCP client (Claude Desktop, Cursor) — the tooling as live tools:
-claude mcp add avodado -- npx -y @avodado/mcp
+npx avodado demo                 # render every block type and open it
+npx avodado block sequence       # fields, terse forms, and a validating example
+npx avodado check docs/          # validate; exits non-zero on any error
+npx avodado html docs/x.md -p    # one doc → standalone HTML, opened
+npx avodado studio               # the local visual editor over the same files
 ```
 
-The agent writes `docs/*.md`; you run `avo check` to keep it honest. Same files, many editors — see [`@avodado/mcp`](./packages/mcp).
+In a project: `pnpm add -D avodado`, `avo init` writes `avodado.config.json` and two starter docs. The skill is never copied into your repo, so the reference and the validator cannot drift apart.
 
-## 🎨 Edit visually — `avo studio`
+**Other AIs:** `avo skill` prints the whole skill for a system-prompt box; `claude mcp add avodado -- npx -y @avodado/mcp` exposes the tooling as MCP tools.
 
-```bash
-avo studio               # opens http://localhost:… (files stay the source of truth)
-```
+## What you can document
 
-Studio is a local visual editor that opens on a **Home page** of your docs —
-click a card and you're editing it in place (schema-aware forms or raw YAML,
-live preview). **Present** (⇧⌘P) shows the current doc as slides, and **Site ↗**
-opens the built docs site in its own tab.
-
-Every edit writes straight back to the `.md` file (atomic, hash-guarded), so Studio, your editor, and your AI agent all stay in sync.
-
-**Export, right from the toolbar.** The **Export** button turns the doc you're looking at — unsaved edits included — into a file:
-
-| Button | Output |
+| For… | Blocks |
 |---|---|
-| **HTML page** | A standalone `.html` — inline CSS + SVG, no runtime. |
-| **Slide deck (HTML)** | A self-contained `.slides.html` presentation. |
-| **PDF** | A print-ready PDF (headless Chromium; downloaded once on first use). |
-| **PowerPoint** | A real `.pptx` — every slide photographed at 2× as a full-bleed 16:9 image, titles as speaker notes. Add `--editable` for native text boxes, bullets, tables, code and charts (diagrams stay images). |
+| Architecture & system design | `c4` `block` `cluster` `archmap` `dfd` `erd` `usecase` `pkg` |
+| Flows, state, time | `sequence` `flow` `state` `swimlane` `saga` `spans` `timing` `gitgraph` `cycle` |
+| Events & messaging | `block` (`preset: event`) `eventcontract` `saga` — 12 patterns in the skill |
+| API reference | `endpoint` `eventcontract` `packet` `code` |
+| Quality, audits, performance | `audit` `checklist` `perfbudget` `percentiles` `threatmodel` `slo` `benchmark` `risk` |
+| Charts | `chart` (bar · line · area · scatter · donut · pie · gauge · radar · waterfall · funnel · pareto · histogram · bell · boxplot · bullet) `heatmap` `sankey` `treemap` `slopegraph` `quadrant` |
+| Decks & decisions | `scqa` `takeaways` `bignumber` `options` `harvey` `scorecard` `scenarios` `chevrons` `roadmap` `swot` `okr` `wardley` |
+| Planning | `userstory` `storymap` `kanban` `timeline` `gantt` `rollout` `changelog` `statustable` `agenda` |
+| Design systems | `wireframe` `palette` `typescale` `dodont` `inventory` `frontend` `felogic` |
+| Algorithms | `array` `linkedlist` `bintree` `hashmap` `graph` |
+| AI & ML | `agentloop` `trace` `prompt` `context` `neuralnet` `modelcard` |
+| Prose structure | `callout` `list` `glossary` `faq` `steps` `spec` `layers` `gallery` `mindmap` `tree` `fishbone` |
 
-## 📄 Turn a doc into HTML, slides, a PDF, or a PowerPoint deck
+107 block types across 13 families. Every field, enum, and terse form: `avo block <type>`. Twelve old names (`infra` `event` `ddd` `network` `belogic` `dag` `waterfall` `funnel` `diff` `terminal` `mece` `tracker`) remain permanent aliases.
 
-The same exports from the CLI, for any doc:
+## Outputs
 
-```bash
-avo html   docs/orders.md          # → orders.html   (standalone)
-avo slides docs/plan.md            # → plan.slides.html  (one slide per # / ## heading)
-avo pdf    docs/plan.md            # → plan.pdf
-avo pptx   docs/plan.md            # → plan.pptx  (real PowerPoint, slides as crisp images)
-avo pptx   docs/plan.md --editable # → native text/tables/charts you can edit in PowerPoint
-avo preview docs/orders.md         # render to a temp file and just open it
-```
-
-Add `-p` to open the result in your browser, or `-o <path>` to choose the filename.
-
-## 🌐 Build a docs site — `avo build`
-
-```bash
-avo build                # → dist/ : index, sidebar nav, cross-doc links, Doc | Slides toggle
-```
-
-A static site from all your docs — deploy the folder anywhere.
-
-## 🌗 One look, light and dark
-
-Every export uses the same editorial skin — warm paper, near-black ink, one rust accent — and follows the reader's OS light/dark setting. There is nothing to configure.
-
-## ✅ Validate — `avo check`
-
-```bash
-avo check                        # all docs (default: docs/**/*.md)
-avo check docs/orders.md         # one file or glob
-avo check --json                 # machine-readable diagnostics
-```
-
-Exits non-zero on any error, so it drops straight into CI. It catches bad fields, unknown block types, duplicate ids, and broken `doc#id` references — with the exact file, line, and a suggestion.
-
----
-
-## The 94 block types
-
-| Family | Blocks |
+| Command | Result |
 |---|---|
-| Document & meta | `meta` |
-| Prose & structure | `prose` `callout` `glossary` `pullquote` `layers` `list` `figure` `faq` `divider` `bignumber` `takeaways` |
-| Tables & metrics | `table` `stats` `slo` `code` `gallery` `benchmark` |
-| API reference | `endpoint` `eventcontract` `packet` |
-| Sequence & state | `sequence` `spans` `state` |
-| Data model | `erd` |
-| Architecture | `c4` `block` `cluster` `archmap` |
-| Code-flavoured | `felogic` `frontend` `uml` `pattern` |
-| Flow & process | `flow` `saga` `dfd` `swimlane` `steps` `gitgraph` |
-| Charts & overviews | `graph` `tree` `gantt` `pyramid` `quadrant` `journey` `chart` `heatmap` `sankey` `treemap` `venn` `fishbone` `slopegraph` |
-| Business & strategy | `swot` `okr` `persona` `wardley` `harvey` `scqa` `scenarios` |
-| Design system | `palette` `typescale` `dodont` `inventory` |
-| Algorithms & data structures | `array` `linkedlist` `bintree` `hashmap` |
-| AI & agents | `agentloop` `trace` `prompt` `context` |
-| Access control / RBAC | `matrix` `anatomy` `composition` |
-| Presentation cards | `drivers` `options` `scorecard` `spec` `envelope` `team` |
-| Planning & meta | `userstory` `stories` `timeline` `changelog` `kanban` `storymap` `rollout` `statustable` `risk` `cvt` `proscons` `agenda` |
-| UI mockups | `wireframe` |
+| `avo html docs/x.md` | A standalone page: inline CSS + SVG, no runtime, ~180 KB |
+| `avo slides docs/x.md` | A self-contained deck, one slide per heading |
+| `avo pdf docs/x.md` | Print-ready PDF (Chromium fetched once on first use) |
+| `avo build` | A static docs site: index, sidebar, cross-doc links |
+| `avo studio` | Local editor: Home page of your docs, edit in place, Present, Export |
 
-Some blocks fold former separate types into a variant — `block` takes `preset: infra | event | ddd | network`, `chart` takes `kind: waterfall | funnel`, `code` takes `kind: diff | terminal`, and so on. The 12 old names (`infra` `event` `ddd` `network` `belogic` `dag` `waterfall` `funnel` `diff` `terminal` `mece` `tracker`) stay **permanent aliases**: existing docs keep validating and rendering byte-for-byte, with only an informational `W_ALIAS_TYPE` warning. Full schemas with worked examples live in `.avodado/skill/SKILL.md`.
+One look, dark by default. `"colorScheme": "light"` or `"system"` in `avodado.config.json` switches it; print and PDF are always light.
 
-## Cross-references (`doc#id`)
+## How the check keeps docs honest
 
-Any block can carry a top-level `id:`; other blocks reference it as `doc#id` (or `#id` within the same document):
+```bash
+avo check                 # docs/**/*.md
+avo check --json          # { code, file, line, column, message, hint, suggestions }
+```
 
-```userstory
-id: US-142
-role: shopper
-want: pay in one step
-soThat: I can complete my purchase quickly
+Strict schemas (an unknown field is an error, with "did you mean"), repo-global unique ids, `doc#id` references resolved across files, density caps that say how to split a crowded diagram, prose lints for long sentences and filler, and lens lints: an unlabelled `c4` arrow, a third block of the same type. The parser also repairs the one YAML trap agents hit most — an unquoted comma inside an inline map — so `label: Hold as BACKORDERED, email ETA` means what the author meant.
+
+## Cross-references
+
+```yaml
 links:
   - { ref: orders-api#seq-place-order, label: Request flow }
 ```
 
-- Ids are **repo-global unique** — a duplicate fails `avo check` with both locations.
-- A `ref` to an id that doesn't exist fails `avo check` with the file, line, and the offending ref.
-
-CI gates on this for free.
+Any block with a top-level `id:` can be referenced as `doc#id` (or `#id` in the same doc). Duplicates and dangling refs fail the check with both locations.
 
 ## Packages
 
 | Package | Purpose |
-| --- | --- |
-| [`@avodado/core`](./packages/core) | Parser, Zod block schemas (all 94 types + 12 permanent aliases), validation, reference resolver. Pure — no I/O. |
-| [`@avodado/render`](./packages/render) | All rendering: `renderDocument` (standalone HTML) + `renderDocumentParts` (embeddable) + `toSlides` (self-contained decks). Inline CSS + SVG; one editorial look, light and dark. |
-| [`avodado`](./packages/cli) | The `avo` CLI (also runs as `avodado`) — `init · check · studio · build · html · slides · pdf · demo · catalog · design · tour · skill · sync` + per-tool installers. PDF export (Playwright) lives here. |
-| [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` — a Home page of your docs, in-place editing, Present, plus HTML / slides / PDF export. |
-| [`@avodado/mcp`](./packages/mcp) | Model Context Protocol server exposing the doc tooling to any MCP client. |
-
-## Full CLI reference
+|---|---|
+| [`avodado`](./packages/cli) | The `avo` CLI: `check · block · demo · html · slides · pdf · build · studio · init · new · audit · sync · mcp · skill` |
+| [`@avodado/core`](./packages/core) | Parser, block registry, Zod schemas, terse grammars, diagnostics. Pure, no I/O |
+| [`@avodado/render`](./packages/render) | Deterministic renderers; HTML + SVG, one editorial skin |
+| [`@avodado/studio`](./packages/studio) | The local visual editor served by `avo studio` |
+| [`@avodado/mcp`](./packages/mcp) | MCP server exposing the tooling to any MCP client |
+| [`skills/avodado`](./skills/avodado) | The agent skill: a 170-line decision path plus selection sheets per family |
 
 <details>
-<summary><strong>Every command at a glance</strong></summary>
+<summary><strong>Full CLI reference</strong></summary>
 
 | Command | What it does |
 |---|---|
-| `avo init` | Scaffold a project — docs, config, skill, editor adapters (interactive; `--yes` for CI) |
-| `avo check [globs]` | Validate docs — schemas, refs, duplicate ids (exits non-zero on errors; `--json`) |
-| `avo preview <in>` | Render to a temp HTML file and open it |
-| `avo studio` | The local editor — a **Home** page of your docs, edit in place, **Present** as slides, **Export** HTML/slides/PDF, built site one click away (`--port`, `--no-open`) |
-| `avo build` | Build a static HTML site from all docs — index, sidebar nav, cross-doc links (`--out`) |
-| `avo html / slides / pdf <in>` | Render one doc to HTML, a slide deck, or a PDF (`-p` opens, `-o` writes) |
-| `avo demo [family] [-s]` | Render the built-in showcase — every block, or one family; bare `avo demo` shows a picker (`-s` for slides) |
-| `avo catalog [-p\|-s]` | List every block + description, grouped by family (`-p` HTML gallery, `-s` a deck) |
-| `avo tour` | Guided, hands-on walkthrough (7 short chapters) |
-| `avo design [slug]` | Design-pattern library (system · AI/agent · code) — grab a template; `-p`/`-s` for the gallery |
-| `avo block / template` | Scaffold a single block or a doc template |
-| `avo skill` | Print the authoring grammar as a copy-paste system prompt |
-| `avo sync openapi <spec>` | Generate an API doc from an OpenAPI spec |
-| `avo sync csv <file>` | Turn a CSV into a `table`/`statustable`/`chart` block, or a whole doc with `--out` |
-| `avo sync sql\|dbml\|prisma <file>` | Turn a SQL DDL, DBML or Prisma schema into an `erd` block, or a whole doc with `--out` |
-| `avo install <tool>` | Install/update the skill + an AI-tool adapter (`claude` \| `cursor` \| `copilot` \| `windsurf`) |
-| `avo mcp` | MCP client setup snippets; `avo mcp --stdio` runs the server |
+| `avo init` | Scaffold `avodado.config.json` + two starter docs (`--force` overwrites) |
+| `avo new [name]` | Scaffold a whole doc (`adr`, `runbook`, …) or one block |
+| `avo check [globs]` | Validate — schemas, refs, ids, density, prose, lens lints (`--json`) |
+| `avo block [type]` | The reference: every type on one line, or one type's contract (`--json`) |
+| `avo demo [family] [-s]` | Render the built-in showcase — every block, or one family (`-s` slides) |
+| `avo html / slides / pdf <in>` | Render one doc (`-p` opens, `-o` writes) |
+| `avo <file.md>` | Render and open one doc |
+| `avo build` | Static site from all docs (`--out`) |
+| `avo studio` | The local editor (`--port`, `--no-open`) |
+| `avo audit [path]` | Audit a codebase and recommend which docs to write, with evidence |
+| `avo sync openapi\|csv\|sql\|dbml\|prisma <file>` | Generate blocks or docs from an OpenAPI spec, a CSV, or a schema |
+| `avo mcp` | MCP client setup; `--stdio` runs the server |
+| `avo skill` | Print the skill as one document |
 
-Exit codes: `0` clean · `1` errors present · `2` CLI usage error. Set `AVO_PLAIN=1` (or run in CI) to force plain output in a TTY.
+Exit codes: `0` clean · `1` errors · `2` usage error. `AVO_PLAIN=1` forces plain output.
 
 </details>
 
-## Architecture, in one paragraph
+## Design rules
 
-`@avodado/core` parses Markdown into segments (prose or typed blocks). The **block registry** in core is a `Record<BlockType, BlockDef>` — adding a block type requires updating the schema and every rendering registry in lock-step (omitting one is a compile error). The renderer turns a Document into HTML via a parallel `Record<BlockType, (data) => string>` map; export wraps render with a PDF path; the CLI wires it together with I/O; the MCP server exposes it to agents. Dependencies always point inward to `core`; only the CLI throws and sets exit codes. See [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+- **Geometry is code, never prompt.** If a fix tempts you to teach the model coordinates, the fix belongs in the renderer.
+- **Registries are exhaustive.** A block type exists only when it has a schema, a renderer, a skill entry, a catalog example, and a test.
+- **One look.** Tokens only, no literal colours; one accent per diagram, spent on the one thing the reader must see.
+- **Files are the truth.** Studio, the CLI, and agents write the same `.md`; nothing else holds state.
+
+See [`ARCHITECTURE.md`](./ARCHITECTURE.md) and the renderer's [`DESIGN.md`](./packages/render/DESIGN.md).
 
 ## Development
 
 ```bash
 pnpm install
-pnpm typecheck      # all packages
-pnpm test           # vitest across all packages
-pnpm lint           # ESLint + typescript-eslint
-pnpm build          # tsup, ESM
+pnpm typecheck && pnpm test && pnpm lint && pnpm build
+node packages/cli/dist/bin.js check        # the repo's own docs
 ```
 
-PDF and PowerPoint export need Chromium. `avo pdf` / `avo pptx` (and Studio's PDF/PowerPoint export) **downloads it automatically on first use** (the matching build, ~100 MB, one time). To pre-install: `npx playwright install chromium`.
+Evals live in [`evals/`](./evals): block selection, end-to-end generation, and the head-to-head. Add a scenario when you add a block.
+
+If Avodado saves you a diagram, a star helps other people find it.
 
 ## License
 

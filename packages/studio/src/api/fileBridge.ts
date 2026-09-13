@@ -23,12 +23,12 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 /** Fetches server meta (version, docs dir). */
-export function fetchMeta(): Promise<StudioMeta> {
+function fetchMeta(): Promise<StudioMeta> {
   return getJson<StudioMeta>('/api/meta');
 }
 
 /** Fetches the doc list. */
-export function fetchDocs(): Promise<DocListItem[]> {
+function fetchDocs(): Promise<DocListItem[]> {
   return getJson<DocListItem[]>('/api/docs');
 }
 

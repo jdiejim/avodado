@@ -40,13 +40,12 @@ import { parseDocument, validateDocument } from '@avodado/core';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
 import { toPdf } from '../io/pdf.js';
-import { toPptx } from '../io/pptx.js';
 import { cliVersion } from '../io/version.js';
 import { createDocsWatcher, createConfigWatcher } from '../io/watch.js';
 import { buildSite, type SiteDoc, type SitePage } from './site.js';
 
 /** Inputs to {@link runStudio}. */
-export interface StudioOptions {
+interface StudioOptions {
   /** Project root. */
   readonly cwd: string;
   /** Port to listen on. `0` = ephemeral (the actual port is printed). */
@@ -180,6 +179,7 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
       doc: parseDocument(f.source, f.slug),
     }));
     const site = buildSite(docs, {
+        colorScheme: config.colorScheme,
       liveReload: true, // the script hits /__events — same origin here
       richIndex: config.richIndex, // on by default; config `false` opts out
     });
@@ -275,7 +275,7 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
   // ── API routes ─────────────────────────────────────────────────────────────
 
   const handleMeta = (res: ServerResponse): void => {
-    sendJson(res, 200, { version: cliVersion(), docsDir: config.docsDir });
+    sendJson(res, 200, { version: cliVersion(), docsDir: config.docsDir, colorScheme: config.colorScheme });
   };
 
   /**
@@ -398,9 +398,9 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
     sendJson(res, 200, { hash, mtimeMs: st.mtimeMs });
   };
 
-  // ── Chromium exports (POST /api/export/pdf | /api/export/pptx) ─────────────
+  // ── Chromium export (POST /api/export/pdf) ──────────────────────────────────
   // The studio renders the doc to HTML in the browser and POSTs it here
-  // (page HTML for PDF, deck HTML for PowerPoint); we run it through headless
+  // (page HTML for PDF); we run it through headless
   // Chromium and stream the bytes back. Chromium is downloaded on the first
   // export (one time) — hence the loopback-only server is the natural place
   // for it. Failures (Playwright/Chromium missing) surface as a 500 with a
@@ -436,10 +436,6 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
   const handleExportPdf = chromiumExport(
     (html) => toPdf(html, { autoInstallBrowser: true, log: (m) => console.log(m) }),
     'application/pdf',
-  );
-  const handleExportPptx = chromiumExport(
-    (html) => toPptx(html, { autoInstallBrowser: true, log: (m) => console.log(m) }),
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   );
 
   // ── Built site pages (/site/…) ─────────────────────────────────────────────
@@ -539,10 +535,6 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
     if (pathname === '/api/export/pdf') {
       if (method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
       return handleExportPdf(req, res);
-    }
-    if (pathname === '/api/export/pptx') {
-      if (method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
-      return handleExportPptx(req, res);
     }
     if (pathname.startsWith('/api/doc/')) {
       const hit = resolveDocPath(docsDirAbs, pathname.slice('/api/doc/'.length));

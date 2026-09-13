@@ -9,8 +9,8 @@ import type { BlockType } from '@avodado/core';
 import { thumbnailHtml } from '../lib/thumbs.js';
 
 /** Native docskin content is laid out at this width, then scaled into the card. */
-export const THUMB_NATIVE_W = 760;
-export const THUMB_SCALE = 0.235;
+const THUMB_NATIVE_W = 760;
+const THUMB_SCALE = 0.235;
 
 /** A block card thumbnail — renders lazily (when scrolled into view) via the global memo. */
 export function Thumb({ type }: { type: BlockType }): JSX.Element {

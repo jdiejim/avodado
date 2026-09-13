@@ -11,7 +11,7 @@ import { parse as yamlParse } from 'yaml';
 import { createJiti } from 'jiti';
 
 /** Loaded configuration. */
-export interface AvodadoConfig {
+interface AvodadoConfig {
   /** Where docs live (relative to project root). Defaults to `docs`. */
   readonly docsDir: string;
   /** Where rendered output goes (relative to project root). Defaults to `dist`. */
@@ -20,9 +20,14 @@ export interface AvodadoConfig {
    * Defaults to `true` (absent = on); set `false` — or pass `--no-rich-index` —
    * to keep the plain card grid. */
   readonly richIndex: boolean;
+  /**
+   * The colour scheme of every rendered page: `dark` (default — the look),
+   * `light`, or `system` (the reader's OS decides). Print is always light.
+   */
+  readonly colorScheme: 'dark' | 'light' | 'system';
 }
 
-const DEFAULTS: AvodadoConfig = { docsDir: 'docs', outDir: 'dist', richIndex: true };
+const DEFAULTS: AvodadoConfig = { docsDir: 'docs', outDir: 'dist', richIndex: true, colorScheme: 'dark' };
 
 const CONFIG_FILES = [
   'avodado.config.ts',
@@ -66,10 +71,15 @@ async function readConfig(path: string): Promise<unknown> {
 
 function mergeWithDefaults(raw: unknown): AvodadoConfig {
   if (raw === null || typeof raw !== 'object') return DEFAULTS;
-  const r = raw as { docsDir?: unknown; outDir?: unknown; richIndex?: unknown };
+  const r = raw as { docsDir?: unknown; outDir?: unknown; richIndex?: unknown; colorScheme?: unknown };
+  const scheme =
+    r.colorScheme === 'light' || r.colorScheme === 'system' || r.colorScheme === 'dark'
+      ? r.colorScheme
+      : DEFAULTS.colorScheme;
   return {
     docsDir: typeof r.docsDir === 'string' ? r.docsDir : DEFAULTS.docsDir,
     outDir: typeof r.outDir === 'string' ? r.outDir : DEFAULTS.outDir,
     richIndex: typeof r.richIndex === 'boolean' ? r.richIndex : DEFAULTS.richIndex,
+    colorScheme: scheme,
   };
 }

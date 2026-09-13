@@ -21,8 +21,6 @@ import { isPristineRow, nextPrimaryField, rowEnterAction, tabOrderPaths } from '
 import { toDetailedValue, toSimpleValue, unionArmFor, unionObjectArm, unionObjectArms } from '../form/union.js';
 import { focusControl, focusablesIn } from '../lib/focus.js';
 
-export { humanizeFieldName };
-
 /** A path into a YAML body. */
 export type YamlPath = ReadonlyArray<string | number>;
 

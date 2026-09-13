@@ -15,6 +15,7 @@ coverage
 out
 
 # build caches / generated
+packages/cli/templates/skill/
 *.tsbuildinfo
 *.generated.ts
 next-env.d.ts

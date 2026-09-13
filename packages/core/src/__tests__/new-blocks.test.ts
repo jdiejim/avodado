@@ -171,7 +171,7 @@ describe('Phase 4 blocks — validation', () => {
   it('c4 validates with required `kind` on each node', () => {
     expect(
       diagsFor(
-        '```c4\nlevel: container\nnodes:\n  - { id: u, col: 1, row: 1, kind: person, name: User }\n  - { id: s, col: 2, row: 1, kind: system, name: App }\nedges:\n  - { from: u, to: s }\n```',
+        '```c4\nlevel: container\nnodes:\n  - { id: u, col: 1, row: 1, kind: person, name: User }\n  - { id: s, col: 2, row: 1, kind: system, name: App }\nedges:\n  - { from: u, to: s, label: signs in, tech: HTTPS }\n```',
       ),
     ).toEqual([]);
   });

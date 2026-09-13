@@ -13,11 +13,15 @@ import { main } from './app.js';
 function flush(stream: NodeJS.WriteStream): Promise<void> {
   if (stream.writableLength === 0) return Promise.resolve();
   return new Promise((resolve) => {
+    // An empty write's callback runs once everything queued before it has
+    // reached the OS. Waiting for 'drain' instead would hang whenever the
+    // buffer never crossed the high-water mark (no 'drain' is ever emitted)
+    // and end the process with an unsettled top-level await.
+    stream.write('', () => resolve());
     // Also settle on error/close — a consumer that stops reading (e.g. `| head`)
-    // never drains, and an unsettled await would warn at process exit.
-    stream.once('drain', resolve);
-    stream.once('error', resolve);
-    stream.once('close', resolve);
+    // never drains.
+    stream.once('error', () => resolve());
+    stream.once('close', () => resolve());
   });
 }
 

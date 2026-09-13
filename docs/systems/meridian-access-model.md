@@ -47,12 +47,15 @@ items:
   - { kicker: "Option 4 · S×R", title: Per-site role groups, how: "One group per persona per site; site and role bound together.", pros: [Least privilege per site, Approval matches plant accountability, Clean per-plant audit], cons: ["Least scalable — groups grow with sites × roles", Adding a role means a group at every plant], verdict: "CHOSEN — matches the constraints best", tone: chosen }
 ```
 
-```callout
-tone: tip
-title: How to read the verdicts
-body: Option 1 fails the mandate outright. The hybrid is the most scalable but leaves
-  role governance outside IGA. Options 3 and 4 both meet the mandate; between
-  them the choice is scale vs. granularity, and the granular path wins.
+How to read the verdicts:
+
+```list
+style: accent
+items:
+  - { lead: Option 1, text: Fails the mandate outright., accent: red }
+  - { lead: Option 2 · Hybrid, text: "The most scalable, but leaves role governance outside IGA.", accent: amber }
+  - { lead: Options 3 and 4, text: "Both meet the mandate. Between them the choice is scale vs. granularity.", accent: blue }
+  - { lead: Option 4 · S×R, text: The granular path wins., accent: green }
 ```
 
 ## How the chosen model works
@@ -107,33 +110,39 @@ edges:
   - { from: lib, to: db, label: one cached read }
 ```
 
-```callout
-tone: note
-title: The math, with real numbers — 13 sites, 7 roles
-body: "Directory ceiling: 13 site groups + up to 91 role groups (~105 total), in
-  practice fewer because groups are minted staffed-only. Per user: a single-site cycle
-  manager carries 1 group; a reader at three plants carries 3. The pathological
-  all-roles-all-sites user carries 91 — still under the ~200-group token limit. A
-  realistic multi-site user lands in the 5–15 range."
+The math, with real numbers. Groups are minted staffed-only, so the directory
+ceiling is an upper bound and the real count is lower.
+
+```envelope
+title: Group count — 13 sites, 7 roles
+assumptions:
+  - { label: Sites, value: "13" }
+  - { label: Roles (personas), value: "7" }
+  - { label: Token group limit, value: "~200" }
+steps:
+  - { label: Site groups, calc: "1 per site", result: "13" }
+  - { label: Role groups, calc: "13 sites × 7 roles", result: "up to 91" }
+  - { label: Directory ceiling, calc: "13 + 91 (fewer in practice — staffed-only minting)", result: "~105" }
+  - { label: Single-site cycle manager, calc: "1 site × 1 role", result: "1 group" }
+  - { label: Reader at three plants, calc: "3 × SiteN-Users", result: "3 groups" }
+  - { label: Pathological all-roles-all-sites user, calc: "13 × 7", result: "91 — under the ~200 limit" }
+result: { label: Realistic multi-site user, value: "5–15 groups" }
 ```
 
-```callout
-tone: warn
+Group multiplication is the price of the granular path. Discipline holds it in
+check: script-only creation, staffed-only minting, and an onboarding script that
+covers add-persona as well as add-plant.
+
+```risk
 title: Trade-offs and risks
-body: "Group multiplication is real directory surface — names, owners, reviews. Adding
-  a new persona scales poorly. One new role means a group per plant, plus IGA
-  roles and reviewer alignment everywhere (in S+R that's one group). Held in check by
-  discipline: script-only creation, staffed-only minting, and the onboarding script
-  must cover add-persona as well as add-plant."
+items:
+  - { risk: "Group multiplication is real directory surface — names, owners, reviews", likelihood: high, impact: med, mitigation: "Script-only creation; staffed-only minting.", owner: Architects + IT, status: mitigating }
+  - { risk: "Adding a new persona scales poorly — one new role means a group per plant, plus IGA roles and reviewer alignment everywhere (in S+R that is one group)", likelihood: med, impact: med, mitigation: "The onboarding script must cover add-persona as well as add-plant.", owner: Architects + IT, status: mitigating }
+  - { risk: "Group growth outweighs the security value", likelihood: low, impact: med, mitigation: "Collapse the persona back to one global group (Option 3). Rare exceptions become DB overrides. A data change, not a rebuild.", owner: Architects, status: open }
 ```
 
-```callout
-tone: tip
-title: The fallback remains open
-body: The resolver reads "role at site X = groups matching X, or global". If group
-  growth ever outweighs the security value, a persona collapses back to one global
-  group (Option 3). Rare exceptions become DB overrides. A data change, not a rebuild.
-```
+The fallback stays open. The resolver reads "role at site X = groups matching X,
+or global", so a persona can collapse to one global group without a rebuild.
 
 ## The approach — three layers
 
@@ -243,13 +252,10 @@ rows:
   - { label: Scheduler, cells: ["—", "—", Edit] }
 ```
 
-```callout
-tone: note
-title: This view is the summary — the workbook is the detail
-body: The badges are the altitude leadership signs off at; each expands into specific
-  feature:action rows authored in the companion spreadsheet (one tab per app). That
-  workbook is the source the seed migrations are built from.
-```
+This view is the summary; the workbook is the detail. The badges are the altitude
+leadership signs off at. Each badge expands into specific `feature:action` rows
+authored in the companion spreadsheet (one tab per app). That workbook is the source
+the seed migrations are built from.
 
 ## How the API works
 
@@ -337,12 +343,12 @@ process takes the group away; the next token drops it, and the same gates start
 denying. Immediate kill switch when needed: `users.status = "inactive"` plus cache
 revoke.
 
-```callout
-tone: tip
+```takeaways
 title: Why this matters to architects
-body: Authorization is fast and self-contained — two of three layers need nothing but
-  the token, and the third is a cached single-table resolution. No runtime dependency
-  on the IGA stack.
+items:
+  - { text: Authorization is fast and self-contained, detail: Two of three layers need nothing but the token. }
+  - { text: The third layer is a cached single-table resolution, detail: At most one DB read per minute per user. }
+  - { text: No runtime dependency on the IGA stack, detail: IGA and IdP provision groups; the app only reads the token. }
 ```
 
 ## Phasing
@@ -373,14 +379,18 @@ items:
 
 ## Stories & the additive rule
 
-```callout
-tone: tip
-title: Read this before the stories
-body: Once the pattern is in place, no feature is done until its access is defined.
-  Every story that adds an action must add its permission string, put it in the
-  matrix via seed migration, and gate both API and UI. This happens in the same
-  story, not a follow-up. RBAC stops being a project and becomes part of the
-  definition of done.
+Once the pattern is in place, no feature is done until its access is defined. RBAC
+stops being a project and becomes part of the definition of done. Every story that
+adds an action carries four obligations:
+
+```list
+title: The additive rule
+style: number
+items:
+  - { lead: Add the permission string, text: "One app:feature:action string on the canonical list." }
+  - { lead: Put it in the matrix, text: Applied via seed migration as a reviewed diff. }
+  - { lead: Gate both API and UI, text: The route checks it; the control hides without it. }
+  - { lead: Same story, not a follow-up, text: The access work ships with the action. }
 ```
 
 ```userstory

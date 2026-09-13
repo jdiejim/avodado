@@ -12,7 +12,7 @@ export type ServerEvent =
   | { readonly type: 'meta' };
 
 /** Parses one SSE `data:` payload; returns `null` for anything malformed. */
-export function parseServerEvent(data: string): ServerEvent | null {
+function parseServerEvent(data: string): ServerEvent | null {
   try {
     const raw = JSON.parse(data) as { type?: unknown; slug?: unknown; hash?: unknown };
     if (raw.type === 'meta') return { type: 'meta' };

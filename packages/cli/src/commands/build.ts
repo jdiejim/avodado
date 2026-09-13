@@ -29,7 +29,7 @@ import { cliVersion } from '../io/version.js';
 import { buildSite, type SiteDoc } from './site.js';
 
 /** Inputs to {@link runBuild}. */
-export interface BuildOptions {
+interface BuildOptions {
   /** Project root. */
   readonly cwd: string;
   /** Output directory override (defaults to config `outDir`). */
@@ -41,7 +41,7 @@ export interface BuildOptions {
 }
 
 /** Result of {@link runBuild}. */
-export interface BuildResult {
+interface BuildResult {
   /** Absolute output directory. */
   readonly outDir: string;
   /** Output directory relative to cwd (for display). */
@@ -74,7 +74,7 @@ export async function runBuild(opts: BuildOptions): Promise<BuildResult> {
       doc: parseDocument(f.source, f.slug),
     }));
 
-  const site = buildSite(docs, { richIndex: opts.richIndex ?? config.richIndex });
+  const site = buildSite(docs, { richIndex: opts.richIndex ?? config.richIndex, colorScheme: config.colorScheme });
   const diagnostics: Diagnostic[] = [...encodingDiagnostics(files), ...site.diagnostics];
 
   // Read the previous manifest before writing, so a page this build also

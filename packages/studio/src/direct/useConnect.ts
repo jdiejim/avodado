@@ -48,7 +48,7 @@ import type { DirectHost } from './host.js';
 import { numAttr, readGeom } from './useDrag.js';
 
 /** What DirectLayer renders while a connect gesture / picker is live. */
-export interface ConnectVisuals {
+interface ConnectVisuals {
   /** Rubber-band wire, wrapper-relative endpoints. */
   readonly wire: { x1: number; y1: number; x2: number; y2: number } | null;
   /** Highlight box of the hovered drop-target node. */

@@ -25,7 +25,7 @@ import { joinBlockPath, parseBlockPath } from './paths.js';
 /* ─── classification ──────────────────────────────────────────────────────── */
 
 /** What arrows do to the selected part. */
-export type PartClass =
+type PartClass =
   /** Grid node: arrows move one cell (`listPath` = nodes/states/steps). */
   | { readonly kind: 'grid'; readonly listPath: string; readonly index: number }
   /** Dashed group wrapper: arrows move the range; ⇧+arrows grow/shrink it. */
@@ -137,12 +137,12 @@ export function capturesArrows(cls: PartClass): boolean {
 export type ArrowKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown';
 
 /** True for ←/→. */
-export function isHorizontal(key: ArrowKey): boolean {
+function isHorizontal(key: ArrowKey): boolean {
   return key === 'ArrowLeft' || key === 'ArrowRight';
 }
 
 /** -1 for ←/↑, +1 for →/↓. */
-export function arrowDir(key: ArrowKey): -1 | 1 {
+function arrowDir(key: ArrowKey): -1 | 1 {
   return key === 'ArrowLeft' || key === 'ArrowUp' ? -1 : 1;
 }
 
@@ -225,7 +225,7 @@ export function kanbanPathAfterMove(args: {
 /* ─── keyboard routing precedence ─────────────────────────────────────────── */
 
 /** Which surface owns the keyboard right now. */
-export type KeySurface = 'sheet' | 'part' | 'block' | 'canvas';
+type KeySurface = 'sheet' | 'part' | 'block' | 'canvas';
 
 /**
  * The precedence ladder: the modal sheet first, then a selected PART (its

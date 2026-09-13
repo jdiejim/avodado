@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { changesSummary } from '../state/changes.js';
 import { hasServer } from '../api/client.js';
-import { exportDeckHtml, exportDocHtml, exportPdf, exportPptx } from '../lib/export.js';
+import { exportDeckHtml, exportDocHtml, exportPdf } from '../lib/export.js';
 import { docFolder, editedAgo } from '../lib/docList.js';
 import { buildShareUrl, SHARE_LIMIT } from '../lib/shareLink.js';
 import { useDerived, useStudio } from '../state/store.js';
@@ -59,7 +59,7 @@ function useMenuDismiss(
 /**
  * The share/export menu items — everything that takes the doc elsewhere:
  * copy a share link (page or deck), export it (HTML / slides / PDF /
- * PowerPoint), or open the built site. ONE implementation, rendered by both
+ * PDF), or open the built site. ONE implementation, rendered by both
  * the wide bar's Share ▾ popover and the narrow ⋯ overflow menu; handlers
  * are unchanged from the old ShareButton / ExportMenu / SiteLink trio.
  * `onDone` closes the owning popover after an action.
@@ -69,7 +69,6 @@ function ShareItems({ onDone }: { onDone: () => void }): JSX.Element {
   const toast = useStudio((s) => s.toast);
   const { doc } = useDerived();
   const [pdfBusy, setPdfBusy] = useState(false);
-  const [pptxBusy, setPptxBusy] = useState(false);
 
   const share = async (present: boolean): Promise<void> => {
     const { source, docs, currentSlug: slug } = useStudio.getState();
@@ -114,18 +113,6 @@ function ShareItems({ onDone }: { onDone: () => void }): JSX.Element {
       setPdfBusy(false);
     }
   };
-  const doPptx = async (): Promise<void> => {
-    setPptxBusy(true);
-    try {
-      await exportPptx(doc, slug);
-      toast('Exported PowerPoint deck', 'info');
-      onDone();
-    } catch (err) {
-      toast(`PowerPoint export failed: ${(err as Error).message}`, 'error');
-    } finally {
-      setPptxBusy(false);
-    }
-  };
 
   return (
     <>
@@ -142,7 +129,7 @@ function ShareItems({ onDone }: { onDone: () => void }): JSX.Element {
       <button type="button" role="menuitem" className="stu-export-item" onClick={doSlides}>
         Export slide deck
       </button>
-      {/* PDF and PowerPoint render in Chromium behind the local server;
+      {/* PDF renders in Chromium behind the local server;
           the hosted studio hides them rather than offering failure. */}
       {hasServer && (
         <>
@@ -154,15 +141,6 @@ function ShareItems({ onDone }: { onDone: () => void }): JSX.Element {
             onClick={() => void doPdf()}
           >
             {pdfBusy ? 'Exporting PDF…' : 'Export PDF'}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="stu-export-item"
-            disabled={pptxBusy}
-            onClick={() => void doPptx()}
-          >
-            {pptxBusy ? 'Exporting PowerPoint…' : 'Export PowerPoint'}
           </button>
           <div className="stu-export-sep" role="separator" />
           <a

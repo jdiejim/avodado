@@ -22,7 +22,7 @@ import type { PathSeg } from './paths.js';
 /* ─── drag-intent classifier ──────────────────────────────────────────────── */
 
 /** Pointer travel below this stays a click (→ micro-editor); above it, a drag. */
-export const DRAG_THRESHOLD_PX = 6;
+const DRAG_THRESHOLD_PX = 6;
 
 /** True once pointer travel exceeds the drag-intent threshold. */
 export function isDragGesture(dx: number, dy: number, threshold = DRAG_THRESHOLD_PX): boolean {

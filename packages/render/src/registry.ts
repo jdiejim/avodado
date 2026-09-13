@@ -103,6 +103,19 @@ import { renderSaga } from './blocks/saga.js';
 import { renderSlopegraph } from './blocks/slopegraph.js';
 import { renderSpans } from './blocks/spans.js';
 import { renderRollout } from './blocks/rollout.js';
+import { renderPerfbudget } from './blocks/perfbudget.js';
+import { renderPercentiles } from './blocks/percentiles.js';
+import { renderTiming } from './blocks/timing.js';
+import { renderThreatmodel } from './blocks/threatmodel.js';
+import { renderNeuralnet } from './blocks/neuralnet.js';
+import { renderMindmap } from './blocks/mindmap.js';
+import { renderUsecase } from './blocks/usecase.js';
+import { renderPkg } from './blocks/pkg.js';
+import { renderAudit } from './blocks/audit.js';
+import { renderChecklist } from './blocks/checklist.js';
+import { renderModelcard } from './blocks/modelcard.js';
+import { renderChevrons } from './blocks/chevrons.js';
+import { renderRoadmap } from './blocks/roadmap.js';
 
 /** Per-block HTML renderer signature. */
 export type HtmlRenderer<K extends BlockType> = (data: BlockDataMap[K]) => string;
@@ -206,4 +219,17 @@ export const htmlRenderers: HtmlRendererRegistry = {
   slopegraph: renderSlopegraph,
   spans: renderSpans,
   rollout: renderRollout,
+  perfbudget: renderPerfbudget,
+  percentiles: renderPercentiles,
+  timing: renderTiming,
+  threatmodel: renderThreatmodel,
+  neuralnet: renderNeuralnet,
+  mindmap: renderMindmap,
+  usecase: renderUsecase,
+  pkg: renderPkg,
+  audit: renderAudit,
+  checklist: renderChecklist,
+  modelcard: renderModelcard,
+  chevrons: renderChevrons,
+  roadmap: renderRoadmap,
 };

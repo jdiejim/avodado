@@ -14,7 +14,7 @@ import type { PathSet } from './drag.js';
 import type { PathSeg } from './paths.js';
 
 /** How one block kind spells its aligned column structure. */
-export interface ColumnSpec {
+interface ColumnSpec {
   /** The column-label list (`columns`, `cols`, `stages`, `xLabels`). */
   readonly colsPath: string;
   /** The value a NEW header cell gets (journey stages are `{label}`). */

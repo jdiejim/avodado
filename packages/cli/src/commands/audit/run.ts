@@ -12,13 +12,13 @@ import { loadGraphify, graphifyStats, graphifyGodNodes } from './graphifySource.
 import { deriveRecommendations } from './rules.js';
 import type { AuditReport, AuditSourceName } from './types.js';
 
-export interface RunAuditOptions {
+interface RunAuditOptions {
   readonly cwd: string;
   /** Directory to audit, relative to cwd (default: cwd itself). */
   readonly path?: string;
 }
 
-export type RunAuditResult =
+type RunAuditResult =
   | { readonly ok: true; readonly report: AuditReport }
   | { readonly ok: false; readonly error: string };
 

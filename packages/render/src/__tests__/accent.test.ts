@@ -87,7 +87,10 @@ function isFurniture(el: HTMLElement): boolean {
 
 /** The accent-carrying elements of the first block on the page. */
 function accentMarks(html: string): HTMLElement[] {
-  const page = parse(html);
+  // `<pre>` is parsed like any element (the parser keeps it raw by default,
+  // and it is the presence of the key that keeps it raw): a `code` block's
+  // highlighted lines live inside one.
+  const page = parse(html, { blockTextElements: { script: true, noscript: true, style: true } });
   const box = page.querySelector('.section-block');
   const inScope = (el: HTMLElement): boolean => box === null || el === box || ancestors(el).includes(box);
 
@@ -163,7 +166,7 @@ const ACCENT: Record<BlockType, AccentRule> = {
   // ── tables & code
   table: NONE,
   stats: NONE,
-  code: { source: 'renderer', catalogMax: 0, why: 'JSON keywords in the highlighter; no diagram accent' },
+  code: { source: 'author', catalogMax: 1, why: 'the lines the author named in `highlight` — one band per line, none without it' },
   slo: NONE,
   // ── API
   endpoint: { source: 'renderer', catalogMax: 1, why: 'the method pill — the diagram chrome DESIGN.md names' },
@@ -181,7 +184,7 @@ const ACCENT: Record<BlockType, AccentRule> = {
   flow: { source: 'renderer', catalogMax: 2, oneThingManyMarks: true, why: 'each arrival that ends well: an `end` node and the edge into it' },
   state: { source: 'renderer', catalogMax: 4, oneThingManyMarks: true, why: 'the final state and the edge into it (a ringed terminal is three marks)' },
   dfd: { source: 'renderer', catalogMax: 1, why: 'the entry process' },
-  swimlane: NONE,
+  swimlane: { source: 'author', catalogMax: 1, why: 'the step the author marked `accent: true` — the focal handoff' },
   steps: NONE,
   cycle: NONE,
   saga: { source: 'renderer', catalogMax: 3, oneThingManyMarks: true, why: 'the step that fails — one card, drawn as body, badge and chip' },
@@ -220,6 +223,19 @@ const ACCENT: Record<BlockType, AccentRule> = {
   risk: { source: 'author', catalogMax: 1, why: 'the status the author wrote (`mitigating`)' },
   statustable: { source: 'author', catalogMax: 0, why: 'the `amber` status the author wrote' },
   rollout: { source: 'author', catalogMax: 1, why: 'the stage the author marked `status: current`' },
+  perfbudget: { source: 'author', catalogMax: 1, why: 'the near-budget bar — the author’s measured value within 10% of its budget' },
+  percentiles: { source: 'renderer', catalogMax: 1, why: 'the p99 dot of a row inside its SLO — the tail is the answer; rows over the SLO take negative' },
+  timing: { source: 'author', catalogMax: 1, why: 'the state the author marked with a non-red accent (`half-open: amber`)' },
+  threatmodel: NONE,
+  neuralnet: NONE,
+  mindmap: { source: 'author', catalogMax: 0, why: 'one flagged branch takes the accent; several take the series ramp' },
+  usecase: NONE,
+  pkg: NONE,
+  modelcard: NONE,
+  audit: { source: 'author', catalogMax: 1, why: 'the finding the author marked `status: fixing` — the one being worked' },
+  checklist: { source: 'author', catalogMax: 1, why: 'the item the author marked `partial` — neither pass nor fail, the one to look at' },
+  chevrons: { source: 'author', catalogMax: 1, why: 'the step the author named as `current`' },
+  roadmap: { source: 'author', catalogMax: 2, oneThingManyMarks: true, why: 'the items the author marked `status: current` — the outline and the bold label of each' },
   // ── business & decisions
   matrix: NONE,
   anatomy: NONE,
@@ -263,6 +279,7 @@ const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
 
 /** Blocks whose accent could grow with the data, at 1 item and at 12. */
 const GROWERS: Record<string, (n: number, marked: boolean) => string> = {
+  code: (n, marked) => 'code: |\n' + range(n).map((i) => `  line ${i}`).join('\n') + (marked ? `\nhighlight: "1-${n}"` : ''),
   spans: (n) =>
     'spans:\n' +
     range(n)
@@ -280,6 +297,10 @@ const GROWERS: Record<string, (n: number, marked: boolean) => string> = {
           ' }',
       )
       .join('\n'),
+  swimlane: (n, marked) =>
+    'lanes: [Sales, Ops]\nsteps:\n' +
+    range(n).map((i) => `  - { id: s${i}, lane: ${i % 2 === 0 ? 'Sales' : 'Ops'}, label: Step ${i}${marked ? ', accent: true' : ''} }`).join('\n') +
+    '\nlinks:\n' + range(n).slice(1).map((i) => `  - s${i - 1} -> s${i}`).join('\n'),
   timeline: (n, marked) => 'items:\n' + range(n).map((i) => `  - { label: Q${i}, desc: item ${i}, status: ${marked ? 'current' : 'done'} }`).join('\n'),
   rollout: (n, marked) => 'stages:\n' + range(n).map((i) => `  - { name: stage ${i}, status: ${marked ? 'current' : 'done'}, traffic: ${i} }`).join('\n'),
   erd: (n) => 'entities:\n' + range(n).map((i) => `  - { name: e${i}, columns: [id uuid pk] }`).join('\n') + '\nrelations:\n' + range(n).slice(1).map((i) => `  - { from: e${i}, to: e0, card: "N:1" }`).join('\n'),

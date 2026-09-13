@@ -74,7 +74,7 @@ messages:
 
 ## Built on: publish / subscribe
 
-The fan-out backbone — grabbed from the pattern library (`avo design pub-sub`).
+The fan-out backbone: one publisher, many independent consumers.
 
 ```pattern
 name: Publish / subscribe
@@ -92,7 +92,7 @@ consequences:
 
 ## Built on: idempotency
 
-How "no duplicates" is guaranteed (`avo design idempotency`).
+How "no duplicates" is guaranteed.
 
 ```pattern
 name: Idempotency

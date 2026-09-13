@@ -14,7 +14,7 @@ cross-references and how slides themselves work.
 title: The four things Avodado gives you
 items:
   - { title: One source of truth, body: "Diagrams live in the .md file, not a separate tool.", tag: "WHAT", icon: doc, accent: blue }
-  - { title: Typed blocks, body: "94 block types with strict schemas.", tag: "HOW", icon: grid, accent: green }
+  - { title: Typed blocks, body: "107 block types with strict schemas.", tag: "HOW", icon: grid, accent: green }
   - { title: Validated, body: "avo check gates every change.", tag: "WHY", icon: check, accent: purple }
   - { title: Many outputs, body: "HTML, slides, and PDF from one file.", tag: "WHERE", icon: layers, accent: amber }
 ```
@@ -528,20 +528,6 @@ title: Authoring for slides
 body: "Each `#`/`##` heading starts a slide and is its title. Everything under it — prose and blocks — rides along, so a slide can stack several blocks. Alignment is automatic; force it with a heading marker: `{top}`, `{center}`, or `{bottom}`."
 ```
 
-## A library of patterns
-
-Don't hand-draw a known pattern — `avo design` ships 106 (system design · AI/agents
-· GoF & architecture code), each a ready card **plus a fitting diagram**.
-
-```list
-title: avo design
-style: number
-items:
-  - { lead: avo design, text: "List them all by category." }
-  - { lead: avo design oauth2, text: "Grab one — card + diagram — to your clipboard." }
-  - { lead: avo design --all --system, text: "Render the whole gallery as a page or deck." }
-```
-
 ## Always validate {center}
 
 ```code
@@ -552,8 +538,7 @@ blocks:
       avo check                 # validate everything
       avo preview docs/x.md     # render + open
       avo slides docs/x.md      # present it
-      avo catalog               # see every block, live
-      avo design --all          # browse the pattern library
+      avo block                 # every block, one line each
       avo pdf docs/x.md           # one doc to PDF
 ```
 
@@ -572,5 +557,5 @@ rows:
   - [A weighed decision, "options · proscons · cvt"]
   - [A plan, "timeline · gantt · kanban · statustable"]
   - [A story or chart, "pyramid · quadrant · journey · stats · chart"]
-note: The full grammar lives in .avodado/skill/SKILL.md.
+note: The skill lives in skills/avodado/SKILL.md; avo block <type> prints any block's fields.
 ```

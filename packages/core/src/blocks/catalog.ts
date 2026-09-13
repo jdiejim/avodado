@@ -1,7 +1,7 @@
 /**
  * The block catalog — per-block starter templates, one-line descriptions, and
  * the 12-way family grouping. Pure data (compile-time exhaustive
- * `Record<BlockType, …>` maps), shared by the CLI (`avo new`, `avo catalog`,
+ * `Record<BlockType, …>` maps), shared by the CLI (`avo new`, `avo block`,
  * `avo demo`) and any editing UI.
  */
 
@@ -34,7 +34,7 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
   stats:
     '```stats\ntitle: This quarter\nstats:\n  - { value: 12.4k, label: Active users, delta: "+18%", trend: up }\n  - { value: 99.95%, label: Uptime, delta: "0", trend: flat }\n  - { value: 142ms, label: p95 latency, delta: "-22ms", trend: up }\n```\n',
   code:
-    '```code\ntitle: Reference\nblocks:\n  - title: index.ts\n    lang: TypeScript\n    code: |\n      export function add(a: number, b: number): number {\n        return a + b;\n      }\n```\n',
+    '```code\ncols: 2\nlines: true\nblocks:\n  - title: add.ts\n    lang: TypeScript\n    highlight: "2"\n    code: |\n      export function add(a: number, b: number): number {\n        return a + b;\n      }\n  - title: add.test.ts\n    code: expect(add(2, 2)).toBe(4);\n```\n',
   agenda:
     '```agenda\nitems:\n  - { time: "09:00", duration: 30m, title: Intros, owner: Host }\n  - { time: "09:30", duration: 45m, title: Status updates, desc: Each team for 5 min }\n  - { time: "10:15", duration: 15m, title: Wrap-up }\n```\n',
   tree:
@@ -56,7 +56,7 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
   quadrant:
     '```quadrant\ntitle: Effort vs impact\nxAxis: { label: Effort, low: Low, high: High }\nyAxis: { label: Impact, low: Low, high: High }\nitems:\n  - { x: 0.2, y: 0.8, label: Quick win }\n  - { x: 0.8, y: 0.8, label: Big bet }\n  - { x: 0.2, y: 0.2, label: Fill-in }\n  - { x: 0.8, y: 0.2, label: Thankless }\n```\n',
   swimlane:
-    '```swimlane\ntitle: Cross-functional flow\nlanes:\n  - { label: Customer }\n  - { label: Sales }\n  - { label: Ops }\nsteps:\n  - { id: req, col: 1, lane: 0, kind: start, label: Submit request }\n  - { id: qual, col: 2, lane: 1, kind: decision, label: Qualify }\n  - { id: fulfill, col: 3, lane: 2, label: Fulfill }\n  - { id: done, col: 4, lane: 0, kind: end, label: Receive }\nlinks:\n  - { from: req, to: qual }\n  - { from: qual, to: fulfill }\n  - { from: fulfill, to: done }\n```\n',
+    '```swimlane\ntitle: Cross-functional flow\nlanes: [Customer, Sales, Ops]\nphases:\n  - { label: Intake, from: 1, to: 2 }\n  - { label: Delivery, from: 3 }\nsteps:\n  - req: Submit request · Customer · start\n  - { id: qual, lane: Sales, kind: decision, label: Qualify }\n  - { id: fulfill, lane: Ops, label: Fulfill, note: SLA 2 days, accent: true }\n  - done: Receive · Customer · end\nlinks:\n  - req -> qual\n  - qual -> fulfill: approved\n  - fulfill --> done: notify\n```\n',
   c4:
     '```c4\ntitle: System context\nlevel: context\nnodes:\n  - { id: user, col: 1, row: 1, kind: person, name: Shopper, desc: A customer placing an order. }\n  - { id: app, col: 2, row: 1, kind: system, name: ShopCo, desc: The retail platform. }\n  - { id: pay, col: 3, row: 1, kind: external, name: Payment GW, desc: Stripe authorisation. }\nedges:\n  - { from: user, to: app, label: places order }\n  - { from: app, to: pay, label: authorises }\n```\n',
   uml:
@@ -195,6 +195,32 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
     '```spans\ntitle: GET /orders/{id}\nunit: ms\nspans:\n  - api/get: GET /orders/{id} · 0 · 120\n  - api/auth: verify token · 4 · 10 · get\n  - db/q1: SELECT orders · 18 · 40 · get\n  - { id: cache, service: cache, name: "GET order:42", start: 62, duration: 3, parent: get, kind: cache }\n  - { id: pay, service: payments, name: GET /payments/42, start: 68, duration: 46, parent: get, kind: client, error: true }\n```\n',
   rollout:
     '```rollout\ntitle: Checkout v2\nstrategy: canary\nstages:\n  - "[done] 1% · Smoke · 15m — no 5xx"\n  - "[current] 10% · Canary · 30m — error rate < 0.5%"\n  - "[next] 50% · Half · 1h — p95 < 300ms"\n  - "[next] 100% · Full"\nrollback: Flip the flag off; the old version keeps serving.\n```\n',
+  neuralnet:
+    '```neuralnet\ntitle: Digit classifier\nparams: 1.2M\nlayers:\n  - { label: Input, units: 784, kind: input, note: 28×28 pixels }\n  - { label: Conv 3×3, units: 32, kind: conv, activation: ReLU }\n  - { label: Max pool, units: 32, kind: pool }\n  - { label: Dense, units: 128, kind: dense, activation: ReLU }\n  - { label: Dropout 0.3, units: 128, kind: dropout }\n  - { label: Output, units: 10, kind: output, activation: softmax }\n```\n',
+  modelcard:
+    '```modelcard\nname: support-intent-v3\nversion: 3.2.0\ntask: Text classification (support ticket intent)\narchitecture: DistilBERT fine-tune, 6 layers\nparams: 66M\nowner: ML platform\nlicense: Internal\nintendedUse:\n  - Route inbound tickets to one of 14 queues\n  - Suggest a queue to an agent; never auto-close\noutOfScope:\n  - Any language other than English and Spanish\ntrainingData:\n  - 410k tickets, 2024-01 to 2025-06, PII scrubbed\nmetrics:\n  - { name: Macro F1, value: 0.91, split: test }\n  - { name: Latency p95, value: 38 ms, split: prod, note: CPU, batch 1 }\nlimitations:\n  - Confuses billing and refund intents on short tickets\n```\n',
+  mindmap:
+    '```mindmap\ncenter: Onboarding v2\nnodes:\n  - { id: acct, label: Account, accent: blue }\n  - { id: sso, parent: acct, label: SSO first }\n  - { id: invite, parent: acct, label: Team invites }\n  - { id: data, label: Data import, accent: teal }\n  - { id: csv, parent: data, label: CSV }\n  - { id: api, parent: data, label: API sync }\n  - { id: learn, label: Learning, accent: amber }\n  - { id: tour, parent: learn, label: Product tour }\n  - { id: tmpl, parent: learn, label: Templates }\n```\n',
+  audit:
+    '```audit\ntitle: Security review — payments service\nscope: payments-api, payments-worker\ndate: 2026-09-01\nauditor: AppSec\nfindings:\n  - { id: F1, title: Refund endpoint has no rate limit, severity: high, area: API, evidence: "POST /refunds accepted 500 req/s in the load test", fix: Add the shared limiter at 20 req/min per key, owner: payments, status: fixing }\n  - { id: F2, title: Card BIN logged at INFO, severity: critical, area: Logging, evidence: "worker.log line 2231", fix: Mask to first 2 digits; add the log-scrub test, owner: payments, status: open }\n  - { id: F3, title: Dependency openssl 3.0.8 has a known CVE, severity: medium, area: Supply chain, fix: Bump to 3.0.14, owner: platform, status: fixed }\n  - { id: F4, title: Health endpoint leaks build SHA, severity: info, area: API, status: accepted }\n```\n',
+  checklist:
+    '```checklist\ntitle: Production readiness — search-indexer\nstandard: PRR v4\ngroups:\n  - label: Observability\n    items:\n      - "[pass] Dashboards for the four golden signals — grafana/search-indexer"\n      - "[pass] Alerts route to the on-call — pagerduty svc P4"\n      - "[partial] Traces sampled at 10% — target is 100% on errors"\n  - label: Resilience\n    items:\n      - "[fail] Load test at 2× peak — not run since the Kafka move"\n      - "[na] Multi-region failover — single-region service by design"\n```\n',
+  perfbudget:
+    '```perfbudget\ntitle: Product page — web vitals\ncontext: p75, mobile, 4G, 30-day field data\nmetrics:\n  - { metric: LCP, budget: 2500, measured: 2140, unit: ms }\n  - { metric: INP, budget: 200, measured: 260, unit: ms }\n  - { metric: CLS, budget: 0.1, measured: 0.04 }\n  - { metric: JS transferred, budget: 300, measured: 285, unit: KB }\n  - { metric: Lighthouse perf, budget: 90, measured: 84, lowerIsBetter: false }\n```\n',
+  percentiles:
+    '```percentiles\ntitle: Checkout API latency — last 7 days\nunit: ms\nslo: 300\nrows:\n  - { label: POST /checkout, p50: 120, p90: 210, p95: 260, p99: 420, max: 1900 }\n  - { label: GET /cart, p50: 18, p90: 35, p95: 48, p99: 90, max: 410 }\n  - { label: POST /payments, p50: 240, p90: 380, p95: 470, p99: 900, max: 3100, accent: red }\n```\n',
+  usecase:
+    '```usecase\nsystem: Ticketing\nactors:\n  - { id: cust, name: Customer }\n  - { id: agent, name: Support agent }\n  - { id: pay, name: Payment gateway, kind: system, side: right }\ncases:\n  - { id: buy, name: Buy ticket }\n  - { id: pay1, name: Pay by card }\n  - { id: refund, name: Request refund }\n  - { id: approve, name: Approve refund }\nlinks:\n  - cust -> buy\n  - cust -> refund\n  - agent -> approve\n  - pay -> pay1\nrelations:\n  - { from: buy, to: pay1, kind: include }\n  - { from: refund, to: approve, kind: extend }\n```\n',
+  pkg:
+    '```pkg\ntitle: Backend module layout\npackages:\n  - { id: api, col: 1, row: 1, name: api, contains: [routes, middleware] }\n  - { id: domain, col: 2, row: 1, name: domain, contains: [orders, payments, inventory] }\n  - { id: infra, col: 3, row: 1, name: infra, contains: [postgres, kafka, stripe] }\n  - { id: shared, col: 2, row: 2, name: shared, contains: [ids, money, clock] }\ndeps:\n  - { from: api, to: domain, kind: use }\n  - { from: domain, to: infra, kind: import, label: ports only }\n  - { from: domain, to: shared }\n  - { from: infra, to: shared }\n```\n',
+  timing:
+    '```timing\ntitle: Circuit breaker under a downstream outage\nunit: s\nlanes:\n  - label: Breaker\n    states:\n      - { state: closed, from: 0, to: 12 }\n      - { state: open, from: 12, to: 42, accent: red }\n      - { state: half-open, from: 42, to: 46, accent: amber }\n      - { state: closed, from: 46, to: 60 }\n  - label: Downstream\n    states:\n      - { state: healthy, from: 0, to: 10 }\n      - { state: down, from: 10, to: 44, accent: red }\n      - { state: healthy, from: 44, to: 60 }\nevents:\n  - { at: 12, label: 5 failures in 10 s }\n  - { at: 46, label: probe ok }\nconstraints:\n  - { from: 12, to: 42, label: open 30 s }\n```\n',
+  threatmodel:
+    '```threatmodel\ntitle: Login — STRIDE\nboundaries:\n  - { id: inet, col: 1, row: 1, cols: 1, rows: 1, label: Internet }\n  - { id: dmz, col: 2, row: 1, cols: 2, rows: 1, label: Trusted network }\nnodes:\n  - { id: browser, col: 1, row: 1, name: Browser, kind: external }\n  - { id: auth, col: 2, row: 1, name: Auth service }\n  - { id: users, col: 3, row: 1, name: Users DB, kind: store }\nedges:\n  - { from: browser, to: auth, label: "POST /login", channel: tls }\n  - { from: auth, to: users, label: SELECT by email, channel: internal }\nthreats:\n  - { id: T1, target: browser, category: S, threat: Credential stuffing, mitigation: Rate limit + breached-password check, severity: high, status: mitigated }\n  - { id: T2, target: auth, category: I, threat: Verbose error reveals whether the email exists, mitigation: One generic message, severity: medium, status: open }\n  - { id: T3, target: users, category: T, threat: Password hash column altered by an admin, mitigation: Audit log + Argon2id, severity: high, status: accepted }\n```\n',
+  chevrons:
+    '```chevrons\ntitle: Incident lifecycle\ncurrent: 3\nsteps:\n  - { label: Detect, desc: alert fires }\n  - { label: Triage, desc: severity + owner }\n  - { label: Mitigate, desc: stop the bleeding }\n  - { label: Resolve, desc: root cause fixed }\n  - { label: Review, desc: postmortem in 5 days }\n```\n',
+  roadmap:
+    '```roadmap\ntitle: Platform roadmap 2026\nperiods: [Q1, Q2, Q3, Q4]\nnow: Q3\nthemes: [Reliability, Developer experience, Cost]\nitems:\n  - { label: Multi-region Postgres, theme: Reliability, from: Q1, to: Q2, status: done }\n  - { label: Chaos game days, theme: Reliability, from: Q3, status: current }\n  - { label: Preview envs per PR, theme: Developer experience, from: Q2, to: Q3, status: current }\n  - { label: Golden-path templates, theme: Developer experience, from: Q4, status: next }\n  - { label: Spot instances for batch, theme: Cost, from: Q2, status: done }\n  - { label: Egress cut 30%, theme: Cost, from: Q3, to: Q4, status: risk }\n```\n',
 };
 
 /**
@@ -214,7 +240,7 @@ export function templateBody(type: BlockType): string {
 
 /**
  * A block family — the same 12-way split the skill's `reference/blocks/`
- * folder uses, so `avo catalog` grouping and `avo demo <family>` line up with
+ * folder uses, so `avo block` grouping and `avo demo <family>` line up with
  * the family reference files an agent reads.
  */
 export type BlockFamily =
@@ -229,7 +255,8 @@ export type BlockFamily =
   | 'business'
   | 'design-system'
   | 'algorithms'
-  | 'agentic';
+  | 'agentic'
+  | 'quality';
 
 /** The families in display order, with their human labels. */
 export const BLOCK_FAMILIES: ReadonlyArray<{ readonly id: BlockFamily; readonly label: string }> = [
@@ -245,6 +272,7 @@ export const BLOCK_FAMILIES: ReadonlyArray<{ readonly id: BlockFamily; readonly 
   { id: 'design-system', label: 'Design system' },
   { id: 'algorithms', label: 'Algorithms' },
   { id: 'agentic', label: 'AI & agents' },
+  { id: 'quality', label: 'Quality & audits' },
 ];
 
 /** True when `value` names a block family. */
@@ -352,6 +380,19 @@ export const BLOCK_FAMILY: Record<BlockType, BlockFamily> = {
   slopegraph: 'charts',
   spans: 'flows',
   rollout: 'planning',
+  neuralnet: 'agentic',
+  modelcard: 'agentic',
+  mindmap: 'charts',
+  audit: 'quality',
+  checklist: 'quality',
+  perfbudget: 'quality',
+  percentiles: 'quality',
+  usecase: 'architecture',
+  pkg: 'architecture',
+  timing: 'flows',
+  threatmodel: 'quality',
+  chevrons: 'planning',
+  roadmap: 'planning',
 };
 
 /** The block types of one family, in {@link BLOCK_TYPES} (registry) order. */
@@ -459,6 +500,19 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   slopegraph: 'Slopegraph',
   spans: 'Trace waterfall',
   rollout: 'Rollout plan',
+  neuralnet: 'Neural network',
+  modelcard: 'Model card',
+  mindmap: 'Mind map',
+  audit: 'Audit findings',
+  checklist: 'Checklist',
+  perfbudget: 'Performance budget',
+  percentiles: 'Latency percentiles',
+  usecase: 'Use case diagram',
+  pkg: 'Package diagram',
+  timing: 'Timing diagram',
+  threatmodel: 'Threat model',
+  chevrons: 'Process chevrons',
+  roadmap: 'Roadmap',
 };
 
 /** One-line "what it's for" per block, keyed exhaustively by {@link BlockType}. */
@@ -476,7 +530,7 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
   proscons: 'Two columns weighed against each other — pros vs cons.',
   cvt: 'Current → target, before / after panels.',
   stats: 'KPI cards with a delta and an up / down / flat trend.',
-  code: 'One or more syntax-highlighted code snippets; `kind: diff` renders a unified diff, `kind: terminal` a shell session.',
+  code: 'Code the reader will copy or diff: highlighted snippets with `highlight` line ranges, `lines` numbers, and a `cols` grid; `kind: compare` sets before / after side by side, `kind: diff` a unified diff, `kind: terminal` a shell session.',
   agenda: 'A meeting agenda — time, duration, owner, topic per row.',
   tree: 'An indented file / folder hierarchy; `variant: issue` renders a MECE issue tree.',
   pyramid: 'A layered pyramid, widening top → bottom.',
@@ -487,7 +541,7 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
   gantt: 'A schedule — task bars across date columns.',
   graph: 'A generic node-link graph with colour-cycled groups.',
   quadrant: 'A 2×2 matrix (e.g. effort vs impact) with plotted items.',
-  swimlane: 'A cross-functional process, one horizontal lane per role.',
+  swimlane: 'Who does which step, in what order — one lane per owner, columns from the links, phase bands.',
   c4: 'C4 model — context / container / component.',
   uml: 'A class diagram — attributes, methods, UML relationships.',
   frontend: 'A top-down component tree (root / layout / page / hook / store).',
@@ -509,7 +563,7 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
   pattern: 'A design-pattern card — intent · forces · participants · consequences.',
   gallery: 'A responsive grid of cards — code snippets or notes (e.g. a bug gallery or comparison).',
   chart:
-    'A data chart — bar / line / area / donut / gauge / radar / waterfall / funnel, pure SVG, series coloured by accent.',
+    'A data chart — bar / line / area / scatter / donut / pie / gauge / radar / waterfall / funnel / histogram / bell / boxplot / pareto / bullet, pure SVG, series coloured by accent.',
   figure: 'An image with a caption in a bordered card (optional pixel width cap).',
   steps: 'A numbered how-to / runbook stepper — title, body, command, note per step.',
   faq: 'Q&A accordions — native details/summary, no JavaScript.',
@@ -591,4 +645,30 @@ export const BLOCK_DESCRIPTIONS: Record<BlockType, string> = {
     'A distributed-trace waterfall — one lane per service, each span a bar on a shared time axis, nested by parent; the critical path is marked.',
   rollout:
     'A progressive-delivery plan — stages left to right with their traffic share, hold time, and the gate each must pass; the rollback move as the footer.',
+  neuralnet:
+    'A layered neural network — one column per layer with unit counts, kinds (input / conv / dense / attention / output) and activations; dense wiring drawn between layers.',
+  modelcard:
+    'An ML model card — identity, intended use and out-of-scope, training data, metrics per split, limitations; the endpoint card for a model.',
+  mindmap:
+    'A radial mind map — one centre, branches fanning left and right, sub-branches hanging off each; accent per branch.',
+  audit:
+    'An audit findings register — severity-ranked rows with evidence, fix, owner and status, and a count strip per severity.',
+  checklist:
+    'A pass / fail checklist with evidence — items or grouped items with a verdict chip and the evidence behind each; pass rate derived.',
+  perfbudget:
+    'Performance budgets against measured values — one bar per metric with the budget mark; over / near / within derived.',
+  percentiles:
+    'Latency percentiles per row — p50 · p90 · p95 · p99 · max as a dot-and-whisker on one axis, with the SLO line.',
+  usecase:
+    'A UML use-case diagram — actors outside the system boundary, use cases inside, include / extend / generalize relations.',
+  pkg:
+    'A UML package diagram — tabbed folders with their members on a grid, dashed import / use dependencies between them.',
+  timing:
+    'A UML timing diagram — one lane per lifeline stepping through states over a shared time axis, with events and duration constraints.',
+  threatmodel:
+    'A STRIDE threat model — data-flow shapes inside dashed trust boundaries, plain hops marked, and a threats table keyed to nodes and edges.',
+  chevrons:
+    'A process chevron strip — N steps left to right with the current one highlighted and a line of detail under each.',
+  roadmap:
+    'A roadmap — themes as rows, periods as columns, items as status-tinted chips spanning their periods, with a "now" rule.',
 };

@@ -195,9 +195,9 @@ function titleCase(s: string): string {
 /* ─── grid occupancy ──────────────────────────────────────────────────────── */
 
 /** A direction an `Add node` item grows the diagram in. */
-export type Dir = 'right' | 'down' | 'left' | 'up';
+type Dir = 'right' | 'down' | 'left' | 'up';
 
-export const DIRS: ReadonlyArray<{ readonly dir: Dir; readonly arrow: string }> = [
+const DIRS: ReadonlyArray<{ readonly dir: Dir; readonly arrow: string }> = [
   { dir: 'right', arrow: '→' },
   { dir: 'down', arrow: '↓' },
   { dir: 'left', arrow: '←' },
@@ -254,7 +254,7 @@ export function freeCellFrom(
 }
 
 /** The first free cell scanning row-major, growing a column when full. */
-export function firstFreeCell(ctx: MenuCtx, spec: ConnectSpec): Placement {
+function firstFreeCell(ctx: MenuCtx, spec: ConnectSpec): Placement {
   if (ctx.grid === null) return { col: 1, row: 1 };
   const cells = occupancy(ctx, spec);
   for (let row = 1; row <= ctx.grid.rows; row++) {
@@ -306,7 +306,7 @@ function moveNodeOps(ctx: MenuCtx, spec: ConnectSpec, index: number, cell: Place
  * spec's documented subset PLUS every kind the block already uses (free-form
  * kinds — a k8s block's `ingress`/`pod` — stay reachable).
  */
-export function nodeKindChoices(ctx: MenuCtx, spec: ConnectSpec): ConnectKind[] {
+function nodeKindChoices(ctx: MenuCtx, spec: ConnectSpec): ConnectKind[] {
   const out = [...spec.nodeKinds];
   const seen = new Set(out.map((k) => k.kind));
   for (const n of records(ctx.data, spec.nodesField)) {

@@ -28,7 +28,7 @@ import { createDocsWatcher, createConfigWatcher } from '../io/watch.js';
 import { buildSite, type SiteDoc, type SitePage } from './site.js';
 
 /** Inputs to {@link runServe}. */
-export interface ServeOptions {
+interface ServeOptions {
   /** Project root. */
   readonly cwd: string;
   /** Port to listen on. `0` = ephemeral (the actual port is printed). */
@@ -96,6 +96,7 @@ export async function runServe(opts: ServeOptions): Promise<void> {
         doc: parseDocument(f.source, f.slug),
       }));
       const site = buildSite(docs, {
+        colorScheme: config.colorScheme,
         liveReload: true,
         richIndex: opts.richIndex ?? config.richIndex,
       });

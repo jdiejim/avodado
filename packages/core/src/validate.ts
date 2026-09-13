@@ -17,6 +17,8 @@ import { NOT_FINITE_MESSAGE } from './blocks/schemas.js';
 import { BLOCK_ALIASES } from './blocks/aliases.js';
 import { DIALECT_PARSE_CODE, DIALECT_PARSE_HINT, isDialectSource } from './dialects.js';
 import { fieldNamesAt } from './blocks/schema-walk.js';
+import { resolveSwimlaneLane } from './blocks/swimlaneLayout.js';
+import { TERSE_HINTS } from './blocks/contract.js';
 import { locateYamlPath } from './yaml.js';
 import { closest } from './suggest.js';
 import type { BlockType } from './types.js';
@@ -41,9 +43,16 @@ function renderIssue(kind: BlockType, issue: z.ZodIssue): IssueRender {
     const valid = fieldNamesAt(kind, issue.path);
     const suggestions = closest(bad, valid, 3);
     const did = suggestions.length > 0 ? `Did you mean \`${suggestions[0]}\`? ` : '';
+    // A "field" with a space in it, or one that starts like a number, is
+    // almost always a value that an unquoted comma inside `{ … }` split into
+    // a second key (`sub: managed, 2 nodes` → keys `sub` and `2 nodes`).
+    const split = issue.keys.some((k) => /\s/.test(k) || /^\d/.test(k));
+    const trap = split
+      ? 'An unquoted comma inside `{ … }` splits one value into two keys — quote the value (`sub: "managed, 2 nodes"`). '
+      : '';
     return {
       message: `${kind}: unknown field${issue.keys.length > 1 ? 's' : ''} ${issue.keys.map((k) => `'${k}'`).join(', ')}`,
-      hint: `${did}Valid fields: ${valid.join(', ')}.`,
+      hint: `${trap}${did}Valid fields: ${valid.join(', ')}.`,
       ...(suggestions.length > 0 ? { suggestions } : {}),
     };
   }
@@ -74,6 +83,19 @@ function renderIssue(kind: BlockType, issue: z.ZodIssue): IssueRender {
       return {
         message: `${kind}: ${at}expected a whole number, got ${issue.received === 'float' ? 'a fraction' : String(issue.received)}`,
         hint: 'Coordinates, spans and counts are whole numbers. Round the value.',
+      };
+    }
+    // A string where a list wants an object: the author reached for a terse
+    // spelling the grammar does not have. Name the spellings that exist.
+    if (issue.expected === 'object' && issue.received === 'string') {
+      const listPath = issue.path.filter((seg): seg is string => typeof seg === 'string');
+      const terse = TERSE_HINTS[kind]?.[listPath.join('.')];
+      return {
+        message: `${kind}: ${at}expected ${issue.expected}, got ${issue.received}`,
+        hint:
+          terse !== undefined
+            ? `The only terse form here is ${terse}. Anything else needs the object form (\`avo block ${kind}\`).`
+            : `This list has no terse string form — use the object form (\`avo block ${kind}\`).`,
       };
     }
     return {
@@ -212,6 +234,177 @@ interface GroupCells {
   readonly row: number;
   readonly cols?: number;
   readonly rows?: number;
+}
+
+/** The fix for a YAML parse failure, from the shape of the parser's message. */
+function yamlParseHint(message: string): string {
+  if (/flow sequence/i.test(message)) {
+    return 'Inside `[ … ]` quote any cell that contains `[` `]` `{` `}` `,` or `:` — `"variants[]"`, `"1:N"`.';
+  }
+  if (/flow map|end with a \}/i.test(message)) {
+    return 'An inline `{ … }` map must close with `}` on the same line. Use block style (one field per line) for a long item.';
+  }
+  if (/nested mappings are not allowed in compact mappings/i.test(message)) {
+    // The parser quotes the offending line under its header; a `- ` item is a
+    // terse line, anything else is a field whose value carries `: `.
+    const excerpt = message.split('\n').map((l) => l.trim()).find((l, i) => i > 0 && l.length > 0) ?? '';
+    return excerpt.startsWith('- ')
+      ? 'A terse line cannot carry a `key: value` pair after its text. Write the whole item in the object form `{ … }` or keep to the terse grammar (`avo block <type>`).'
+      : 'A value with `: ` in it must be quoted — `note: "pass retryOn: () => true"`.';
+  }
+  if (/unexpected scalar at node end/i.test(message)) {
+    return 'A value that starts with a quote must be quoted whole — write `note: "\\"Needs\\" lists …"` or wrap the entire value in single quotes.';
+  }
+  if (/mapping values are not allowed/i.test(message)) {
+    return 'A value with `: ` in it must be quoted — `label: "GET /x: cached"`.';
+  }
+  return 'Often an unquoted special character (, : # | & *). Wrap the value in quotes.';
+}
+
+/**
+ * The lens-repeat lint: one document that draws the same structural block
+ * three or more times is almost always one shape reached for by habit
+ * (a third `callout`, a fourth `sequence`). Tables, code and the cover are
+ * exempt: rows and snippets repeat by nature. One warning per repeated type,
+ * on its third occurrence, with the alternatives that usually fit.
+ */
+const LENS_EXEMPT: ReadonlySet<string> = new Set([
+  'meta', 'table', 'code', 'prose', 'divider', 'figure', 'pullquote',
+  // One block per item by nature: a route, an event, a story, a pattern, a screen.
+  'endpoint', 'eventcontract', 'userstory', 'pattern', 'wireframe', 'persona', 'modelcard',
+]);
+/** The habit block warns on its third use; every other lens on its fourth. */
+const LENS_LIMIT: Readonly<Record<string, number>> = { callout: 3 };
+const LENS_ALTERNATIVES: Readonly<Record<string, string>> = {
+  callout: '`list`, `spec`, `faq`, `glossary`, or `takeaways` carry several points better than a row of callouts',
+  sequence: 'one `sequence` per question; a second interaction is often a `flow`, a `swimlane`, or an `alt` frame in the first',
+  flow: 'a second decision tree is often the `state` of one object or a `swimlane` when owners differ',
+  block: 'one topology per doc; a second view is a `c4` level, a `cluster`, or a `table` of parts',
+  stats: 'merge the KPIs into one `stats` row, or use a `table` when they need a column each',
+  spec: 'one `spec` per contract; several become a `table` or a `glossary`',
+  steps: 'one procedure per `steps`; a second is a `checklist`, a `flow`, or a `swimlane`',
+};
+function isPlainRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+function lintLensRepeat(doc: Document, file: string): Diagnostic[] {
+  const seen = new Map<string, number>();
+  const out: Diagnostic[] = [];
+  // An API reference (three or more endpoint / eventcontract cards) carries
+  // one sequence per route by design — the importer writes exactly that.
+  const apiCards = doc.segments.filter((s) => s.kind === 'endpoint' || s.kind === 'eventcontract').length;
+  for (const seg of doc.segments) {
+    if (seg.kind === 'markdown' || LENS_EXEMPT.has(seg.kind)) continue;
+    const data = isPlainRecord(seg.data) ? seg.data : {};
+    // A sequence that documents one route (it carries `endpoint:`) is one
+    // per route, like the endpoint card itself.
+    if (seg.kind === 'sequence' && (apiCards >= 3 || data['endpoint'] !== undefined)) continue;
+    // A chart kind, a block preset, or a variant is its own lens: a bar
+    // chart next to a pareto and a histogram repeats nothing.
+    const facet = data['kind'] ?? data['preset'] ?? data['variant'];
+    const key = typeof facet === 'string' ? `${seg.kind}:${facet}` : seg.kind;
+    const n = (seen.get(key) ?? 0) + 1;
+    seen.set(key, n);
+    if (n !== (LENS_LIMIT[seg.kind] ?? 4)) continue;
+    const alt = LENS_ALTERNATIVES[seg.kind] ?? 'a different block usually answers the third question better — `avo block` lists the families';
+    out.push({
+      file,
+      line: seg.line,
+      level: 'warn',
+      code: 'W_LENS_REPEAT',
+      message: `${seg.kind}: ${n === 3 ? 'third' : 'fourth'} \`${seg.kind}\` block in this document`,
+      hint: `${alt}. Merge, or change the lens.`,
+    });
+  }
+  return out;
+}
+
+/**
+ * C4 notation: every relationship names its intent, and container-level
+ * lines name their technology. An unlabelled `c4` edge is a warning that says
+ * which one and what to add; the renderer still draws the arrow.
+ */
+function lintEdgeLabels(
+  seg: { readonly data: unknown; readonly raw: string; readonly line: number },
+  file: string,
+  positioned: boolean,
+): Diagnostic[] {
+  const data = seg.data;
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return [];
+  const edges = (data as Record<string, unknown>)['edges'];
+  if (!Array.isArray(edges)) return [];
+  const level = (data as Record<string, unknown>)['level'];
+  const out: Diagnostic[] = [];
+  edges.forEach((e, i) => {
+    if (typeof e !== 'object' || e === null || Array.isArray(e)) return;
+    const edge = e as { from?: unknown; to?: unknown; label?: unknown; tech?: unknown };
+    const label = typeof edge.label === 'string' ? edge.label.trim() : '';
+    if (label.length > 0) return;
+    const loc = positioned ? locateYamlPath(seg.raw, ['edges', i]) : undefined;
+    out.push({
+      file,
+      ...(loc !== undefined ? { line: seg.line + loc.line, column: loc.column } : { line: seg.line }),
+      level: 'warn',
+      code: 'W_EDGE_LABEL',
+      message: `c4: the relationship ${String(edge.from)} → ${String(edge.to)} has no label`,
+      hint:
+        level === 'container' || level === 'component'
+          ? 'C4 asks every line to say what crosses it and, at container level, over what (`label: reads orders`, `tech: HTTPS/JSON`).'
+          : 'C4 asks every line to say what crosses it — a verb phrase, not "uses" (`label: places orders`).',
+      value: `${String(edge.from)} -> ${String(edge.to)}`,
+    });
+  });
+  return out;
+}
+
+/**
+ * A swimlane step's `lane` must name a lane: a label or `id` (matched
+ * case-insensitively, trimmed) or a 0-based index inside `lanes`. An error —
+ * the step has nowhere to be drawn — that lists the lanes it could name.
+ */
+function lintSwimlaneLanes(
+  seg: { readonly data: unknown; readonly raw: string; readonly line: number },
+  file: string,
+  positioned: boolean,
+): Diagnostic[] {
+  const data = seg.data;
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return [];
+  const rec = data as Record<string, unknown>;
+  const steps = Array.isArray(rec['steps']) ? rec['steps'] : [];
+  const lanes = (Array.isArray(rec['lanes']) ? rec['lanes'] : []).filter(
+    (l): l is { id?: string; label: string } =>
+      typeof l === 'object' && l !== null && typeof (l as { label?: unknown }).label === 'string',
+  );
+  const names = lanes.map((l) => l.label).join(', ');
+  const out: Diagnostic[] = [];
+  steps.forEach((st, i) => {
+    if (typeof st !== 'object' || st === null || Array.isArray(st)) return;
+    const step = st as { id?: unknown; lane?: unknown };
+    const lane = step.lane;
+    if (typeof lane !== 'string' && typeof lane !== 'number') return;
+    if (resolveSwimlaneLane(lane, lanes) !== undefined) return;
+    const loc = positioned ? locateYamlPath(seg.raw, ['steps', i, 'lane']) : undefined;
+    const id = String(step.id ?? i);
+    const message =
+      lanes.length === 0
+        ? `swimlane: step ${id} has a lane, but the block declares no lanes`
+        : typeof lane === 'string'
+          ? `swimlane: step ${id} names lane "${lane}", which is not one of the lanes`
+          : `swimlane: step ${id} has lane ${String(lane)}, but there are ${String(lanes.length)} lanes (0–${String(lanes.length - 1)})`;
+    out.push({
+      file,
+      ...(loc !== undefined ? { line: seg.line + loc.line, column: loc.column } : { line: seg.line }),
+      level: 'error',
+      code: 'E_SWIMLANE_LANE',
+      message,
+      hint:
+        lanes.length === 0
+          ? 'Add `lanes:` — one label per owner — then name a lane by its label (`lane: Sales`).'
+          : `Lanes: ${names}. Name one by its label or id (case-insensitive), or by its 0-based index.`,
+      value: String(lane),
+    });
+  });
+  return out;
 }
 
 /**
@@ -442,10 +635,7 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
         level: 'error',
         code: dialect !== undefined ? DIALECT_PARSE_CODE[dialect] : 'E_PARSE_YAML',
         message: `${seg.kind}: ${seg.parseError}`,
-        hint:
-          dialect !== undefined
-            ? DIALECT_PARSE_HINT[dialect]
-            : 'Often an unquoted special character (, : # | & *). Wrap the value in quotes.',
+        hint: dialect !== undefined ? DIALECT_PARSE_HINT[dialect] : yamlParseHint(seg.parseError),
       });
       continue;
     }
@@ -477,6 +667,8 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
     }
     if (result.success) {
       diagnostics.push(...lintGroupNesting(seg, file, !isMermaid));
+      if (seg.kind === 'c4') diagnostics.push(...lintEdgeLabels(seg, file, !isMermaid));
+      if (seg.kind === 'swimlane') diagnostics.push(...lintSwimlaneLanes(seg, file, !isMermaid));
     }
     if (!result.success) {
       for (const issue of dropNonFiniteFollowOns(flattenIssues(result.error.issues))) {
@@ -511,5 +703,6 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
     }
   }
 
+  diagnostics.push(...lintLensRepeat(doc, file));
   return diagnostics;
 }

@@ -83,7 +83,7 @@ interface Rect {
 }
 
 /** The inner SVG + legend strip (no diagram frame). */
-export function renderFlowSvg(data: BlockDataMap['flow']): { svg: string; legend: string } {
+function renderFlowSvg(data: BlockDataMap['flow']): { svg: string; legend: string } {
   const edges = data.edges ?? [];
   const groups = data.groups ?? [];
   const rawNodes = data.nodes ?? [];

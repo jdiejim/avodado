@@ -43,7 +43,7 @@ check_document · render_document · resolve_refs · sync_openapi.
  * Finds a locally installed `avodado-mcp` bin by walking `node_modules/.bin`
  * up from `cwd`. Returns undefined when no local install is resolvable.
  */
-export function resolveMcpBin(cwd: string): string | undefined {
+function resolveMcpBin(cwd: string): string | undefined {
   let dir = cwd;
   for (;;) {
     const bin = join(dir, 'node_modules', '.bin', 'avodado-mcp');

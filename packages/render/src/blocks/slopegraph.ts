@@ -32,7 +32,7 @@ const PAD = 26;
 /** Horizontal span between the two baselines. */
 const SPAN_W = 260;
 /** Minimum vertical separation between neighbouring labels on one side. */
-const MIN_SEP = 14;
+const MIN_SEP = 16;
 /** A label displaced further than this from its endpoint gets a leader. */
 const LEADER_AT = 7;
 /** Labels longer than this are cut with an ellipsis (full text in <title>). */

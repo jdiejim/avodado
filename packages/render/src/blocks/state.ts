@@ -18,7 +18,7 @@ import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
 import { edgeMask } from '../svg/edgePill.js';
-import { edgeStep } from '../svg/edgeSteps.js';
+import { edgeStep, dodge } from '../svg/edgeSteps.js';
 import { GROUP_PADS, gridGroupsSvg, groupExtent, nestingPads } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
@@ -124,6 +124,12 @@ export function renderState(data: BlockDataMap['state']): string {
   const labels: string[] = [];
   const used = { plain: false, error: false, accent: false };
   const lanes = edgeLanes(trans);
+  // Node boxes a numeral must keep clear of: a short transition's midpoint
+  // can land on a neighbouring state and print the badge over its name.
+  const avoid = states.map((st) => {
+    const r = rectFor(st, cellW, cellH, gapX, gapY, padX, padTop);
+    return { x: r.x, y: r.y, w: r.w, h: r.h };
+  });
   const entries = entryPortOffsets(trans, (id) => {
     const n = byId.get(id);
     return n !== undefined ? rectFor(n, cellW, cellH, gapX, gapY, padX, padTop) : undefined;
@@ -159,7 +165,7 @@ export function renderState(data: BlockDataMap['state']): string {
       entries[ti] ?? 0,
     );
     s += `<path d="${p.d}" fill="none" stroke="${stroke}" stroke-width="${sw}" marker-end="url(#${marker})"${tAttrs}/>`;
-    const mark = numbered ? edgeStep(p, ti + 1, isErr, true) : edgeMask(p, label, tone);
+    const mark = numbered ? edgeStep(dodge(p.lx, p.ly, avoid), ti + 1, isErr, true) : edgeMask(p, label, tone);
     labels.push(`<g${tAttrs}>${mark}</g>`);
   });
 

@@ -283,22 +283,6 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     expect(stdout).toContain('Cursor');
   }, 30_000);
 
-  it('avo install cursor installs the skill + Cursor adapter in a scratch dir', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
-    mkdirSync(tmp, { recursive: true });
-    try {
-      const { code, stdout } = await runBin(['install', 'cursor'], tmp);
-      expect(code).toBe(0);
-      expect(stdout).toContain('Cursor: skill + adapter installed/updated.');
-      // canonical skill + the Cursor rule pointer — no per-tool skill copy
-      expect(existsSync(join(tmp, '.avodado/skill/SKILL.md'))).toBe(true);
-      expect(existsSync(join(tmp, '.cursor/rules/avodado.mdc'))).toBe(true);
-      expect(existsSync(join(tmp, '.cursor/skills'))).toBe(false);
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
-  }, 30_000);
-
   it('the old adapter aliases are gone — `avo claude` is an unknown command', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
     for (const alias of ['claude', 'cursor', 'copilot', 'github', 'windsurf']) {
@@ -324,14 +308,27 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     expect(stdout).not.toMatch(/\u001b\[/);
     expect(stdout).toContain('avodado v'); // the plain one-line banner
     // The four-group command epilogue.
-    for (const header of ['WORK', 'OUTPUT', 'DISCOVER', 'SETUP']) {
+    for (const header of ['WORK', 'OUTPUT', 'REFERENCE', 'SETUP']) {
       expect(stdout).toContain(header);
     }
-    expect(stdout).toContain('explore');
-    expect(stdout).toContain('New here? avo explore tour');
+    expect(stdout).toContain('npx skills add jdiejim/avodado');
     expect(stdout).toContain('avo <file.md>');
-    // Hidden compat commands stay out of the command listing.
-    for (const hidden of ['preview', 'serve', 'demo', 'catalog', 'design', 'tour', 'block', 'template', 'skill']) {
+    expect(stdout).toMatch(/^ {2}block /m);
+    expect(stdout).toMatch(/^ {2}demo /m);
+    // Hidden or removed commands stay out of the command listing.
+    for (const hidden of [
+      'preview',
+      'serve',
+      'skill',
+      'catalog',
+      'design',
+      'tour',
+      'explore',
+      'install',
+      'template',
+      'compare',
+      'pptx',
+    ]) {
       expect(stdout, `${hidden} must be hidden from top-level help`).not.toMatch(
         new RegExp(`^  ${hidden} `, 'm'),
       );
@@ -350,7 +347,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
         const { code, stdout } = await runBin([], cwd);
         expect(code).toBe(0);
         expect(stdout).toContain('Usage: avo');
-        expect(stdout).toContain('DISCOVER');
+        expect(stdout).toContain('REFERENCE');
       }
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -414,109 +411,118 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo explore: bare lists the four flows; subcommands run (AVO_PLAIN, exit 0)', async () => {
+  it('removed commands are unknown: explore / install / tour / design / catalog / compare / pptx', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
-      const bare = await runBin(['explore'], tmp);
-      expect(bare.code).toBe(0);
-      for (const what of ['demo', 'catalog', 'design', 'tour']) {
-        expect(bare.stdout).toContain(what);
+      for (const cmd of [
+        'explore',
+        'install',
+        'tour',
+        'design',
+        'catalog',
+        'compare',
+        'template',
+      ]) {
+        const { code, stderr } = await runBin([cmd], tmp);
+        expect(code, `avo ${cmd} must fail`).not.toBe(0);
+        expect(stderr).toContain('unknown command');
       }
-
-      const catalog = await runBin(['explore', 'catalog'], tmp);
-      expect(catalog.code).toBe(0);
-      expect(catalog.stdout).toContain('block types');
-
-      const design = await runBin(['explore', 'design'], tmp);
-      expect(design.code).toBe(0);
-      expect(design.stdout).toContain('Design patterns');
-
-      const tour = await runBin(['explore', 'tour'], tmp);
-      expect(tour.code).toBe(0);
-      expect(tour.stdout).toContain('Chapter 1/7');
-
-      const demo = await runBin(['explore', 'demo', '-o', 'demo.html'], tmp);
-      expect(demo.code).toBe(0);
-      expect(existsSync(join(tmp, 'demo.html'))).toBe(true);
+      const pptx = await runBin(['pptx', 'x.md'], tmp);
+      expect(pptx.code).not.toBe(0);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   }, 30_000);
 
-  it('hidden compat commands still work: demo/catalog/design/tour/block/template/skill', async () => {
+  it('avo block lists every type by family; avo block <type> prints the contract + example', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
-      const block = await runBin(['block', 'sequence'], tmp);
-      expect(block.code).toBe(0);
-      expect(block.stdout).toContain('```sequence');
+      const index = await runBin(['block'], tmp);
+      expect(index.code).toBe(0);
+      expect(index.stdout).toMatch(/^\d+ block types/);
+      expect(index.stdout).toContain('Flows & state');
+      expect(index.stdout).toContain('  sequence');
 
-      const template = await runBin(['template', 'list'], tmp);
-      expect(template.code).toBe(0);
-      expect(template.stdout).toContain('adr');
+      const seq = await runBin(['block', 'sequence'], tmp);
+      expect(seq.code).toBe(0);
+      expect(seq.stdout).toContain('sequence — ');
+      expect(seq.stdout).toContain('messages[]');
+      expect(seq.stdout).toContain('```sequence');
+      expect(seq.stdout).toContain('`from -> to: label`');
 
-      const catalog = await runBin(['catalog'], tmp);
-      expect(catalog.code).toBe(0);
-      expect(catalog.stdout).toContain('block types');
+      // An alias resolves, with the note on stderr so stdout stays clean.
+      const alias = await runBin(['block', 'waterfall'], tmp);
+      expect(alias.code).toBe(0);
+      expect(alias.stdout).toContain('chart — ');
+      expect(alias.stderr).toContain('old spelling');
 
-      const design = await runBin(['design'], tmp);
-      expect(design.code).toBe(0);
-      expect(design.stdout).toContain('Design patterns');
+      const json = await runBin(['block', 'erd', '--json'], tmp);
+      expect(json.code).toBe(0);
+      const parsed = JSON.parse(json.stdout) as { type: string; fields: string[]; example: string };
+      expect(parsed.type).toBe('erd');
+      expect(parsed.fields.length).toBeGreaterThan(3);
 
-      const tour = await runBin(['tour'], tmp);
-      expect(tour.code).toBe(0);
-      expect(tour.stdout).toContain('Chapter 1/7');
+      const nope = await runBin(['block', 'nope'], tmp);
+      expect(nope.code).toBe(2);
+      expect(nope.stderr).toContain('Unknown block');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 30_000);
 
-      const skill = await runBin(['skill'], tmp);
-      expect(skill.code).toBe(0);
-      expect(skill.stdout).toContain('Avodado');
-
+  it('avo demo -o writes the showcase; avo skill prints the stitched skill', async () => {
+    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    mkdirSync(tmp, { recursive: true });
+    try {
       const demo = await runBin(['demo', '-o', 'demo.html'], tmp);
       expect(demo.code).toBe(0);
       expect(existsSync(join(tmp, 'demo.html'))).toBe(true);
+      const skill = await runBin(['skill'], tmp);
+      expect(skill.code).toBe(0);
+      expect(skill.stdout).toContain('Avodado');
+      expect(skill.stdout).toContain('avo block');
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   }, 30_000);
 
-  it('avo init -y writes at most 46 files (skill once + exemplars + pointer stubs)', async () => {
+  it('avo init writes three files and points at the skills install', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
       const { code, stdout } = await runBin(['init', '-y'], tmp);
       expect(code).toBe(0);
-      const m = /Created (\d+) file\(s\)/.exec(stdout);
-      expect(m).not.toBeNull();
-      expect(Number((m as RegExpExecArray)[1])).toBeLessThanOrEqual(46);
-      // canonical skill once; stubs where tools have a native skill format
-      expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/contract.md'))).toBe(true);
-      expect(existsSync(join(tmp, '.claude/skills/avodado-docs/SKILL.md'))).toBe(true);
-      // the /avo slash command lands and opens with YAML frontmatter
-      expect(existsSync(join(tmp, '.claude/commands/avo.md'))).toBe(true);
-      expect(readFileSync(join(tmp, '.claude/commands/avo.md'), 'utf8').startsWith('---')).toBe(true);
-      expect(existsSync(join(tmp, '.claude/skills/avodado-docs/reference'))).toBe(false);
-      expect(existsSync(join(tmp, '.cursor/skills'))).toBe(false);
-      expect(existsSync(join(tmp, '.windsurf'))).toBe(false);
+      expect(stdout).toContain('Created 3 file(s)');
+      expect(stdout).toContain('npx skills add jdiejim/avodado');
+      expect(existsSync(join(tmp, 'avodado.config.json'))).toBe(true);
+      expect(existsSync(join(tmp, 'docs/getting-started.md'))).toBe(true);
+      expect(existsSync(join(tmp, '.avodado'))).toBe(false);
+      expect(existsSync(join(tmp, '.claude'))).toBe(false);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   }, 30_000);
 
-  it('avo init -y --scope backend skips design-system/algorithms and records the scope', async () => {
+  it('colorScheme in the config stamps every built page; the default is dark with no stamp', async () => {
     const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
-    mkdirSync(tmp, { recursive: true });
+    mkdirSync(join(tmp, 'docs'), { recursive: true });
+    writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: A\n```\n\nHello.\n');
     try {
-      const { code } = await runBin(['init', '-y', '--scope', 'backend'], tmp);
-      expect(code).toBe(0);
-      expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/api.md'))).toBe(true);
-      expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/design-system.md'))).toBe(false);
-      expect(existsSync(join(tmp, '.avodado/skill/reference/blocks/algorithms.md'))).toBe(false);
-      expect(existsSync(join(tmp, '.avodado/skill/reference/exemplars/backend-arch.md'))).toBe(true);
-      const config = JSON.parse(readFileSync(join(tmp, 'avodado.config.json'), 'utf8')) as {
-        skillScope?: string;
-      };
-      expect(config.skillScope).toBe('backend');
+      writeFileSync(join(tmp, 'avodado.config.json'), '{ "docsDir": "docs", "outDir": "dist" }');
+      expect((await runBin(['build'], tmp)).code).toBe(0);
+      const dark = readFileSync(join(tmp, 'dist', 'a.html'), 'utf8');
+      expect(dark).not.toMatch(/<html[^>]*data-theme/);
+      expect(dark).toContain('color-scheme:dark');
+      writeFileSync(join(tmp, 'avodado.config.json'), '{ "docsDir": "docs", "outDir": "dist", "colorScheme": "light" }');
+      expect((await runBin(['build'], tmp)).code).toBe(0);
+      const light = readFileSync(join(tmp, 'dist', 'a.html'), 'utf8');
+      expect(light).toContain('<html lang="en" data-theme="light">');
+      const deck = readFileSync(join(tmp, 'dist', 'a.slides.html'), 'utf8');
+      expect(deck).toContain('data-theme="light"');
+      expect((await runBin(['html', 'docs/a.md', '-o', 'one.html'], tmp)).code).toBe(0);
+      expect(readFileSync(join(tmp, 'one.html'), 'utf8')).toContain('data-theme="light"');
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -692,22 +698,5 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
-  }, 30_000);
-
-  it('avo tour (non-TTY / AVO_PLAIN) prints the static 7-chapter walkthrough', async () => {
-    const repoRoot = resolve(import.meta.dirname, '../../../..');
-    const { code, stdout } = await runBin(['tour'], repoRoot);
-    expect(code).toBe(0);
-    for (let n = 1; n <= 7; n++) {
-      expect(stdout).toContain(`Chapter ${n}/7`);
-    }
-    // The commands are the star: at least 5 distinct `$ avo …` command lines.
-    const avoCmds = new Set(
-      stdout
-        .split('\n')
-        .map((l) => l.trim())
-        .filter((l) => l.startsWith('$ avo ')),
-    );
-    expect(avoCmds.size).toBeGreaterThanOrEqual(5);
   }, 30_000);
 });

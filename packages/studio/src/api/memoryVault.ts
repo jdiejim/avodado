@@ -121,7 +121,7 @@ const VERSION = (import.meta.env?.['VITE_STUDIO_VERSION'] as string | undefined)
 
 async function fetchMeta(): Promise<StudioMeta> {
   await seedIfEmpty();
-  return { version: VERSION, docsDir: 'This browser tab' };
+  return { version: VERSION, docsDir: 'This browser tab', colorScheme: 'dark' };
 }
 
 async function fetchDocs(): Promise<DocListItem[]> {

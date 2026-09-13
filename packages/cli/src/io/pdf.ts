@@ -19,10 +19,10 @@ type PlaywrightModule = typeof Playwright;
 const require = createRequire(import.meta.url);
 
 /** Page format for the generated PDF. */
-export type PdfFormat = 'A4' | 'Letter';
+type PdfFormat = 'A4' | 'Letter';
 
 /** Options for {@link toPdf}. */
-export interface PdfOptions {
+interface PdfOptions {
   /** Page format. Defaults to `A4`. */
   readonly format?: PdfFormat;
   /**
@@ -67,7 +67,7 @@ function playwrightCliPath(): string | undefined {
  * bundled CLI guarantees the browser build matches the library version — the
  * usual cause of "Executable doesn't exist at …chromium-XXXX" errors.
  */
-export async function installChromium(log: (message: string) => void = () => {}): Promise<void> {
+async function installChromium(log: (message: string) => void = () => {}): Promise<void> {
   const cli = playwrightCliPath();
   if (cli === undefined) {
     throw new Error('Could not locate the Playwright CLI. Run `npx playwright install chromium`.');
@@ -153,7 +153,7 @@ export async function toPdf(input: Document | string, opts: PdfOptions = {}): Pr
  * Exported for the other Chromium-backed exporter ({@link ../pptx.js toPptx});
  * not part of the public CLI surface.
  */
-export async function launchChromium(pw: PlaywrightModule, opts: PdfOptions): Promise<Playwright.Browser> {
+async function launchChromium(pw: PlaywrightModule, opts: PdfOptions): Promise<Playwright.Browser> {
   try {
     return await pw.chromium.launch({ headless: true });
   } catch (err) {
@@ -172,7 +172,7 @@ export async function launchChromium(pw: PlaywrightModule, opts: PdfOptions): Pr
 }
 
 /** Lazy Playwright import shared by the PDF and PPTX exporters. */
-export async function loadPlaywright(): Promise<PlaywrightModule> {
+async function loadPlaywright(): Promise<PlaywrightModule> {
   try {
     return await import('playwright');
   } catch (err) {

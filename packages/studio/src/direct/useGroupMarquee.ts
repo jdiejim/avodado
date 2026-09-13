@@ -23,7 +23,7 @@ import type { DirectHost } from './host.js';
 import { readGeom } from './useDrag.js';
 
 /** What DirectLayer renders while a marquee is live. */
-export interface MarqueeVisuals {
+interface MarqueeVisuals {
   /** The raw dashed marquee rectangle, wrapper-relative. */
   readonly box: Box | null;
   /** The snapped cell range the release would cover, wrapper-relative. */

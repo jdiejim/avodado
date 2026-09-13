@@ -89,7 +89,7 @@ export async function buildShareUrl(
 }
 
 /** What a share link asks the studio to do. */
-export interface SharedDoc {
+interface SharedDoc {
   readonly source: string;
   readonly present: boolean;
   readonly title?: string;

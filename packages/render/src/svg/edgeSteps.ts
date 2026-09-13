@@ -88,7 +88,7 @@ const DODGE_PAD = 13;
  * shortest exit — which tracks the (orthogonal) edge it rides on. Two passes,
  * so escaping one box into a neighbour resolves too.
  */
-function dodge(lx: number, ly: number, avoid: ReadonlyArray<AvoidRect>): PillPoint {
+export function dodge(lx: number, ly: number, avoid: ReadonlyArray<AvoidRect>): PillPoint {
   let x = lx;
   let y = ly;
   let dodged = false;

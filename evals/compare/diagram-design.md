@@ -41,7 +41,7 @@ dropped, 0 diagnostics.
 
 ## Reproduce
 
-1. Copy `.avodado/skill` into an empty project with `docs/` and
+1. Install the skill (`npx skills add jdiejim/avodado`) in an empty project with `docs/` and
    `avodado.config.json`; clone diagram-design beside it.
 2. Give each fresh agent the brief in `evals/compare/brief.md`, pointing at
    its skill, and let it validate with its own tooling.

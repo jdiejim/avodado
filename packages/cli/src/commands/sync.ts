@@ -31,7 +31,7 @@ import { runCheck, type CheckResult } from './check.js';
 import { overwriteRefusal } from '../io/write.js';
 
 /** Inputs for {@link runSyncOpenApi}. */
-export interface SyncOpenApiOptions {
+interface SyncOpenApiOptions {
   readonly cwd: string;
   /** Path to the OpenAPI spec (relative or absolute). */
   readonly spec: string;
@@ -46,7 +46,7 @@ export interface SyncOpenApiOptions {
 }
 
 /** Result of `avo sync openapi`. */
-export interface SyncOpenApiResult {
+interface SyncOpenApiResult {
   readonly exitCode: 0 | 1 | 2;
   /** A short, plain-text summary suitable for logging. */
   readonly message: string;
@@ -152,7 +152,7 @@ function simpleDiff(a: string, b: string): string {
 export type CsvBlockKind = 'table' | 'statustable' | 'chart';
 
 /** Inputs for {@link runSyncCsv}. */
-export interface SyncCsvOptions {
+interface SyncCsvOptions {
   readonly cwd: string;
   /** Path to the CSV file (relative or absolute). */
   readonly file: string;
@@ -169,7 +169,7 @@ export interface SyncCsvOptions {
 }
 
 /** Result of `avo sync csv`. */
-export interface SyncCsvResult {
+interface SyncCsvResult {
   readonly exitCode: 0 | 1 | 2;
   /** The block kind that was produced (or attempted). */
   readonly block: CsvBlockKind;
@@ -193,7 +193,7 @@ export interface SyncCsvResult {
 export type SchemaDialect = 'sql' | 'dbml' | 'prisma';
 
 /** Inputs for {@link runSyncSchema}. */
-export interface SyncSchemaOptions {
+interface SyncSchemaOptions {
   readonly cwd: string;
   /** Path to the schema file (relative or absolute). */
   readonly file: string;
@@ -209,7 +209,7 @@ export interface SyncSchemaOptions {
 }
 
 /** Result of `avo sync sql | dbml | prisma`. */
-export interface SyncSchemaResult {
+interface SyncSchemaResult {
   readonly exitCode: 0 | 1 | 2;
   /** The ready-to-paste ` ```erd ` fence (stdout mode) — trailing newline included. */
   readonly fence?: string;

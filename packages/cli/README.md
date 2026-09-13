@@ -1,6 +1,6 @@
 # avodado
 
-**Documentation-as-code.** Write docs as plain Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and `avo` validates them like code, renders them to HTML, slides, PDF, or PowerPoint, and lets you edit them in a visual studio. The `.md` files on disk stay the single source of truth.
+**Documentation-as-code.** Write docs as plain Markdown with typed, fenced YAML blocks — diagrams, tables, API references, decision records — and `avo` validates them like code, renders them to HTML, slides, or PDF, and lets you edit them in a visual studio. The `.md` files on disk stay the single source of truth.
 
 `avo` is the command-line tool. It shows a friendly interactive UI in your terminal, and plain text output in CI.
 
@@ -38,7 +38,6 @@ Then run:
 avo check docs/orders.md      # validates every block against its schema
 avo html  docs/orders.md -p   # renders a styled HTML page and opens it
 avo slides docs/orders.md -p  # …or a slide deck   ·   avo pdf docs/orders.md  → a PDF
-avo pptx  docs/orders.md      # …or a real PowerPoint deck (add --editable for native text)
 avo studio                    # edit visually — forms + live preview
 ```
 
@@ -48,18 +47,18 @@ avo studio                    # edit visually — forms + live preview
 
 ```bash
 avo demo        # see it instantly — renders a showcase of every block and opens it
-avo init        # scaffold docs/, config, and set up your AI tools (interactive)
-avo tour        # a short, guided, hands-on walkthrough
+avo init        # scaffold docs/ and avodado.config.json
+avo block       # every block type on one line; avo block <type> for fields + example
 ```
 
 ## Let your AI write the docs
 
-After `avo init`, the AI tools in your repo already know the block grammar, so you can just ask them to "document the checkout flow as a sequence diagram."
+Install the authoring skill into your agent once, then ask it to "document the checkout flow as a sequence diagram." The agent looks blocks up with `avo block <type>` and validates with `avo check`.
 
 ```bash
-avo install claude    # or: cursor · copilot · windsurf  (installs the authoring skill + adapter)
-avo skill             # print the grammar as a system prompt (paste into ChatGPT / any AI)
-avo mcp               # setup for Model Context Protocol clients (@avodado/mcp)
+npx skills add jdiejim/avodado -g   # Claude Code, Cursor, Codex, OpenCode, Copilot, and 70+ agents
+avo skill                            # print the whole skill as one document (paste into ChatGPT / any AI)
+avo mcp                              # setup for Model Context Protocol clients (@avodado/mcp)
 ```
 
 ## Common commands

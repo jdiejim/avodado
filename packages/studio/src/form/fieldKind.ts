@@ -187,7 +187,7 @@ export function refOptionsFor(
 }
 
 /** The documented kind vocabulary for a block's free-string `kind` fields (or null). */
-export function kindOptionsFor(blockKind: string): readonly string[] | null {
+function kindOptionsFor(blockKind: string): readonly string[] | null {
   if (NODE_KIND_BLOCKS.has(blockKind)) return KNOWN_NODE_KINDS;
   if (LOGIC_KIND_BLOCKS.has(blockKind)) return KNOWN_LOGIC_KINDS;
   return null;
@@ -275,7 +275,7 @@ export interface FieldSpec {
 }
 
 /** The three sections of a form: visible, collapsed extras, collapsed plumbing. */
-export interface FieldPartition {
+interface FieldPartition {
   readonly primary: readonly FieldSpec[];
   readonly more: readonly FieldSpec[];
   readonly advanced: readonly FieldSpec[];

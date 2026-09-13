@@ -492,17 +492,23 @@ export const statsSchema = z
   .strict();
 
 // ─── code (one or more code blocks / a diff / a terminal session) ───────────
-// `kind` picks the surface: plain snippets (default), `diff` (unified-diff
-// text: `+` additions, `-` removals, `@@` hunks), or `terminal` (a shell
-// session: `$ ` commands, `# ` comments, output lines). Top-level `code` /
-// `lang` / `session` are the single-snippet shorthand — no `blocks` list
-// needed for one snippet. The former `diff` and `terminal` block types are
-// permanent aliases for `code` with the matching `kind`.
+// `kind` picks the surface: plain snippets (default), `compare` (two
+// `blocks[]` entries side by side under BEFORE / AFTER eyebrows), `diff`
+// (unified-diff text: `+` additions, `-` removals, `@@` hunks), or `terminal`
+// (a shell session: `$ ` commands, `# ` comments, output lines). Top-level
+// `code` / `lang` / `session` are the single-snippet shorthand — no `blocks`
+// list needed for one snippet. `highlight` names 1-based line ranges
+// (`"3-5, 8"`); a range past the end is ignored. `lines` prints line numbers
+// from `start`; `cols` lays `blocks[]` out as a grid; `wrap` soft-wraps long
+// lines. The former `diff` and `terminal` block types are permanent aliases
+// for `code` with the matching `kind`.
 const codeEntrySchema = z
   .object({
     title: z.string().optional(),
     lang: z.string().optional(),
     code: z.string(),
+    highlight: z.string().optional(),
+    caption: z.string().optional(),
   })
   .strict();
 export const codeSchema = z
@@ -510,10 +516,16 @@ export const codeSchema = z
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
-    kind: z.enum(['diff', 'terminal']).optional(),
+    kind: z.enum(['compare', 'diff', 'terminal']).optional(),
     code: z.string().optional(),
     lang: z.string().optional(),
     session: z.string().optional(),
+    highlight: z.string().optional(),
+    caption: z.string().optional(),
+    lines: z.boolean().optional(),
+    start: num.int().optional(),
+    cols: num.int().min(1).max(3).optional(),
+    wrap: z.boolean().optional(),
     blocks: z.array(codeEntrySchema).optional(),
   })
   .strict();
@@ -805,14 +817,22 @@ export const quadrantSchema = z
   .strict();
 
 // ─── swimlane (cross-functional process) ────────────────────────────────────
-const swimlaneLaneSchema = z.object({ label: z.string() }).strict();
+const swimlaneLaneSchema = z.object({ id: z.string().optional(), label: z.string() }).strict();
+/**
+ * A lane by its label or `id` (`lane: Sales`, case-insensitive, trimmed) or
+ * by its 0-based index. `validate.ts` checks a name resolves
+ * (`E_SWIMLANE_LANE`); `swimlaneLayout.ts` resolves it for the renderers.
+ */
+const swimlaneLaneRef = z.union([laneIndex, z.string().min(1, 'a lane name cannot be empty')]);
 const swimlaneStepSchema = z
   .object({
     id: z.string(),
-    col: gridCoord,
-    lane: laneIndex,
+    col: gridCoord.optional(),
+    lane: swimlaneLaneRef,
     label: z.string(),
     kind: z.enum(['action', 'decision', 'start', 'end', 'wait']).optional(),
+    note: z.string().optional(),
+    accent: z.boolean().optional(),
   })
   .strict();
 const swimlaneLinkSchema = z
@@ -820,6 +840,15 @@ const swimlaneLinkSchema = z
     from: z.string(),
     to: z.string(),
     label: z.string().optional(),
+    kind: z.enum(['dashed', 'error']).optional(),
+  })
+  .strict();
+/** A column band over the lanes (a BPMN milestone): columns `from`..`to`, 1-based; no `to` runs to the last column. */
+const swimlanePhaseSchema = z
+  .object({
+    label: z.string(),
+    from: gridCoord,
+    to: gridCoord.optional(),
   })
   .strict();
 export const swimlaneSchema = z
@@ -828,6 +857,7 @@ export const swimlaneSchema = z
     description: z.string().optional(),
     lede: z.string().optional(),
     lanes: z.array(swimlaneLaneSchema).optional(),
+    phases: z.array(swimlanePhaseSchema).optional(),
     steps: z.array(swimlaneStepSchema).optional(),
     links: z.array(swimlaneLinkSchema).optional(),
   })
@@ -1009,6 +1039,9 @@ const blockGraphNodeSchema = z
     row: gridCoord.optional(),
     layer: laneIndex.optional(),
     w: gridSpan.optional(),
+    // Row span. A gateway or load balancer drawn as a vertical bar spans the
+    // rows of the services it fronts; omitted, the renderer spans the fan-out.
+    h: gridSpan.optional(),
     kind: z.string().optional(),
     name: z.string(),
     tech: z.string().optional(),
@@ -1523,13 +1556,45 @@ const chartGuidesSchema = z
     quadrants: z.array(z.string()).length(4).optional(),
   })
   .strict();
+// A labelled point on a bell curve (`kind: bell`): `at` is the x value.
+const chartMarkerSchema = z
+  .object({
+    at: num,
+    label: z.string(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+// A five-number summary for `kind: boxplot`; `outliers` are drawn as dots.
+const chartBoxSchema = z
+  .object({
+    label: z.string(),
+    min: num,
+    q1: num,
+    median: num,
+    q3: num,
+    max: num,
+    outliers: z.array(num).optional(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+// One bullet-graph row (`kind: bullet`): the measure against a target inside
+// qualitative `ranges` (poor → good, ascending; 2–3 values).
+const chartBulletSchema = z
+  .object({
+    label: z.string(),
+    value: num,
+    target: num.optional(),
+    ranges: z.array(num).optional(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
 export const chartSchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
     lede: z.string().optional(),
     kind: z
-      .enum(['bar', 'stacked', 'line', 'area', 'scatter', 'donut', 'gauge', 'radar', 'waterfall', 'funnel'])
+      .enum(['bar', 'stacked', 'line', 'area', 'scatter', 'donut', 'pie', 'gauge', 'radar', 'waterfall', 'funnel', 'histogram', 'bell', 'boxplot', 'pareto', 'bullet'])
       .optional(),
     labels: z.array(z.string()).optional(),
     series: z.array(chartSeriesSchema).optional(),
@@ -1547,6 +1612,18 @@ export const chartSchema = z
     unit: z.string().optional(),
     budget: num.optional(),
     max: num.optional(),
+    // `kind: histogram` and `kind: bell` take raw `values`; the renderer bins
+    // them (`bins`, default Sturges) or fits mean / sd. `bell` may instead be
+    // given `mean` + `sd` directly; `markers` label points on the curve.
+    values: z.array(num).optional(),
+    bins: num.optional(),
+    mean: num.optional(),
+    sd: num.optional(),
+    markers: z.array(chartMarkerSchema).optional(),
+    // `kind: boxplot` takes one five-number summary per box.
+    boxes: z.array(chartBoxSchema).optional(),
+    // `kind: bullet` takes one bar per row: value vs target inside ranges.
+    bullets: z.array(chartBulletSchema).optional(),
   })
   .strict();
 
@@ -3013,6 +3090,419 @@ export const sagaSchema = z
   });
 
 // ─── registry source-of-truth ───────────────────────────────────────────────
+
+// ═══ Phase 31 — coverage sweep (2026-09-13): ML, audits & performance, UML,
+// threat modelling, and the presentation shapes decks still faked. ═══════════
+
+// ─── neuralnet (layered neural network) ─────────────────────────────────────
+// One column per layer, left to right. `units` is the real width of the layer;
+// the renderer draws at most `maxUnits` circles per layer and marks the rest
+// with an ellipsis, so a 784-unit input still reads as one column. Every
+// consecutive pair of layers is dense-connected unless the layer says
+// `connect: none` (residual and attention blocks name their own wiring in
+// prose). `kind` picks the glyph/tint; `activation` prints under the label.
+const neuralLayerSchema = z
+  .object({
+    label: z.string(),
+    units: num.optional(),
+    kind: z.enum(['input', 'dense', 'conv', 'pool', 'recurrent', 'embedding', 'attention', 'norm', 'dropout', 'output']).optional(),
+    activation: z.string().optional(),
+    note: z.string().optional(),
+    connect: z.enum(['dense', 'none']).optional(),
+  })
+  .strict();
+export const neuralnetSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    lede: z.string().optional(),
+    layers: z.array(neuralLayerSchema).min(2),
+    /** Circles drawn per layer before the ellipsis (default 6). */
+    maxUnits: num.optional(),
+    /** Total parameter count, printed in the footer when given. */
+    params: z.string().optional(),
+  })
+  .strict();
+
+// ─── modelcard (ML model card) ──────────────────────────────────────────────
+// The Mitchell et al. model-card sections as a card: identity, intended use,
+// training data, metrics per split, limitations, license.
+const modelMetricSchema = z
+  .object({
+    name: z.string(),
+    value: z.union([z.string(), num]),
+    split: z.string().optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+export const modelcardSchema = z
+  .object({
+    name: z.string(),
+    version: z.string().optional(),
+    task: z.string().optional(),
+    architecture: z.string().optional(),
+    params: z.string().optional(),
+    owner: z.string().optional(),
+    license: z.string().optional(),
+    description: z.string().optional(),
+    intendedUse: z.array(z.string()).optional(),
+    outOfScope: z.array(z.string()).optional(),
+    trainingData: z.array(z.string()).optional(),
+    metrics: z.array(modelMetricSchema).optional(),
+    limitations: z.array(z.string()).optional(),
+    ethics: z.array(z.string()).optional(),
+  })
+  .strict();
+
+// ─── mindmap (radial idea map) ──────────────────────────────────────────────
+// One `center`, branches by `parent`. Depth-1 branches fan out around the
+// centre alternating right/left; deeper nodes hang off their branch. Accent
+// per branch is inherited by its subtree.
+const mindmapNodeSchema = z
+  .object({
+    id: z.string(),
+    parent: z.string().optional(),
+    label: z.string(),
+    note: z.string().optional(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+export const mindmapSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    center: z.string(),
+    nodes: z.array(mindmapNodeSchema).min(1),
+  })
+  .strict();
+
+// ─── audit (findings register) ──────────────────────────────────────────────
+// One row per finding, severity-ranked; the header strip counts findings per
+// severity. `evidence` is what was observed (a path, a query, a screenshot
+// reference), `fix` the recommended change. The twin of `risk` for what IS
+// wrong rather than what MIGHT go wrong.
+const auditFindingSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string(),
+    severity: z.enum(['critical', 'high', 'medium', 'low', 'info']),
+    area: z.string().optional(),
+    evidence: z.string().optional(),
+    fix: z.string().optional(),
+    owner: z.string().optional(),
+    status: z.enum(['open', 'fixing', 'fixed', 'accepted', 'wontfix']).optional(),
+    ref: z.string().optional(),
+  })
+  .strict();
+export const auditSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    scope: z.string().optional(),
+    date: z.string().optional(),
+    auditor: z.string().optional(),
+    findings: z.array(auditFindingSchema).min(1),
+  })
+  .strict();
+
+// ─── checklist (pass / fail with evidence) ──────────────────────────────────
+// Items grouped under optional headings; each carries a verdict and the
+// evidence behind it. The footer derives pass / fail / n/a counts and the
+// pass rate over the items that apply. `[pass] item — evidence` is the terse
+// form.
+const checklistItemSchema = z
+  .object({
+    item: z.string(),
+    status: z.enum(['pass', 'fail', 'partial', 'na', 'pending']),
+    evidence: z.string().optional(),
+    note: z.string().optional(),
+    ref: z.string().optional(),
+  })
+  .strict();
+const checklistGroupSchema = z
+  .object({
+    label: z.string(),
+    items: z.array(checklistItemSchema).min(1),
+  })
+  .strict();
+export const checklistSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    standard: z.string().optional(),
+    items: z.array(checklistItemSchema).optional(),
+    groups: z.array(checklistGroupSchema).optional(),
+  })
+  .strict();
+
+// ─── perfbudget (performance budgets vs measured) ───────────────────────────
+// One row per metric: the budget, the measured value, and a bar of measured
+// against budget. `lowerIsBetter` defaults to true (latency, bytes, CLS);
+// set it false for scores and throughput. Status derives: over budget →
+// fail, within 90% → warn, else pass.
+const perfMetricSchema = z
+  .object({
+    metric: z.string(),
+    budget: num,
+    measured: num,
+    unit: z.string().optional(),
+    lowerIsBetter: z.boolean().optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+export const perfbudgetSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    context: z.string().optional(),
+    metrics: z.array(perfMetricSchema).min(1),
+  })
+  .strict();
+
+// ─── percentiles (latency distribution per row) ─────────────────────────────
+// One row per endpoint/series with its p50 · p90 · p95 · p99 (and optional
+// p999 and max) on a shared axis; the SLO line is drawn when `slo` is set on
+// the block or the row. Reads as a dot-and-whisker plot: the eye sees the
+// tail, not just the median.
+const percentileRowSchema = z
+  .object({
+    label: z.string(),
+    p50: num,
+    p90: num.optional(),
+    p95: num.optional(),
+    p99: num,
+    p999: num.optional(),
+    max: num.optional(),
+    slo: num.optional(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+export const percentilesSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    unit: z.string().optional(),
+    slo: num.optional(),
+    /** `log` spreads a long tail; default linear. */
+    scale: z.enum(['linear', 'log']).optional(),
+    rows: z.array(percentileRowSchema).min(1),
+  })
+  .strict();
+
+// ─── usecase (UML use-case diagram) ─────────────────────────────────────────
+// Actors outside the system boundary, use cases (ovals) inside it. `links`
+// join actors to cases; `relations` join cases to cases with `include`,
+// `extend`, or `generalize`. Terse: `actor -> case` and `a ..> b: include`.
+const usecaseActorSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    kind: z.enum(['person', 'system', 'time']).optional(),
+    side: z.enum(['left', 'right']).optional(),
+  })
+  .strict();
+const usecaseCaseSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    note: z.string().optional(),
+  })
+  .strict();
+const usecaseLinkSchema = z
+  .object({
+    from: z.string(),
+    to: z.string(),
+    label: z.string().optional(),
+  })
+  .strict();
+const usecaseRelSchema = z
+  .object({
+    from: z.string(),
+    to: z.string(),
+    kind: z.enum(['include', 'extend', 'generalize']),
+    label: z.string().optional(),
+  })
+  .strict();
+export const usecaseSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    system: z.string().optional(),
+    actors: z.array(usecaseActorSchema).min(1),
+    cases: z.array(usecaseCaseSchema).min(1),
+    links: z.array(usecaseLinkSchema).optional(),
+    relations: z.array(usecaseRelSchema).optional(),
+  })
+  .strict();
+
+// ─── pkg (UML package diagram) ──────────────────────────────────────────────
+// Packages as tabbed folders on a grid, optionally nested by `parent`;
+// `contains` lists the members printed inside. `deps` are dashed
+// dependency arrows (`import`, `use`, `access`, `merge`).
+const pkgNodeSchema = z
+  .object({
+    id: z.string(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
+    name: z.string(),
+    parent: z.string().optional(),
+    contains: z.array(z.string()).optional(),
+    stereotype: z.string().optional(),
+  })
+  .strict();
+const pkgDepSchema = z
+  .object({
+    from: z.string(),
+    to: z.string(),
+    kind: z.enum(['import', 'use', 'access', 'merge']).optional(),
+    label: z.string().optional(),
+  })
+  .strict();
+export const pkgSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    dir: gridDirSchema,
+    packages: z.array(pkgNodeSchema).min(1),
+    deps: z.array(pkgDepSchema).optional(),
+  })
+  .strict();
+
+// ─── timing (UML timing diagram) ────────────────────────────────────────────
+// One lane per lifeline; each lane is a step line of `states` over a shared
+// time axis (`from` … `to` in `unit`). `events` mark instants with a label;
+// `constraints` draw a duration bracket between two times.
+const timingStateSchema = z
+  .object({
+    state: z.string(),
+    from: num,
+    to: num,
+    accent: accentEnum.optional(),
+  })
+  .strict();
+const timingLaneSchema = z
+  .object({
+    label: z.string(),
+    states: z.array(timingStateSchema).min(1),
+  })
+  .strict();
+const timingEventSchema = z
+  .object({
+    at: num,
+    label: z.string(),
+    lane: z.string().optional(),
+  })
+  .strict();
+const timingConstraintSchema = z
+  .object({
+    from: num,
+    to: num,
+    label: z.string(),
+  })
+  .strict();
+export const timingSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    unit: z.string().optional(),
+    lanes: z.array(timingLaneSchema).min(1),
+    events: z.array(timingEventSchema).optional(),
+    constraints: z.array(timingConstraintSchema).optional(),
+  })
+  .strict();
+
+// ─── threatmodel (data flow with trust boundaries + STRIDE table) ───────────
+// The dfd shapes (process / external / store) plus `boundaries` drawn as
+// dashed trust boundaries, and a `threats` table under the drawing keyed to
+// nodes or edges by `target`. `category` is the STRIDE letter.
+const threatNodeSchema = z
+  .object({
+    id: z.string(),
+    col: gridCoord.optional(),
+    row: gridCoord.optional(),
+    name: z.string(),
+    kind: z.enum(['process', 'external', 'store']).optional(),
+  })
+  .strict();
+const threatEdgeSchema = z
+  .object({
+    from: z.string(),
+    to: z.string(),
+    label: z.string().optional(),
+    /** `plain` draws the edge red-dashed as an unencrypted hop. */
+    channel: z.enum(['tls', 'plain', 'internal']).optional(),
+  })
+  .strict();
+const threatSchema = z
+  .object({
+    id: z.string().optional(),
+    target: z.string(),
+    category: z.enum(['S', 'T', 'R', 'I', 'D', 'E']),
+    threat: z.string(),
+    mitigation: z.string().optional(),
+    severity: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+    status: z.enum(['open', 'mitigated', 'accepted']).optional(),
+  })
+  .strict();
+export const threatmodelSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    dir: gridDirSchema,
+    boundaries: z.array(gridGroupSchema).optional(),
+    nodes: z.array(threatNodeSchema).min(1),
+    edges: z.array(threatEdgeSchema).optional(),
+    threats: z.array(threatSchema).optional(),
+  })
+  .strict();
+
+// ─── chevrons (process chevron strip) ───────────────────────────────────────
+// The consulting process strip: N chevrons left to right, one `current`
+// highlighted, an optional line of detail under each. Up to 8 read in one
+// row; more wrap.
+const chevronStepSchema = z
+  .object({
+    label: z.string(),
+    desc: z.string().optional(),
+    accent: accentEnum.optional(),
+  })
+  .strict();
+export const chevronsSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    steps: z.array(chevronStepSchema).min(2),
+    /** 1-based index of the highlighted step. */
+    current: num.optional(),
+  })
+  .strict();
+
+// ─── roadmap (themes × periods) ─────────────────────────────────────────────
+// Coarser than gantt: one row per theme (a team, a product area), one column
+// per period (quarter, month), items as chips in the cell that spans
+// `from` … `to` periods. Status tints the chip.
+const roadmapItemSchema = z
+  .object({
+    label: z.string(),
+    theme: z.string(),
+    from: z.string(),
+    to: z.string().optional(),
+    status: z.enum(['done', 'current', 'next', 'later', 'risk']).optional(),
+    note: z.string().optional(),
+  })
+  .strict();
+export const roadmapSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    periods: z.array(z.string()).min(2),
+    themes: z.array(z.string()).optional(),
+    items: z.array(roadmapItemSchema).min(1),
+    /** The period the reader is in; drawn as a vertical rule. */
+    now: z.string().optional(),
+  })
+  .strict();
+
 /**
  * The schema map. `as const satisfies Record<BlockType, ...>` enforces that
  * every {@link BlockType} has an entry — omitting one is a compile error.
@@ -3112,6 +3602,19 @@ export const blockSchemas = {
   slopegraph: slopegraphSchema,
   spans: spansSchema,
   rollout: rolloutSchema,
+  neuralnet: neuralnetSchema,
+  modelcard: modelcardSchema,
+  mindmap: mindmapSchema,
+  audit: auditSchema,
+  checklist: checklistSchema,
+  perfbudget: perfbudgetSchema,
+  percentiles: percentilesSchema,
+  usecase: usecaseSchema,
+  pkg: pkgSchema,
+  timing: timingSchema,
+  threatmodel: threatmodelSchema,
+  chevrons: chevronsSchema,
+  roadmap: roadmapSchema,
 } as const satisfies Record<BlockType, z.ZodTypeAny>;
 
 /** Per-block data types, derived from the schemas above. */

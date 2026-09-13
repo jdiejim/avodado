@@ -1,0 +1,301 @@
+# Generation eval — end-to-end scenarios across the block families.
+#
+# A fresh agent gets ONE request, the installed skill, and a working `avo`
+# (through `npx -y avodado`). It follows the skill's fast path in full: pick,
+# `avo block`, write, `avo check`, fix. Unlike evals/write, the agent MAY run
+# the CLI — that is the product. The first draft is captured before any check
+# so first-write quality and final quality are both scored.
+#
+# Each case: the request (never names a block), the block types that carry
+# the main answer (`expected` → full marks, `acceptable` → half, `wrong` → a
+# keyword trap), and `family` for the coverage table. Keep ids stable; add new
+# cases at the end.
+
+- id: login-flow
+  family: flows
+  request: How the login flow works across the SPA, the auth service, and Google.
+  expected: [sequence]
+  acceptable: [swimlane]
+  wrong: [flow, steps, c4]
+
+- id: order-lifecycle
+  family: flows
+  request: Show how an order moves from cart to delivered and what can go wrong at each stage.
+  expected: [state]
+  acceptable: [flow]
+  wrong: [timeline, steps, journey]
+
+- id: checkout-slow
+  family: flows
+  request: Our checkout API got slow last week. Show where the time actually goes inside one request.
+  expected: [spans]
+  acceptable: [sequence, chart]
+  wrong: [timeline, gantt, table]
+
+- id: billing-model
+  family: data-model
+  request: Explain the data model behind subscriptions, plans, invoices, and payments.
+  expected: [erd]
+  acceptable: [uml]
+  wrong: [table, tree, flow]
+
+- id: platform-shape
+  family: architecture
+  request: "Explain the shape of the platform to a new backend engineer: services, databases, third parties."
+  expected: [c4, block]
+  acceptable: [cluster, archmap]
+  wrong: [flow, sequence, tree]
+
+- id: zones-and-replicas
+  family: architecture
+  request: Show how the service is laid out across regions and availability zones, with how many copies of each part run.
+  expected: [block]
+  acceptable: [c4, cluster]
+  wrong: [flow, tree, table]
+
+- id: pii-flow
+  family: flows
+  request: Where do PII fields flow through the system, from ingestion to the warehouse?
+  expected: [dfd]
+  acceptable: [flow, sankey]
+  wrong: [erd, sequence, table]
+
+- id: cache-compare
+  family: business
+  request: "Compare the three caching options we discussed: Redis, Memcached, and an in-process LRU."
+  expected: [options]
+  acceptable: [proscons, benchmark, table, harvey]
+  wrong: [chart, list]
+
+- id: admin-visibility
+  family: business
+  request: Explain who can see what in the admin app — the roles against the screens.
+  expected: [matrix]
+  acceptable: [table]
+  wrong: [tree, flow, c4]
+
+- id: q3-plan
+  family: planning
+  request: Show the Q3 delivery plan for the mobile app with dates and dependencies.
+  expected: [gantt]
+  acceptable: [timeline]
+  wrong: [table, kanban, steps]
+
+- id: friday-deploys
+  family: charts
+  request: Why do deploys keep failing on Fridays? Lay out the possible causes.
+  expected: [fishbone]
+  acceptable: [tree]
+  wrong: [flow, table, timeline]
+
+- id: infra-bill
+  family: charts
+  request: The monthly infra bill grew 40% — break down where the money goes.
+  expected: [chart, treemap]
+  acceptable: [table, stats]
+  wrong: [timeline, bignumber]
+
+- id: orders-rest-api
+  family: api
+  request: Document the public REST API for the orders service.
+  expected: [endpoint]
+  acceptable: [table]
+  wrong: [sequence, code, flow]
+
+- id: agent-run
+  family: agentic
+  request: Show a real run of the agent handling "refund my order", turn by turn.
+  expected: [trace]
+  acceptable: [sequence]
+  wrong: [code, steps, table]
+
+- id: two-pointer
+  family: algorithms
+  request: Explain the two-pointer approach for the "container with most water" problem.
+  expected: [array]
+  acceptable: [steps, code]
+  wrong: [flow, table, linkedlist]
+
+- id: outage-postmortem
+  family: planning
+  request: "Postmortem for the outage on 14 Aug: what happened, in what order, and why."
+  expected: [timeline]
+  acceptable: [sequence, fishbone]
+  wrong: [gantt, steps, table]
+
+# ── Added 2026-09-13 (evening): messaging and event patterns ────────────────
+# Cases 1–16 are unchanged. These seven ask for the patterns the skill's
+# reference/patterns.md covers, in the words a teammate would use.
+
+- id: order-events-fanout
+  family: architecture
+  request: When an order is placed, five other services have to react to it without the order service knowing about any of them. Show how that works.
+  expected: [block]
+  acceptable: [dfd, sequence, eventcontract]
+  wrong: [flow, steps, table]
+
+- id: feed-fanout
+  family: architecture
+  request: Explain how a new post reaches every follower's feed quickly, and what we do differently for accounts with millions of followers.
+  expected: [block]
+  acceptable: [sequence, flow, options]
+  wrong: [table, steps, timeline]
+
+- id: outbox-reliability
+  family: flows
+  request: We lose events when the database commit succeeds but the publish to the broker fails. Document the fix we agreed on.
+  expected: [sequence, flow]
+  acceptable: [block, state]
+  wrong: [table, timeline, erd]
+
+- id: read-write-split
+  family: architecture
+  request: Reads outnumber writes fifty to one and the product page query joins nine tables. Document the read-model approach we agreed on.
+  expected: [block, dfd]
+  acceptable: [sequence, options]
+  wrong: [erd, table, steps]
+
+- id: poison-messages
+  family: flows
+  request: A malformed message keeps crashing the consumer and blocks the whole queue behind it. Document how we handle that.
+  expected: [flow, state]
+  acceptable: [sequence, block]
+  wrong: [table, steps, timeline]
+
+- id: partitioned-consumers
+  family: architecture
+  request: Show how the order stream is partitioned and what happens to the consumer group when we add or remove instances.
+  expected: [block]
+  acceptable: [dfd, sequence, table]
+  wrong: [flow, tree, steps]
+
+- id: event-schema
+  family: api
+  request: Document the order.placed event so other teams can consume it safely.
+  expected: [eventcontract]
+  acceptable: [table, spec]
+  wrong: [endpoint, sequence, packet]
+
+# ── Added 2026-09-13 (night): coverage sweep — the 13 new blocks and the new
+# chart kinds. One request per block, in a teammate's words, never naming it.
+
+- id: cnn-shape
+  family: agentic
+  request: Explain the shape of the image classifier we ship — what each layer does and how wide it is.
+  expected: [neuralnet]
+  acceptable: [flow, layers, table]
+  wrong: [c4, block, tree]
+
+- id: model-handoff
+  family: agentic
+  request: Write the one-page handoff for the ticket-routing model so another team can decide whether to reuse it.
+  expected: [modelcard]
+  acceptable: [spec, table]
+  wrong: [endpoint, prose, benchmark]
+
+- id: onboarding-ideas
+  family: charts
+  request: Lay out everything we brainstormed for onboarding v2, grouped around the main idea.
+  expected: [mindmap]
+  acceptable: [tree, list]
+  wrong: [flow, kanban, steps]
+
+- id: pentest-findings
+  family: quality
+  request: Write up what the pentest found on the payments service, worst first, with what we do about each.
+  expected: [audit]
+  acceptable: [risk, table]
+  wrong: [statustable, list, timeline]
+
+- id: prod-readiness
+  family: quality
+  request: Go through the production-readiness standard for the search indexer and show what passes and what doesn't, with proof.
+  expected: [checklist]
+  acceptable: [statustable, table]
+  wrong: [list, steps, matrix]
+
+- id: web-vitals
+  family: quality
+  request: Show how the product page does against our web performance budgets.
+  expected: [perfbudget]
+  acceptable: [slo, stats, benchmark]
+  wrong: [chart, table, gantt]
+
+- id: api-tail
+  family: quality
+  request: The median looks fine but people complain checkout is slow — show the latency picture per endpoint.
+  expected: [percentiles]
+  acceptable: [chart, spans, table]
+  wrong: [stats, timeline, gantt]
+
+- id: login-threats
+  family: quality
+  request: Threat-model the login path — where can it be attacked and what stops each attack?
+  expected: [threatmodel]
+  acceptable: [dfd, audit, risk]
+  wrong: [sequence, flow, table]
+
+- id: ticketing-actors
+  family: architecture
+  request: Who does what with the ticketing system — customers, agents, the payment provider — and which features depend on others?
+  expected: [usecase]
+  acceptable: [matrix, userstory, c4]
+  wrong: [sequence, flow, swimlane]
+
+- id: module-rules
+  family: architecture
+  request: Document which backend modules are allowed to depend on which, so reviewers can enforce it.
+  expected: [pkg]
+  acceptable: [felogic, block, tree]
+  wrong: [c4, erd, table]
+
+- id: breaker-timing
+  family: flows
+  request: Show what the circuit breaker and the downstream are doing over the sixty seconds of last week's outage.
+  expected: [timing]
+  acceptable: [state, sequence, timeline]
+  wrong: [gantt, spans, flow]
+
+- id: incident-phases
+  family: planning
+  request: Deck opener for the incident process — the phases, and which one we are improving this quarter.
+  expected: [chevrons]
+  acceptable: [steps, cycle, timeline]
+  wrong: [flow, kanban, list]
+
+- id: platform-roadmap
+  family: planning
+  request: The 2026 platform roadmap by theme and quarter, with where we are now.
+  expected: [roadmap]
+  acceptable: [gantt, timeline, kanban]
+  wrong: [table, storymap, steps]
+
+- id: deploy-causes-pareto
+  family: charts
+  request: Of the 140 failed deploys this year, show which few causes account for most of them.
+  expected: [chart]
+  acceptable: [fishbone, table]
+  wrong: [timeline, list]
+
+- id: latency-spread
+  family: charts
+  request: Show how request latency is distributed across the fleet and where our 250 ms alert threshold sits on that curve.
+  expected: [chart]
+  acceptable: [percentiles, stats]
+  wrong: [gantt, timeline]
+
+# ── Added 2026-09-13 (late): the lenses agents skipped in 38 docs ───────────
+
+- id: refund-handoffs
+  family: flows
+  request: Document how a refund moves between support, finance, and the warehouse, and who owns each step.
+  expected: [swimlane]
+  acceptable: [flow, sequence]
+  wrong: [steps, table, timeline]
+
+- id: retry-helper-change
+  family: tables-data
+  request: Explain the change we made to the retry helper so reviewers can see exactly what moved, with the new function they should call.
+  expected: [code]
+  acceptable: [steps, callout]
+  wrong: [flow, sequence, table]

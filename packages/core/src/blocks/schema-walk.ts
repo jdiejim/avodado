@@ -31,7 +31,7 @@ export function unwrap(schema: z.ZodTypeAny): z.ZodTypeAny {
  * Resolves the schema node at a zod issue path, walking objects by key and
  * arrays by index. Returns `undefined` if the path leaves the known shape.
  */
-export function schemaAt(
+function schemaAt(
   kind: BlockType,
   path: ReadonlyArray<string | number>,
 ): z.ZodTypeAny | undefined {

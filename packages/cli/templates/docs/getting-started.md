@@ -87,15 +87,14 @@ edges:
 ```table
 columns: [Command, What it does]
 rows:
-  - ["avo init", Scaffold a project + your AI-tool adapters (Claude / Cursor / Copilot / Windsurf)]
+  - ["avo init", Scaffold docs/ and avodado.config.json]
   - ["avo check [globs]", "Validate schemas, references, and duplicate ids — exits non-zero on errors"]
-  - ["avo preview <file>", Render to a temp HTML file and open it in your browser]
+  - ["avo <file.md>", Render to a temp HTML file and open it in your browser]
   - ["avo html / slides / pdf <file>", Render one doc to a standalone HTML page, a slide deck, or a PDF]
   - ["avo demo [-s]", Render the built-in showcase of every block (-s for slides)]
-  - ["avo catalog [-p]", "List every block + description; -p opens an HTML gallery (-s a deck)"]
-  - ["avo design [slug]", "Grab a design-pattern template; -p/-s render the gallery"]
-  - ["avo block / template", Scaffold a single block or a doc template]
-  - ["avo skill", "Copy the authoring grammar as a system prompt — for Copilot / custom GPTs / any AI"]
+  - ["avo block [type]", "Every block on one line — or one block's fields, terse forms, and example"]
+  - ["avo new <name>", Scaffold a whole doc (adr, runbook, …) or a single block]
+  - ["npx skills add jdiejim/avodado", "Install the authoring skill into your AI agent — Claude Code, Cursor, Codex, and more"]
   - ["avo sync openapi <spec>", Generate an API doc straight from an OpenAPI file]
 ```
 
@@ -152,5 +151,5 @@ links:
 ```callout
 tone: note
 title: Next steps
-body: "Edit this file and run `avo check`. Then open `docs/tutorial.md` for the full feature tour, and read `.avodado/skill/SKILL.md` for the complete block grammar."
+body: "Edit this file and run `avo check`. Then open `docs/tutorial.md` for the full feature tour, and run `avo block <type>` for any block's fields."
 ```

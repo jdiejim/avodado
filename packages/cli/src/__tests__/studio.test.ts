@@ -268,13 +268,13 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
     }
   }, 20_000);
 
-  it('POST /api/export/pdf|pptx validates input (GET → 405, missing html → 400)', async () => {
-    // The happy paths launch Chromium — covered by pdf.test.ts / pptx.test.ts,
+  it('POST /api/export/pdf validates input (GET → 405, missing html → 400)', async () => {
+    // The happy path launches Chromium — covered by pdf.test.ts,
     // gated on the browser being installed. Here we only assert the routes'
     // guards, which never touch Playwright.
     const s = await startStudio();
     try {
-      for (const route of ['/api/export/pdf', '/api/export/pptx']) {
+      for (const route of ['/api/export/pdf']) {
         const wrongMethod = await fetch(api(s.port, route));
         expect(wrongMethod.status).toBe(405);
 

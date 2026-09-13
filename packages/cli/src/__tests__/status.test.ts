@@ -27,7 +27,7 @@ describe('projectStatus (smart bare `avo`)', () => {
       expect(text).toContain('2 document(s)');
       expect(text).toContain('clean');
       // the 4-5 next actions, with one-liners
-      for (const cmd of ['avo check', 'avo <file.md>', 'avo studio', 'avo build', 'avo explore']) {
+      for (const cmd of ['avo check', 'avo <file.md>', 'avo studio', 'avo build', 'avo block']) {
         expect(text).toContain(cmd);
       }
     } finally {

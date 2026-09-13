@@ -42,10 +42,10 @@ import {
 import { numAttr, readGeom } from './useDrag.js';
 
 /** How long the snapped-cell flash stays before the trail fades out. */
-export const FLASH_MS = 160;
+const FLASH_MS = 160;
 
 /** What DirectLayer renders while pen mode is on. */
-export interface SketchVisuals {
+interface SketchVisuals {
   /** The live ink trail, wrapper-relative — empty between strokes. */
   readonly trail: readonly Pt[];
   /** True once the stroke committed: the trail fades instead of tracking. */

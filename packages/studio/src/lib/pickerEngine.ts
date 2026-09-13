@@ -26,7 +26,7 @@ export interface PickerHit {
 }
 
 /** One family section of the browse gallery. */
-export interface BrowseGroup {
+interface BrowseGroup {
   readonly family: BlockFamily;
   readonly label: string;
   readonly hits: readonly PickerHit[];
@@ -36,7 +36,7 @@ export interface BrowseGroup {
 export type FamilyFilter = BlockFamily | 'all';
 
 /** Everything browse mode needs to render for a (query, family) pair. */
-export interface BrowseView {
+interface BrowseView {
   /** Matching sections (family filter applied), BLOCK_FAMILIES order. */
   readonly groups: readonly BrowseGroup[];
   /** Cards visible under the current query + family filter. */
@@ -65,7 +65,7 @@ export function compactItems(query: string, max: number): InsertItem[] {
  * chart's description match) tags the chart card, while `chart` (a direct
  * slug match) does not.
  */
-export function browseHits(query: string): ReadonlyMap<BlockType, PickerHit> {
+function browseHits(query: string): ReadonlyMap<BlockType, PickerHit> {
   const byType = new Map<BlockType, PickerHit>();
   for (const item of filterInsertItems(query)) {
     if (byType.has(item.type)) continue;
@@ -149,7 +149,7 @@ export function pickerInsertIndex(
 /* ─── roving focus (browse card grid) ─────────────────────────────────────── */
 
 /** The keys the card grid's roving focus responds to. */
-export type RoveKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'Home' | 'End';
+type RoveKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'Home' | 'End';
 
 /** True when `key` is one the grid handles. */
 export function isRoveKey(key: string): key is RoveKey {

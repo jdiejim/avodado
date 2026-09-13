@@ -20,7 +20,7 @@ export type TourAction =
   | 'part-move'
   | 'micro-close';
 
-export interface TourStep {
+interface TourStep {
   readonly id: string;
   /** CSS selector of the anchor element (spotlit + card beside it). */
   readonly target: string;
@@ -62,7 +62,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     title: 'Insert your first block',
     body:
       'Press / to open the insert menu, type "seq", and hit ⏎ to insert a Sequence diagram. ' +
-      'Every one of the 94 block types inserts this way.',
+      'Every one of the 107 block types inserts this way.',
     keys: ['/', 'type seq', '⏎'],
     advance: 'insert',
   },

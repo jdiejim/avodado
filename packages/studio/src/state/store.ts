@@ -36,10 +36,10 @@ import { derive } from './derive.js';
 import { canMoveSegment, decideFsEvent, versionChanged } from './sync.js';
 
 /** An edit operation: pure `(source, doc) → newSource`. May throw Range/TypeError. */
-export type EditOp = (source: string, doc: Document) => string;
+type EditOp = (source: string, doc: Document) => string;
 
 /** A transient toast message. */
-export interface Toast {
+interface Toast {
   readonly id: number;
   readonly message: string;
   readonly tone: 'error' | 'info';
@@ -49,7 +49,7 @@ const UNDO_CAP = 100;
 const AUTOSAVE_MS = 800;
 
 /** The studio's three surfaces: editing canvas, built-site preview, deck. */
-export type StudioMode = 'home' | 'edit' | 'present';
+type StudioMode = 'home' | 'edit' | 'present';
 
 /** The insert picker while open: which face, where it inserts, where it sits. */
 export interface PickerOpenState {
@@ -69,7 +69,7 @@ export function newDocTemplate(slug: string): string {
   return `\`\`\`meta\ntitle: ${title}\nsubtitle: One-line description.\ntag: DRAFT\n\`\`\`\n`;
 }
 
-export interface StudioState {
+interface StudioState {
   meta: StudioMeta | null;
   docs: readonly DocListItem[];
   currentSlug: string | null;

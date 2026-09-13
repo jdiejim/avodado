@@ -42,12 +42,12 @@ export function diagramName(
  * to assistive tech. Always paired with {@link svgTitleEl} in the same SVG:
  * the label is what a screen reader reads, the title what a pointer reveals.
  */
-export function svgNameAttrs(name: string): string {
+function svgNameAttrs(name: string): string {
   return ` role="img" aria-label="${escapeHtml(name)}"`;
 }
 
 /** `<title>…</title>` — the first child of the SVG, matching the aria-label. */
-export function svgTitleEl(name: string): string {
+function svgTitleEl(name: string): string {
   return `<title>${escapeHtml(name)}</title>`;
 }
 

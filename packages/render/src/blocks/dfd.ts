@@ -19,21 +19,15 @@ import { wrapText } from '../svg/wrapText.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
 import { GROUP_PADS, gridGroupsSvg, groupExtent, nestingPads } from '../svg/gridGroups.js';
 import { gridMetaAttrs, nodeCellAttrs } from '../svg/gridMeta.js';
-import { nodeSkin } from '../svg/blockStyle.js';
+import { dfdChip, dfdKindOf, dfdName, dfdPaint, dfdShape, type DfdKind } from '../svg/dfdShapes.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { countPhrase, svgName } from '../svg/svgTitle.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';
 import { ensureGrid } from './autoLayout.js';
 
-type Kind = 'process' | 'external' | 'store';
-
-function kindOf(kind: string | undefined): Kind {
-  const k = (kind ?? 'process').toLowerCase();
-  if (k === 'external') return 'external';
-  if (k === 'store' || k === 'datastore') return 'store';
-  return 'process';
-}
+type Kind = DfdKind;
+const kindOf = dfdKindOf;
 
 export function renderDfd(data: BlockDataMap['dfd']): string {
   const edges = data.edges ?? [];
@@ -112,47 +106,14 @@ export function renderDfd(data: BlockDataMap['dfd']): string {
     const k = kindOf(n.kind);
     kindsUsed.add(k);
     const accent = n.id === accentId;
-    const sk = nodeSkin(k === 'process' ? undefined : k);
-    const stroke = accent ? 'var(--accent)' : sk.primary ? 'var(--ink)' : 'var(--rule-solid)';
-    const sw = accent || sk.primary ? 1.5 : 1;
-    const fill = accent ? 'var(--accent-tint)' : sk.fill === 'paper-2' ? 'var(--paper-2)' : 'var(--paper)';
-    const dash = sk.dashed ? ' stroke-dasharray="4 3"' : '';
-    let shape: string;
-    if (k === 'process') {
-      shape = `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="16" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-    } else if (k === 'store') {
-      shape =
-        `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${fill}" stroke="none"/>` +
-        `<path d="M${r.x + r.w} ${r.y} H ${r.x} V ${r.y + r.h} H ${r.x + r.w}" fill="none" stroke="${stroke}" stroke-width="${sw}"/>`;
-    } else {
-      shape = `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`;
-    }
-    // The kind chip (top-right) — `muted` on the inactive fill, where `soft`
-    // would sit under the small-text floor.
-    const chipTone = accent ? ' c-accent' : sk.fill === 'paper-2' ? ' c-muted' : '';
-    const chip =
-      sk.chip !== ''
-        ? `<text x="${r.x + r.w - 10}" y="${r.y + 14}" class="t-eyebrow${chipTone}" text-anchor="end">${escapeHtml(sk.chip)}</text>`
-        : '';
+    const paint = dfdPaint(k, accent);
+    const shape = dfdShape(k, r, paint);
+    const chip = dfdChip(r, paint);
     const num =
       n.num !== undefined && k === 'process'
         ? `<text x="${r.x + 12}" y="${r.y + 16}" class="t-badge"${bp(`nodes.${ni}.num`)}>${escapeHtml(n.num)}</text>`
         : '';
-    const lines = nameLines[ni] ?? [];
-    const cx = r.x + r.w / 2;
-    const cy = r.y + r.h / 2;
-    const tone = accent ? ' c-accent' : '';
-    const name =
-      lines.length <= 1
-        ? `<text x="${cx}" y="${cy + 4}" class="t-name${tone}" text-anchor="middle"${bp(`nodes.${ni}.name`)}>${escapeHtml(n.name)}</text>`
-        : `<g${bp(`nodes.${ni}.name`)}>` +
-          lines
-            .map(
-              (ln, j) =>
-                `<text x="${cx}" y="${cy + 4 - (lines.length - 1) * 7 + j * 14}" class="t-name${tone}" text-anchor="middle">${escapeHtml(ln)}</text>`,
-            )
-            .join('') +
-          `</g>`;
+    const name = dfdName(nameLines[ni] ?? [], n.name, r, accent, `nodes.${ni}.name`);
     s += `<g${bp(`nodes.${ni}`)}${nodeCellAttrs(n.col, n.row)}>${shape}${chip}${num}${name}</g>`;
   });
   s += `</g>`; // close the nodes list container

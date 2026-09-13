@@ -7,8 +7,7 @@
 import React from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
-import { BLOCK_TYPES } from '@avodado/core';
-import { DEMO_FAMILIES, familyBlocks, type DemoFamily } from './catalog.js';
+import { BLOCK_TYPES, BLOCK_FAMILIES as DEMO_FAMILIES, familyBlocks, type BlockFamily as DemoFamily } from '@avodado/core';
 
 const EVERYTHING = '__all__';
 

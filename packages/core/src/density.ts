@@ -111,6 +111,16 @@ export const DENSITY_BUDGETS: Partial<Record<BlockType, readonly DensityBudget[]
   saga: [{ field: 'steps', cap: 12, unit: 'steps', split: 'Split the saga into one diagram per phase.' }],
   slopegraph: [{ field: 'items', cap: 20, unit: 'items', split: 'Keep the items that move, or split the list into one slopegraph per group.' }],
   spans: [{ field: 'spans', cap: 40, unit: 'spans', split: 'Collapse leaf spans into their parent, or draw one spans block per service hop.' }],
+  neuralnet: [{ field: 'layers', cap: 12, unit: 'layers', split: 'Group repeated blocks into one layer with a note, or split encoder and decoder.' }],
+  mindmap: [{ field: 'nodes', cap: 40, unit: 'nodes', split: 'Split the map into one mindmap per top branch.' }],
+  audit: [{ field: 'findings', cap: 30, unit: 'findings', split: 'Split the register by area or severity.' }],
+  percentiles: [{ field: 'rows', cap: 16, unit: 'rows', split: 'Keep the endpoints that matter, or draw one block per service.' }],
+  usecase: [{ field: 'cases', cap: 16, unit: 'cases', split: 'Split the system into one usecase diagram per subsystem.' }],
+  pkg: [{ field: 'packages', cap: 16, unit: 'packages', split: 'Draw one diagram per layer or bounded context.' }],
+  timing: [{ field: 'lanes', cap: 8, unit: 'lanes', split: 'Draw one timing diagram per interaction.' }],
+  threatmodel: [{ field: 'nodes', cap: 16, unit: 'nodes', split: 'Model one trust boundary per block.' }],
+  chevrons: [{ field: 'steps', cap: 10, unit: 'steps', split: 'Group steps into phases, one chevrons block per phase.' }],
+  roadmap: [{ field: 'items', cap: 30, unit: 'items', split: 'Split the roadmap by theme or by half-year.' }],
   // Not a count of items — the value IS the drawing's size. The schema stops
   // what the renderer cannot draw (128 bits per row); this stops well short of
   // it, where a reader can no longer count the cells.

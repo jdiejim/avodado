@@ -11,7 +11,7 @@ import { loadConfig } from '../io/config.js';
 import { runCheck } from './check.js';
 
 /** The data behind the bare-`avo` status panel. */
-export interface ProjectStatus {
+interface ProjectStatus {
   /** How many docs matched `<docsDir>/**\/*.md`. */
   readonly docCount: number;
   /** Error-level diagnostics from a quick validate (no render). */
@@ -45,7 +45,7 @@ const NEXT_ACTIONS: ReadonlyArray<readonly [cmd: string, note: string]> = [
   ['avo <file.md>', 'render + open one doc in the browser'],
   ['avo studio', 'edit visually · Site mode previews the docs site live'],
   ['avo build', 'build the static docs site'],
-  ['avo explore', 'demos · block catalog · design patterns · guided tour'],
+  ['avo block', 'every block type, or one block\'s fields + example'],
 ];
 
 /**

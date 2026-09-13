@@ -23,7 +23,7 @@ import { levelsBySegment } from '../lib/segDiagnostics.js';
 import { slashUsed } from '../lib/prefs.js';
 import { segmentLabel } from '../state/changes.js';
 import { docSurface } from '../state/derive.js';
-import { useSystemDark } from '../lib/systemDark.js';
+import { useColorScheme } from '../lib/colorScheme.js';
 import { useDerived, useStudio } from '../state/store.js';
 import {
   IconArrowDown,
@@ -357,7 +357,7 @@ function BlockToolbar({ index, count, isMeta, metaFirst, onEdit, onDelete }: {
 }
 
 /** A segment's diagnostic tallies, for the card badge + error ring. */
-export interface SegLevels {
+interface SegLevels {
   readonly errors: number;
   readonly warnings: number;
 }
@@ -541,7 +541,7 @@ export function Canvas(): JSX.Element {
   const currentSlug = useStudio((s) => s.currentSlug);
   const select = useStudio((s) => s.select);
   const slashHintAt = useStudio((s) => s.slashHintAt);
-  const sysDark = useSystemDark();
+  const scheme = useColorScheme();
   const showSlashHint = slashHintAt !== null && !slashUsed();
 
   // Per-segment error/warning tallies for the card badges — derived from the
@@ -576,7 +576,7 @@ export function Canvas(): JSX.Element {
       <style>{rendered.css}</style>
       <div
         className="stu-page"
-        data-doc-theme={docSurface(sysDark)}
+        data-doc-theme={docSurface(scheme === 'dark')}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="docskin">

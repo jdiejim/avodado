@@ -28,7 +28,7 @@ import type { RefOption, ResolvedControl } from './fieldKind.js';
 import { filterComboOptions } from './keyboard.js';
 
 /** What a control does with the values it produces. */
-export interface ControlHandlers {
+interface ControlHandlers {
   readonly onCommit: (value: unknown) => void;
   /** Keystroke-level staging for live previews (optional). */
   readonly onStage?: ((value: unknown) => void) | undefined;
@@ -39,7 +39,7 @@ export interface ControlHandlers {
 }
 
 /** Accent-name → hex, for the named-accent swatch row. */
-export const ACCENT_HEX: Readonly<Record<string, string>> = {
+const ACCENT_HEX: Readonly<Record<string, string>> = {
   navy: '#0e54a1',
   blue: '#2563eb',
   teal: '#0f766e',
@@ -55,7 +55,7 @@ export const ACCENT_HEX: Readonly<Record<string, string>> = {
  * `error`, …) show the swatch of the accent they normalize to, titled with
  * their own semantic name.
  */
-export function accentOptionHex(option: string): string {
+function accentOptionHex(option: string): string {
   const alias = (STATUS_COLOR_ALIASES as Readonly<Record<string, string>>)[option];
   return ACCENT_HEX[option] ?? (alias !== undefined ? ACCENT_HEX[alias] : undefined) ?? '#999';
 }
@@ -65,7 +65,7 @@ export function accentOptionHex(option: string): string {
  * (see `packages/render/src/svg/blockStyle.ts`), so a hand-picked color always
  * matches something the diagrams already speak.
  */
-export const DIAGRAM_PALETTE: ReadonlyArray<{ readonly hex: string; readonly name: string }> = [
+const DIAGRAM_PALETTE: ReadonlyArray<{ readonly hex: string; readonly name: string }> = [
   { hex: '#0e54a1', name: 'navy' },
   { hex: '#1a6dbe', name: 'blue' },
   { hex: '#0369a1', name: 'sky' },
@@ -93,7 +93,7 @@ function asString(value: unknown): string {
 }
 
 /** `#abc` → `#aabbcc`, `#rrggbbaa` → `#rrggbb` — what `<input type=color>` accepts. */
-export function pickerHex(value: string): string | null {
+function pickerHex(value: string): string | null {
   if (!HEX_RE.test(value)) return null;
   const h = value.slice(1);
   if (h.length === 3 || h.length === 4) {
