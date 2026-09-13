@@ -139,7 +139,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     target: '[data-tour="topbar"]',
     title: "That's the tour",
     body:
-      'Share ▾ copies a link or exports the document as HTML, slides, PDF or PowerPoint; ' +
+      'Share ▾ copies a link or exports the document as HTML, slides or PDF; ' +
       'Present shows it as a deck. Press ? anytime for every keyboard shortcut, and the ' +
       'README covers the full block catalog.',
     keys: ['?'],

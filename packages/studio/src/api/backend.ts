@@ -62,8 +62,8 @@ export interface StudioBackend {
   readonly kind: 'file-bridge' | 'vault';
   /**
    * True when a real server is behind the backend. Gates the features that
-   * can only exist there: file-change events, Chromium exports (PDF and
-   * PowerPoint) and the built site. The hosted studio keeps everything the
+   * can only exist there: file-change events, the Chromium PDF export, and
+   * the built site. The hosted studio keeps everything the
    * browser can do on its own and hides the rest rather than offering
    * buttons that fail.
    */
