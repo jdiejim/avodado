@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="./assets/hero.png" alt="A runtime topology rendered by Avodado from 40 lines of YAML" width="880" />
+  <img src="./assets/flow.gif" alt="Install the skill, ask for a doc, the agent writes typed YAML, avo check passes, the page renders" width="880" />
 </p>
 
 ```bash
@@ -32,18 +32,22 @@ Diagrams-as-code tools make you write the diagram. Diagram-generating agents dra
 
 - **The agent writes content.** Forty lines of YAML per diagram: nodes, edges, labels, the reader's nouns. Never a coordinate.
 - **The renderer owns geometry.** One block type → one deterministic renderer → one editorial look, dark by default. Labels dodge, edges route, stages grow.
-- **The check is the contract.** `avo check` fails on a bad field, a broken `doc#id` reference, an unlabelled arrow, a fourth callout in a row. Every diagnostic has a stable code, a line, and the fix.
+- **The check is the contract.** `avo check` fails on a bad field, a broken `doc#id` reference, an unlabelled arrow, a third callout in a row. Every diagnostic has a stable code, a line, and the fix.
 
-Measured on the [generation eval](./evals/generate) (38 plain-language requests, fresh agent each, no block named):
+Measured on the [generation eval](./evals/generate) (40 plain-language requests, fresh agent each, no block named):
 
 | | Avodado |
 |---|---|
-| Right block picked from the reader's question | 37.5 / 38 |
-| First draft passes `avo check` | 32 / 38 |
-| Clean at handoff, rendered | 38 / 38 |
-| Tokens per document (≈ 7 blocks + prose) | ~54K |
+| Right block picked from the reader's question | 39.5 / 40 |
+| First draft passes `avo check` | 33 / 40 |
+| Clean at handoff, rendered | 40 / 40 |
+| Tokens per document (≈ 7 blocks + prose) | ~55K |
 
 On the eight requests a coordinate-placing diagram skill can also express, Avodado used 13% fewer tokens, finished 21% faster, and passed its own validator on the first draft 8 of 8 times against 1 of 8, while producing a whole document instead of one diagram ([method and screenshots](./.scratch/evals/archify-vs-avodado-2026-09-13)).
+
+<p align="center">
+  <img src="./assets/hero.png" alt="A runtime topology rendered by Avodado from 40 lines of YAML" width="880" />
+</p>
 
 ## What a doc looks like
 
