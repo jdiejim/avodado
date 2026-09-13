@@ -1,0 +1,25 @@
+name: Bug
+description: Something renders wrong, validates wrong, or crashes
+labels: [bug]
+body:
+  - type: textarea
+    id: block
+    attributes:
+      label: The block or command
+      description: The smallest fenced block (or CLI command) that shows it. Paste the YAML as you wrote it.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `npx avodado --version`
+    validations:
+      required: true

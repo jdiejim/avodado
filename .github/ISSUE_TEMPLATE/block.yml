@@ -1,0 +1,23 @@
+name: Block request
+description: A diagram, table, or card the docs you write still need
+labels: [block]
+body:
+  - type: input
+    id: question
+    attributes:
+      label: The reader's question it answers
+      placeholder: "Which module may depend on which?"
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: What it looks like
+      description: A link to an example (any tool), or a sketch in words. What varies per item, and what is fixed.
+    validations:
+      required: true
+  - type: textarea
+    id: closest
+    attributes:
+      label: The closest existing block, and why it falls short
+      description: Run `npx avodado block` for the list.
