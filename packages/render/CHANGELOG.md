@@ -1,5 +1,16 @@
 # @avodado/render
 
+## 0.33.0
+
+### Minor Changes
+
+- 32b6304: Avodado is now **Chiltepin**. New package names: `chiltepin` (CLI, binary `chiltepin`), `chiltepin-core`, `chiltepin-render`, `chiltepin-studio`. The skill installs with `npx skills add jdiejim/chiltepin`. The config file is `chiltepin.config.*`; the old `avodado.config.*` still loads with a warning for now, and an existing `.avodado-build.json` manifest is read once and replaced. The `avo` binary and the `@avodado/*` packages are deprecated on npm with a pointer here. New logo and favicon.
+
+### Patch Changes
+
+- Updated dependencies [32b6304]
+  - chiltepin-core@0.24.0
+
 ## 0.32.0
 
 ### Minor Changes
