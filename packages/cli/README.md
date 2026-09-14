@@ -1,54 +1,71 @@
 <!-- Generated from the repo README by scripts/sync-readme.mjs — edit the root README.md. -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/avodado_logo.png" alt="Avodado" width="150" />
+  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/avodado_logo.png" alt="Avodado" width="100" />
 </p>
 
 <h1 align="center">Avodado</h1>
 
-<p align="center"><strong>Docs your AI agent can write, and your CI can check.</strong><br/>Markdown with typed YAML blocks — 107 diagram, table, and card types — rendered by code, never drawn by the model.</p>
+<p align="center"><strong>Docs your AI agent can write, and your CI can check.</strong><br/>Turn Markdown and typed YAML into architecture diagrams, API docs, runbooks, and slides. 107 block types, with deterministic HTML + SVG output.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/avodado"><img src="https://img.shields.io/npm/v/avodado?label=avodado&color=e4744c" alt="npm" /></a>
-  <a href="https://www.npmjs.com/package/avodado"><img src="https://img.shields.io/npm/dm/avodado?color=555" alt="downloads" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license" /></a>
+  <a href="https://github.com/jdiejim/avodado/actions/workflows/ci.yml"><img src="https://github.com/jdiejim/avodado/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <a href="https://github.com/jdiejim/avodado/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license" /></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/avodado" alt="node" /></a>
-  <a href="https://skills.sh"><img src="https://img.shields.io/badge/skills-npx%20skills%20add%20jdiejim%2Favodado-111" alt="skill" /></a>
+  <a href="https://github.com/jdiejim/avodado/tree/main/skills/avodado"><img src="https://img.shields.io/badge/skills-npx%20skills%20add%20jdiejim%2Favodado-111" alt="skill" /></a>
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/assets/flow.gif" alt="Install the skill, ask for a doc, the agent writes typed YAML, avo check passes, the page renders" width="880" />
+  <a href="https://avodado.dev">Website</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#examples">Examples</a> ·
+  <a href="https://github.com/jdiejim/avodado/blob/main/skills/avodado/SKILL.md">Agent skill</a> ·
+  <a href="https://github.com/jdiejim/avodado/blob/main/CONTRIBUTING.md">Contribute</a>
 </p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/architecture.png" alt="C4 context diagram: a shopper places orders, and the orders system calls payment and shipping services" width="880" />
+</p>
+
+**Your agent writes the content. Avodado handles the layout.** Keep the source in Git, review a Markdown diff, and run `avo check` in CI.
 
 ```bash
-npx skills add jdiejim/avodado -g      # give your agent the skill (Claude Code, Cursor, Codex, Copilot, 70+ agents)
+npx -y avodado demo                    # see rendered examples without creating a project
 ```
 
-Then ask your agent, in plain words: *"Explain the shape of the platform to a new backend engineer: services, databases, third parties."* You get a `docs/platform.md` with a C4 context diagram, a runtime topology, a request sequence, a service catalog table, and the rule that must not break — every block validated by `avo check`, rendered into the page above.
+Use an agent to write docs with `npx skills add jdiejim/avodado -g`, or follow the [manual quick start](#quick-start).
 
----
+## Examples
 
-## Why
+These are screenshots from the current renderer. Open each image at full size, or follow its source link to inspect the YAML.
 
-Diagrams-as-code tools make you write the diagram. Diagram-generating agents draw pixels and fix overlaps for four rounds. Avodado splits the job the other way round:
+| Architecture and system context | Request flow with success and failure branches |
+| --- | --- |
+| [![C4 context: shopper, orders, payments, and shipping](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/architecture.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/architecture.png) | [![Sequence diagram: place an order, charge a card, then approve or decline](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/sequence.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/sequence.png) |
+| [Source: system overview](https://github.com/jdiejim/avodado/blob/main/docs/examples/system-overview.md) | [Source: the example below](#what-a-doc-looks-like) |
 
-- **The agent writes content.** Forty lines of YAML per diagram: nodes, edges, labels, the reader's nouns. Never a coordinate.
-- **The renderer owns geometry.** One block type → one deterministic renderer → one editorial look, dark by default. Labels dodge, edges route, stages grow.
-- **The check is the contract.** `avo check` fails on a bad field, a broken `doc#id` reference, an unlabelled arrow, a third callout in a row. Every diagnostic has a stable code, a line, and the fix.
+| Database relationships | Canary rollout with explicit gates |
+| --- | --- |
+| [![Entity relationship diagram connecting orders and order items](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/data-model.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/data-model.png) | [![Checkout rollout from 1 percent to full traffic, with health gates and rollback](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/rollout.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/rollout.png) |
+| [Source: API reference](https://github.com/jdiejim/avodado/blob/main/docs/examples/api.md) | [Source: canary rollout](https://github.com/jdiejim/avodado/blob/main/docs/examples/canary-rollout.md) |
 
-Measured on the [generation eval](https://github.com/jdiejim/avodado/tree/main/evals/generate) (40 plain-language requests, fresh agent each, no block named):
+More complete documents: [ADR](https://github.com/jdiejim/avodado/blob/main/docs/examples/adr.md), [event contract](https://github.com/jdiejim/avodado/blob/main/docs/examples/event-contract.md), [runbook](https://github.com/jdiejim/avodado/blob/main/docs/examples/runbook.md), and [slide deck](https://github.com/jdiejim/avodado/blob/main/docs/examples/presentation.md).
 
-| | Avodado |
-|---|---|
-| Right block picked from the reader's question | 39.5 / 40 |
-| First draft passes `avo check` | 33 / 40 |
-| Clean at handoff, rendered | 40 / 40 |
-| Tokens per document (≈ 7 blocks + prose) | ~55K |
-
-On the eight requests a coordinate-placing diagram skill can also express, Avodado used 13% fewer tokens, finished 21% faster, and passed its own validator on the first draft 8 of 8 times against 1 of 8, while producing a whole document instead of one diagram ([method and screenshots](https://github.com/jdiejim/avodado/tree/main/.scratch/evals/archify-vs-avodado-2026-09-13)).
+<details>
+<summary><strong>Watch the authoring workflow</strong></summary>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/assets/hero.png" alt="A runtime topology rendered by Avodado from 40 lines of YAML" width="880" />
+  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/assets/flow.gif" alt="Workflow overview: install the skill, ask for a doc, write typed YAML, validate, and render" width="880" />
 </p>
+
+</details>
+
+## Why Avodado
+
+- **Docs you can review.** Prose, diagrams, tables, and decisions live in the same Markdown file.
+- **Layout you can reproduce.** Typed content goes through deterministic renderers; the agent does not need to draw the output.
+- **Validation you can automate.** `avo check` fails on invalid fields and broken references. Style and density warnings help authors improve the result.
+- **Several outputs from one source.** Export HTML, slides, PDF, or a static docs site. Edit the same files in Studio or your editor.
 
 ## What a doc looks like
 
@@ -74,30 +91,48 @@ messages:
 ```
 ````
 
-Prose is plain Markdown. Anything structured is a fenced block: the info-string is the block type, the body is YAML (JSON works too) against a strict schema. Terse one-line forms cover the common items (`a -> b: label`, `Term — definition`, `[pass] item — evidence`). The `.md` files are the only source of truth; the CLI, Studio, the MCP server, and your agent are all editors of the same files.
+Prose is plain Markdown. Anything structured is a fenced block: the info-string is the block type, the body is YAML (JSON works too) against a strict schema. Terse one-line forms cover the common items (`a -> b: label`, `Term — definition`, `[pass] item — evidence`). The `.md` files are the only source of truth; the CLI, Studio, and your agent are all editors of the same files.
 
 ## Quick start
 
-**With an agent** (recommended):
+Requires **Node.js 20 or later**. `npx` downloads the CLI on first use.
+
+**With an agent:**
 
 ```bash
-npx skills add jdiejim/avodado -g      # once, global
-# then ask for a doc; the agent runs `npx -y avodado block <type>` and `npx -y avodado check`
+npx skills add jdiejim/avodado -g
 ```
 
-**By hand:**
+Then ask:
+
+> Use Avodado to document this project's request flow. Read the code, explain the services and data stores, include the failure path, and validate the document.
+
+The [skill](https://github.com/jdiejim/avodado/blob/main/skills/avodado/SKILL.md) guides block selection, schema lookup, and validation. Review the generated content against your code.
+
+**By hand, in your project directory:**
 
 ```bash
-npx avodado demo                 # render every block type and open it
-npx avodado block sequence       # fields, terse forms, and a validating example
-npx avodado check docs/          # validate; exits non-zero on any error
-npx avodado html docs/x.md -p    # one doc → standalone HTML, opened
-npx avodado studio               # the local visual editor over the same files
+npx -y avodado init
+npx -y avodado check
+npx -y avodado html docs/getting-started.md -p
+npx -y avodado studio
 ```
 
-In a project: `pnpm add -D avodado`, `avo init` writes `avodado.config.json` and two starter docs. The skill is never copied into your repo, so the reference and the validator cannot drift apart.
+`init` writes a config and two starter docs; it skips existing files. Look up any block with `npx -y avodado block sequence`.
 
-**Other AIs:** `avo skill` prints the whole skill for a system-prompt box; `claude mcp add avodado -- npx -y @avodado/mcp` exposes the tooling as MCP tools.
+For a version pinned in your project, run `pnpm add -D avodado`, then use `pnpm exec avo check` and `pnpm exec avo studio`.
+
+**Other AI tools:** `avo skill` prints the authoring guide for tools with a system-prompt field.
+
+## Check docs in CI
+
+After installing the project's dependencies, run:
+
+```bash
+pnpm exec avo check
+```
+
+Errors fail the command. Warnings are non-blocking by default; `--strict-prose` makes prose warnings fail too. Validation checks structure and references; reviewers still verify the technical facts.
 
 ## What you can document
 
@@ -122,7 +157,7 @@ In a project: `pnpm add -D avodado`, `avo init` writes `avodado.config.json` and
 
 | Command | Result |
 |---|---|
-| `avo html docs/x.md` | A standalone page: inline CSS + SVG, no runtime, ~180 KB |
+| `avo html docs/x.md` | A standalone page with inline CSS + SVG; size depends on content |
 | `avo slides docs/x.md` | A self-contained deck, one slide per heading |
 | `avo pdf docs/x.md` | Print-ready PDF (Chromium fetched once on first use) |
 | `avo build` | A static docs site: index, sidebar, cross-doc links |
@@ -152,12 +187,11 @@ Any block with a top-level `id:` can be referenced as `doc#id` (or `#id` in the 
 
 | Package | Purpose |
 |---|---|
-| [`avodado`](https://github.com/jdiejim/avodado/tree/main/packages/cli) | The `avo` CLI: `check · block · demo · html · slides · pdf · build · studio · init · new · audit · sync · mcp · skill` |
+| [`avodado`](https://github.com/jdiejim/avodado/tree/main/packages/cli) | The `avo` CLI: `check · block · demo · html · slides · pdf · build · studio · init · new · audit · sync · skill` |
 | [`@avodado/core`](https://github.com/jdiejim/avodado/tree/main/packages/core) | Parser, block registry, Zod schemas, terse grammars, diagnostics. Pure, no I/O |
 | [`@avodado/render`](https://github.com/jdiejim/avodado/tree/main/packages/render) | Deterministic renderers; HTML + SVG, one editorial skin |
 | [`@avodado/studio`](https://github.com/jdiejim/avodado/tree/main/packages/studio) | The local visual editor served by `avo studio` |
-| [`@avodado/mcp`](https://github.com/jdiejim/avodado/tree/main/packages/mcp) | MCP server exposing the tooling to any MCP client |
-| [`skills/avodado`](https://github.com/jdiejim/avodado/tree/main/skills/avodado) | The agent skill: a 170-line decision path plus selection sheets per family |
+| [`skills/avodado`](https://github.com/jdiejim/avodado/tree/main/skills/avodado) | The agent skill: block selection, validation, and references loaded on demand |
 
 <details>
 <summary><strong>Full CLI reference</strong></summary>
@@ -175,12 +209,15 @@ Any block with a top-level `id:` can be referenced as `doc#id` (or `#id` in the 
 | `avo studio` | The local editor (`--port`, `--no-open`) |
 | `avo audit [path]` | Audit a codebase and recommend which docs to write, with evidence |
 | `avo sync openapi\|csv\|sql\|dbml\|prisma <file>` | Generate blocks or docs from an OpenAPI spec, a CSV, or a schema |
-| `avo mcp` | MCP client setup; `--stdio` runs the server |
 | `avo skill` | Print the skill as one document |
 
 Exit codes: `0` clean · `1` errors · `2` usage error. `AVO_PLAIN=1` forces plain output.
 
 </details>
+
+## Evaluation
+
+The [generation evaluation](https://github.com/jdiejim/avodado/tree/main/evals/generate) records 40 plain-language requests: a selection score of 39.5/40, 33 first drafts without errors, and 40 documents validated and rendered at handoff. These are maintainer-reported development runs, including rescoring after fixes. Raw run artifacts are local, so this is not an independently reproducible benchmark result yet. See the [case set](https://github.com/jdiejim/avodado/blob/main/evals/generate/cases.yaml) and [method](https://github.com/jdiejim/avodado/blob/main/evals/generate/README.md).
 
 ## Design rules
 
@@ -199,10 +236,14 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 node packages/cli/dist/bin.js check        # the repo's own docs
 ```
 
-Evals live in [`evals/`](https://github.com/jdiejim/avodado/tree/main/evals): block selection, end-to-end generation, and the head-to-head. Add a scenario when you add a block.
+Evals live in [`evals/`](https://github.com/jdiejim/avodado/tree/main/evals): block selection and end-to-end generation. Add a scenario when you add a block. Regenerate the gallery with `pnpm screenshots` after building; it requires the CLI's optional Playwright and its Chromium browser.
+
+## Contribute and get help
+
+Read [CONTRIBUTING.md](https://github.com/jdiejim/avodado/blob/main/CONTRIBUTING.md) to add a block, improve a renderer, or contribute an example. [Report a bug](https://github.com/jdiejim/avodado/issues/new?template=bug.yml) with the smallest Markdown file that reproduces it, or [request a block](https://github.com/jdiejim/avodado/issues/new?template=block.yml).
 
 If Avodado saves you a diagram, a star helps other people find it.
 
 ## License
 
-[MIT](https://github.com/jdiejim/avodado/tree/main/LICENSE)
+[MIT](https://github.com/jdiejim/avodado/blob/main/LICENSE)

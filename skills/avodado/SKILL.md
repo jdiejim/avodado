@@ -1,18 +1,11 @@
 ---
 name: avodado
 description: >-
-  Write, edit, validate, and review Avodado documentation — Markdown files
-  that mix prose with typed, fenced YAML blocks (107 block types: sequence ·
-  erd · c4 · flow · state · table · callout · timeline · userstory · chart ·
-  endpoint · agentloop · and more). Use when the user asks for a design doc,
-  architecture doc, API reference, ADR, runbook, roadmap, diagram, or any doc
-  under docs/**/*.md in a repo with avodado.config.* or this skill installed,
-  or mentions "avodado" or the `avo` CLI. The CLI is the reference: `npx -y
-  avodado block <type>` prints any block's fields and an example. Detailed
-  references live beside this file — read them on demand: reference/blocks/
-  INDEX.md (every block, one line), reference/writing.md (YAML traps, terse
-  forms, doc#id), reference/check.md (diagnostic codes), reference/recipes.md
-  (whole-document compositions), reference/style-ste.md (prose rules).
+  Write, edit, validate, and render Avodado docs: Markdown with typed YAML
+  blocks for diagrams, API references, ADRs, runbooks, and slides. Use when
+  the user requests Avodado or the avo CLI, or edits typed-block docs in an
+  Avodado project (avodado.config.*). Preserve an explicitly requested format;
+  installing this skill alone does not make every Markdown task an Avodado task.
 ---
 
 # Avodado — docs as Markdown with typed YAML blocks
@@ -37,33 +30,42 @@ messages:
 
 ## Fast path
 
-Every command below runs with no install: `npx -y avodado …` (a local `avo`
-is used when present).
+Use the project's installed CLI (`pnpm exec avo` or `npx --no-install avodado`)
+to match its dependency version. Otherwise, `npx -y avodado …` downloads and
+runs the published CLI. In the Avodado source repo, use the built
+`node packages/cli/dist/bin.js`. The commands below show the fallback form.
+
+Detailed references live beside this file — read them on demand; the table
+at the end explains which reference each task needs.
 
 1. **Pick the blocks from the reader's question**, not from the words in the
-   request. Use the table below. Two to five structural blocks per doc, each
-   a different lens. Fewer than three rows or nodes is a sentence, not a
-   block. Unsure which block exists: `npx -y avodado block` lists all 107.
+   request. Use the table below. For a full doc, two to five structural blocks
+   often suffice. A single diagram request needs only that diagram. Use prose
+   when a small list communicates the same information more clearly.
+   Unsure which block exists: `npx -y avodado block` lists all 107 block types.
 2. **Look up each block you will write**: `npx -y avodado block <type>`.
    It prints the fields, enums, terse one-line forms, and a validating
-   example. That is the whole reference for that block. Read nothing else.
-3. **Write the doc.** `meta` first (title, subtitle, tag). A `##` heading
+   example. Read a family selection sheet only when the choice remains unclear.
+3. **Write the doc.** For a full doc, put `meta` first (title, subtitle, tag). A `##` heading
    above a block is its title. Prose carries why and consequence, never a
    description of the block below it. Rules in the two sections after the
    table.
 4. **Check**: `npx -y avodado check <file> --json`. Every diagnostic carries
    a stable code and the failing value; `reference/check.md` maps each code
-   to its fix. Fix, rerun. Two rounds maximum, then report what remains.
-   A non-zero exit is never "done".
+   to its fix. Fix errors and rerun while you make progress. Stop and report
+   the blocker if a diagnostic repeats without a new fix or needs missing facts.
+   Warnings do not fail the check by default; review them and report relevant ones.
+   A non-zero exit is never "done". If the CLI is unavailable, report validation
+   as unverified. Never invent a successful check.
 5. **Render when asked**: `npx -y avodado html <file> -p` (page) or
    `slides <file> -p` (deck).
 
-Handoff: the file path, the check result (0 errors), and one line per block
-naming the rejected alternative ("sequence, not flow — the question is
-message order between two services").
+Handoff: the file path, actual check result, and any unresolved diagnostics.
+Explain block selection only when the user asks or a tradeoff needs explanation.
 
 Editing an existing doc: read it whole first. Change the one block, and
-carry the fact into every block that shares it. Never regenerate the file.
+carry the fact into related blocks within the requested scope. Preserve unrelated
+content. Rewrite the whole document only when the user requests a rewrite.
 
 ## Pick the block by the reader's question
 

@@ -28,7 +28,7 @@ In short:
 ## Working on the codebase itself
 
 - Read `ARCHITECTURE.md` before changing structure.
-- Dependency direction points inward to `@avo/core`; `core` is pure (no I/O, no DOM).
+- Dependency direction points inward to `@avodado/core`; `core` is pure (no I/O, no DOM).
 - Block types are defined once in the **block registry**; adding one means adding a
   schema in `core` plus a renderer in each target. Registries are compile-time
   exhaustive — don't bypass them with ad-hoc switches.
@@ -48,19 +48,19 @@ charts, planning, business/decisions, design system, algorithms, AI/agents).
 
 ### Packages
 
-- `@avo/core` — pure library. Parsing, block registry, schemas, diagnostics.
+- `@avodado/core` — pure library. Parsing, block registry, schemas, diagnostics.
   No I/O, no DOM. Everything depends inward on core. If a change here is not
   additive, it is a breaking change to every other package — say so.
 - `@avodado/render` — deterministic renderers. One block type → one renderer →
   consistent HTML/SVG. **The LLM never draws.** It writes ~1KB of YAML; the
   renderer owns 100% of layout and geometry.
-- `avo` (CLI) — `check` (strict typed diagnostics; a change is not done until it
-  passes), `build`, `serve`, `site`, slides/decks, `theme`, catalog/demo.
+- `avodado` (CLI, `avo` binary) — validation, static sites, HTML, slides, PDF,
+  Studio, block references, and the built-in demo. Run `avo --help` for commands.
 - `@avodado/studio` — web canvas/editor bundling core + render.
-- MCP package + authoring skill (`skills/avodado/SKILL.md` + reference files, one
+- Authoring skill (`skills/avodado/SKILL.md` + reference files, one
   copy in the repo) — teaches an agent to author docs. It installs into any agent
   with `npx skills add jdiejim/avodado`; the CLI build copies it into the package
-  for `avo skill` and the MCP embed.
+  for `avo skill`.
 
 ### The invariant that matters most
 

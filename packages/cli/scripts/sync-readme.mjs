@@ -3,7 +3,7 @@
  * README, with relative links and images rewritten to absolute GitHub URLs so
  * they render on npmjs.com. Runs at build (before `files` are packed).
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -14,9 +14,15 @@ const RAW = 'https://raw.githubusercontent.com/jdiejim/avodado/main/';
 const BLOB = 'https://github.com/jdiejim/avodado/blob/main/';
 const TREE = 'https://github.com/jdiejim/avodado/tree/main/';
 
+function githubLink(target) {
+  const [file] = target.split('#');
+  return `${statSync(path.join(root, file)).isDirectory() ? TREE : BLOB}${target}`;
+}
+
 const out = src
   .replace(/src="\.\/([^"]+)"/g, (_, p) => `src="${RAW}${p}"`)
-  .replace(/\]\(\.\/([^)]+)\)/g, (_, p) => `](${/\.[a-z]+$/i.test(p) ? BLOB : TREE}${p})`)
-  .replace(/\]\(\.scratch\/([^)]+)\)/g, (_, p) => `](${TREE}.scratch/${p})`);
+  .replace(/href="\.\/([^"]+)"/g, (_, p) => `href="${githubLink(p)}"`)
+  .replace(/!\[([^\]]*)\]\(\.\/([^)]+)\)/g, (_, alt, p) => `![${alt}](${RAW}${p})`)
+  .replace(/\]\(\.\/([^)]+)\)/g, (_, p) => `](${githubLink(p)})`);
 
 writeFileSync(path.join(here, '..', 'README.md'), `<!-- Generated from the repo README by scripts/sync-readme.mjs — edit the root README.md. -->\n${out}`);

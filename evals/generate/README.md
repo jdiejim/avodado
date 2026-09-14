@@ -2,7 +2,7 @@
 
 End to end: a fresh agent, the installed skill, a working `avo`, one request.
 The agent follows the skill's fast path in full — pick, `avo block`, write,
-`avo check`, fix — and hands off. Sixteen scenarios in `cases.yaml` span the
+`avo check`, fix — and hands off. Forty scenarios in `cases.yaml` span the
 block families and never name a block type.
 
 It measures what the selection eval cannot: whether the whole loop produces
@@ -37,8 +37,8 @@ node evals/generate/report.mjs <project-dir> <run-dir>   # → <run-dir>/report.
   ran any check. This is the skill's raw quality; the error codes say what
   the skill still teaches wrong.
 - **final errors / warnings** — the handed-off document. Errors here mean
-  the two-round repair loop failed.
-- **structural blocks** — the skill asks for two to five per doc.
+  the repair loop did not resolve every error.
+- **structural blocks** — a size diagnostic; the skill suggests two to five for a full doc.
 - **render** — the shipped renderer must not throw on any handed-off doc.
 - **tokens / tools / time** — the cost of the whole loop.
 

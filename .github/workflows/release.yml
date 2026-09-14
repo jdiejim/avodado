@@ -24,6 +24,10 @@ jobs:
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
       - run: pnpm install --frozen-lockfile
+      # The separate CI workflow runs concurrently. Gate publishing here too.
+      - run: pnpm verify
+      - run: pnpm publint
+      - run: pnpm attw
 
       # Direct publish (no "Version Packages" PR): when a changeset is present,
       # version + publish + push the bump and tags back to main in one shot.

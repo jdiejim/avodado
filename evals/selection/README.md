@@ -1,7 +1,7 @@
 # Block-selection eval
 
 Measures whether an agent that follows the authoring skill picks the block by
-the reader's question or by keyword. Thirty requests in `requests.yaml`, none
+the reader's question or by keyword. Thirty-seven requests in `requests.yaml`, none
 naming a block type, each with the expected shapes and the tempting wrong
 picks.
 
@@ -26,7 +26,7 @@ node evals/selection/score.mjs .scratch/evals/before .scratch/evals/after
   keyword-matching signal. A skill change that raises `score` but also raises
   `traps` made the model more confident, not better.
 - `justified` counts requests where every chosen block named its rejected
-  alternative. The skill makes this mandatory.
+  alternative. The evaluation prompt requires this explanation; ordinary skill handoffs do not.
 - `structure` counts how many distinct block-type sequences the run produced,
   after stripping the chrome every doc shares (`meta`, `callout`, `prose`,
   `divider`, `takeaways`). Two different requests that yield the same ordered

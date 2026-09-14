@@ -25,7 +25,8 @@
     "publint": "pnpm -r exec publint",
     "attw": "pnpm -r --filter='@avodado/core' --filter='@avodado/render' exec attw --pack . --profile esm-only",
     "check:packages": "pnpm build && pnpm publint && pnpm attw",
-    "verify": "pnpm build && pnpm lint && pnpm typecheck && pnpm test"
+    "verify": "pnpm build && pnpm lint && pnpm typecheck && pnpm test && pnpm avo check",
+    "screenshots": "node scripts/readme-screenshots.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

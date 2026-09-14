@@ -1,6 +1,6 @@
 # Architecture
 
-Avodado is a documentation-as-code system. A pnpm monorepo of five published packages — `@avodado/core`, `render`, `studio`, `mcp`, `cli` — where dependencies always point inward toward a pure `@avodado/core`. **87 canonical block types** (plus 12 permanent aliases for merged old names) ported from `resources/doc-studio.jsx`, each with a zod schema, a typed renderer entry, and (where applicable) shared layout / SVG utilities.
+Avodado is a documentation-as-code system. A pnpm monorepo of four published packages — `@avodado/core`, `@avodado/render`, `@avodado/studio`, and `avodado` — where dependencies always point inward toward a pure `@avodado/core`. **107 canonical block types** (plus 12 permanent aliases for merged old names), each with a zod schema, a typed renderer entry, and (where applicable) shared layout / SVG utilities.
 
 ## Guiding principle
 
@@ -9,11 +9,10 @@ Avodado is a documentation-as-code system. A pnpm monorepo of five published pac
 ## Layering
 
 ```
-@avodado/core   ← pure: parse, schemas (87 + aliases), validate, resolve, edit ops. No I/O.
-@avodado/render ← @avodado/core. HTML + slide decks out. No DOM, no browser. One look; OS dark mode.
+@avodado/core   ← pure: parse, schemas (107 + aliases), validate, resolve, edit ops. No I/O.
+@avodado/render ← @avodado/core. HTML + slide decks out. No DOM, no browser. One look; dark by default.
 @avodado/studio ← @avodado/{core, render}. Browser SPA (Vite/React), ships built static assets.
-@avodado/mcp    ← @avodado/{core, render}. MCP server over stdio.
-@avodado/cli    ← @avodado/{core, render, studio}. Ink TUI. PDF (Playwright) + sync I/O (OpenAPI, CSV). Owns process.exit.
+avodado (CLI)   ← @avodado/{core, render, studio}. Ink TUI. PDF (Playwright) + sync I/O (OpenAPI, CSV). Owns process.exit.
 ```
 
 The marketing + docs site (avodado.dev) lives in its own repository and consumes `@avodado/*` from npm like any other user, so nothing in this monorepo depends on it.
@@ -21,7 +20,7 @@ The marketing + docs site (avodado.dev) lives in its own repository and consumes
 Rules:
 
 - `@avodado/core` does **no I/O**: no file system, no network, no `process`, no DOM. It reads strings and returns models and diagnostics.
-- All I/O lives in the **outer ring** (`cli`) — including PDF export (Playwright, an optional dependency imported lazily) and the file reads/writes behind `avo sync openapi` / `avo sync csv`. The importers themselves (OpenAPI → markdown, CSV → block fences, `core/src/import/`) are pure and live in `core`, so the studio and MCP server share them.
+- All I/O lives in the **outer ring** (`cli`) — including PDF export (Playwright, an optional dependency imported lazily) and the file reads/writes behind `avo sync openapi` / `avo sync csv`. The importers themselves (OpenAPI → markdown, CSV → block fences, `core/src/import/`) are pure and live in `core`, so Studio shares them with the CLI.
 - Libraries **return diagnostics** as values. They don't `throw` for expected conditions (parse errors, schema violations, dangling refs). The CLI is the only layer that maps diagnostics to console output and exit codes.
 - `@avodado/studio` is an outermost consumer of `core` + `render` only (never the CLI's Node/Playwright-bound PDF code). The whole parse → validate → render pipeline runs client-side in the browser; the published package contains only built static assets plus a tiny Node entry (`assetsPath()`) the CLI uses to serve them. The `avo studio` server is a **file bridge** — JSON read/write API + SSE change events, bound to `127.0.0.1` — and never renders. Editing goes through core's surgical edit ops (`replaceBlockBody`, `insertBlock`, `setYamlPath`, …) — including direct on-diagram interactions (click to select a part, Enter to edit it, arrow keys or drag to move it), which compile down to the same ops — so a studio session rewrites individual fenced blocks in place and the files on disk stay the single source of truth. Storage itself sits behind one interface — `StudioBackend` in `studio/src/api/backend.ts`, five methods — with two implementations: the file bridge above, and an in-tab vault with no server behind it. The package builds both (`dist/app` for the CLI, `dist/web` for a static host), so a hosted studio is a choice of backend at boot rather than a second application; the hosted build hides what needs a server (PDF, PowerPoint, the built site, change events) and shares documents by putting the source in a URL fragment instead.
 
@@ -87,13 +86,13 @@ Block types are grouped into 13 families (`BLOCK_FAMILIES` / `BLOCK_FAMILY` in t
 
 ## Renderer fidelity
 
-`@avodado/render` is a faithful TypeScript port of `resources/doc-studio.jsx`:
+`@avodado/render` owns the HTML/SVG output and the shared editorial skin:
 
-- The house CSS (`packages/render/src/css.ts`) is the verbatim doc-studio stylesheet, namespaced under `.docskin`.
-- Each block renderer matches the JSX component's DOM signature (class names, element structure, geometry constants).
+- The house CSS (`packages/render/src/css.ts`) is namespaced under `.docskin`.
+- Each block renderer maps schema data to HTML or SVG with shared layout utilities.
 - SVG diagrams use integer-only coordinates so snapshots are byte-deterministic.
 - Diagrams are wrapped in a `<div class="diagram">` frame with a colour-coded tag pill (e.g. `POST`, `C4`, `SEQUENCE`) and optional title / description / figure number.
-- Each typed block is wrapped in a `.section-block` with a `SECTION NN · LABEL` eyebrow, matching `resources/sample-orders-api.html`.
+- Each typed block is wrapped in a `.section-block` with a `SECTION NN · LABEL` eyebrow.
 
 Shared SVG utilities live under `packages/render/src/svg/`:
 
@@ -109,7 +108,7 @@ Shared SVG utilities live under `packages/render/src/svg/`:
 
 ## Look and dark mode
 
-There is one look: the editorial skin in `packages/render/src/css.ts` (see `packages/render/DESIGN.md`). Every colour is a role token on `:root` (`--paper`, `--ink`, `--accent`, …); the dark set replaces them on `prefers-color-scheme: dark` and on `[data-theme="dark"]`, so a page follows the reader's OS and a host page can still force dark. Rendered pages never stamp `data-theme` themselves.
+There is one look: the editorial skin in `packages/render/src/css.ts` (see `packages/render/DESIGN.md`). Every colour is a role token on `:root` (`--paper`, `--ink`, `--accent`, …); dark is the default. `colorScheme: "light"` stamps `data-theme="light"` on the rendered page; `"system"` adds an OS preference rule.
 
 There is no theme choice anywhere — no `avo theme`, no `--theme`, no Studio panel. `packages/render/src/themes.ts` keeps the single-entry shape (`ThemeName = 'textbook'`, label `Editorial`, `themeStyle()` returns `''`) so presets can return without an API change, and `RenderPartsOptions.themeVars` stays as an internal `:root` override with no user surface (the CLI uses it for `--size`).
 
@@ -155,12 +154,11 @@ The top-level always `process.exit(code)` after `waitUntilExit()`.
 
 ## Shipped seams and remaining extension points
 
-The 87-block renderer is complete. Several of the original post-v1 seams have since shipped as workspace packages:
+The renderer covers all canonical block types. Several of the original post-v1 seams have since shipped as workspace packages:
 
-- **The authoring skill** — one copy, at `skills/avodado/` (SKILL.md + reference/), laid out so `npx skills add jdiejim/avodado` installs it into any agent. The CLI build copies it to `packages/cli/templates/skill/` (gitignored) for `avo skill`; the MCP build stitches it into `skill.generated.ts`. The block field contract is not written by hand: `avo block <type>` prints it from the zod schema (`core/src/blocks/contract.ts`), plus one hand-kept table of terse-form hints that a test pins to the grammar table in `normalize.ts`.
-- **`@avodado/mcp`** — Model Context Protocol server (published). Tools: `check_document`, `render_document`, `list_block_types`, `get_block_schema`, `resolve_refs`, `sync_openapi`, `get_authoring_guide`. The OpenAPI generator it uses comes straight from `@avodado/core` (`core/src/import/openapi/`) — no vendored copies.
+- **The authoring skill** — one copy, at `skills/avodado/` (SKILL.md + reference/), laid out so `npx skills add jdiejim/avodado` installs it into any agent. The CLI build copies it to `packages/cli/templates/skill/` (gitignored) for `avo skill`. The block field contract is not written by hand: `avo block <type>` prints it from the zod schema (`core/src/blocks/contract.ts`), plus one hand-kept table of terse-form hints that a test pins to the grammar table in `normalize.ts`.
 - **`@avodado/studio`** — the visual editor served by `avo studio` (see the layering rules above).
-- **Importers** — `packages/core/src/import/`: pure external-source importers (OpenAPI → whole docs, CSV → `table`/`statustable`/`chart` fences) plus the small importer registry (`IMPORTERS` / `importerForFile`). Exposed as `avo sync openapi` / `avo sync csv`, the MCP `sync_openapi` tool, and the studio’s drag-drop / “Import…” flow.
+- **Importers** — `packages/core/src/import/`: pure external-source importers (OpenAPI → whole docs, CSV → `table`/`statustable`/`chart` fences) plus the small importer registry (`IMPORTERS` / `importerForFile`). Exposed as `avo sync openapi` / `avo sync csv` and the studio’s drag-drop / “Import…” flow.
 
 Still clean extension points, not "TODO" stubs:
 
@@ -174,10 +172,10 @@ Still clean extension points, not "TODO" stubs:
 | --- | --- |
 | Workspace | pnpm |
 | Build | tsup (ESM) |
-| Tests | Vitest — 690+ tests across core, render, studio, mcp, and the CLI |
+| Tests | Vitest across core, render, studio, and the CLI |
 | Lint | ESLint flat config + typescript-eslint |
 | Format | Prettier |
 | Release | Changesets |
-| CI | GitHub Actions (lint → typecheck → build → playwright install → test) |
+| CI | GitHub Actions (`pnpm verify`, package exports, and published types; release repeats these checks before publishing) |
 
 Strict TypeScript: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`. No `any` in public APIs.
