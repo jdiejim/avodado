@@ -1,5 +1,11 @@
 # chiltepin
 
+## 0.47.1
+
+### Patch Changes
+
+- 7d6e6ac: npm keywords name the product category: documentation generator, AI documentation generator, AI docs.
+
 ## 0.47.0
 
 ### Minor Changes

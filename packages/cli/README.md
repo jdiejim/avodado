@@ -9,6 +9,8 @@
 AI systems, architecture, graphs, and the documents that connect them.<br/>
 Written in Markdown. Drawn by code. Checked in CI.</p>
 
+<p align="center"><sub>Open-source docs as code: an AI documentation generator that lives in your repo. Your agent writes the docs, <code>chiltepin check</code> validates them, the renderer draws them.</sub></p>
+
 <p align="center">
   <a href="https://www.npmjs.com/package/chiltepin"><img src="https://img.shields.io/npm/v/chiltepin?label=chiltepin&color=e4744c" alt="npm version" /></a>
   <a href="https://github.com/jdiejim/chiltepin/actions/workflows/ci.yml"><img src="https://github.com/jdiejim/chiltepin/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
@@ -25,9 +27,9 @@ Written in Markdown. Drawn by code. Checked in CI.</p>
 </p>
 
 <p align="center">
-  <a href="https://github.com/jdiejim/chiltepin/blob/main/assets/examples/agent-document.png"><img src="https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/examples/agent-document-cover.png" alt="A real Chiltepin document titled An agent you can reason about, with a research agent loop connecting a researcher, a tool-calling LLM, source tools, evidence memory, and a stopping rule" width="960" /></a>
+  <a href="https://github.com/jdiejim/chiltepin/blob/main/docs/examples/platform-architecture.md"><img src="https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/examples/platform.png" alt="System design of a marketplace platform: clients through a CDN, WAF, and load balancer into replicated services, a Kafka event backbone, sharded Postgres with read replicas, a Redis cache, search, object storage, a warehouse, and Stripe and Twilio at the edge" width="960" /></a>
 </p>
-<p align="center"><sub>A real AI design document, rendered from <a href="https://github.com/jdiejim/chiltepin/blob/main/docs/examples/research-agent.md">Markdown and typed YAML</a>. Click to read the complete document.</sub></p>
+<p align="center"><sub>A platform on one page: 20 nodes, 21 flows, one <code>block</code> in <a href="https://github.com/jdiejim/chiltepin/blob/main/docs/examples/platform-architecture.md">typed YAML</a>. Shapes, routing, numbering, and the legend come from the renderer.</sub></p>
 
 **Your agent writes the content. Chiltepin handles the layout.** Compose prose and typed YAML blocks in a `.md` file. Get consistent diagrams, a document you can share, and a source diff you can review.
 
