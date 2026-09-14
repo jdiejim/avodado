@@ -16,7 +16,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "node scripts/sync-skill.mjs && tsup && chmod +x dist/bin.js",
+    "build": "node scripts/sync-skill.mjs && node scripts/sync-readme.mjs && tsup && chmod +x dist/bin.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -8,6 +8,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 permissions:
   contents: write # push the version-bump commit + tags back to main
+  id-token: write # npm provenance (signed build attestation on the package page)
 
 jobs:
   release:
@@ -46,6 +47,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
 
       # Guard: changeset publish can skip a package yet exit 0 — fail loudly if
       # the registry doesn't match the (now pre-versioned) tree.
