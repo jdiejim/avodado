@@ -1,5 +1,11 @@
 # @avodado/cli
 
+## 0.45.2
+
+### Patch Changes
+
+- 9429a67: The npm page shows the repo README (with the animated demo and the eval numbers) instead of the old install notes, and releases carry npm provenance.
+
 ## 0.45.1
 
 ### Patch Changes
