@@ -40,3 +40,37 @@ export function thumbnailCacheSize(): number {
 export function clearThumbnailCache(): void {
   cache.clear();
 }
+
+const docCache = new Map<string, string>();
+
+/**
+ * The card thumbnail for a whole document: its first structural block (not
+ * prose, not the cover, not a callout) rendered through the real pipeline;
+ * the cover when the document has no such block. Memoised per `key`, which
+ * callers build from slug + mtime so an edit refreshes the picture.
+ */
+export function docThumbnailHtml(key: string, source: string, slug: string): string {
+  const hit = docCache.get(key);
+  if (hit !== undefined) return hit;
+  let html = '';
+  try {
+    const doc = parseDocument(source, slug);
+    const r = renderDocumentSegments(doc);
+    const skip = new Set(['meta', 'callout', 'prose']);
+    let body = '';
+    for (let i = 0; i < doc.segments.length; i += 1) {
+      const seg = doc.segments[i];
+      const rendered = r.segments[i]?.html ?? '';
+      if (seg === undefined || seg.kind === 'markdown' || rendered === '') continue;
+      if (skip.has(seg.kind)) continue;
+      body = rendered;
+      break;
+    }
+    if (body === '') body = r.segments.find((x) => x.html !== '')?.html ?? r.cover;
+    html = body === '' ? '' : r.defs + body;
+  } catch {
+    html = '';
+  }
+  docCache.set(key, html);
+  return html;
+}

@@ -4884,6 +4884,99 @@ a.stu-export-item {
   justify-self: end;
 }
 
+/* Card grid — every document as a thumbnail card. */
+.stu-doclist-inner-wide {
+  max-width: 1180px;
+}
+
+.stu-doclist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
+}
+
+.stu-doccard {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 1px solid var(--stu-rule);
+  border-radius: 10px;
+  background: var(--stu-panel);
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.stu-doccard:hover {
+  border-color: var(--stu-sel);
+}
+
+.stu-doccard-thumb {
+  position: relative;
+  height: 150px;
+  background: var(--stu-well);
+  border-bottom: 1px solid var(--stu-rule-soft);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stu-doccard-thumb::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 36px;
+  background: linear-gradient(to top, var(--stu-well), transparent);
+}
+
+.stu-doccard-thumb .section-head {
+  display: none;
+}
+
+.stu-doccard-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--stu-faint);
+}
+
+.stu-doccard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+}
+
+.stu-doccard-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--stu-navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-doccard-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--stu-faint);
+  min-width: 0;
+}
+
+.stu-doccard-folder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stu-doccard-edited {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 /* Empty state (no docs at all) — hero + template quick-starts. */
 .stu-doclist-empty {
   flex: 1;
@@ -5433,6 +5526,7 @@ a.stu-export-item {
 .stu-picker-copy:focus-visible,
 .stu-picker-yaml:focus-visible,
 .stu-doclist-row:focus-visible,
+.stu-doccard:focus-visible,
 .stu-doclist-empty-chip:focus-visible,
 .stu-keybar-x:focus-visible,
 .stu-keys-card header button:focus-visible,

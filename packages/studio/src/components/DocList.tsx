@@ -1,35 +1,24 @@
 /**
- * "All documents" — the rail's root selection: every doc as a table row
- * (name · folder · edited · check status), most recently edited first.
- * Clicking a row opens it in Edit. With no docs at all, an empty-state hero
- * offers the template picker directly.
+ * "All documents" — the rail's root selection: every doc as a card with a
+ * thumbnail of its first structural block (name · folder · edited · check
+ * status), most recently edited first. Clicking a card opens it in Edit.
+ * With no docs at all, an empty-state hero offers the template picker.
  *
- * The Status column shows errors only ("✓ pass" / "N errors") — warnings
- * never block publish, so they never change a doc's status. The count comes
- * from the doc-list payload (`errorCount`, server-computed with an mtime
- * cache); the open doc uses the live in-editor diagnostics instead.
+ * Status shows errors only ("✓ pass" / "N errors") — warnings never block
+ * publish, so they never change a doc's status. The count comes from the
+ * doc-list payload (`errorCount`, server-computed with an mtime cache); the
+ * open doc uses the live in-editor diagnostics instead.
  */
 
 import { useMemo, useState } from 'react';
+import { parseDocument } from 'chiltepin-core';
+import { renderDocumentSegments } from 'chiltepin-render';
 import { useDerived, useStudio } from '../state/store.js';
-import { docCheckStatus, type DocCheckStatus } from '../lib/checkView.js';
+import { docCheckStatus } from '../lib/checkView.js';
 import { docFolder, editedAgo } from '../lib/docList.js';
+import { DocCard } from './DocCard.js';
 import { IconDoc } from './Icons.js';
 import { TemplatePicker } from './TemplatePicker.js';
-
-/** The Status cell: quiet pass, filled error chip, or nothing (old server). */
-function StatusChip({ status }: { status: DocCheckStatus }): JSX.Element {
-  // An empty cell keeps the grid columns aligned when the count is unknown.
-  if (status.kind === 'unknown') return <span aria-hidden="true" />;
-  if (status.kind === 'errors') {
-    return (
-      <span className="stu-doclist-status stu-doclist-status-err">
-        {status.count} error{status.count === 1 ? '' : 's'}
-      </span>
-    );
-  }
-  return <span className="stu-doclist-status stu-doclist-status-ok">✓ pass</span>;
-}
 
 /** The empty state's quick-start templates: real ids from DOC_TEMPLATES. */
 const STARTER_CHIPS: ReadonlyArray<{ id: string; label: string }> = [
@@ -73,9 +62,7 @@ function EmptyState({ docsDir }: { docsDir: string }): JSX.Element {
           ))}
         </div>
       </div>
-      {picker !== null && (
-        <TemplatePicker initial={picker} onClose={() => setPicker(null)} />
-      )}
+      {picker !== null && <TemplatePicker initial={picker} onClose={() => setPicker(null)} />}
     </div>
   );
 }
@@ -91,6 +78,9 @@ export function DocList(): JSX.Element {
   const docsDir = meta?.docsDir ?? 'docs';
   const liveErrors = diagnostics.filter((d) => d.level === 'error').length;
   const sorted = useMemo(() => [...docs].sort((a, b) => b.mtimeMs - a.mtimeMs), [docs]);
+  // The docskin stylesheet for the card thumbnails — the canvas injects its
+  // own only once a document is open, and the home grid comes first.
+  const skinCss = useMemo(() => renderDocumentSegments(parseDocument('', 'home-skin')).css, []);
 
   if (docs.length === 0) return <EmptyState docsDir={docsDir} />;
 
@@ -101,29 +91,18 @@ export function DocList(): JSX.Element {
 
   return (
     <div className="stu-doclist">
-      <div className="stu-doclist-inner">
-        <div className="stu-doclist-table">
-          <div className="stu-doclist-head" aria-hidden="true">
-            <span>Document</span>
-            <span>Folder</span>
-            <span>Edited</span>
-            <span>Status</span>
-            <span />
-          </div>
+      <style>{skinCss}</style>
+      <div className="stu-doclist-inner stu-doclist-inner-wide">
+        <div className="stu-doclist-grid">
           {sorted.map((d) => (
-            <button
+            <DocCard
               key={d.slug}
-              type="button"
-              className="stu-doclist-row"
-              title={d.slug}
-              onClick={() => open(d.slug)}
-            >
-              <span className="stu-doclist-name">{d.title}</span>
-              <span className="stu-doclist-folder">{docFolder(d.slug, docsDir)}</span>
-              <span className="stu-doclist-edited stu-num">{editedAgo(d.mtimeMs)}</span>
-              <StatusChip status={docCheckStatus(d, { slug: currentSlug, errors: liveErrors })} />
-              <span className="stu-doclist-chev">›</span>
-            </button>
+              doc={d}
+              folder={docFolder(d.slug, docsDir)}
+              edited={editedAgo(d.mtimeMs)}
+              status={docCheckStatus(d, { slug: currentSlug, errors: liveErrors })}
+              onOpen={() => open(d.slug)}
+            />
           ))}
         </div>
       </div>
