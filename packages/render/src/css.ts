@@ -300,6 +300,14 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .callout-body p{margin:0 0 8px;}
 .docskin .callout-body p:last-child{margin-bottom:0;}
 /* prose */
+/* Markdown pipe tables and links inside prose: the same frame, header, and
+   row rules as the table block, so a GFM table never renders bare. */
+.docskin .prose table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0;font-size:13px;border:1px solid var(--rule-solid);border-radius:6px;overflow:hidden;}
+.docskin .prose thead th{background:var(--paper-2);color:var(--muted);text-align:left;padding:9px 12px;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;border-bottom:1px solid var(--rule-solid);}
+.docskin .prose td{padding:9px 12px;border-bottom:1px solid var(--rule-table);vertical-align:top;}
+.docskin .prose tbody tr:last-child td{border-bottom:none;}
+.docskin .prose tbody tr:nth-child(even){background:color-mix(in srgb,var(--paper-2) 50%,transparent);}
+.docskin .prose a{color:var(--link);text-decoration:underline;text-underline-offset:2px;text-decoration-color:color-mix(in srgb,var(--link) 50%,transparent);}
 .docskin .prose h2{font-family:var(--font-display);font-weight:700;font-size:clamp(24px,3vw,32px);line-height:1.15;letter-spacing:-.015em;color:var(--navy);margin:40px 0 14px;padding-bottom:12px;border-bottom:1px solid var(--rule-solid);}
 .docskin .prose h2:first-child{margin-top:0;}
 .docskin .prose h3{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:-.005em;color:var(--navy);margin:36px 0 12px;}
