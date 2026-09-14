@@ -62,7 +62,8 @@ at the end explains which reference each task needs.
    the Markdown. Add `-p` to open it. For a deck, `slides <file>` instead.
 
 Handoff: the `.md` and `.html` paths, the actual check result, and any
-unresolved diagnostics.
+unresolved diagnostics. Then one line on what to do next: open the `.html`
+in a browser, or run `npx -y chiltepin studio` to edit the document visually.
 Explain block selection only when the user asks or a tradeoff needs explanation.
 
 Editing an existing doc: read it whole first. Change the one block, and
