@@ -8,6 +8,8 @@
 AI systems, architecture, graphs, and the documents that connect them.<br/>
 Written in Markdown. Drawn by code. Checked in CI.</p>
 
+<p align="center"><sub>Open-source docs as code: an AI documentation generator that lives in your repo. Your agent writes the docs, <code>chiltepin check</code> validates them, the renderer draws them.</sub></p>
+
 <p align="center">
   <a href="https://www.npmjs.com/package/chiltepin"><img src="https://img.shields.io/npm/v/chiltepin?label=chiltepin&color=e4744c" alt="npm version" /></a>
   <a href="https://github.com/jdiejim/chiltepin/actions/workflows/ci.yml"><img src="https://github.com/jdiejim/chiltepin/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
