@@ -1,5 +1,13 @@
 # chiltepin-render
 
+## 0.33.2
+
+### Patch Changes
+
+- 8dc104c: Markdown pipe tables inside prose render like the table block (frame, header row, row rules, alternating rows) and prose links use the link colour; they were unstyled.
+- 487b111: Section titles and the page footer use a 1px muted rule instead of a 2px ink line, so dark pages have no bright horizontal bars above blocks.
+- c0b7e3e: Tables have a visible frame and row rules again: a new `--rule-table` token (32% ink in light, 28% in dark) replaces the 13% hairline on every table kind, and the plain `table` block gets a 1px rounded border.
+
 ## 0.33.1
 
 ### Patch Changes

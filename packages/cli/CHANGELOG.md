@@ -1,5 +1,15 @@
 # chiltepin
 
+## 0.47.4
+
+### Patch Changes
+
+- Updated dependencies [8dc104c]
+- Updated dependencies [487b111]
+- Updated dependencies [c0b7e3e]
+  - chiltepin-render@0.33.2
+  - chiltepin-studio@0.16.2
+
 ## 0.47.3
 
 ### Patch Changes
