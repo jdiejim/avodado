@@ -1,5 +1,11 @@
 # chiltepin
 
+## 0.47.6
+
+### Patch Changes
+
+- 0e20b4a: Every `npx chiltepin` hint in the CLI, README, and skill pins `@latest`, so a stale npx cache never runs an old renderer.
+
 ## 0.47.5
 
 ### Patch Changes
