@@ -17,8 +17,8 @@ const missing = [];
 /** Freshly published versions can take a minute or two to propagate through
  *  the registry CDN (bit us at 0.31.0 and again at 0.32.1) — retry with
  *  backoff before declaring a package missing. */
-const ATTEMPTS = 6;
-const DELAYS_MS = [0, 15_000, 30_000, 45_000, 60_000, 60_000];
+const ATTEMPTS = 12;
+const DELAYS_MS = [0, 15_000, 30_000, 45_000, 60_000, 60_000, 90_000, 90_000, 120_000, 120_000, 120_000, 120_000];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function viewVersion(name, version) {
