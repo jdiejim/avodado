@@ -1,4 +1,4 @@
-# @avodado/core
+# chiltepin-core
 
 ## 0.24.0
 

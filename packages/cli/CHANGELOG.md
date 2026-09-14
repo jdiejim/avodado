@@ -1,4 +1,4 @@
-# @avodado/cli
+# chiltepin
 
 ## 0.47.0
 

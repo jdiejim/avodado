@@ -1,4 +1,4 @@
-# @avodado/studio
+# chiltepin-studio
 
 ## 0.16.0
 

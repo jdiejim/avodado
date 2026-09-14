@@ -1,4 +1,4 @@
-# @avodado/render
+# chiltepin-render
 
 ## 0.33.0
 
