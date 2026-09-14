@@ -1,5 +1,12 @@
 # chiltepin-studio
 
+## 0.16.1
+
+### Patch Changes
+
+- d712087: The 8px band above a document cover is gone: pages, Studio, and exports start at the cover meta line.
+- 82cb733: The Studio home shows every document as a card with a rendered thumbnail of its first block, instead of a table row.
+
 ## 0.16.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # chiltepin-render
 
+## 0.33.1
+
+### Patch Changes
+
+- d712087: The 8px band above a document cover is gone: pages, Studio, and exports start at the cover meta line.
+
 ## 0.33.0
 
 ### Minor Changes

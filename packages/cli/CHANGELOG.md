@@ -1,5 +1,15 @@
 # chiltepin
 
+## 0.47.3
+
+### Patch Changes
+
+- 7b9b6b2: The skill renders the HTML page after every clean check and hands back both the `.md` and the `.html` path.
+- Updated dependencies [d712087]
+- Updated dependencies [82cb733]
+  - chiltepin-render@0.33.1
+  - chiltepin-studio@0.16.1
+
 ## 0.47.2
 
 ### Patch Changes
