@@ -23,7 +23,7 @@
 export const LIGHT_SET = `  /* The skin's role tokens (packages/render/DESIGN.md). Renderers name the
      role, never the value; the dark set overrides these on :root. */
   --paper:#f7f6f2; --paper-2:#efede8; --ink:#1f2430; --muted:#4f5868; --soft:#5f6876;
-  --rule:rgba(31,36,48,.14); --rule-solid:#807b70;
+  --rule:rgba(31,36,48,.14); --rule-solid:#807b70; --rule-table:rgba(31,36,48,.32);
   --accent:#b04a25; --accent-tint:rgba(176,74,37,.09); --link:#2f5c8f;
   --negative:#9a3f34; --negative-tint:rgba(154,63,52,.08);
   /* Tone steps between paper-2 and ink (heatmap ramp: paper → paper-2 → ink-3 → ink-2 → ink). Fills only, never text. */
@@ -38,7 +38,7 @@ export const LIGHT_SET = `  /* The skin's role tokens (packages/render/DESIGN.md
 `;
 
 export const DARK_SET = `  --paper:#15171d; --paper-2:#1d2028; --ink:#eceae4; --muted:#b4bac6; --soft:#9da5b3;
-  --rule:rgba(236,234,228,.13); --rule-solid:#7d8499;
+  --rule:rgba(236,234,228,.13); --rule-solid:#7d8499; --rule-table:rgba(236,234,228,.28);
   --accent:#e4744c; --accent-tint:rgba(228,116,76,.14); --link:#93b7e8;
   --negative:#f5a39b; --negative-tint:rgba(245,163,155,.14);
   --ink-2:#adadab; --ink-3:#62646a;
@@ -238,7 +238,7 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 /* Table headers everywhere: a paper-2 band with eyebrow text in muted (4.5:1 floor) — never a dark fill. */
 .docskin .transition-table thead{background:var(--paper-2);color:var(--muted);}
 .docskin .transition-table th{text-align:left;padding:8px 10px;font-family:var(--font-mono);font-size:9.5px;font-weight:500;text-transform:uppercase;letter-spacing:.12em;border-bottom:1px solid var(--rule-solid);}
-.docskin .transition-table td{padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top;}
+.docskin .transition-table td{padding:8px 10px;border-bottom:1px solid var(--rule-table);vertical-align:top;}
 .docskin .transition-table td.t-num{width:30px;padding-right:2px;}
 /* Status chips (the one encoding for every status / priority / tone pill in the skin):
    a WORD plus one of — ink outline (default) · paper-2 fill (done / settled) ·
@@ -250,12 +250,12 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 .docskin .pill-wait{background:var(--paper-2);border-color:var(--paper-2);}
 .docskin .pill-end{border-color:var(--accent);color:var(--accent);}
 /* presentation: comparison table */
-.docskin .pres-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px;}
+.docskin .pres-table{width:100%;border-collapse:separate;border-spacing:0;margin:14px 0;font-size:13px;border:1px solid var(--rule-solid);border-radius:6px;overflow:hidden;}
 .docskin .pres-table thead{background:var(--paper-2);color:var(--muted);}
 .docskin .pres-table th{padding:9px 12px;text-align:left;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;border-bottom:1px solid var(--rule-solid);}
 .docskin .pres-table th.r,.docskin .pres-table td.r{text-align:right;} .docskin .pres-table th.c,.docskin .pres-table td.c{text-align:center;}
 .docskin .pres-table th.hi{color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent);}
-.docskin .pres-table td{padding:9px 12px;border-bottom:1px solid var(--rule);}
+.docskin .pres-table td{padding:9px 12px;border-bottom:1px solid var(--rule-table);} .docskin .pres-table tbody tr:last-child td{border-bottom:none;}
 .docskin .pres-table tbody tr:nth-child(even){background:color-mix(in srgb,var(--paper-2) 50%,transparent);}
 .docskin .pres-table td.lead{font-weight:600;color:var(--ink);}
 .docskin .pres-table td.hi{background:var(--accent-tint);}
@@ -366,7 +366,7 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
 /* tracker */
 .docskin .trk{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;}
 .docskin .trk thead{background:var(--paper-2);color:var(--muted);} .docskin .trk th{padding:8px 10px;text-align:left;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;border-bottom:1px solid var(--rule-solid);}
-.docskin .trk td{padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:middle;}
+.docskin .trk td{padding:8px 10px;border-bottom:1px solid var(--rule-table);vertical-align:middle;}
 .docskin .trk tr.done .trk-task{text-decoration:line-through;color:var(--muted);}
 .docskin .st{display:inline-block;font-family:var(--font-mono);font-size:9.5px;font-weight:600;padding:2px 8px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink);background:var(--paper);border:1px solid var(--ink);}
 .docskin .st.todo{border-style:dashed;border-color:var(--muted);color:var(--muted);} .docskin .st.doing{border-color:var(--accent);color:var(--accent);} .docskin .st.done{background:var(--paper-2);border-color:var(--paper-2);} .docskin .st.blocked{border-color:var(--negative);color:var(--negative);}
@@ -423,7 +423,7 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .ep-section{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--gray);font-weight:700;margin:16px 0 6px;}
 .docskin .ep-table{width:100%;border-collapse:collapse;font-size:13px;}
 .docskin .ep-table th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);font-weight:700;padding:4px 8px;border-bottom:1px solid var(--rule);}
-.docskin .ep-table td{padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--charcoal);}
+.docskin .ep-table td{padding:6px 8px;border-bottom:1px solid var(--rule-table);vertical-align:top;color:var(--charcoal);}
 .docskin .ep-name{font-family:var(--font-mono);font-weight:600;color:var(--navy);white-space:nowrap;}
 .docskin .ep-type{font-family:var(--font-mono);color:var(--slate);font-size:12px;}
 .docskin .ep-req{font-family:var(--font-body);font-size:9px;font-weight:700;text-transform:uppercase;color:var(--negative);letter-spacing:.04em;}
@@ -452,7 +452,7 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .mx-desc{font-size:13px;color:var(--muted);margin:2px 0 10px;line-height:1.5;}
 .docskin .mx-scroll{overflow-x:auto;border:1px solid var(--rule-solid);border-radius:6px;background:var(--paper);}
 .docskin .mx-grid{border-collapse:collapse;width:100%;font-size:13px;}
-.docskin .mx-grid th,.docskin .mx-grid td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);}
+.docskin .mx-grid th,.docskin .mx-grid td{padding:9px 13px;text-align:center;border-bottom:1px solid var(--rule-table);border-right:1px solid var(--rule-table);}
 .docskin .mx-grid tr:last-child th,.docskin .mx-grid tr:last-child td{border-bottom:none;}
 .docskin .mx-grid th:last-child,.docskin .mx-grid td:last-child{border-right:none;}
 .docskin .mx-grid thead th{background:var(--paper-2);color:var(--muted);font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;}
@@ -826,7 +826,7 @@ a.link-chip:hover,a.st-link:hover{text-decoration:underline;}
 .docskin .sc-table thead th{background:var(--paper-2);color:var(--muted);padding:10px 12px;text-align:left;font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;vertical-align:top;border-bottom:1px solid var(--rule-solid);}
 .docskin .sc-table th.c,.docskin .sc-table td.c{text-align:center;}
 .docskin .sc-table thead th.sc-win{color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent);}
-.docskin .sc-table td{padding:9px 12px;border-bottom:1px solid var(--rule);color:var(--ink);}
+.docskin .sc-table td{padding:9px 12px;border-bottom:1px solid var(--rule-table);color:var(--ink);}
 .docskin .sc-crit{font-weight:600;color:var(--ink);}
 .docskin .sc-weight{display:inline-block;font-family:var(--font-mono);font-size:9.5px;font-weight:600;color:var(--ink);background:var(--paper);border:1px solid var(--rule-solid);border-radius:3px;padding:1px 6px;margin-left:8px;}
 .docskin .sc-score{font-family:var(--font-mono);font-weight:600;}
