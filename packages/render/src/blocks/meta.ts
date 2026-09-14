@@ -3,7 +3,7 @@
  * entry for `meta` returns an empty string; {@link renderCover} produces the
  * cover from the {@link Document.meta} data.
  *
- * Class names match doc-studio: `.cover-bar`, `.cover-pad`, `.cover-meta`,
+ * Class names match doc-studio: `.cover-pad`, `.cover-meta`,
  * `.cover-title`, `.cover-sub`, `.cover-logo`.
  */
 
@@ -23,8 +23,7 @@ export function renderCover(meta: MetaData | undefined): string {
       ? `<img class="cover-logo" src="${escapeHtml(safeUrl(meta.logo))}" alt="${escapeHtml(title)}">`
       : '';
   return (
-    `<div class="cover-bar"></div>` +
-    `<div class="cover-pad">` +
+        `<div class="cover-pad">` +
     logo +
     `<div class="cover-meta"><span>DOCUMENT</span><span class="accent">${escapeHtml(tag)}</span></div>` +
     `<h1 class="cover-title">${escapeHtml(title)}</h1>` +

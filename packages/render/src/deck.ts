@@ -227,7 +227,6 @@ body{background:var(--paper-2);font-family:var(--font-body);color:var(--ink);}
 /* A divider that owns its slide is the title card: center the band's content
    block on the stage with no leftover doc margins. */
 .docskin.slide .slide-inner:has(.dvd) .section-block{margin:0;}
-.docskin.slide.slide-cover .cover-bar{display:none;}
 .docskin.slide.slide-cover .cover-pad{border-bottom:none;padding-bottom:0;margin-bottom:0;}
 .docskin.slide.slide-cover .cover-meta{justify-content:center;}
 .deck-nav{position:fixed;left:0;right:0;bottom:0;height:60px;display:flex;align-items:center;justify-content:center;

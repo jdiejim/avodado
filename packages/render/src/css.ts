@@ -87,7 +87,6 @@ body{background:var(--white);color:var(--charcoal);font-family:var(--font-body);
   background:var(--white); color:var(--charcoal); font-family:var(--font-body); font-size:15px; line-height:1.6;
   max-width:var(--page-max,1180px); margin:0 auto; padding:0 56px 128px;
 }
-.docskin .cover-bar{height:8px;background:var(--navy);margin:0 -56px 36px;}
 .docskin .cover-pad{padding:0 0 40px;margin-bottom:56px;border-bottom:1px solid var(--rule);}
 .docskin .cover-logo{display:block;height:52px;width:auto;max-width:260px;margin:0 0 28px;}
 .docskin .cover-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--gray);font-weight:600;margin-bottom:32px;}
