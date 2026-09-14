@@ -57,10 +57,12 @@ at the end explains which reference each task needs.
    Warnings do not fail the check by default; review them and report relevant ones.
    A non-zero exit is never "done". If the CLI is unavailable, report validation
    as unverified. Never invent a successful check.
-5. **Render when asked**: `npx -y chiltepin html <file> -p` (page) or
-   `slides <file> -p` (deck).
+5. **Render**: after a clean check, `npx -y chiltepin html <file>` writes
+   `<file>.html` next to the source, so the reader gets the page as well as
+   the Markdown. Add `-p` to open it. For a deck, `slides <file>` instead.
 
-Handoff: the file path, actual check result, and any unresolved diagnostics.
+Handoff: the `.md` and `.html` paths, the actual check result, and any
+unresolved diagnostics.
 Explain block selection only when the user asks or a tradeoff needs explanation.
 
 Editing an existing doc: read it whole first. Change the one block, and
