@@ -15,9 +15,12 @@ mkdirSync(output, { recursive: true });
 
 const examples = [
   ['architecture', 'docs/examples/system-overview.md', 'c4'],
-  ['sequence', 'README.md', 'sequence'],
-  ['data-model', 'docs/examples/api.md', 'erd'],
-  ['rollout', 'docs/examples/canary-rollout.md', 'rollout'],
+  ['sequence', 'docs/examples/checkout-design.md', 'sequence'],
+  ['data-model', 'docs/examples/checkout-design.md', 'erd'],
+  ['rollout', 'docs/examples/checkout-design.md', 'rollout'],
+  ['pipeline', 'docs/examples/chiltepin-pipeline.md', 'block'],
+  ['deployment', 'docs/examples/deployment-topology.md', 'block'],
+  ['document', 'docs/examples/checkout-design.md', null],
 ];
 
 const browser = await chromium.launch();
@@ -30,9 +33,11 @@ try {
   for (const [name, file, type] of examples) {
     await page.setViewportSize({ width: 1080, height: 800 });
     const source = readFileSync(resolve(root, file), 'utf8');
-    const fence = source.match(new RegExp('^```' + type + '\\r?\\n[\\s\\S]*?^```(?=\\r?$)', 'm'))?.[0];
-    if (!fence) throw new Error(`No ${type} block in ${file}`);
-    const doc = parseDocument(fence, name);
+    const content = type
+      ? source.match(new RegExp('^```' + type + '\\r?\\n[\\s\\S]*?^```(?=\\r?$)', 'm'))?.[0]
+      : source;
+    if (!content) throw new Error(`No ${type} block in ${file}`);
+    const doc = parseDocument(content, name);
     const errors = validateDocument(doc, file).filter((d) => d.level === 'error');
     if (errors.length) throw new Error(JSON.stringify(errors));
     await page.setContent(renderDocument(doc), { waitUntil: 'load' });
@@ -50,9 +55,22 @@ try {
       stages.some((el) => el.scrollWidth > el.clientWidth + 1),
     );
     if (clipped) throw new Error(`${name}: screenshot would crop a scrollable diagram`);
-    const section = page.locator('.section-block').first();
-    await section.screenshot({ path: resolve(output, `${name}.png`), animations: 'disabled' });
-    console.log(`${file} (${type}) → assets/examples/${name}.png`);
+    if (type) {
+      await page.locator('.section-block').first().screenshot({
+        path: resolve(output, `${name}.png`), animations: 'disabled',
+      });
+    } else {
+      await page.screenshot({ path: resolve(output, `${name}.png`), fullPage: true, animations: 'disabled' });
+      // The cover includes the real document header, prose, and first diagram.
+      // Clip at its section boundary rather than cutting through the next figure.
+      const first = await page.locator('.section-block').first().boundingBox();
+      if (!first) throw new Error(`${file}: no first section to capture`);
+      const clip = { x: 0, y: 0, width: page.viewportSize().width, height: Math.ceil(first.y + first.height + 32) };
+      await page.screenshot({ path: resolve(output, 'document-cover.png'), clip, animations: 'disabled' });
+      await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+      await page.screenshot({ path: resolve(output, 'document-light.png'), clip, animations: 'disabled' });
+    }
+    console.log(`${file} (${type ?? 'full document + dark/light covers'}) → assets/examples/${name}.png`);
   }
 } finally {
   await browser.close();

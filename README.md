@@ -4,7 +4,7 @@
 
 <h1 align="center">Chiltepin</h1>
 
-<p align="center"><strong>Docs your AI agent can write, and your CI can check.</strong><br/>Turn Markdown and typed YAML into architecture diagrams, API docs, runbooks, and slides. 107 block types, with deterministic HTML + SVG output.</p>
+<p align="center"><strong>Docs your AI agent can write, and your CI can check.</strong><br/>Turn Markdown and typed YAML into architecture diagrams, API docs, runbooks, and slides. A growing library of typed blocks, with deterministic HTML + SVG output.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/chiltepin"><img src="https://img.shields.io/npm/v/chiltepin?label=chiltepin&color=e4744c" alt="npm" /></a>
@@ -150,7 +150,7 @@ Errors fail the command. Warnings are non-blocking by default; `--strict-prose` 
 | AI & ML | `agentloop` `trace` `prompt` `context` `neuralnet` `modelcard` |
 | Prose structure | `callout` `list` `glossary` `faq` `steps` `spec` `layers` `gallery` `mindmap` `tree` `fishbone` |
 
-107 block types across 13 families. Every field, enum, and terse form: `chiltepin block <type>`. Twelve old names (`infra` `event` `ddd` `network` `belogic` `dag` `waterfall` `funnel` `diff` `terminal` `mece` `tracker`) remain permanent aliases.
+Typed blocks across 13 families. Every field, enum, and terse form: `chiltepin block <type>`. Twelve old names (`infra` `event` `ddd` `network` `belogic` `dag` `waterfall` `funnel` `diff` `terminal` `mece` `tracker`) remain permanent aliases.
 
 ## Outputs
 

@@ -14,7 +14,7 @@ cross-references and how slides themselves work.
 title: The four things Chiltepin gives you
 items:
   - { title: One source of truth, body: "Diagrams live in the .md file, not a separate tool.", tag: "WHAT", icon: doc, accent: blue }
-  - { title: Typed blocks, body: "107 block types with strict schemas.", tag: "HOW", icon: grid, accent: green }
+  - { title: Typed blocks, body: "A growing library of typed blocks with strict schemas.", tag: "HOW", icon: grid, accent: green }
   - { title: Validated, body: "chiltepin check gates every change.", tag: "WHY", icon: check, accent: purple }
   - { title: Many outputs, body: "HTML, slides, and PDF from one file.", tag: "WHERE", icon: layers, accent: amber }
 ```
