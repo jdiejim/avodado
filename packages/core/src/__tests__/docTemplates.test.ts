@@ -1,7 +1,7 @@
 /**
  * Full-document templates (relocated from the CLI): every template is a
  * complete doc that parses and validates with no errors (alias fences inside
- * legacy templates may warn — warnings never fail `avo check`), and the
+ * legacy templates may warn — warnings never fail `chiltepin check`), and the
  * picker display info covers exactly the template names.
  */
 

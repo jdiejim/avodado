@@ -26,7 +26,7 @@
  * and their first elements carry the fields above. On a missing file the
  * audit silently uses the builtin source (with a "richer audit" hint). On a
  * parse error or shape mismatch the audit falls back to the builtin source
- * and reports one notice that names the reason. `avo audit` never fails
+ * and reports one notice that names the reason. `chiltepin audit` never fails
  * because graph.json is bad.
  */
 

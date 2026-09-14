@@ -19,7 +19,7 @@
  * type name; prose shows its first ~40 characters.
  */
 
-import { parseDocument, BLOCK_LABELS, type BlockType, type Segment } from '@avodado/core';
+import { parseDocument, BLOCK_LABELS, type BlockType, type Segment } from 'chiltepin-core';
 
 /** What happened to one segment between the saved baseline and now. */
 export interface ChangeItem {

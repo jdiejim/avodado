@@ -1,23 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { isChromiumAvailable, toPdf } from '../io/pdf.js';
 
 const roadmap = (): string =>
-  readFileSync(resolve(import.meta.dirname, '../../../../resources/avodado-roadmap.md'), 'utf8');
+  readFileSync(resolve(import.meta.dirname, '../../../../resources/chiltepin-roadmap.md'), 'utf8');
 
 const chromiumAvailable = await isChromiumAvailable();
 if (!chromiumAvailable) {
   console.warn(
-    '[skip] avo pdf tests — Playwright Chromium not installed. ' +
+    '[skip] chiltepin pdf tests — Playwright Chromium not installed. ' +
       'Run: npx playwright install chromium',
   );
 }
 
 describe.skipIf(!chromiumAvailable)('toPdf', () => {
   it('produces a PDF byte buffer with the %PDF- magic header', async () => {
-    const doc = parseDocument(roadmap(), 'avodado-roadmap');
+    const doc = parseDocument(roadmap(), 'chiltepin-roadmap');
     const bytes = await toPdf(doc);
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(bytes.byteLength).toBeGreaterThan(1024);

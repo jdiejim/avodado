@@ -7,7 +7,7 @@
  */
 
 import { create } from 'zustand';
-import { insertBlock } from '@avodado/core';
+import { insertBlock } from 'chiltepin-core';
 import { useStudio } from '../state/store.js';
 import { onTourAction } from './bus.js';
 import {
@@ -19,7 +19,7 @@ import {
   type TourState,
 } from './script.js';
 
-const TOUR_KEY = 'avodado-studio-tour';
+const TOUR_KEY = 'chiltepin-studio-tour';
 
 function markTour(value: 'done' | 'dismissed'): void {
   try {

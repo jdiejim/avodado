@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeBlockSchema, type FieldNode } from '@avodado/core';
+import { describeBlockSchema, type FieldNode } from 'chiltepin-core';
 import { coerceValue } from '../direct/paths.js';
 import { resolveControl } from './fieldKind.js';
 import {

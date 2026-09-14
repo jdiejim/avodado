@@ -1,5 +1,5 @@
 ```meta
-title: Avodado — all blocks
+title: Chiltepin — all blocks
 subtitle: One rendered example of every block type the renderer supports.
 tag: DEMO · v1
 ```
@@ -105,12 +105,12 @@ items:
 ```tree
 title: Repo layout
 nodes:
-  - { id: root, label: avodado }
+  - { id: root, label: chiltepin }
   - { id: packages, parent: root, label: packages }
-  - { id: core, parent: packages, label: '@avodado/core', note: pure model }
-  - { id: render, parent: packages, label: '@avodado/render', note: HTML out }
-  - { id: studio, parent: packages, label: '@avodado/studio', note: visual editor }
-  - { id: cli, parent: packages, label: '@avodado/cli', note: avo binary }
+  - { id: core, parent: packages, label: 'chiltepin-core', note: pure model }
+  - { id: render, parent: packages, label: 'chiltepin-render', note: HTML out }
+  - { id: studio, parent: packages, label: 'chiltepin-studio', note: visual editor }
+  - { id: cli, parent: packages, label: 'chiltepin', note: chiltepin binary }
   - { id: resources, parent: root, label: resources, note: fixtures + reference renderer }
   - { id: docs, parent: root, label: docs, note: the documents }
 ```
@@ -1053,7 +1053,7 @@ rows:
 title: Why documentation-as-code
 style: accent
 items:
-  - { lead: Typed blocks, text: "76 strict schemas, validated by avo check.", accent: blue }
+  - { lead: Typed blocks, text: "76 strict schemas, validated by chiltepin check.", accent: blue }
   - { lead: One source of truth, text: Diagrams live in the .md file., accent: green }
   - { lead: Many outputs, text: "HTML, slides, and PDF from one file.", accent: amber }
 ```
@@ -1368,9 +1368,9 @@ rows:
 ## Figure
 
 ```figure
-src: https://avodado.dev/logo.png
-alt: The Avodado logo
-caption: "The Avodado logo, capped at 420 px."
+src: https://chiltepin.dev/logo.png
+alt: The Chiltepin logo
+caption: "The Chiltepin logo, capped at 420 px."
 width: 420
 ```
 
@@ -1438,9 +1438,9 @@ items:
     a: "In the .md files on disk — they are the single source of truth. Every diagram on this page is a typed YAML block."
     open: true
   - q: Do diagrams need a drawing tool?
-    a: "No. Change the YAML and rerun avo html — the SVG updates."
+    a: "No. Change the YAML and rerun chiltepin html — the SVG updates."
   - q: How do I validate a doc?
-    a: Run avo check and fix every diagnostic it reports.
+    a: Run chiltepin check and fix every diagnostic it reports.
 ```
 
 ## Capacity math
@@ -1491,7 +1491,7 @@ session: |
 ## SWOT
 
 ```swot
-title: Taking Avodado to the enterprise
+title: Taking Chiltepin to the enterprise
 description: Where we stand before the enterprise push.
 strengths:
   - Docs-as-code fits existing review workflows
@@ -1622,7 +1622,7 @@ releases:
     date: 2026-06-24
     tag: breaking
     items:
-      - { type: changed, text: "Config moved from .avodadorc to avodado.config.json" }
+      - { type: changed, text: "Config moved from .chiltepinrc to chiltepin.config.json" }
       - { type: removed, text: Dropped Node 18 support }
       - { type: security, text: Bumped yaml to patch CVE-2026-1234 }
   - version: 1.4.0
@@ -1635,7 +1635,7 @@ releases:
     date: 2026-04-03
     tag: patch
     items:
-      - { type: fixed, text: Windows path handling in avo check }
+      - { type: fixed, text: Windows path handling in chiltepin check }
 ```
 
 ## Team
@@ -1646,7 +1646,7 @@ members:
   - { name: Ana Ruiz, role: Tech lead, focus: Rendering pipeline, accent: navy }
   - { name: Sam Okafor, role: Backend, focus: Sync + integrations, accent: teal }
   - { name: Lena Fischer, role: Design, focus: Themes and house style, accent: purple }
-  - { name: Tom Alvarez, role: CLI, focus: avo commands and DX, accent: green }
+  - { name: Tom Alvarez, role: CLI, focus: chiltepin commands and DX, accent: green }
   - { name: DevRel, initials: DR, role: Advocacy, focus: Docs and community, accent: amber }
 ```
 
@@ -1865,7 +1865,7 @@ items:
 
 ## Quality, UML, ML, and deck shapes
 
-Thirteen blocks added in the September coverage sweep. Each is the example `avo block <type>` prints.
+Thirteen blocks added in the September coverage sweep. Each is the example `chiltepin block <type>` prints.
 
 ### Audit findings
 
@@ -2118,7 +2118,7 @@ items:
 ## Older spellings still work
 
 Twelve old block types merged into canonical blocks; their fence tags remain
-permanent aliases. They parse, validate, and render as before — `avo check`
+permanent aliases. They parse, validate, and render as before — `chiltepin check`
 notes the mapping with a `W_ALIAS_TYPE` warning. The four fences below use the
 old spellings on purpose:
 

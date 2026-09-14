@@ -1,7 +1,7 @@
 /**
- * `avo serve` — zero-dependency local dev server for the docs site.
+ * `chiltepin serve` — zero-dependency local dev server for the docs site.
  *
- * Serves the same site as `avo build`, but from memory: `node:http` routes
+ * Serves the same site as `chiltepin build`, but from memory: `node:http` routes
  * `/` → index, `/<slug>.html` → page, and `/__events` → a Server-Sent-Events
  * stream that pushes `reload` after every rebuild (each served page carries a
  * tiny injected `EventSource` script — serve only, never in build output).
@@ -9,7 +9,7 @@
  * Watching (shared helpers in `../io/watch.js`): recursive `fs.watch` on the
  * docs dir with a per-directory fallback for platforms without recursive
  * watch, plus a non-recursive watch on the project root for
- * `avodado.config.*`. Rebuilds are debounced
+ * `chiltepin.config.*`. Rebuilds are debounced
  * (150 ms) and never crash the server — a bad save shows an in-page
  * diagnostics banner instead.
  *
@@ -20,8 +20,8 @@
 import { createServer, type ServerResponse } from 'node:http';
 import { resolve } from 'node:path';
 import open from 'open';
-import { parseDocument, type Diagnostic } from '@avodado/core';
-import { escapeHtml } from '@avodado/render';
+import { parseDocument, type Diagnostic } from 'chiltepin-core';
+import { escapeHtml } from 'chiltepin-render';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
 import { createDocsWatcher, createConfigWatcher } from '../io/watch.js';
@@ -62,11 +62,11 @@ function bannerHtml(diagnostics: readonly Diagnostic[], fatal: string | undefine
   const rows = shown.map((t) => `<div>${escapeHtml(t)}</div>`).join('');
   const moreRow = more > 0 ? `<div style="opacity:.75">…and ${more} more</div>` : '';
   return (
-    `<div id="avo-diagnostics" style="position:fixed;left:0;right:0;bottom:0;z-index:2147483647;` +
+    `<div id="chiltepin-diagnostics" style="position:fixed;left:0;right:0;bottom:0;z-index:2147483647;` +
     `background:${bg};color:#fff;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;` +
     `padding:10px 18px;box-shadow:0 -2px 10px rgba(0,0,0,.3);white-space:pre-wrap;">` +
     `<div style="font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10px;` +
-    `opacity:.85;margin-bottom:4px;">avodado — ${isError ? 'errors' : 'warnings'}</div>` +
+    `opacity:.85;margin-bottom:4px;">chiltepin — ${isError ? 'errors' : 'warnings'}</div>` +
     rows +
     moreRow +
     `</div>`

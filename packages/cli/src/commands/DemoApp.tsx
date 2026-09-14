@@ -1,5 +1,5 @@
 /**
- * Interactive family picker for bare `avo demo` in a TTY (Ink). "Everything"
+ * Interactive family picker for bare `chiltepin demo` in a TTY (Ink). "Everything"
  * (the full showcase) comes first, then the 12 block families; `q`/escape
  * cancels without rendering.
  */
@@ -7,7 +7,7 @@
 import React from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
-import { BLOCK_TYPES, BLOCK_FAMILIES as DEMO_FAMILIES, familyBlocks, type BlockFamily as DemoFamily } from '@avodado/core';
+import { BLOCK_TYPES, BLOCK_FAMILIES as DEMO_FAMILIES, familyBlocks, type BlockFamily as DemoFamily } from 'chiltepin-core';
 
 const EVERYTHING = '__all__';
 

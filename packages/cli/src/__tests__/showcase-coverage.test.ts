@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BLOCK_TYPES } from '@avodado/core';
+import { BLOCK_TYPES } from 'chiltepin-core';
 
 const ROOT = join(import.meta.dirname, '../../../..');
 const SHOWCASE = join(ROOT, 'docs/reference/showcase.md');

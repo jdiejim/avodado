@@ -1,13 +1,13 @@
 /**
- * `avo init` — scaffold a new Avodado project in the current directory:
+ * `chiltepin init` — scaffold a new Chiltepin project in the current directory:
  * the config file and two starter docs. Nothing else.
  *
  * The authoring skill is not copied here. It installs into any agent with one
- * command — `npx skills add jdiejim/avodado` — and lives once, in the
- * repository's `skills/avodado/` folder. This module still knows where that
+ * command — `npx skills add jdiejim/chiltepin` — and lives once, in the
+ * repository's `skills/chiltepin/` folder. This module still knows where that
  * folder is (packaged as `templates/skill/`, or the repo copy when running
  * from source) for the two consumers that need the whole skill as one
- * document: `avo skill` and the MCP server's embed.
+ * document: `chiltepin skill` and the MCP server's embed.
  */
 
 import { cp, mkdir, readFile } from 'node:fs/promises';
@@ -17,11 +17,11 @@ import { fileURLToPath } from 'node:url';
 
 /**
  * The skill's reference files, in stitch order (hub first, then the block
- * index, the block families, recipes, and the authoring guidance). `avo skill`
+ * index, the block families, recipes, and the authoring guidance). `chiltepin skill`
  * and the MCP embed concatenate exactly this list; the on-disk folder may
  * carry more (the exemplars), which stay out of the single-file form.
  *
- * This is the one list of skill reference files the CLI stitches for `avo skill`.
+ * This is the one list of skill reference files the CLI stitches for `chiltepin skill`.
  */
 export const SKILL_REFERENCE_FILES: readonly string[] = [
   'reference/blocks/INDEX.md',
@@ -54,9 +54,9 @@ export const SKILL_REFERENCE_FILES: readonly string[] = [
 /** The hub + its references, in stitch order. */
 const SKILL_FILES: readonly string[] = ['SKILL.md', ...SKILL_REFERENCE_FILES];
 
-/** Files `avo init` writes, template-relative = repo-relative. */
+/** Files `chiltepin init` writes, template-relative = repo-relative. */
 const BASE_FILES: readonly string[] = [
-  'avodado.config.json',
+  'chiltepin.config.json',
   'docs/getting-started.md',
   'docs/tutorial.md',
 ];
@@ -77,20 +77,20 @@ export function templatesDir(): string {
     if (parent === dir) break;
     dir = parent;
   }
-  throw new Error(`Could not locate avodado/cli templates directory near ${import.meta.url}`);
+  throw new Error(`Could not locate chiltepin/cli templates directory near ${import.meta.url}`);
 }
 
 /**
  * Resolves the authoring skill folder: the packaged copy (`templates/skill`,
  * written by `scripts/sync-skill.mjs` at build time) or, when running from the
- * repository, the single source at `skills/avodado/`.
+ * repository, the single source at `skills/chiltepin/`.
  */
 export function skillDir(): string {
   // Inside this monorepo (a `pnpm-workspace.yaml` beside `skills/`) the repo
   // copy wins, so an edited skill never hides behind a stale build-time copy.
   let dir = dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 8; i++) {
-    const candidate = join(dir, 'skills', 'avodado');
+    const candidate = join(dir, 'skills', 'chiltepin');
     if (existsSync(join(candidate, 'SKILL.md')) && existsSync(join(dir, 'pnpm-workspace.yaml'))) {
       return candidate;
     }
@@ -100,13 +100,13 @@ export function skillDir(): string {
   }
   const packaged = join(templatesDir(), 'skill');
   if (existsSync(join(packaged, 'SKILL.md'))) return packaged;
-  throw new Error('Could not locate the Avodado skill (templates/skill or skills/avodado)');
+  throw new Error('Could not locate the Chiltepin skill (templates/skill or skills/chiltepin)');
 }
 
 /**
  * Stitches the skill hub + every reference file (in {@link SKILL_REFERENCE_FILES}
  * order) into one self-contained markdown document, for consumers with no
- * filesystem beside the skill: `avo skill` and the MCP server's embed. The
+ * filesystem beside the skill: `chiltepin skill` and the MCP server's embed. The
  * hub's "live beside this file" pointer language is rewritten since the
  * references follow inline.
  */
@@ -130,7 +130,7 @@ export interface InitResult {
 }
 
 /**
- * Scaffolds an Avodado project into `cwd`: the config and the two starter
+ * Scaffolds a Chiltepin project into `cwd`: the config and the two starter
  * docs. Existing files are skipped unless `force: true`. Returns the
  * created/skipped relative paths for reporting.
  */

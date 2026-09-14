@@ -5,7 +5,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { deleteYamlPath, parseDocument, setYamlPath } from '@avodado/core';
+import { deleteYamlPath, parseDocument, setYamlPath } from 'chiltepin-core';
 import { useStudio } from '../state/store.js';
 import { canvasHost, deletePathInSegment, setPathInSegment, setPathsInSegment } from './host.js';
 

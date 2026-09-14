@@ -1,7 +1,7 @@
 /**
  * The top bar's check chips + their anchored results popovers:
  *
- * - {@link CheckChip} (a doc is open) — the live `avo check` of the open doc.
+ * - {@link CheckChip} (a doc is open) — the live `chiltepin check` of the open doc.
  *   The chip shows the error count (or a quiet pass); clicking it opens the
  *   popover: one row per diagnostic (severity border, mono code, message,
  *   line, hint) with "Open field →" jumping to the block and its offending
@@ -102,7 +102,7 @@ export function CheckChip(): JSX.Element {
         className={`stu-checkchip ${errors > 0 ? 'stu-checkchip-err' : 'stu-checkchip-ok'}`}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title={errors > 0 ? `${chipLabel} — click for details` : 'avo check passes — click for details'}
+        title={errors > 0 ? `${chipLabel} — click for details` : 'chiltepin check passes — click for details'}
         onClick={() => setOpen(!open)}
       >
         {errors === 0 && <IconCheck size={10} />}
@@ -115,7 +115,7 @@ export function CheckChip(): JSX.Element {
         <div className="stu-checkpop" role="dialog" aria-label="Check results">
           <span className="stu-checkpop-caret" aria-hidden="true" />
           <header className="stu-checkpop-head">
-            <b>avo check</b>
+            <b>chiltepin check</b>
             {errors > 0 && (
               <span className="stu-checkpop-chip stu-checkpop-chip-err">
                 {errors} error{errors === 1 ? '' : 's'}
@@ -198,7 +198,7 @@ export function HomeCheckChip(): JSX.Element | null {
         title={
           total > 0
             ? `${failing.length} doc${failing.length === 1 ? '' : 's'} failing — click for the list`
-            : 'avo check passes across all docs'
+            : 'chiltepin check passes across all docs'
         }
         onClick={() => setOpen(!open)}
       >
@@ -212,7 +212,7 @@ export function HomeCheckChip(): JSX.Element | null {
         <div className="stu-checkpop" role="dialog" aria-label="Check results, all documents">
           <span className="stu-checkpop-caret" aria-hidden="true" />
           <header className="stu-checkpop-head">
-            <b>avo check</b>
+            <b>chiltepin check</b>
             {total > 0 ? (
               <span className="stu-checkpop-chip stu-checkpop-chip-err">
                 {total} error{total === 1 ? '' : 's'} · {failing.length} doc

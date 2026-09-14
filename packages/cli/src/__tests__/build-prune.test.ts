@@ -1,11 +1,11 @@
 /**
- * W-5 — `avo build` must remove the outputs it no longer generates, and
+ * W-5 — `chiltepin build` must remove the outputs it no longer generates, and
  * nothing else.
  *
  * The rule under test: a build deletes only files the *previous* build recorded
- * in `dist/.avodado-build.json`. A file a user put in the output directory was
+ * in `dist/.chiltepin-build.json`. A file a user put in the output directory was
  * never in that manifest, so it survives; an output directory with no manifest
- * (an older Avodado's `dist/`) is left completely alone.
+ * (an older Chiltepin's `dist/`) is left completely alone.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -18,7 +18,7 @@ import { runBuild } from '../commands/build.js';
 import { MANIFEST_FILE, readManifest } from '../io/manifest.js';
 
 async function project(): Promise<{ root: string; cleanup: () => Promise<void> }> {
-  const root = join(tmpdir(), `avo-prune-${randomBytes(6).toString('hex')}`);
+  const root = join(tmpdir(), `chiltepin-prune-${randomBytes(6).toString('hex')}`);
   await mkdir(join(root, 'docs', 'guides'), { recursive: true });
   await writeFile(join(root, 'docs/keep.md'), '```meta\ntitle: Keep\n```\n');
   await writeFile(join(root, 'docs/goner.md'), '```meta\ntitle: Goner\n```\n');
@@ -26,7 +26,7 @@ async function project(): Promise<{ root: string; cleanup: () => Promise<void> }
   return { root, cleanup: () => rm(root, { recursive: true, force: true }) };
 }
 
-describe('avo build prune', () => {
+describe('chiltepin build prune', () => {
   it('removes the pages of a deleted doc on the next build', async () => {
     const { root, cleanup } = await project();
     try {
@@ -81,7 +81,7 @@ describe('avo build prune', () => {
     }
   });
 
-  it('degrades gracefully on a dist from a pre-manifest Avodado: prunes nothing, says so', async () => {
+  it('degrades gracefully on a dist from a pre-manifest Chiltepin: prunes nothing, says so', async () => {
     const { root, cleanup } = await project();
     try {
       // A dist built by an older version: pages, no manifest.

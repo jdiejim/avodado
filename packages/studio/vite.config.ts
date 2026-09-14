@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 /**
  * One source tree, two builds.
  *
- *   `dist/app` — the default: documents come from `avo studio`'s file bridge.
+ *   `dist/app` — the default: documents come from `chiltepin studio`'s file bridge.
  *   `dist/web` — the hosted studio: documents live in the tab, no server.
  *
  * The `build:web` script sets both variables — `VITE_STUDIO_BACKEND` picks the

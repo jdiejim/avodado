@@ -1,5 +1,5 @@
 /**
- * Build manifest — the record of what `avo build` generated, so the next build
+ * Build manifest — the record of what `chiltepin build` generated, so the next build
  * can remove what it no longer generates.
  *
  * The prune rule: **a build deletes only the files the previous build recorded
@@ -8,7 +8,7 @@
  * never in the manifest, so they survive every build.
  *
  * Degradation: an output directory with no manifest (built by an older
- * Avodado, or by something else entirely) is left completely alone. The build
+ * Chiltepin, or by something else entirely) is left completely alone. The build
  * writes its files, writes a manifest, and reports that it pruned nothing;
  * from the next build on, pruning works.
  */
@@ -17,7 +17,9 @@ import { readFile, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 
 /** File name of the manifest inside the output directory. */
-export const MANIFEST_FILE = '.avodado-build.json';
+export const MANIFEST_FILE = '.chiltepin-build.json';
+/** The pre-rename manifest name — read once so an existing site still prunes. */
+const LEGACY_MANIFEST_FILE = '.avodado-build.json';
 
 /** On-disk shape. `files` are output-relative POSIX paths. */
 interface BuildManifest {
@@ -38,7 +40,11 @@ export async function readManifest(outDir: string): Promise<BuildManifest | unde
   try {
     raw = await readFile(join(outDir, MANIFEST_FILE), 'utf8');
   } catch {
-    return undefined;
+    try {
+      raw = await readFile(join(outDir, LEGACY_MANIFEST_FILE), 'utf8');
+    } catch {
+      return undefined;
+    }
   }
   try {
     const parsed = JSON.parse(raw) as Partial<BuildManifest>;
@@ -58,6 +64,11 @@ export async function writeManifest(
 ): Promise<void> {
   const manifest: BuildManifest = { version: 1, generator, files: [...files].sort() };
   await writeFile(join(outDir, MANIFEST_FILE), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  try {
+    await unlink(join(outDir, LEGACY_MANIFEST_FILE)); // superseded by the file above
+  } catch {
+    /* none there — the common case */
+  }
 }
 
 /** True when `abs` is inside `root` (and is not `root` itself). */

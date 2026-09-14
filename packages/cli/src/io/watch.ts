@@ -1,12 +1,12 @@
 /**
- * Shared file-watching helpers for the long-running commands (`avo serve`,
- * `avo studio`).
+ * Shared file-watching helpers for the long-running commands (`chiltepin serve`,
+ * `chiltepin studio`).
  *
  * {@link createDocsWatcher} watches a docs directory recursively, with a
  * per-directory fallback for platforms without recursive `fs.watch` (one
  * non-recursive watcher per subdirectory, re-walked on {@link DocsWatcher.resync}
  * so new directories get picked up). {@link createConfigWatcher} watches the
- * project root and fires only for `avodado.config.*` files.
+ * project root and fires only for `chiltepin.config.*` files.
  *
  * Watcher errors never propagate — a vanished directory just stops being
  * watched until the next resync.
@@ -126,14 +126,14 @@ export function createDocsWatcher(
 /**
  * Watches the project root (non-recursively, filtering by name so a config
  * file created after startup counts) and fires `onEvent` for every
- * `avodado.config.*` change. Inert (but valid) when `cwd` can't be watched.
+ * `chiltepin.config.*` (or legacy `avodado.config.*`) change. Inert (but valid) when `cwd` can't be watched.
  */
 export function createConfigWatcher(cwd: string, onEvent: () => void): ConfigWatcher {
   let watcher: FSWatcher | undefined;
   if (existsSync(cwd)) {
     try {
       watcher = watch(cwd, (_event, filename) => {
-        if (filename !== null && /^avodado\.config\./.test(filename)) onEvent();
+        if (filename !== null && /^(chiltepin|avodado)\.config\./.test(filename)) onEvent();
       });
       watcher.on('error', () => {
         watcher?.close();

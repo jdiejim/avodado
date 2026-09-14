@@ -21,8 +21,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { FieldNode } from '@avodado/core';
-import { STATUS_COLOR_ALIASES } from '@avodado/core';
+import type { FieldNode } from 'chiltepin-core';
+import { STATUS_COLOR_ALIASES } from 'chiltepin-core';
 import { coerceValue } from '../direct/paths.js';
 import type { RefOption, ResolvedControl } from './fieldKind.js';
 import { filterComboOptions } from './keyboard.js';

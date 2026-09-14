@@ -13,14 +13,14 @@
  *
  * @example
  * ```ts
- * import { parseDocument } from '@avodado/core';
- * import { renderDocument } from '@avodado/render';
+ * import { parseDocument } from 'chiltepin-core';
+ * import { renderDocument } from 'chiltepin-render';
  *
  * const html = renderDocument(parseDocument(md, 'orders'));
  * ```
  */
 
-import type { Document } from '@avodado/core';
+import type { Document } from 'chiltepin-core';
 import { FAVICON_LINK } from './brand.js';
 import { escapeHtml } from './escape.js';
 import { renderDocumentParts, type RenderPartsOptions } from './parts.js';
@@ -39,7 +39,7 @@ export type RenderOptions = RenderPartsOptions;
 /**
  * Renders a document to a standalone HTML page.
  *
- * @param doc - The parsed Avodado document.
+ * @param doc - The parsed Chiltepin document.
  * @param opts - Optional render options (internal variable overrides).
  * @returns A complete HTML string (`<!doctype html>…</html>`).
  */

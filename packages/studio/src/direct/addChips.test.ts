@@ -13,8 +13,8 @@ import {
   describeBlockSchema,
   parseDocument,
   validateDocument,
-} from '@avodado/core';
-import { renderDocument } from '@avodado/render';
+} from 'chiltepin-core';
+import { renderDocument } from 'chiltepin-render';
 import { addColumnSets, columnSpecFor } from './columnOps.js';
 import { setPathsInSegment } from './host.js';
 import { newItemForList, parseBlockPath, resolveFieldAt, singularize, valueAt } from './paths.js';

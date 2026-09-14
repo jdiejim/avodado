@@ -4,11 +4,11 @@
 //   node evals/generate/score.mjs <project-dir> <run-dir>
 //
 // <project-dir>/docs/<id>.md      final docs (what the agent handed off)
-// <run-dir>/first/<id>.md         first drafts, copied before any `avo check`
+// <run-dir>/first/<id>.md         first drafts, copied before any `chiltepin check`
 // <run-dir>/usage.json            { "<id>": { tokens, tools, seconds } }
 //
 // Writes <run-dir>/scores.json and prints a table. Every number comes from
-// the real CLI (`avo check --json`) or the real renderer, never from a guess.
+// the real CLI (`chiltepin check --json`) or the real renderer, never from a guess.
 
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -28,11 +28,11 @@ const render = await import(join(root, 'packages/render/dist/index.js'));
 const cases = YAML.parse(readFileSync(join(here, 'cases.yaml'), 'utf8'));
 const CHROME = new Set(['meta', 'callout', 'prose', 'divider', 'takeaways']);
 
-/** `avo check --json` over one doc in a throwaway project. */
+/** `chiltepin check --json` over one doc in a throwaway project. */
 function checkDoc(md) {
-  const dir = mkdtempSync(join(tmpdir(), 'avo-gen-eval-'));
+  const dir = mkdtempSync(join(tmpdir(), 'chiltepin-gen-eval-'));
   try {
-    writeFileSync(join(dir, 'avodado.config.json'), JSON.stringify({ docsDir: 'docs' }));
+    writeFileSync(join(dir, 'chiltepin.config.json'), JSON.stringify({ docsDir: 'docs' }));
     mkdirSync(join(dir, 'docs'));
     writeFileSync(join(dir, 'docs', 'doc.md'), md);
     let out = '';

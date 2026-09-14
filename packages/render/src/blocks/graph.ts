@@ -11,7 +11,7 @@
  * `current` node. Two or more candidates, or none, means no accent.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
@@ -64,7 +64,7 @@ export function renderGraph(data: BlockDataMap['graph']): string {
     targets.length === 1 ? targets[0]?.id : targets.length === 0 && currents.length === 1 ? currents[0]?.id : undefined;
   const hasChips = nodes.some((n) => n.state !== undefined || n.group !== undefined);
 
-  // Grid metadata for editors (Avodado Studio drag-to-move / drag-to-connect):
+  // Grid metadata for editors (Chiltepin Studio drag-to-move / drag-to-connect):
   // inert attrs mirroring the layout constants plus each node's cell below.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
   let s = `<svg viewBox="0 0 ${width} ${height}" role="img"${gridMeta}><title>Graph</title>`;

@@ -1,7 +1,7 @@
 {
-  "name": "@avodado/studio",
+  "name": "chiltepin-studio",
   "version": "0.15.1",
-  "description": "Avodado Studio — the local, AI-native visual editor for documentation-as-code. Edit Markdown + typed YAML blocks for API docs, architecture & system design, ADRs, and frontend design systems with live preview, browse the built docs site, and present as slides — the .md files on disk stay the single source of truth. Launch with `avo studio`.",
+  "description": "Chiltepin Studio — the local, AI-native visual editor for documentation-as-code. Edit Markdown + typed YAML blocks for API docs, architecture & system design, ADRs, and frontend design systems with live preview, browse the built docs site, and present as slides — the .md files on disk stay the single source of truth. Launch with `chiltepin studio`.",
   "license": "MIT",
   "private": false,
   "type": "module",
@@ -26,8 +26,8 @@
     "dev:web": "VITE_STUDIO_BACKEND=vault vite"
   },
   "devDependencies": {
-    "@avodado/core": "workspace:*",
-    "@avodado/render": "workspace:*",
+    "chiltepin-core": "workspace:*",
+    "chiltepin-render": "workspace:*",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -46,13 +46,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jdiejim/avodado.git",
+    "url": "git+https://github.com/jdiejim/chiltepin.git",
     "directory": "packages/studio"
   },
-  "homepage": "https://avodado.dev",
-  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "homepage": "https://chiltepin.dev",
+  "bugs": "https://github.com/jdiejim/chiltepin/issues",
   "keywords": [
-    "avodado",
+    "chiltepin",
     "studio",
     "documentation",
     "docs-as-code",

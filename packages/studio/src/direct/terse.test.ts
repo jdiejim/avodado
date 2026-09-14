@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseDocument, validateDocument, type Document } from '@avodado/core';
+import { parseDocument, validateDocument, type Document } from 'chiltepin-core';
 import { deletePathInSegment, setPathInSegment, setPathsInSegment } from './host.js';
 import { flattenMenu, isRemoveOp, menuFor, targetFor, type MenuCtx, type Op } from './menu.js';
 

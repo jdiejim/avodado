@@ -1,18 +1,18 @@
 /**
  * On-disk convention lint (`W_DOC_CONVENTION`) — path-based, so it lives in
- * the CLI, not in `@avodado/core`.
+ * the CLI, not in `chiltepin-core`.
  *
  * The convention: docs live under the configured docs root with one level of
  * grouping (`docs/<area>/<doc>.md`), and filenames are kebab-case slugs
  * (lowercase a-z, 0-9, hyphens, `.md`). The slug is the reference prefix
  * (`doc#id`), so names are load-bearing. Files outside the docs root are not
- * checked — checking `resources/` fixtures is a legitimate use of `avo check`.
+ * checked — checking `resources/` fixtures is a legitimate use of `chiltepin check`.
  *
  * Findings are always warnings. No flag escalates them.
  */
 
 import { basename, relative, resolve, sep } from 'node:path';
-import type { Diagnostic } from '@avodado/core';
+import type { Diagnostic } from 'chiltepin-core';
 
 /** Kebab-case doc filename: lowercase a-z, 0-9, single hyphens, `.md`. */
 const KEBAB_FILE = /^[a-z0-9]+(-[a-z0-9]+)*\.md$/;

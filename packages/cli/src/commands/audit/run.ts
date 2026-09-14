@@ -1,5 +1,5 @@
 /**
- * `avo audit [path]` — orchestrates the sources, derives recommendations,
+ * `chiltepin audit [path]` — orchestrates the sources, derives recommendations,
  * and formats the human report. Returns values; the CLI dispatcher owns exit
  * codes and printing. An audit is informational: it exits 0 whenever the
  * path is usable, even when it recommends nothing.
@@ -76,7 +76,7 @@ function languagesLine(languages: Readonly<Record<string, number>>, cap = 6): st
 
 /**
  * Formats the human report: stats line, recommendations table, next-step
- * hint. `plain` drops color (non-TTY / AVO_PLAIN / tests).
+ * hint. `plain` drops color (non-TTY / CHILTEPIN_PLAIN / tests).
  */
 export function formatAudit(report: AuditReport, plain = false): string {
   const dim = (s: string): string => (plain ? s : pc.dim(s));
@@ -119,7 +119,7 @@ export function formatAudit(report: AuditReport, plain = false): string {
     }
   }
   lines.push('');
-  lines.push(`  ${dim('Next:')} run ${cyan('/avo audit')} in Claude Code to generate the docs you pick.`);
+  lines.push(`  ${dim('Next:')} run ${cyan('/chiltepin audit')} in Claude Code to generate the docs you pick.`);
   if (report.notice !== undefined) lines.push(`  ${dim(`note: ${report.notice}`)}`);
   lines.push('');
   return lines.join('\n');

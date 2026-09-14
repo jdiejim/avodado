@@ -1,8 +1,8 @@
 /**
  * The block catalog — per-block starter templates, one-line descriptions, and
  * the 12-way family grouping. Pure data (compile-time exhaustive
- * `Record<BlockType, …>` maps), shared by the CLI (`avo new`, `avo block`,
- * `avo demo`) and any editing UI.
+ * `Record<BlockType, …>` maps), shared by the CLI (`chiltepin new`, `chiltepin block`,
+ * `chiltepin demo`) and any editing UI.
  */
 
 import { BLOCK_TYPES, type BlockType } from '../types.js';
@@ -90,7 +90,7 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
   spec:
     '```spec\ntitle: Per-site role groups\naccent: green\nrows:\n  - { label: Groups, value: "SiteN-Users (read) + SiteN-<Persona> per staffed plant." }\n  - { label: Roles, value: "Each group reads as (site, role); the token carries the full scope." }\n  - { label: Resolution, steps: [Decode token, "Read (site, role)", Check matrix] }\n  - { label: Cost, value: "Up to Sites x Roles groups; adding a role multiplies them." }\n```\n',
   list:
-    '```list\ntitle: What you get\nstyle: accent\nitems:\n  - { lead: Typed blocks, text: "76 strict schemas, validated by avo check.", accent: blue }\n  - { lead: One source of truth, text: Diagrams live in the .md file., accent: green }\n  - { lead: Many outputs, text: "HTML, slides, and PDF from one file.", accent: amber }\n```\n',
+    '```list\ntitle: What you get\nstyle: accent\nitems:\n  - { lead: Typed blocks, text: "76 strict schemas, validated by chiltepin check.", accent: blue }\n  - { lead: One source of truth, text: Diagrams live in the .md file., accent: green }\n  - { lead: Many outputs, text: "HTML, slides, and PDF from one file.", accent: amber }\n```\n',
   stories:
     '```stories\ntitle: Backlog\nitems:\n  - { id: US-1, title: One-step checkout, role: shopper, want: pay for my cart in one step, soThat: I finish faster, priority: High, points: 5, open: true, criteria: [{ given: I have items, when: I submit valid payment, then: an order is created }] }\n  - { id: US-2, title: Save payment method, role: returning shopper, want: store a card, soThat: I skip re-entry, priority: Med, points: 3 }\n```\n',
   pattern:
@@ -104,7 +104,7 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
   steps:
     '```steps\ntitle: Deploy a hotfix\nitems:\n  - title: Branch from main\n    body: Hotfixes always branch from the latest main.\n    code: git checkout -b hotfix/fix-retry main\n    lang: bash\n  - title: Ship the fix\n    body: Commit and push; CI runs the full suite.\n    code: git push -u origin hotfix/fix-retry\n    lang: bash\n    note: CI must be green before the next step.\n  - title: Tag and deploy\n    code: git tag v1.4.1 && git push --tags\n    lang: bash\n```\n',
   faq:
-    '```faq\ntitle: Common questions\nitems:\n  - q: Where does the content live?\n    a: "In the .md files on disk — they are the single source of truth."\n    open: true\n  - q: Do diagrams need a drawing tool?\n    a: "No. Diagrams are typed YAML blocks; the renderer draws the SVG."\n  - q: How do I validate a doc?\n    a: Run avo check and fix every diagnostic it reports.\n```\n',
+    '```faq\ntitle: Common questions\nitems:\n  - q: Where does the content live?\n    a: "In the .md files on disk — they are the single source of truth."\n    open: true\n  - q: Do diagrams need a drawing tool?\n    a: "No. Diagrams are typed YAML blocks; the renderer draws the SVG."\n  - q: How do I validate a doc?\n    a: Run chiltepin check and fix every diagnostic it reports.\n```\n',
   envelope:
     '```envelope\ntitle: Write-path capacity\nassumptions:\n  - { label: Daily active users, value: 5M }\n  - { label: Writes / user / day, value: "4" }\nsteps:\n  - { label: Writes per day, calc: "5M × 4", result: 20M/day }\n  - { label: Write QPS, calc: "20M / 86,400 s", result: "≈ 230 rps" }\n  - { label: Peak QPS, calc: "230 × 3 (peak factor)", result: "≈ 700 rps" }\nresult: { label: Provision for, value: "~1,400 rps (2× peak headroom)" }\n```\n',
   slo:
@@ -116,7 +116,7 @@ export const BLOCK_TEMPLATES: Record<BlockType, string> = {
   persona:
     '```persona\ntitle: Who we build for\npersonas:\n  - name: Maya Chen\n    role: Staff engineer\n    quote: I want the diagram in the PR diff, not in a wiki.\n    goals: [Docs that live with the code, Reviewable architecture changes]\n    frustrations: [Stale wiki pages, Screenshots of whiteboards]\n    tools: [VS Code, GitHub]\n    accent: blue\n  - name: Priya Patel\n    role: Engineering manager\n    quote: Every reorg breaks our onboarding docs.\n    goals: [One source of truth per system]\n    frustrations: ["Docs no one owns"]\n    tools: [Linear, Notion]\n    accent: teal\n```\n',
   changelog:
-    '```changelog\ntitle: Release history\nreleases:\n  - version: 2.0.0\n    date: 2026-06-24\n    tag: breaking\n    items:\n      - { type: changed, text: "Config moved from .rc to avodado.config.json" }\n      - { type: removed, text: Dropped Node 18 support }\n  - version: 1.4.0\n    date: 2026-05-12\n    tag: minor\n    items:\n      - { type: added, text: Dark theme }\n      - { type: fixed, text: Slide overflow on long tables }\n```\n',
+    '```changelog\ntitle: Release history\nreleases:\n  - version: 2.0.0\n    date: 2026-06-24\n    tag: breaking\n    items:\n      - { type: changed, text: "Config moved from .rc to chiltepin.config.json" }\n      - { type: removed, text: Dropped Node 18 support }\n  - version: 1.4.0\n    date: 2026-05-12\n    tag: minor\n    items:\n      - { type: added, text: Dark theme }\n      - { type: fixed, text: Slide overflow on long tables }\n```\n',
   team:
     '```team\ntitle: Who owns what\nmembers:\n  - { name: Ana Ruiz, role: Tech lead, focus: Rendering pipeline, accent: navy }\n  - { name: Sam Okafor, role: Backend, focus: Sync + integrations, accent: teal }\n  - { name: Lena Fischer, role: Design, focus: Themes and house style, accent: purple }\n```\n',
   heatmap:
@@ -240,7 +240,7 @@ export function templateBody(type: BlockType): string {
 
 /**
  * A block family — the same 12-way split the skill's `reference/blocks/`
- * folder uses, so `avo block` grouping and `avo demo <family>` line up with
+ * folder uses, so `chiltepin block` grouping and `chiltepin demo <family>` line up with
  * the family reference files an agent reads.
  */
 export type BlockFamily =

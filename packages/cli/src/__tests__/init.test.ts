@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { parseDocument, validateDocument, type Diagnostic } from '@avodado/core';
+import { parseDocument, validateDocument, type Diagnostic } from 'chiltepin-core';
 import {
   runInit,
   skillDir,
@@ -14,7 +14,7 @@ import {
 } from '../commands/init.js';
 
 async function tempDir(): Promise<{ root: string; cleanup: () => Promise<void> }> {
-  const root = join(tmpdir(), `avo-init-${randomBytes(6).toString('hex')}`);
+  const root = join(tmpdir(), `chiltepin-init-${randomBytes(6).toString('hex')}`);
   await mkdir(root, { recursive: true });
   return { root, cleanup: () => rm(root, { recursive: true, force: true }) };
 }
@@ -29,16 +29,16 @@ describe('runInit', () => {
     try {
       const result = await runInit({ cwd: root });
       expect(result.created).toEqual([
-        'avodado.config.json',
+        'chiltepin.config.json',
         'docs/getting-started.md',
         'docs/tutorial.md',
       ]);
       expect(result.skipped).toEqual([]);
       // No skill copy, no adapters — the skill installs through `npx skills add`.
-      expect(existsSync(join(root, '.avodado'))).toBe(false);
+      expect(existsSync(join(root, '.chiltepin'))).toBe(false);
       expect(existsSync(join(root, '.claude'))).toBe(false);
       expect(existsSync(join(root, 'CLAUDE.md'))).toBe(false);
-      const config = await readFile(join(root, 'avodado.config.json'), 'utf8');
+      const config = await readFile(join(root, 'chiltepin.config.json'), 'utf8');
       expect(JSON.parse(config)).toMatchObject({ docsDir: 'docs', outDir: 'dist' });
     } finally {
       await cleanup();
@@ -62,14 +62,14 @@ describe('runInit', () => {
   it('skips existing files unless --force', async () => {
     const { root, cleanup } = await tempDir();
     try {
-      await writeFile(join(root, 'avodado.config.json'), '{ "docsDir": "d" }\n');
+      await writeFile(join(root, 'chiltepin.config.json'), '{ "docsDir": "d" }\n');
       const first = await runInit({ cwd: root });
-      expect(first.skipped).toEqual(['avodado.config.json']);
+      expect(first.skipped).toEqual(['chiltepin.config.json']);
       expect(first.created).toHaveLength(2);
-      expect(await readFile(join(root, 'avodado.config.json'), 'utf8')).toContain('"d"');
+      expect(await readFile(join(root, 'chiltepin.config.json'), 'utf8')).toContain('"d"');
       const forced = await runInit({ cwd: root, force: true });
       expect(forced.created).toHaveLength(3);
-      expect(await readFile(join(root, 'avodado.config.json'), 'utf8')).toContain('"docs"');
+      expect(await readFile(join(root, 'chiltepin.config.json'), 'utf8')).toContain('"docs"');
     } finally {
       await cleanup();
     }
@@ -83,20 +83,20 @@ describe('the skill folder', () => {
     for (const f of SKILL_REFERENCE_FILES) {
       expect(existsSync(join(dir, f)), `missing ${f}`).toBe(true);
     }
-    // No hand-written contract: the CLI (`avo block`) is the reference.
+    // No hand-written contract: the CLI (`chiltepin block`) is the reference.
     expect(existsSync(join(dir, 'reference/blocks/contract.md'))).toBe(false);
   });
 
   it('templatesDir carries no skill copy in the repo (it is synced at build time)', () => {
     // The packaged copy is gitignored; from source, skillDir() falls back to
-    // skills/avodado. Either way the resolver must land on a SKILL.md.
+    // skills/chiltepin. Either way the resolver must land on a SKILL.md.
     expect(existsSync(join(skillDir(), 'SKILL.md'))).toBe(true);
     expect(existsSync(templatesDir())).toBe(true);
   });
 
   it('stitchSkill() joins the hub and the references, without the exemplars', async () => {
     const md = await stitchSkill();
-    expect(md.startsWith('---\nname: avodado')).toBe(true);
+    expect(md.startsWith('---\nname: chiltepin')).toBe(true);
     expect(md).toContain('are included in full below — read them on demand');
     expect(md).not.toContain('live beside this file — read them on demand');
     for (const f of SKILL_REFERENCE_FILES) {

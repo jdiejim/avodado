@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { renderHarvey } from '../blocks/harvey.js';
 import { renderScqa } from '../blocks/scqa.js';
 import { toSlides } from '../deck.js';

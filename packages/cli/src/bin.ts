@@ -1,5 +1,5 @@
 /**
- * `avo` CLI entry point. Tsup adds the `#!/usr/bin/env node` shebang at build
+ * `chiltepin` CLI entry point. Tsup adds the `#!/usr/bin/env node` shebang at build
  * time; this file is the JS that runs after.
  */
 
@@ -8,7 +8,7 @@ import { main } from './app.js';
 /**
  * Resolves once the stream's userspace buffer is flushed to the OS. Without this,
  * `process.exit()` can terminate before a large piped write lands — truncating
- * output at the pipe buffer (e.g. `avo skill | pbcopy` cut off at 64 KiB).
+ * output at the pipe buffer (e.g. `chiltepin skill | pbcopy` cut off at 64 KiB).
  */
 function flush(stream: NodeJS.WriteStream): Promise<void> {
   if (stream.writableLength === 0) return Promise.resolve();

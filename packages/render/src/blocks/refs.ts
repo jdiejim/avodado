@@ -2,7 +2,7 @@
  * Shared helper for reference-bearing link chips (`userstory` + `stories`).
  *
  * A ref is `#id` or `doc#id`. Block ids are repo-global unique, so `href="#id"`
- * is already correct within one document; `avo build` rewrites cross-doc hrefs
+ * is already correct within one document; `chiltepin build` rewrites cross-doc hrefs
  * by post-processing the emitted `data-ref` attribute.
  */
 

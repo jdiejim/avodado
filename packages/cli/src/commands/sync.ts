@@ -1,11 +1,11 @@
 /**
- * `avo sync` — import external sources into Avodado documents.
+ * `chiltepin sync` — import external sources into Chiltepin documents.
  *
- * `avo sync openapi` generates a doc from an OpenAPI spec (or drift-checks an
- * existing one); `avo sync csv` turns a CSV into a ready-to-insert block
- * fence, or a minimal doc with `--out`; `avo sync sql | dbml | prisma` turn
+ * `chiltepin sync openapi` generates a doc from an OpenAPI spec (or drift-checks an
+ * existing one); `chiltepin sync csv` turns a CSV into a ready-to-insert block
+ * fence, or a minimal doc with `--out`; `chiltepin sync sql | dbml | prisma` turn
  * a database schema into an `erd` fence the same way. All build on the pure
- * importers in `@avodado/core` (`core/src/import/`); this module only does
+ * importers in `chiltepin-core` (`core/src/import/`); this module only does
  * the I/O.
  */
 
@@ -26,7 +26,7 @@ import {
   type CsvDelimiter,
   type CsvImportResult,
   type ImportDiagnostic,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import { runCheck, type CheckResult } from './check.js';
 import { overwriteRefusal } from '../io/write.js';
 
@@ -45,7 +45,7 @@ interface SyncOpenApiOptions {
   readonly force?: boolean;
 }
 
-/** Result of `avo sync openapi`. */
+/** Result of `chiltepin sync openapi`. */
 interface SyncOpenApiResult {
   readonly exitCode: 0 | 1 | 2;
   /** A short, plain-text summary suitable for logging. */
@@ -60,16 +60,16 @@ function slugFromPath(path: string): string {
 }
 
 /**
- * Generates an Avodado doc from an OpenAPI spec — either writing it to disk,
+ * Generates a Chiltepin doc from an OpenAPI spec — either writing it to disk,
  * or comparing the in-memory result against an existing doc on disk and
  * reporting drift.
  */
 export async function runSyncOpenApi(opts: SyncOpenApiOptions): Promise<SyncOpenApiResult> {
   if (opts.out === undefined && opts.check === undefined) {
-    return { exitCode: 2, message: 'avo sync openapi: must specify --out <path> or --check <path>' };
+    return { exitCode: 2, message: 'chiltepin sync openapi: must specify --out <path> or --check <path>' };
   }
   if (opts.out !== undefined && opts.check !== undefined) {
-    return { exitCode: 2, message: 'avo sync openapi: --out and --check are mutually exclusive' };
+    return { exitCode: 2, message: 'chiltepin sync openapi: --out and --check are mutually exclusive' };
   }
 
   const specAbs = resolve(opts.cwd, opts.spec);
@@ -146,9 +146,9 @@ function simpleDiff(a: string, b: string): string {
   return out.join('\n');
 }
 
-// ─── avo sync csv ────────────────────────────────────────────────────────────
+// ─── chiltepin sync csv ────────────────────────────────────────────────────────────
 
-/** The block kinds `avo sync csv` can target. */
+/** The block kinds `chiltepin sync csv` can target. */
 export type CsvBlockKind = 'table' | 'statustable' | 'chart';
 
 /** Inputs for {@link runSyncCsv}. */
@@ -168,7 +168,7 @@ interface SyncCsvOptions {
   readonly force?: boolean;
 }
 
-/** Result of `avo sync csv`. */
+/** Result of `chiltepin sync csv`. */
 interface SyncCsvResult {
   readonly exitCode: 0 | 1 | 2;
   /** The block kind that was produced (or attempted). */
@@ -183,13 +183,13 @@ interface SyncCsvResult {
   readonly warnings: readonly string[];
   /** Fatal message when `exitCode` ≠ 0. */
   readonly message?: string;
-  /** `avo check` result for the written doc (write mode only). */
+  /** `chiltepin check` result for the written doc (write mode only). */
   readonly check?: CheckResult;
 }
 
-// ─── avo sync sql | dbml | prisma ────────────────────────────────────────────
+// ─── chiltepin sync sql | dbml | prisma ────────────────────────────────────────────
 
-/** The schema dialects `avo sync` reads into an `erd` block. */
+/** The schema dialects `chiltepin sync` reads into an `erd` block. */
 export type SchemaDialect = 'sql' | 'dbml' | 'prisma';
 
 /** Inputs for {@link runSyncSchema}. */
@@ -208,7 +208,7 @@ interface SyncSchemaOptions {
   readonly force?: boolean;
 }
 
-/** Result of `avo sync sql | dbml | prisma`. */
+/** Result of `chiltepin sync sql | dbml | prisma`. */
 interface SyncSchemaResult {
   readonly exitCode: 0 | 1 | 2;
   /** The ready-to-paste ` ```erd ` fence (stdout mode) — trailing newline included. */
@@ -220,7 +220,7 @@ interface SyncSchemaResult {
   readonly relations: number;
   /** Fatal message when `exitCode` ≠ 0. */
   readonly message?: string;
-  /** `avo check` result for the written doc (write mode only). */
+  /** `chiltepin check` result for the written doc (write mode only). */
   readonly check?: CheckResult;
 }
 
@@ -235,7 +235,7 @@ function idFromFile(file: string): string {
 
 /**
  * Converts a SQL DDL, DBML or Prisma schema file to an `erd` fence (stdout
- * mode) or a minimal doc (`--out` mode, validated with `avo check` after
+ * mode) or a minimal doc (`--out` mode, validated with `chiltepin check` after
  * writing). A line the dialect subset cannot read is exit 1 with the line.
  */
 export async function runSyncSchema(opts: SyncSchemaOptions): Promise<SyncSchemaResult> {
@@ -283,7 +283,7 @@ function parseDelimiter(raw: string | undefined): CsvDelimiter | undefined | nul
   return null; // unrecognised
 }
 
-/** `sales-q1.csv` → `Sales q1` — the same prettifying `avo studio` uses for new docs. */
+/** `sales-q1.csv` → `Sales q1` — the same prettifying `chiltepin studio` uses for new docs. */
 function titleFromFile(file: string): string {
   const stem = basename(file, extname(file));
   const spaced = stem.replace(/[-_]+/g, ' ').trim();
@@ -297,7 +297,7 @@ const errorMessages = (diags: readonly ImportDiagnostic[]): string[] =>
 
 /**
  * Converts a CSV file to a block fence (stdout mode) or a minimal doc
- * (`--out` mode, validated with `avo check` after writing).
+ * (`--out` mode, validated with `chiltepin check` after writing).
  *
  * Block choice: `--block` runs that converter strictly (a CSV that can't take
  * the shape is exit 1); omitted, `suggestCsvImport` picks and its reason is
@@ -312,7 +312,7 @@ export async function runSyncCsv(opts: SyncCsvOptions): Promise<SyncCsvResult> {
       exitCode: 2,
       block: fallback,
       warnings: [],
-      message: `avo sync csv: unknown delimiter ${JSON.stringify(opts.delimiter)} — use "," ";" or "tab"`,
+      message: `chiltepin sync csv: unknown delimiter ${JSON.stringify(opts.delimiter)} — use "," ";" or "tab"`,
     };
   }
 

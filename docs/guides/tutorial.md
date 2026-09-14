@@ -1,6 +1,6 @@
 ```meta
-title: The Avodado tutorial
-subtitle: A deck-first tour of the full feature set — render it with `avo slides docs/tutorial.md`.
+title: The Chiltepin tutorial
+subtitle: A deck-first tour of the full feature set — render it with `chiltepin slides docs/tutorial.md`.
 tag: TUTORIAL · FULL TOUR
 ```
 
@@ -11,11 +11,11 @@ vocabulary — architecture, data, process, planning, RBAC, and narrative — pl
 cross-references and how slides themselves work.
 
 ```drivers
-title: The four things Avodado gives you
+title: The four things Chiltepin gives you
 items:
   - { title: One source of truth, body: "Diagrams live in the .md file, not a separate tool.", tag: "WHAT", icon: doc, accent: blue }
   - { title: Typed blocks, body: "107 block types with strict schemas.", tag: "HOW", icon: grid, accent: green }
-  - { title: Validated, body: "avo check gates every change.", tag: "WHY", icon: check, accent: purple }
+  - { title: Validated, body: "chiltepin check gates every change.", tag: "WHY", icon: check, accent: purple }
   - { title: Many outputs, body: "HTML, slides, and PDF from one file.", tag: "WHERE", icon: layers, accent: amber }
 ```
 
@@ -30,8 +30,8 @@ current:
   label: Prose-only docs
   items: [Diagrams rot in a separate tool, Nothing validates them, Copy-paste drift]
 target:
-  label: Avodado
-  items: [Structure lives in the file, avo check gates every change, One source of truth]
+  label: Chiltepin
+  items: [Structure lives in the file, chiltepin check gates every change, One source of truth]
 note: The .md on disk is always the truth.
 ```
 
@@ -45,7 +45,7 @@ attribution: The one rule
 ```callout
 tone: tip
 title: Definition of done
-body: "A change isn't finished until `avo check` passes — schemas, references, and duplicate ids all green."
+body: "A change isn't finished until `chiltepin check` passes — schemas, references, and duplicate ids all green."
 ```
 
 ## A block = type + YAML
@@ -70,15 +70,15 @@ Start a system doc with who uses it and what it touches — that's a `c4` contex
 diagram.
 
 ```c4
-title: Avodado in context
+title: Chiltepin in context
 level: context
 nodes:
   - { id: author, col: 1, row: 1, kind: person, name: Author, desc: Writes docs. }
-  - { id: avo, col: 2, row: 1, kind: system, name: Avodado }
+  - { id: chiltepin, col: 2, row: 1, kind: system, name: Chiltepin }
   - { id: ci, col: 3, row: 1, kind: external, name: CI }
 edges:
-  - { from: author, to: avo, label: edits .md }
-  - { from: avo, to: ci, label: "avo check" }
+  - { from: author, to: chiltepin, label: edits .md }
+  - { from: chiltepin, to: ci, label: "chiltepin check" }
 ```
 
 ## The build pipeline
@@ -90,7 +90,7 @@ bands.
 ```block
 preset: infra
 title: Markdown in, many outputs out
-systemLabel: "@avodado/*"
+systemLabel: "@chiltepin/*"
 layers:
   - { label: Author }
   - { label: Core }
@@ -119,11 +119,11 @@ id: seq-tour
 title: Validate a document
 endpoint: { method: POST, path: /check }
 actors:
-  - { id: CLI, name: avo CLI }
-  - { id: Core, name: "@avo/core" }
+  - { id: CLI, name: chiltepin CLI }
+  - { id: Core, name: "@chiltepin/core" }
   - { id: User, name: Terminal }
 messages:
-  - User -> CLI: avo check
+  - User -> CLI: chiltepin check
   - CLI -> Core: parse + validate
   - Core --> CLI: diagnostics
   - CLI --> User: OK / errors
@@ -143,7 +143,7 @@ processes).
 title: Does it pass?
 nodes:
   - { id: start, col: 1, row: 1, kind: start, label: Edit }
-  - { id: check, col: 2, row: 1, kind: decision, label: avo check? }
+  - { id: check, col: 2, row: 1, kind: decision, label: chiltepin check? }
   - { id: ship, col: 3, row: 1, kind: end, label: Ship }
   - { id: fix, col: 2, row: 2, kind: process, label: Fix it }
 edges:
@@ -168,7 +168,7 @@ states:
   - { id: end, col: 5, row: 1, kind: terminal }
 transitions:
   - { from: s0, to: draft, event: create }
-  - { from: draft, to: review, event: "avo check" }
+  - { from: draft, to: review, event: "chiltepin check" }
   - { from: review, to: pub, event: merge }
   - { from: pub, to: end, event: archive }
 ```
@@ -203,9 +203,9 @@ for the backend controller → service → repository chain.
 
 ```felogic
 variant: be
-title: How avo html works
+title: How chiltepin html works
 nodes:
-  - { id: cmd, col: 1, row: 1, kind: controller, name: renderCmd, note: "avo html" }
+  - { id: cmd, col: 1, row: 1, kind: controller, name: renderCmd, note: "chiltepin html" }
   - { id: svc, col: 2, row: 1, kind: service, name: Renderer, note: blocks → HTML }
   - { id: reg, col: 1, row: 2, kind: repository, name: BlockRegistry, note: lookup }
   - { id: theme, col: 2, row: 2, kind: gateway, name: ThemeLoader, note: CSS vars }
@@ -226,7 +226,7 @@ nodes:
   - { id: app, kind: root, name: App }
   - { id: layout, parent: app, kind: layout, name: DocLayout }
   - { id: page, parent: layout, kind: page, name: DocPage }
-  - { id: doc, parent: page, kind: component, name: AvodadoDoc }
+  - { id: doc, parent: page, kind: component, name: ChiltepinDoc }
   - { id: hook, parent: doc, kind: hook, name: useTheme }
 ```
 
@@ -253,7 +253,7 @@ URN, a path.
 title: Anatomy of a permission
 separator: ":"
 parts:
-  - { label: App, value: avodado, note: Which product. }
+  - { label: App, value: chiltepin, note: Which product. }
   - { label: Feature, value: docs, note: The area. }
   - { label: Action, value: edit, note: The capability. }
 ```
@@ -296,7 +296,7 @@ accent: amber
 rows:
   - { label: Look, value: "Warm paper, near-black ink, one rust accent." }
   - { label: Dark mode, value: "Follows the reader's OS setting." }
-  - { label: Apply, steps: [Write Markdown, "avo html", Done] }
+  - { label: Apply, steps: [Write Markdown, "chiltepin html", Done] }
 ```
 
 ## Numbers that matter
@@ -319,9 +319,9 @@ Items take a terse one-liner — `[status] date · label · description`:
 
 ```timeline
 items:
-  - "[current] now · Write your first doc · Edit, then avo check"
-  - "[next] next · Gate it in CI · avo check on every PR"
-  - "[future] later · Present it · avo slides"
+  - "[current] now · Write your first doc · Edit, then chiltepin check"
+  - "[next] next · Gate it in CI · chiltepin check on every PR"
+  - "[future] later · Present it · chiltepin slides"
 ```
 
 ## Schedule with dates
@@ -362,7 +362,7 @@ in your own status vocabulary or the defaults.
 ```statustable
 columns: [Task, Update]
 rows:
-  - { cells: [Scaffold the repo, avo init ran clean], status: done }
+  - { cells: [Scaffold the repo, chiltepin init ran clean], status: done }
   - { cells: [Write getting-started, Draft out for review], status: in progress }
   - { cells: [Add to CI, Waiting on repo admin], status: todo }
 ```
@@ -400,7 +400,7 @@ stages.
 ```journey
 stages: [{ label: Discover }, { label: Author }, { label: Validate }, { label: Ship }]
 rows:
-  - { label: Tool, cells: ["avo init", "edit .md", "avo check", "avo pdf"] }
+  - { label: Tool, cells: ["chiltepin init", "edit .md", "chiltepin check", "chiltepin pdf"] }
   - { label: Feeling, cells: [Curious, Focused, Tense, Proud] }
 emotion: [0.6, 0.7, 0.4, 0.9]
 ```
@@ -446,7 +446,7 @@ nodes:
 
 ## An HTTP endpoint
 
-`endpoint` is a Swagger-style card; `avo sync openapi` can generate a whole set.
+`endpoint` is a Swagger-style card; `chiltepin sync openapi` can generate a whole set.
 
 ```endpoint
 method: POST
@@ -471,9 +471,9 @@ screens:
   - device: browser
     title: Rendered doc
     url: localhost/out.html
-    label: An Avodado page in the browser
+    label: A Chiltepin page in the browser
     elements:
-      - { type: header, label: The Avodado tutorial }
+      - { type: header, label: The Chiltepin tutorial }
       - { type: text, rows: 2 }
       - { type: image, label: sequence diagram }
       - { type: button, label: Switch theme, tone: accent }
@@ -482,7 +482,7 @@ screens:
 ## Connect with `doc#id`
 
 Give a block an `id:`, then reference it with `doc#id` (or bare `#id` in the same
-file). A dangling ref fails `avo check`. This story links to the flow above.
+file). A dangling ref fails `chiltepin check`. This story links to the flow above.
 
 ```userstory
 id: US-tour
@@ -492,7 +492,7 @@ soThat: the document becomes a connected, checkable model
 priority: Med
 points: 3
 criteria:
-  - { given: a sequence has an id, when: I add a matching ref, then: avo check resolves it }
+  - { given: a sequence has an id, when: I add a matching ref, then: chiltepin check resolves it }
 links:
   - { ref: "#seq-tour", mode: sequence, label: The validate flow }
 ```
@@ -504,7 +504,7 @@ links:
 ```glossary
 terms:
   - { term: Block, def: A fenced section whose info-string is a typed block name. }
-  - { term: "doc#id", def: "A cross-reference to a block id, checked by avo check." }
+  - { term: "doc#id", def: "A cross-reference to a block id, checked by chiltepin check." }
   - { term: Skin, def: "The one editorial look every export uses, in light and dark." }
 ```
 
@@ -535,11 +535,11 @@ blocks:
   - title: The loop
     lang: bash
     code: |
-      avo check                 # validate everything
-      avo preview docs/x.md     # render + open
-      avo slides docs/x.md      # present it
-      avo block                 # every block, one line each
-      avo pdf docs/x.md           # one doc to PDF
+      chiltepin check                 # validate everything
+      chiltepin preview docs/x.md     # render + open
+      chiltepin slides docs/x.md      # present it
+      chiltepin block                 # every block, one line each
+      chiltepin pdf docs/x.md           # one doc to PDF
 ```
 
 ## Recap
@@ -557,5 +557,5 @@ rows:
   - [A weighed decision, "options · proscons · cvt"]
   - [A plan, "timeline · gantt · kanban · statustable"]
   - [A story or chart, "pyramid · quadrant · journey · stats · chart"]
-note: The skill lives in skills/avodado/SKILL.md; avo block <type> prints any block's fields.
+note: The skill lives in skills/chiltepin/SKILL.md; chiltepin block <type> prints any block's fields.
 ```

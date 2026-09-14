@@ -9,7 +9,7 @@ import {
   removeSegment,
   templateBody,
   type BlockType,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import { useStudio } from '../state/store.js';
 import { emitTourAction } from '../tour/bus.js';
 

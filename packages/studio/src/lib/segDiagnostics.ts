@@ -8,7 +8,7 @@ import {
   type Diagnostic,
   type Document,
   type SegmentSpan,
-} from '@avodado/core';
+} from 'chiltepin-core';
 
 /** Diagnostics whose position falls inside `span` (line-less ones excluded). */
 export function diagnosticsInSpan(

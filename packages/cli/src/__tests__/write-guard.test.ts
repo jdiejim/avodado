@@ -17,7 +17,7 @@ import { writeNewDoc } from '../commands/new.js';
 import { runSingle } from '../commands/single.js';
 
 async function temp(): Promise<{ root: string; cleanup: () => Promise<void> }> {
-  const root = join(tmpdir(), `avo-write-${randomBytes(6).toString('hex')}`);
+  const root = join(tmpdir(), `chiltepin-write-${randomBytes(6).toString('hex')}`);
   await mkdir(root, { recursive: true });
   return { root, cleanup: () => rm(root, { recursive: true, force: true }) };
 }
@@ -79,7 +79,7 @@ describe('overwriteRefusal', () => {
   });
 });
 
-describe('avo sync --out (W-4)', () => {
+describe('chiltepin sync --out (W-4)', () => {
   it('sql: refuses to overwrite a hand-written doc, and leaves it byte-identical', async () => {
     const { root, cleanup } = await temp();
     try {
@@ -146,7 +146,7 @@ describe('avo sync --out (W-4)', () => {
   });
 });
 
-describe('avo new / block / template -o', () => {
+describe('chiltepin new / block / template -o', () => {
   it('refuses to write a template over an existing document', async () => {
     const { root, cleanup } = await temp();
     try {
@@ -163,7 +163,7 @@ describe('avo new / block / template -o', () => {
   });
 });
 
-describe('avo html -o', () => {
+describe('chiltepin html -o', () => {
   it('re-exports over its own .html output, but refuses to render over a document', async () => {
     const { root, cleanup } = await temp();
     try {

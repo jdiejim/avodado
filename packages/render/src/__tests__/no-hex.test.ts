@@ -42,7 +42,7 @@ const SKINNED = [
  * an entry when the reason goes away; the test then enforces the rule on it.
  *
  * - `svg/dsTone.ts` — not restyled yet: still the pre-skin hex palette.
- * - `brand.ts` — the Avodado mark (favicon / logo artwork), not a renderer.
+ * - `brand.ts` — the Chiltepin mark (favicon / logo artwork), not a renderer.
  *   Its colours are the brand's, fixed in both themes, and no role token
  *   names them.
  *

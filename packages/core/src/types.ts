@@ -1,7 +1,7 @@
 /**
  * Core domain types: block types, segments, documents.
  *
- * These types describe an Avodado document as an in-memory model — a slug, an
+ * These types describe a Chiltepin document as an in-memory model — a slug, an
  * optional meta header, and an ordered list of segments (prose or typed blocks).
  */
 
@@ -240,7 +240,7 @@ export interface SuspectFence {
   readonly suggestion: string;
 }
 
-/** A parsed Avodado document. */
+/** A parsed Chiltepin document. */
 export interface Document {
   /** Document slug, typically the path under the docs root without `.md`. */
   readonly slug: string;

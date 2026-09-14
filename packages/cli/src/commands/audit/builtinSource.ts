@@ -21,7 +21,7 @@ import type {
   SchemaEvidence,
 } from './types.js';
 
-/** Hard cap on files read — keeps `avo audit` fast on big repos. */
+/** Hard cap on files read — keeps `chiltepin audit` fast on big repos. */
 export const FILE_CAP = 2000;
 
 /** Directories never walked (rough .gitignore etiquette). */

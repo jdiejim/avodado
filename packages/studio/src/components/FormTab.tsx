@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { describeBlockSchema, type Diagnostic, type FieldNode, type TypedSegment } from '@avodado/core';
+import { describeBlockSchema, type Diagnostic, type FieldNode, type TypedSegment } from 'chiltepin-core';
 import { humanizeFieldName, newItemForList, singularize } from '../direct/paths.js';
 import { SmartControl } from '../form/controls.js';
 import { partitionFields, resolveControl, type FieldSpec } from '../form/fieldKind.js';

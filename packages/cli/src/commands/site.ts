@@ -1,5 +1,5 @@
 /**
- * Site core shared by `avo build` and `avo serve` — pure functions, no I/O.
+ * Site core shared by `chiltepin build` and `chiltepin serve` — pure functions, no I/O.
  *
  * {@link buildSite} turns a set of parsed documents into a multi-page static
  * site: one HTML page per doc (wrapped in a shell with a left nav sidebar), a
@@ -10,7 +10,7 @@
  * using the {@link resolveRefs} graph.
  *
  * Diagnostics (schema + ref) are returned as values — the callers decide how
- * to surface them (`avo build` warns, `avo serve` shows an in-page banner).
+ * to surface them (`chiltepin build` warns, `chiltepin serve` shows an in-page banner).
  */
 
 import {
@@ -19,7 +19,7 @@ import {
   type BlockDataMap,
   type Diagnostic,
   type Document,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import {
   buildThemeVars,
   DEFAULT_THEME,
@@ -33,7 +33,7 @@ import {
   toSlides,
   schemeMarkup,
   type ColorScheme,
-} from '@avodado/render';
+} from 'chiltepin-render';
 import { guardRender } from './renderGuard.js';
 
 /** A loaded document ready for site rendering. */
@@ -232,7 +232,7 @@ function viewToggle(slug: string): string {
 }
 
 /**
- * Dresses a standalone deck (from `@avodado/render`'s `toSlides`) for the
+ * Dresses a standalone deck (from `chiltepin-render`'s `toSlides`) for the
  * site: splices a floating back-link pill — and, when serving, the same
  * live-reload script the doc pages get — just before `</body>`. String-splice
  * only; the deck markup itself is never modified.
@@ -412,7 +412,7 @@ function tldrDigest(groups: readonly IndexGroup[]): string {
 
 /**
  * Renders the doc-to-doc cross-reference graph as a real `graph` block via
- * the `@avodado/render` registry — the renderer owns all layout (auto-grid,
+ * the `chiltepin-render` registry — the renderer owns all layout (auto-grid,
  * left-to-right). An edge A→B means a block in A references an id in B; the
  * reference count becomes the edge `weight` when above 1. Node click-through
  * is not in the graph schema, so a legend under the graph links each doc.

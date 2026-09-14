@@ -9,7 +9,7 @@
  * Sheet) covers the rare disagreement — one undo step, no extra UI.
  */
 
-import { openapiToMarkdown } from '@avodado/core';
+import { openapiToMarkdown } from 'chiltepin-core';
 import { useStudio } from '../state/store.js';
 import { insertBlockAt } from './actions.js';
 import { planImport } from './importFile.js';

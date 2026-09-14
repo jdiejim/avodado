@@ -59,7 +59,7 @@ function extractMeta(data: unknown): MetaData | undefined {
 }
 
 /**
- * Parses an Avodado Markdown document.
+ * Parses a Chiltepin Markdown document.
  *
  * @param markdown - The document source.
  * @param slug - The document slug (typically the path under the docs root,

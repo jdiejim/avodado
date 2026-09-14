@@ -71,7 +71,7 @@ export async function decodeShare(payload: string): Promise<string> {
 /**
  * Builds the link to hand someone.
  *
- * @param base - Where the studio lives, e.g. `https://studio.avodado.dev/`.
+ * @param base - Where the studio lives, e.g. `https://studio.chiltepin.dev/`.
  * @param present - Open straight into the deck instead of the editor.
  */
 export async function buildShareUrl(

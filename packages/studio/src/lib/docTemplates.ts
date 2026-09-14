@@ -1,6 +1,6 @@
 /**
  * Doc-template picker data — the "+ New doc" flow's cards, derived entirely
- * from core's DOC_TEMPLATES / DOC_TEMPLATE_INFO (the same data `avo new`
+ * from core's DOC_TEMPLATES / DOC_TEMPLATE_INFO (the same data `chiltepin new`
  * uses). Pure functions; the modal UI lives in components/TemplatePicker.
  */
 
@@ -10,7 +10,7 @@ import {
   DOC_TEMPLATE_INFO,
   parseDocument,
   type BlockType,
-} from '@avodado/core';
+} from 'chiltepin-core';
 
 /** One picker card: a doc template plus its derived mini block-type list. */
 interface DocTemplateCard {

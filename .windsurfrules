@@ -1,6 +1,6 @@
-# Avodado documentation
+# Chiltepin documentation
 
-For docs under `docs/`, follow `skills/avodado/SKILL.md`.
+For docs under `docs/`, follow `skills/chiltepin/SKILL.md`.
 That file holds the authoring workflow and routes to the relevant references.
 
 Run `node packages/cli/dist/bin.js block <type>` for fields and examples.

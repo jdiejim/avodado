@@ -187,7 +187,7 @@ export function Rail(): JSX.Element {
         <button type="button" className="stu-rail-brand" title="All documents" onClick={goHome}>
           <img src={markUrl} alt="" className="stu-rail-mark" aria-hidden="true" />
           <span className="stu-rail-name">
-            avodado <em>studio</em>
+            chiltepin <em>studio</em>
           </span>
         </button>
 

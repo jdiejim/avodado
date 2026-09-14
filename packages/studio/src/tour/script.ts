@@ -49,7 +49,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'welcome',
     target: '[data-tour="topbar"]',
-    title: 'Welcome to Avodado Studio',
+    title: 'Welcome to Chiltepin Studio',
     body:
       'This is a visual editor over plain Markdown files — every edit you make here rewrites ' +
       'a fenced YAML block in a real file on disk. The files stay the single source of truth; ' +

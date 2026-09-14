@@ -1,6 +1,6 @@
 ```meta
 title: The Repository pattern
-subtitle: A backend-pattern tutorial — the card, the structure, the runtime, and a backlog to adopt it. Render as a deck with `avo slides`.
+subtitle: A backend-pattern tutorial — the card, the structure, the runtime, and a backlog to adopt it. Render as a deck with `chiltepin slides`.
 tag: BE PATTERN · TUTORIAL
 ```
 

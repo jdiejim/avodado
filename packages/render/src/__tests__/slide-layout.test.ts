@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { renderSlides } from '../parts.js';
 import { toSlides } from '../deck.js';
 

@@ -4,8 +4,8 @@
  * so logs stay parseable.
  */
 
-/** True when the process is running interactively (TTY, not CI, not AVO_PLAIN). */
+/** True when the process is running interactively (TTY, not CI, not CHILTEPIN_PLAIN). */
 export const isInteractive: boolean =
   process.stdout.isTTY === true &&
   process.env['CI'] !== 'true' &&
-  process.env['AVO_PLAIN'] !== '1';
+  process.env['CHILTEPIN_PLAIN'] !== '1';

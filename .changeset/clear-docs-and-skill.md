@@ -1,5 +1,5 @@
 ---
-'avodado': patch
+'chiltepin': patch
 ---
 
 Clarify skill scope, prefer the project's CLI version, and report actual validation results.

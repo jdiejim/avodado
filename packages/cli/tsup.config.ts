@@ -11,9 +11,9 @@ export default defineConfig({
   splitting: false,
   banner: { js: '#!/usr/bin/env node' },
   external: [
-    '@avodado/core',
-    '@avodado/render',
-    '@avodado/studio', // optional at runtime — `avo studio` imports it lazily
+    'chiltepin-core',
+    'chiltepin-render',
+    'chiltepin-studio', // optional at runtime — `chiltepin studio` imports it lazily
     'ink',
     'ink-select-input',
     'react',

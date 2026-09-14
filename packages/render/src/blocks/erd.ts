@@ -28,7 +28,7 @@
  * aggregate root and takes the accent. Nothing is truncated: cards grow.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';
 import { countPhrase, svgName } from '../svg/svgTitle.js';

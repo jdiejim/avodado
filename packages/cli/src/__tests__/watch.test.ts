@@ -1,6 +1,6 @@
 /**
- * `createConfigWatcher` must see `avodado.config.*` writes at the project
- * root — that's what keeps `avo serve` and the studio's Site mode in step
+ * `createConfigWatcher` must see `chiltepin.config.*` writes at the project
+ * root — that's what keeps `chiltepin serve` and the studio's Site mode in step
  * with config changes — and nothing else.
  */
 
@@ -15,7 +15,7 @@ const roots: string[] = [];
 const watchers: ConfigWatcher[] = [];
 
 function scaffold(): { cwd: string } {
-  const base = join(tmpdir(), `avo-watch-${randomBytes(6).toString('hex')}`);
+  const base = join(tmpdir(), `chiltepin-watch-${randomBytes(6).toString('hex')}`);
   const cwd = join(base, 'proj');
   mkdirSync(cwd, { recursive: true });
   roots.push(base);
@@ -53,17 +53,17 @@ async function triggerAndWait(
 }
 
 describe('createConfigWatcher', () => {
-  it('fires for project avodado.config.* writes, including files created after startup', async () => {
+  it('fires for project chiltepin.config.* writes, including files created after startup', async () => {
     const { cwd } = scaffold();
     let n = 0;
     watchers.push(createConfigWatcher(cwd, () => (n += 1)));
 
     const writeConfig = (): void =>
-      writeFileSync(join(cwd, 'avodado.config.json'), '{ "docsDir": "docs" }\n');
+      writeFileSync(join(cwd, 'chiltepin.config.json'), '{ "docsDir": "docs" }\n');
     await triggerAndWait(() => n, 0, writeConfig, 'project config write');
 
     const before = n;
-    const writeYaml = (): void => writeFileSync(join(cwd, 'avodado.config.yml'), 'docsDir: docs\n');
+    const writeYaml = (): void => writeFileSync(join(cwd, 'chiltepin.config.yml'), 'docsDir: docs\n');
     await triggerAndWait(() => n, before, writeYaml, 'second config file');
   }, 20_000);
 
@@ -72,13 +72,13 @@ describe('createConfigWatcher', () => {
     let n = 0;
     watchers.push(createConfigWatcher(cwd, () => (n += 1)));
     writeFileSync(join(cwd, 'README.md'), 'hi\n');
-    writeFileSync(join(cwd, 'avodado.theme.json'), '{}\n'); // a leftover from older versions
+    writeFileSync(join(cwd, 'chiltepin.theme.json'), '{}\n'); // a leftover from older versions
     await new Promise((r) => setTimeout(r, 300));
     expect(n).toBe(0);
   });
 
   it('is inert (but closeable) when nothing exists to watch', () => {
-    const base = join(tmpdir(), `avo-watch-${randomBytes(6).toString('hex')}`);
+    const base = join(tmpdir(), `chiltepin-watch-${randomBytes(6).toString('hex')}`);
     roots.push(base);
     const w = createConfigWatcher(join(base, 'nope'), () => {});
     w.close(); // no throw

@@ -31,7 +31,7 @@
  * response/error back to the caller (or the actor's last outgoing message).
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { wrapText } from '../svg/wrapText.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';

@@ -3,7 +3,7 @@
  *
  * The source string is the canonical client-side state — every mutation goes
  * through {@link StudioState.applyOp}, which runs a pure edit op from
- * `@avodado/core` against the CURRENT source + its parsed document, pushes an
+ * `chiltepin-core` against the CURRENT source + its parsed document, pushes an
  * undo snapshot, and schedules autosave. Derived views (parsed doc,
  * diagnostics, rendered HTML) live in `derive.ts`, memoised outside React.
  *
@@ -18,7 +18,7 @@ import {
   parseDocument,
   replaceBlockBody,
   type Document,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import {
   fetchDoc,
   fetchDocs,

@@ -5,7 +5,7 @@
  * same seed-compare rules the form's Enter rhythm uses) must not nag.
  */
 
-import { describeBlockSchema, templateBody, type BlockType, type Segment } from '@avodado/core';
+import { describeBlockSchema, templateBody, type BlockType, type Segment } from 'chiltepin-core';
 import {
   newItemForList,
   parseBlockPath,

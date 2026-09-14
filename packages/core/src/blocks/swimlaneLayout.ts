@@ -2,8 +2,8 @@
  * Swimlane placement — the one place that turns a `swimlane` body into cells.
  *
  * A step names its lane by label, by `id`, or by 0-based index, and may omit
- * `col`. This module resolves both so every consumer (`@avodado/render`, the
- * Studio canvas, `avo check`) sees the same grid:
+ * `col`. This module resolves both so every consumer (`chiltepin-render`, the
+ * Studio canvas, `chiltepin check`) sees the same grid:
  *
  * - `resolveSwimlaneLane` — the lane index a `lane` value names, or
  *   `undefined` when nothing matches (validation reports that as

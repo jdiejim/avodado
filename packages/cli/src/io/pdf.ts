@@ -2,7 +2,7 @@
  * PDF export via headless Chromium (Playwright).
  *
  * Playwright is an optional dependency — importing it lazily means consumers
- * who never touch `avo pdf` aren't forced to download Chromium. Callers who
+ * who never touch `chiltepin pdf` aren't forced to download Chromium. Callers who
  * use {@link toPdf} can pass `autoInstallBrowser: true` to download the matching
  * Chromium on first use; otherwise a missing browser throws a clear error.
  */
@@ -10,8 +10,8 @@
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import type { Document } from '@avodado/core';
-import { renderDocument } from '@avodado/render';
+import type { Document } from 'chiltepin-core';
+import { renderDocument } from 'chiltepin-render';
 import type * as Playwright from 'playwright';
 
 type PlaywrightModule = typeof Playwright;

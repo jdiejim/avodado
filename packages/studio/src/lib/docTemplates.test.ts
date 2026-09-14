@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { DOC_TEMPLATES, DOC_TEMPLATE_INFO, parseDocument } from '@avodado/core';
+import { DOC_TEMPLATES, DOC_TEMPLATE_INFO, parseDocument } from 'chiltepin-core';
 import { firstContentIndex, TEMPLATE_CARDS, templateBlockTypes } from './docTemplates.js';
 
 describe('TEMPLATE_CARDS', () => {

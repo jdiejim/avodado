@@ -16,7 +16,7 @@
  * Ported from doc-studio.jsx `GridBlock` + `LayeredBlock` + `BlockDiagram`.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
@@ -1089,7 +1089,7 @@ function renderGrid(data: Data, entry: readonly string[]): { svg: string; legend
   const width = padX * 2 + cols * cellW + (cols - 1) * gapX;
   const height = padTop + rows * cellH + (rows - 1) * gapY + padBot;
 
-  // Grid metadata for editors (Avodado Studio drag-to-move / drag-to-connect):
+  // Grid metadata for editors (Chiltepin Studio drag-to-move / drag-to-connect):
   // inert attributes mirroring the layout constants above plus each node's
   // EFFECTIVE cell — crucial in quick mode, where the placements only exist
   // post-auto-layout.

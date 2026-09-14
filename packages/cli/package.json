@@ -1,13 +1,12 @@
 {
-  "name": "avodado",
+  "name": "chiltepin",
   "version": "0.46.0",
-  "description": "Documentation-as-code CLI: write Markdown with typed YAML blocks for API docs, architecture & system design (C4, ERDs, sequence diagrams), frontend & design systems, ADRs and decision records, planning, and slide presentations. Validate like code with `avo check`, export to HTML, slides, or PDF. AI-native — one-command agent skill (npx skills add jdiejim/avodado), MCP server, and a visual Studio.",
+  "description": "Documentation-as-code CLI: write Markdown with typed YAML blocks for API docs, architecture & system design (C4, ERDs, sequence diagrams), frontend & design systems, ADRs and decision records, planning, and slide presentations. Validate like code with `chiltepin check`, export to HTML, slides, or PDF. AI-native — one-command agent skill (npx skills add jdiejim/chiltepin) and a visual Studio.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/bin.js",
   "bin": {
-    "avo": "./dist/bin.js",
-    "avodado": "./dist/bin.js"
+    "chiltepin": "./dist/bin.js"
   },
   "files": [
     "dist",
@@ -20,9 +19,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@avodado/core": "workspace:*",
-    "@avodado/render": "workspace:*",
-    "@avodado/studio": "workspace:*",
+    "chiltepin-core": "workspace:*",
+    "chiltepin-render": "workspace:*",
+    "chiltepin-studio": "workspace:*",
     "cfonts": "^3.3.0",
     "commander": "^12.1.0",
     "fast-glob": "^3.3.2",
@@ -45,13 +44,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jdiejim/avodado.git",
+    "url": "git+https://github.com/jdiejim/chiltepin.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://avodado.dev",
-  "bugs": "https://github.com/jdiejim/avodado/issues",
+  "homepage": "https://chiltepin.dev",
+  "bugs": "https://github.com/jdiejim/chiltepin/issues",
   "keywords": [
-    "avodado",
+    "chiltepin",
     "documentation",
     "docs-as-code",
     "documentation-as-code",
@@ -78,7 +77,6 @@
     "claude",
     "cursor",
     "copilot",
-    "mcp",
     "studio",
     "visual-editor",
     "html",

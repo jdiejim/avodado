@@ -29,7 +29,7 @@ import {
   BLOCK_LABELS,
   type Diagnostic,
   type TypedSegment,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import { DirectLayer } from '../direct/DirectLayer.js';
 import type { DirectHost } from '../direct/host.js';
 import { mapDiagnosticsToFields, previewBlock } from '../lib/blockPreview.js';

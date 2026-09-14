@@ -15,7 +15,7 @@
  * roving-focus arithmetic for the browse card grid.
  */
 
-import { BLOCK_ALIASES, BLOCK_FAMILIES, type BlockFamily, type BlockType } from '@avodado/core';
+import { BLOCK_ALIASES, BLOCK_FAMILIES, type BlockFamily, type BlockType } from 'chiltepin-core';
 import { filterInsertItems, INSERT_ITEMS, insertBodyFor, type InsertItem } from './insertEngine.js';
 
 /** One picker hit: a canonical item, plus the alias the query matched via. */

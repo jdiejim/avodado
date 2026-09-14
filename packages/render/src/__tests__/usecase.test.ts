@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
-import { BLOCK_TEMPLATES, parseDocument } from '@avodado/core';
+import { BLOCK_TEMPLATES, parseDocument } from 'chiltepin-core';
 import { renderUsecase } from '../blocks/usecase.js';
 import { renderDocument } from '../document.js';
 

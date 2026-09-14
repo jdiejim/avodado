@@ -1,18 +1,18 @@
-# @avodado/render
+# chiltepin-render
 
-`renderDocument(doc) → string`. Pure function: takes a parsed `@avodado/core` Document, returns a standalone HTML string with inlined CSS and inline SVG diagrams. No browser, no DOM, no I/O.
+`renderDocument(doc) → string`. Pure function: takes a parsed `chiltepin-core` Document, returns a standalone HTML string with inlined CSS and inline SVG diagrams. No browser, no DOM, no I/O.
 
 ## Install
 
 ```
-pnpm add @avodado/render @avodado/core
+pnpm add chiltepin-render chiltepin-core
 ```
 
 ## Usage
 
 ```ts
-import { parseDocument } from '@avodado/core';
-import { renderDocument } from '@avodado/render';
+import { parseDocument } from 'chiltepin-core';
+import { renderDocument } from 'chiltepin-render';
 
 const html = renderDocument(parseDocument(markdown, 'orders'));
 ```
@@ -27,4 +27,4 @@ const html = renderDocument(parseDocument(markdown, 'orders'));
 
 ## Fidelity
 
-CSS is ported verbatim from the reference renderer at `resources/avodado-renderer.html`. Block DOM signatures match the reference's class names and element structure. SVG geometry uses integer-only coordinates, so output is byte-deterministic.
+CSS is ported verbatim from the reference renderer at `resources/chiltepin-renderer.html`. Block DOM signatures match the reference's class names and element structure. SVG geometry uses integer-only coordinates, so output is byte-deterministic.

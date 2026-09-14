@@ -5,7 +5,7 @@
  * canvas host uses, then the doc is re-parsed and validated.
  */
 import { describe, expect, it } from 'vitest';
-import { parseDocument, validateDocument, type Document } from '@avodado/core';
+import { parseDocument, validateDocument, type Document } from 'chiltepin-core';
 import { specFor } from './connect.js';
 import { applyReorder } from './drag.js';
 import { deletePathInSegment, setPathsInSegment } from './host.js';
@@ -141,7 +141,7 @@ const FENCES: Readonly<Record<string, string>> = {
     '```steps',
     'items:',
     '  - { title: Install the CLI }',
-    '  - { title: Add a config, body: Write avodado.config.ts }',
+    '  - { title: Add a config, body: Write chiltepin.config.ts }',
     '```',
   ].join('\n'),
   list: [

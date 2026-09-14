@@ -14,7 +14,7 @@
  * marked state takes the accent — the author's count, not the renderer's.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { DECORATIVE } from '../svg/decorative.js';

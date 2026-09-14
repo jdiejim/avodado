@@ -102,7 +102,7 @@ const notesHtml =
         .join('')}</ol></section>`
     : '';
 
-const html = `<title>Avodado Generation Eval</title>
+const html = `<title>Chiltepin Generation Eval</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   :root { --paper:#f7f6f2; --paper-2:#efede8; --ink:#1f2430; --muted:#4f5868; --soft:#646d7b; --rule:rgba(31,36,48,.14); --rule-solid:#807b70; --accent:#b04a25; --good:#2f6b4f; --bad:#9a3f34; --warn:#8a6d1a; --frame:#fbfaf7; }
@@ -144,8 +144,8 @@ const html = `<title>Avodado Generation Eval</title>
 </style>
 <main>
 <p class="eyebrow">Run ${esc(runName)} · ${summary.answered} of ${summary.cases} scenarios</p>
-<h1>Avodado Generation Eval</h1>
-<p class="lede">One fresh agent per request, the installed skill, and the real CLI through <code>npx -y avodado</code>. The agent picks blocks, looks each up with <code>avo block</code>, writes, checks, and fixes. Every document below is the handed-off file rendered by the shipped renderer.</p>
+<h1>Chiltepin Generation Eval</h1>
+<p class="lede">One fresh agent per request, the installed skill, and the real CLI through <code>npx -y chiltepin</code>. The agent picks blocks, looks each up with <code>chiltepin block</code>, writes, checks, and fixes. Every document below is the handed-off file rendered by the shipped renderer.</p>
 <div class="tiles">
   ${tile(`${summary.selectionScore}/${summary.answered}`, 'right block chosen', summary.selectionScore === summary.answered ? 'good' : 'warn')}
   ${tile(summary.traps, 'keyword traps hit', summary.traps === 0 ? 'good' : 'bad')}

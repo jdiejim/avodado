@@ -8,7 +8,7 @@
  * Error edges (`kind: error`, or a label like "no" / "fail") are `negative`.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
@@ -136,7 +136,7 @@ function renderFlowSvg(data: BlockDataMap['flow']): { svg: string; legend: strin
       .map((n) => n.id),
   );
 
-  // Grid metadata for editors (Avodado Studio drag-to-connect): inert attrs
+  // Grid metadata for editors (Chiltepin Studio drag-to-connect): inert attrs
   // mirroring the layout constants plus each node's effective cell below.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
   const a11y = svgName('Flowchart', data.title, [countPhrase(nodes.length, 'step')]);

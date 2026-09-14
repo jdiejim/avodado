@@ -1,6 +1,6 @@
 /**
  * Document export from Studio's toolbar: the CURRENT canvas state (unsaved
- * edits included) as a downloadable file, mirroring `avo html | slides | pdf`.
+ * edits included) as a downloadable file, mirroring `chiltepin html | slides | pdf`.
  *
  * HTML and slides are produced entirely in the browser — the renderer is
  * already in this bundle — and handed to the user as a Blob download. PDF
@@ -9,8 +9,8 @@
  * bytes back.
  */
 
-import type { Document } from '@avodado/core';
-import { renderDocument, toSlides } from '@avodado/render';
+import type { Document } from 'chiltepin-core';
+import { renderDocument, toSlides } from 'chiltepin-render';
 
 /** `docs/api/orders` → `orders`; the export lands as `orders.<ext>`. */
 function baseName(slug: string): string {

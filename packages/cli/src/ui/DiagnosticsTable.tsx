@@ -1,5 +1,5 @@
 /**
- * Diagnostics rendering for `avo check`.
+ * Diagnostics rendering for `chiltepin check`.
  *
  * - {@link DiagnosticsTable} is the interactive (TTY) Ink view.
  * - {@link formatDiagnosticsPlain} is the CI / non-TTY text view.
@@ -9,7 +9,7 @@
  */
 
 import { Box, Text } from 'ink';
-import { helpUrl, type Diagnostic } from '@avodado/core';
+import { helpUrl, type Diagnostic } from 'chiltepin-core';
 import React from 'react';
 import { renderCodeFrame } from './codeFrame.js';
 

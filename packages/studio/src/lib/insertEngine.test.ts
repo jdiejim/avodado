@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { BLOCK_ALIASES, BLOCK_TYPES, parseDocument, templateBody, validateDocument } from '@avodado/core';
+import { BLOCK_ALIASES, BLOCK_TYPES, parseDocument, templateBody, validateDocument } from 'chiltepin-core';
 import {
   ALIAS_ITEMS,
   aliasTemplateBody,

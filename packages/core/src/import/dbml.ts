@@ -1,5 +1,5 @@
 /**
- * DBML → `erd` block data (the ```` ```dbml ```` fence dialect and `avo sync dbml`).
+ * DBML → `erd` block data (the ```` ```dbml ```` fence dialect and `chiltepin sync dbml`).
  *
  * Subset: `Table [schema.]name [as Alias] { … }` with columns
  * `name type [pk, primary key, unique, not null, null, increment,

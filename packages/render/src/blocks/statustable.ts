@@ -13,11 +13,11 @@
  * `data-bl` container for "+ add subtask". A subtle legend row appears below
  * the table when the user defines more than three labels of their own. Short
  * rows pad with empty cells; a status outside the vocabulary falls back to a
- * gray pill (and `avo check` flags it).
+ * gray pill (and `chiltepin check` flags it).
  */
 
-import type { BlockDataMap } from '@avodado/core';
-import { STATUSTABLE_DEFAULT_STATUSES, normalizeStatusColor } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
+import { STATUSTABLE_DEFAULT_STATUSES, normalizeStatusColor } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 

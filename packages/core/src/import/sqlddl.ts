@@ -1,5 +1,5 @@
 /**
- * SQL DDL → `erd` block data (`avo sync sql schema.sql`). Not a fence
+ * SQL DDL → `erd` block data (`chiltepin sync sql schema.sql`). Not a fence
  * dialect: a ```` ```sql ```` fence is usually a plain code sample.
  *
  * Subset: `CREATE TABLE [IF NOT EXISTS] [schema.]name ( … )` with column

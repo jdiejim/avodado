@@ -6,13 +6,13 @@ import { randomBytes } from 'node:crypto';
 import { projectStatus, formatStatus } from '../commands/status.js';
 
 async function scratchProject(): Promise<{ root: string; cleanup: () => Promise<void> }> {
-  const root = join(tmpdir(), `avo-status-${randomBytes(6).toString('hex')}`);
+  const root = join(tmpdir(), `chiltepin-status-${randomBytes(6).toString('hex')}`);
   await mkdir(join(root, 'docs'), { recursive: true });
-  await writeFile(join(root, 'avodado.config.json'), '{ "docsDir": "docs", "outDir": "dist" }\n');
+  await writeFile(join(root, 'chiltepin.config.json'), '{ "docsDir": "docs", "outDir": "dist" }\n');
   return { root, cleanup: () => rm(root, { recursive: true, force: true }) };
 }
 
-describe('projectStatus (smart bare `avo`)', () => {
+describe('projectStatus (smart bare `chiltepin`)', () => {
   it('counts docs and reports a clean quick-validate', async () => {
     const { root, cleanup } = await scratchProject();
     try {
@@ -27,7 +27,7 @@ describe('projectStatus (smart bare `avo`)', () => {
       expect(text).toContain('2 document(s)');
       expect(text).toContain('clean');
       // the 4-5 next actions, with one-liners
-      for (const cmd of ['avo check', 'avo <file.md>', 'avo studio', 'avo build', 'avo block']) {
+      for (const cmd of ['chiltepin check', 'chiltepin <file.md>', 'chiltepin studio', 'chiltepin build', 'chiltepin block']) {
         expect(text).toContain(cmd);
       }
     } finally {
@@ -35,7 +35,7 @@ describe('projectStatus (smart bare `avo`)', () => {
     }
   });
 
-  it('surfaces validate errors and points at avo check', async () => {
+  it('surfaces validate errors and points at chiltepin check', async () => {
     const { root, cleanup } = await scratchProject();
     try {
       await writeFile(
@@ -46,7 +46,7 @@ describe('projectStatus (smart bare `avo`)', () => {
       expect(status.errors).toBeGreaterThan(0);
       const text = formatStatus(status, true);
       expect(text).toContain('error(s)');
-      expect(text).toContain('run avo check');
+      expect(text).toContain('run chiltepin check');
     } finally {
       await cleanup();
     }

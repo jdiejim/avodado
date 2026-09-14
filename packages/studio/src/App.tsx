@@ -9,7 +9,7 @@
 
 import { useEffect } from 'react';
 import { useApplyColorScheme } from './lib/colorScheme.js';
-import { removeSegment } from '@avodado/core';
+import { removeSegment } from 'chiltepin-core';
 import { hasServer } from './api/client.js';
 import { useServerEvents } from './api/events.js';
 import { keySurface } from './direct/partSelect.js';

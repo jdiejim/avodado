@@ -4,7 +4,7 @@
  * A renderer is supposed to be a pure function of validated data, but a bad
  * value can still make one throw (an unbounded loop that hits V8's string cap,
  * a required field the schema rejected but the build rendered anyway). Left
- * alone, that surfaces from `avo build` as a bare `Invalid string length` with
+ * alone, that surfaces from `chiltepin build` as a bare `Invalid string length` with
  * no file, no line, and no block type.
  *
  * {@link renderFailure} turns any throw into a normal `E_RENDER` diagnostic
@@ -13,8 +13,8 @@
  * throws the same way.
  */
 
-import type { Diagnostic, Document, TypedSegment } from '@avodado/core';
-import { htmlRenderers } from '@avodado/render';
+import type { Diagnostic, Document, TypedSegment } from 'chiltepin-core';
+import { htmlRenderers } from 'chiltepin-render';
 
 /** The message of a thrown value, whatever it was. */
 function errorMessage(err: unknown): string {
@@ -80,7 +80,7 @@ export function renderFailure(
     code: 'E_RENDER',
     message: `The ${what} could not be rendered: the \`${label}\` block failed — ${reason}`,
     ...(block.id !== undefined ? { value: block.id } : {}),
-    hint: 'Fix the values in this block, or remove it and re-run `avo build`.',
+    hint: 'Fix the values in this block, or remove it and re-run `chiltepin build`.',
   };
 }
 

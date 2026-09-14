@@ -2,7 +2,7 @@
  * Permanent block-type aliases: every old spelling parses to its canonical
  * kind with the tag preserved in `sourceType`, the alias patch applied for
  * keys the body doesn't set (body wins), and a `W_ALIAS_TYPE` warning — never
- * an error, so `avo check` exit semantics are unchanged.
+ * an error, so `chiltepin check` exit semantics are unchanged.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -102,7 +102,7 @@ describe('W_ALIAS_TYPE', () => {
     for (const [name, alias] of Object.entries(BLOCK_ALIASES)) {
       const md = `\`\`\`${name}\n${ALIAS_BODIES[name]}\n\`\`\`\n`;
       const diags = validateDocument(parseDocument(md, name), `${name}.md`);
-      // Warnings only — exit-code semantics unchanged; `avo check` stays green.
+      // Warnings only — exit-code semantics unchanged; `chiltepin check` stays green.
       expect(diags.filter((d) => d.level === 'error'), name).toEqual([]);
       const warns = diags.filter((d) => d.code === 'W_ALIAS_TYPE');
       expect(warns, name).toHaveLength(1);

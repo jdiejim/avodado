@@ -9,5 +9,5 @@ export default defineConfig({
   target: 'node20',
   treeshake: true,
   splitting: false,
-  external: ['@avodado/core', 'marked'],
+  external: ['chiltepin-core', 'marked'],
 });

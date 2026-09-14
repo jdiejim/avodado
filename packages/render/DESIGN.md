@@ -1,7 +1,7 @@
 # Render skin — the single source of truth for how blocks look
 
 Every renderer draws from the tokens and roles in this file. No renderer
-carries a hex value; a test enforces it. To change the look of Avodado,
+carries a hex value; a test enforces it. To change the look of Chiltepin,
 change this file and `src/css.ts`, never a block.
 
 The goal: **editorial, quiet, dense with content.** Meaning travels through

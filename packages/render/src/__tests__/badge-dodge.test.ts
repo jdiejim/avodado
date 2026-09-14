@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { renderDocumentParts } from '../parts.js';
 
 /** The exact shape that reproduced the bug: a vertical chain with a skip edge. */

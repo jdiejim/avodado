@@ -1,5 +1,5 @@
 /**
- * Avodado core: parser, block schemas, validation, and reference resolver.
+ * Chiltepin core: parser, block schemas, validation, and reference resolver.
  *
  * Pure library — no I/O. Reads strings, returns models and diagnostics.
  *

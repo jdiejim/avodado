@@ -8,7 +8,7 @@
  * Ported from doc-studio.jsx `Prose`.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { renderInlineMd } from '../markdown.js';
 import { bl, bp } from '../paths.js';
 

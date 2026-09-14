@@ -15,7 +15,7 @@
  * series ramp in branch order, the way a chart tells its series apart.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { seriesColor } from '../svg/dsTone.js';
 import { renderLegend, type LegendItem } from '../svg/legend.js';

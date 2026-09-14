@@ -4,7 +4,7 @@
  * Good for "explain it in N ordered layers" (e.g. an L1/L2/L3 model).
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 

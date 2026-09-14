@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { BLOCK_FAMILIES, templateBody } from '@avodado/core';
+import { BLOCK_FAMILIES, templateBody } from 'chiltepin-core';
 import { filterInsertItems, INSERT_ITEMS } from './insertEngine.js';
 import {
   aliasPatchSummary,

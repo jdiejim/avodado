@@ -36,7 +36,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { parse, type HTMLElement } from 'node-html-parser';
-import { BLOCK_TEMPLATES, BLOCK_TYPES, parseDocument, type BlockType } from '@avodado/core';
+import { BLOCK_TEMPLATES, BLOCK_TYPES, parseDocument, type BlockType } from 'chiltepin-core';
 import { houseCss } from '../css.js';
 import { renderDocument } from '../document.js';
 

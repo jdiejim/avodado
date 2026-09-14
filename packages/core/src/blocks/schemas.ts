@@ -1,12 +1,12 @@
 /**
- * Zod schemas for every Avodado block type.
+ * Zod schemas for every Chiltepin block type.
  *
  * These schemas are the single source of truth for each block's shape. TS types
  * are derived via `z.infer` in {@link BlockDataMap}, so validation and types
  * cannot drift apart.
  *
  * Shapes match `resources/doc-studio.jsx` (v1 grammar). Where doc-studio
- * differed from the earlier `resources/avodado-renderer.html` reference, the
+ * differed from the earlier `resources/chiltepin-renderer.html` reference, the
  * doc-studio shape wins.
  *
  * Note: every schema is `.strict()` so unknown fields surface as diagnostics.

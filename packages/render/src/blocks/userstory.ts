@@ -6,7 +6,7 @@
  * `.story-chip`, `.ac-title`, `.ac-item`, `.gwt`, `.link-chip`).
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { refIdPart } from './refs.js';
@@ -52,7 +52,7 @@ export function renderUserStory(data: BlockDataMap['userstory']): string {
     links.forEach((l, i) => {
       const inner =
         `<span class="lt">${escapeHtml(l.mode ?? '')}</span>` + `${escapeHtml(l.label ?? '')}`;
-      // A link WITH a ref is a real anchor (`#id` resolves same-doc; `avo build`
+      // A link WITH a ref is a real anchor (`#id` resolves same-doc; `chiltepin build`
       // rewrites cross-doc hrefs via data-ref). Attribute order class → data-ref
       // → href is load-bearing for that rewrite. Label-only links stay chips.
       h +=

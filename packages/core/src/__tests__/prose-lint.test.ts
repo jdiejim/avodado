@@ -40,7 +40,7 @@ describe('sentence splitter', () => {
   });
 
   it('does not split inside inline code or links', () => {
-    const s = splitSentences('Run `avo check --fix. now` first. See [docs](https://a.dev/x.y?q=1.2) next.');
+    const s = splitSentences('Run `chiltepin check --fix. now` first. See [docs](https://a.dev/x.y?q=1.2) next.');
     expect(s).toHaveLength(2);
   });
 

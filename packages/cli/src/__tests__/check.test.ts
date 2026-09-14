@@ -9,7 +9,7 @@ async function tempProject(files: Record<string, string>): Promise<{
   root: string;
   cleanup: () => Promise<void>;
 }> {
-  const root = join(tmpdir(), `avo-check-${randomBytes(6).toString('hex')}`);
+  const root = join(tmpdir(), `chiltepin-check-${randomBytes(6).toString('hex')}`);
   for (const [rel, content] of Object.entries(files)) {
     const abs = join(root, rel);
     await mkdir(join(abs, '..'), { recursive: true });

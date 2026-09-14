@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { renderDocument } from '../index.js';
 import { renderGantt } from '../blocks/gantt.js';
 import { renderQuadrant } from '../blocks/quadrant.js';

@@ -6,7 +6,7 @@
  * header and total are highlighted with a WINNER chip (ties highlight all).
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 

@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { describeBlockSchema, type FieldNode } from '@avodado/core';
+import { describeBlockSchema, type FieldNode } from 'chiltepin-core';
 import { unionArmFor, unionObjectArms } from './union.js';
 
 function messagesElement(): Extract<FieldNode, { kind: 'union' }> {

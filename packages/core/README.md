@@ -1,11 +1,11 @@
-# @avodado/core
+# chiltepin-core
 
-Pure library: parse Avodado Markdown into a typed model, validate it, and resolve references across documents. No I/O.
+Pure library: parse Chiltepin Markdown into a typed model, validate it, and resolve references across documents. No I/O.
 
 ## Install
 
 ```
-pnpm add @avodado/core
+pnpm add chiltepin-core
 ```
 
 ## Primary API
@@ -18,7 +18,7 @@ import {
   blockRegistry,
   type Document,
   type Diagnostic,
-} from '@avodado/core';
+} from 'chiltepin-core';
 
 const doc: Document = parseDocument(markdown, 'orders');
 const diags: Diagnostic[] = validateDocument(doc, 'docs/orders.md');
@@ -42,4 +42,4 @@ A ```` ```mermaid ```` fence whose first line is `sequenceDiagram`, `flowchart` 
 
 **107 block types** across 13 families (prose, tables, API, architecture, flows, data model, charts, planning, business, design system, algorithms, AI/agents, quality & audits) — high-signal ones include `sequence`, `erd`, `c4`, `table`, `callout`, `flow`, `userstory`, `chart`, and `endpoint`. The full list is `BLOCK_TYPES`; `BLOCK_FAMILIES` groups them.
 
-Each block's field shape is a zod schema exported individually (e.g. `sequenceSchema`), and its data type is `BlockDataMap[K]`. See the full reference at **[avodado.dev](https://avodado.dev)**.
+Each block's field shape is a zod schema exported individually (e.g. `sequenceSchema`), and its data type is `BlockDataMap[K]`. See the full reference at **[chiltepin.dev](https://chiltepin.dev)**.

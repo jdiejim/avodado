@@ -1,6 +1,6 @@
 /**
  * `--size` export presets (sm | md | lg | xl) for the page-shaped exports
- * (`avo html`, `avo pdf`).
+ * (`chiltepin html`, `chiltepin pdf`).
  *
  * - Preset table + parsing: pure unit tests.
  * - HTML wiring: `runSingle` directly (no browser needed) — the preset must
@@ -26,7 +26,7 @@ title: Size preset fixture
 Some prose.
 `;
 
-const dir = join(tmpdir(), `avo-size-${randomBytes(4).toString('hex')}`);
+const dir = join(tmpdir(), `chiltepin-size-${randomBytes(4).toString('hex')}`);
 mkdirSync(dir, { recursive: true });
 writeFileSync(join(dir, 'doc.md'), DOC, 'utf8');
 

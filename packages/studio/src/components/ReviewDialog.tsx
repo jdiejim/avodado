@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useRef } from 'react';
-import { BLOCK_LABELS } from '@avodado/core';
+import { BLOCK_LABELS } from 'chiltepin-core';
 import { changesSummary, type ChangeItem } from '../state/changes.js';
 import { docSurface } from '../state/derive.js';
 import { useSystemDark } from '../lib/systemDark.js';

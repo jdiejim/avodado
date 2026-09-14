@@ -15,7 +15,7 @@ describe('memoryVault', () => {
   it('seeds a welcome document so a first visit has something to edit', async () => {
     const docs = await memoryVault.fetchDocs();
     expect(docs).toHaveLength(1);
-    expect(docs[0]?.title).toBe('Welcome to Avodado');
+    expect(docs[0]?.title).toBe('Welcome to Chiltepin');
   });
 
   // Boot calls fetchMeta and fetchDocs concurrently — seeding once must not

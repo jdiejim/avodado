@@ -5,7 +5,7 @@
  * uppercase role kicker, and an optional focus line. Quiet and professional.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { initialsFor } from './persona.js';

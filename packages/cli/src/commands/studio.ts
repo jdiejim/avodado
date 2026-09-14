@@ -1,8 +1,8 @@
 /**
- * `avo studio` — local file-bridge server for the visual editor.
+ * `chiltepin studio` — local file-bridge server for the visual editor.
  *
  * For editing, this does no server-side rendering: the studio web app
- * (`@avodado/studio`, loaded lazily) renders in the browser and talks to a
+ * (`chiltepin-studio`, loaded lazily) renders in the browser and talks to a
  * small JSON API here — list docs, read a doc's raw source, write it back.
  * The Markdown files on disk stay the single source of truth: writes are
  * atomic (temp file + rename), LF-normalized, and guarded by a content hash
@@ -11,7 +11,7 @@
  *
  * The BUILT docs site is also mounted here, under `/site/…` (`/site/` →
  * index, `/site/<slug>.html`, `/site/<slug>.slides.html`): the same
- * in-memory {@link buildSite} pages `avo serve` produces, built lazily on the
+ * in-memory {@link buildSite} pages `chiltepin serve` produces, built lazily on the
  * first `/site` request and invalidated by the same debounced fs events that
  * feed `/__events`. The pages' live-reload script targets `/__events` — the
  * same origin here — so they reload on external changes with zero changes to
@@ -36,7 +36,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 import open from 'open';
-import { parseDocument, validateDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from 'chiltepin-core';
 import { loadConfig } from '../io/config.js';
 import { loadDocs } from '../io/files.js';
 import { toPdf } from '../io/pdf.js';
@@ -130,13 +130,13 @@ const MIME: Readonly<Record<string, string>> = {
   '.map': 'application/json',
 };
 
-/** Shown at `/` when the optional `@avodado/studio` assets aren't installed. */
+/** Shown at `/` when the optional `chiltepin-studio` assets aren't installed. */
 const FALLBACK_HTML =
-  '<!doctype html><html><head><meta charset="utf-8"><title>Avodado Studio</title></head>' +
+  '<!doctype html><html><head><meta charset="utf-8"><title>Chiltepin Studio</title></head>' +
   '<body style="font:16px/1.6 system-ui,sans-serif;max-width:38rem;margin:4rem auto;padding:0 1rem;">' +
-  '<h1>Avodado Studio</h1>' +
-  '<p>The studio web app (<code>@avodado/studio</code>) is not installed, so there is ' +
-  'nothing to show here. Reinstall <code>avodado</code> to get the bundled assets.</p>' +
+  '<h1>Chiltepin Studio</h1>' +
+  '<p>The studio web app (<code>chiltepin-studio</code>) is not installed, so there is ' +
+  'nothing to show here. Reinstall <code>chiltepin</code> to get the bundled assets.</p>' +
   '<p>The file-bridge API is still running: <code>/api/meta</code>, <code>/api/docs</code>, ' +
   '<code>/api/doc/&lt;slug&gt;</code> and the <code>/__events</code> stream all work.</p>' +
   '</body></html>';
@@ -157,7 +157,7 @@ export async function runStudio(opts: StudioOptions): Promise<void> {
   // — never a crash — when it's absent. `null` = tried and failed.
   let assetsRootPromise: Promise<string | null> | undefined;
   const assetsRoot = (): Promise<string | null> => {
-    assetsRootPromise ??= import('@avodado/studio')
+    assetsRootPromise ??= import('chiltepin-studio')
       .then((mod) => resolve(mod.assetsPath()))
       .catch(() => null);
     return assetsRootPromise;

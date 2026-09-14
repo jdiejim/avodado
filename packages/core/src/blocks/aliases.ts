@@ -4,7 +4,7 @@
  * alias fence, the parser maps it to its canonical `kind` (recording the tag
  * as written in `sourceType`) and injects the alias `patch` for any keys the
  * body doesn't set (body wins). Validation surfaces a `W_ALIAS_TYPE` warning —
- * informational only; warnings never fail `avo check`.
+ * informational only; warnings never fail `chiltepin check`.
  *
  * The display data (`sectionLabel`, `label`, `description`) is the exact text
  * these types carried before the merge, so alias fences keep rendering with

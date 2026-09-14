@@ -8,7 +8,7 @@
  * Kept free of React/DOM so every rule is unit-testable.
  */
 
-import type { FieldNode } from '@avodado/core';
+import type { FieldNode } from 'chiltepin-core';
 import { coerceUnionInput, unionArmFor } from '../form/union.js';
 import { defaultObject, defaultValue } from '../lib/defaults.js';
 

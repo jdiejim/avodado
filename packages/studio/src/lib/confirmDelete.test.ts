@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { describeBlockSchema, parseDocument, templateBody, type Segment } from '@avodado/core';
+import { describeBlockSchema, parseDocument, templateBody, type Segment } from 'chiltepin-core';
 import { newItemForList } from '../direct/paths.js';
 import { needsBlockDeleteConfirm, needsPartDeleteConfirm } from './confirmDelete.js';
 

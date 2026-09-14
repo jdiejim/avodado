@@ -3,14 +3,14 @@ import { mkdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { BLOCK_TYPES, parseDocument, validateDocument, type Diagnostic } from '@avodado/core';
+import { BLOCK_TYPES, parseDocument, validateDocument, type Diagnostic } from 'chiltepin-core';
 import { DOC_TEMPLATES, templateFor, writeNewDoc } from '../commands/new.js';
 
 
 /**
  * Diagnostics that should fail a "validates clean" gate. Alias spellings are
  * valid forever and emit only the informational `W_ALIAS_TYPE` warning
- * (warnings never fail `avo check`) — everything else still counts.
+ * (warnings never fail `chiltepin check`) — everything else still counts.
  */
 const failing = (diags: readonly Diagnostic[]): readonly Diagnostic[] =>
   diags.filter((d) => !(d.code === 'W_ALIAS_TYPE' && d.level === 'warn'));
@@ -70,7 +70,7 @@ describe('DOC_TEMPLATES', () => {
 
 describe('writeNewDoc', () => {
   it('writes a doc to the given path', async () => {
-    const root = join(tmpdir(), `avo-new-${randomBytes(6).toString('hex')}`);
+    const root = join(tmpdir(), `chiltepin-new-${randomBytes(6).toString('hex')}`);
     await mkdir(root, { recursive: true });
     try {
       const path = await writeNewDoc({ cwd: root, type: 'callout', out: 'docs/x.md' });

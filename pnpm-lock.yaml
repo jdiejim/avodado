@@ -47,18 +47,18 @@ importers:
 
   packages/cli:
     dependencies:
-      '@avodado/core':
-        specifier: workspace:*
-        version: link:../core
-      '@avodado/render':
-        specifier: workspace:*
-        version: link:../render
-      '@avodado/studio':
-        specifier: workspace:*
-        version: link:../studio
       cfonts:
         specifier: ^3.3.0
         version: 3.3.1
+      chiltepin-core:
+        specifier: workspace:*
+        version: link:../core
+      chiltepin-render:
+        specifier: workspace:*
+        version: link:../render
+      chiltepin-studio:
+        specifier: workspace:*
+        version: link:../studio
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -106,7 +106,7 @@ importers:
 
   packages/render:
     dependencies:
-      '@avodado/core':
+      chiltepin-core:
         specifier: workspace:*
         version: link:../core
       marked:
@@ -122,12 +122,6 @@ importers:
 
   packages/studio:
     devDependencies:
-      '@avodado/core':
-        specifier: workspace:*
-        version: link:../core
-      '@avodado/render':
-        specifier: workspace:*
-        version: link:../render
       '@types/node':
         specifier: ^22.10.5
         version: 22.19.20
@@ -140,6 +134,12 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.3(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
+      chiltepin-core:
+        specifier: workspace:*
+        version: link:../core
+      chiltepin-render:
+        specifier: workspace:*
+        version: link:../render
       react:
         specifier: ^18.3.1
         version: 18.3.1

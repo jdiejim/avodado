@@ -10,8 +10,8 @@ import {
   validateDocument,
   type Diagnostic,
   type Document,
-} from '@avodado/core';
-import { renderDocumentSegments, type DocumentSegmentsResult } from '@avodado/render';
+} from 'chiltepin-core';
+import { renderDocumentSegments, type DocumentSegmentsResult } from 'chiltepin-render';
 
 /** Everything derivable from the current source. */
 interface Derived {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeBlockSchema, blockSchemas } from '@avodado/core';
+import { describeBlockSchema, blockSchemas } from 'chiltepin-core';
 import { defaultObject, defaultValue } from './defaults.js';
 
 describe('defaultValue', () => {

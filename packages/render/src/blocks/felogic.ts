@@ -19,7 +19,7 @@
  * candidates, or none, means no accent.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { edgeLabelLayer, type EdgeLabelPoint } from '../svg/edgeSteps.js';
@@ -236,7 +236,7 @@ function renderFelogicGraph(data: Data, tag: string): string {
   const entries0 = nodes.filter((n) => entryKinds.includes((n.kind ?? '').toLowerCase()));
   const accentId = entries0.length === 1 ? entries0[0]?.id : undefined;
 
-  // Grid metadata for editors (Avodado Studio drag/connect/context menus):
+  // Grid metadata for editors (Chiltepin Studio drag/connect/context menus):
   // inert attrs mirroring the layout constants plus each node's effective cell.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
   let s =

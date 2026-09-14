@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
-import { parseDocument, validateDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from 'chiltepin-core';
 import { renderErd } from '../blocks/erd.js';
 import { renderDocument } from '../document.js';
 

@@ -12,8 +12,8 @@
  * Kept free of React/DOM so every rule is unit-testable.
  */
 
-import type { FieldNode } from '@avodado/core';
-import { KNOWN_LOGIC_KINDS, KNOWN_NODE_KINDS } from '@avodado/render';
+import type { FieldNode } from 'chiltepin-core';
+import { KNOWN_LOGIC_KINDS, KNOWN_NODE_KINDS } from 'chiltepin-render';
 import type { PathSeg } from '../direct/paths.js';
 import { unionSimpleControl } from './union.js';
 

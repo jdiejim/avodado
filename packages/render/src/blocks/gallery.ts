@@ -6,7 +6,7 @@
  * column count (2 for a bug grid, 3–4 for a comparison).
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { highlightCode } from '../highlight.js';
 import { bl, bp } from '../paths.js';

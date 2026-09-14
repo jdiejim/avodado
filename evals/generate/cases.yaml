@@ -1,8 +1,8 @@
 # Generation eval — end-to-end scenarios across the block families.
 #
-# A fresh agent gets ONE request, the installed skill, and a working `avo`
-# (through `npx -y avodado`). It follows the skill's fast path in full: pick,
-# `avo block`, write, `avo check`, fix. Unlike evals/write, the agent MAY run
+# A fresh agent gets ONE request, the installed skill, and a working `chiltepin`
+# (through `npx -y chiltepin`). It follows the skill's fast path in full: pick,
+# `chiltepin block`, write, `chiltepin check`, fix. Unlike evals/write, the agent MAY run
 # the CLI — that is the product. The first draft is captured before any check
 # so first-write quality and final quality are both scored.
 #

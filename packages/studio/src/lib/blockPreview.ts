@@ -10,8 +10,8 @@ import {
   type BlockType,
   type Diagnostic,
   type TypedSegment,
-} from '@avodado/core';
-import { renderDocumentSegments } from '@avodado/render';
+} from 'chiltepin-core';
+import { renderDocumentSegments } from 'chiltepin-render';
 import { diagnosticsInSpan } from './segDiagnostics.js';
 
 /** A single fenced block as a standalone document source. */

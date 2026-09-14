@@ -18,7 +18,7 @@
  * micro-editor hand-off) lives in `ContextMenu.tsx` / `DirectLayer.tsx`.
  */
 
-import { SEQUENCE_FRAME_KINDS } from '@avodado/core';
+import { SEQUENCE_FRAME_KINDS } from 'chiltepin-core';
 import {
   edgeIndexFromPath,
   newNodeAtOps,

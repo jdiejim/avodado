@@ -1,5 +1,5 @@
 /**
- * Converts an OpenAPI spec into Avodado markdown.
+ * Converts an OpenAPI spec into Chiltepin markdown.
  *
  * The output is **deterministic**: same spec in → same markdown out. That
  * makes drift detection a simple string compare.
@@ -213,7 +213,7 @@ function renderSchemasErd(slug: string, spec: OpenApiSpec): string {
 }
 
 /**
- * Generates an Avodado markdown document from an OpenAPI spec.
+ * Generates a Chiltepin markdown document from an OpenAPI spec.
  *
  * @param spec - The parsed OpenAPI spec.
  * @param opts - Options including the doc slug.

@@ -1,6 +1,6 @@
 # Architecture
 
-Avodado is a documentation-as-code system. A pnpm monorepo of four published packages — `@avodado/core`, `@avodado/render`, `@avodado/studio`, and `avodado` — where dependencies always point inward toward a pure `@avodado/core`. **107 canonical block types** (plus 12 permanent aliases for merged old names), each with a zod schema, a typed renderer entry, and (where applicable) shared layout / SVG utilities.
+Chiltepin is a documentation-as-code system. A pnpm monorepo of four published packages — `chiltepin-core`, `chiltepin-render`, `chiltepin-studio`, and `chiltepin` — where dependencies always point inward toward a pure `chiltepin-core`. **107 canonical block types** (plus 12 permanent aliases for merged old names), each with a zod schema, a typed renderer entry, and (where applicable) shared layout / SVG utilities.
 
 ## Guiding principle
 
@@ -9,24 +9,24 @@ Avodado is a documentation-as-code system. A pnpm monorepo of four published pac
 ## Layering
 
 ```
-@avodado/core   ← pure: parse, schemas (107 + aliases), validate, resolve, edit ops. No I/O.
-@avodado/render ← @avodado/core. HTML + slide decks out. No DOM, no browser. One look; dark by default.
-@avodado/studio ← @avodado/{core, render}. Browser SPA (Vite/React), ships built static assets.
-avodado (CLI)   ← @avodado/{core, render, studio}. Ink TUI. PDF (Playwright) + sync I/O (OpenAPI, CSV). Owns process.exit.
+chiltepin-core   ← pure: parse, schemas (107 + aliases), validate, resolve, edit ops. No I/O.
+chiltepin-render ← chiltepin-core. HTML + slide decks out. No DOM, no browser. One look; dark by default.
+chiltepin-studio ← @chiltepin/{core, render}. Browser SPA (Vite/React), ships built static assets.
+chiltepin (CLI)   ← @chiltepin/{core, render, studio}. Ink TUI. PDF (Playwright) + sync I/O (OpenAPI, CSV). Owns process.exit.
 ```
 
-The marketing + docs site (avodado.dev) lives in its own repository and consumes `@avodado/*` from npm like any other user, so nothing in this monorepo depends on it.
+The marketing + docs site (chiltepin.dev) lives in its own repository and consumes `@chiltepin/*` from npm like any other user, so nothing in this monorepo depends on it.
 
 Rules:
 
-- `@avodado/core` does **no I/O**: no file system, no network, no `process`, no DOM. It reads strings and returns models and diagnostics.
-- All I/O lives in the **outer ring** (`cli`) — including PDF export (Playwright, an optional dependency imported lazily) and the file reads/writes behind `avo sync openapi` / `avo sync csv`. The importers themselves (OpenAPI → markdown, CSV → block fences, `core/src/import/`) are pure and live in `core`, so Studio shares them with the CLI.
+- `chiltepin-core` does **no I/O**: no file system, no network, no `process`, no DOM. It reads strings and returns models and diagnostics.
+- All I/O lives in the **outer ring** (`cli`) — including PDF export (Playwright, an optional dependency imported lazily) and the file reads/writes behind `chiltepin sync openapi` / `chiltepin sync csv`. The importers themselves (OpenAPI → markdown, CSV → block fences, `core/src/import/`) are pure and live in `core`, so Studio shares them with the CLI.
 - Libraries **return diagnostics** as values. They don't `throw` for expected conditions (parse errors, schema violations, dangling refs). The CLI is the only layer that maps diagnostics to console output and exit codes.
-- `@avodado/studio` is an outermost consumer of `core` + `render` only (never the CLI's Node/Playwright-bound PDF code). The whole parse → validate → render pipeline runs client-side in the browser; the published package contains only built static assets plus a tiny Node entry (`assetsPath()`) the CLI uses to serve them. The `avo studio` server is a **file bridge** — JSON read/write API + SSE change events, bound to `127.0.0.1` — and never renders. Editing goes through core's surgical edit ops (`replaceBlockBody`, `insertBlock`, `setYamlPath`, …) — including direct on-diagram interactions (click to select a part, Enter to edit it, arrow keys or drag to move it), which compile down to the same ops — so a studio session rewrites individual fenced blocks in place and the files on disk stay the single source of truth. Storage itself sits behind one interface — `StudioBackend` in `studio/src/api/backend.ts`, five methods — with two implementations: the file bridge above, and an in-tab vault with no server behind it. The package builds both (`dist/app` for the CLI, `dist/web` for a static host), so a hosted studio is a choice of backend at boot rather than a second application; the hosted build hides what needs a server (PDF, PowerPoint, the built site, change events) and shares documents by putting the source in a URL fragment instead.
+- `chiltepin-studio` is an outermost consumer of `core` + `render` only (never the CLI's Node/Playwright-bound PDF code). The whole parse → validate → render pipeline runs client-side in the browser; the published package contains only built static assets plus a tiny Node entry (`assetsPath()`) the CLI uses to serve them. The `chiltepin studio` server is a **file bridge** — JSON read/write API + SSE change events, bound to `127.0.0.1` — and never renders. Editing goes through core's surgical edit ops (`replaceBlockBody`, `insertBlock`, `setYamlPath`, …) — including direct on-diagram interactions (click to select a part, Enter to edit it, arrow keys or drag to move it), which compile down to the same ops — so a studio session rewrites individual fenced blocks in place and the files on disk stay the single source of truth. Storage itself sits behind one interface — `StudioBackend` in `studio/src/api/backend.ts`, five methods — with two implementations: the file bridge above, and an in-tab vault with no server behind it. The package builds both (`dist/app` for the CLI, `dist/web` for a static host), so a hosted studio is a choice of backend at boot rather than a second application; the hosted build hides what needs a server (PDF, PowerPoint, the built site, change events) and shares documents by putting the source in a URL fragment instead.
 
 ## The block registry
 
-The block registry in `@avodado/core` is the architectural backbone:
+The block registry in `chiltepin-core` is the architectural backbone:
 
 ```ts
 export const blockSchemas = {
@@ -46,7 +46,7 @@ export interface BlockDef<K extends BlockType> {
 export type BlockRegistry = { readonly [K in BlockType]: BlockDef<K> };
 ```
 
-The same `Record<BlockType, …>` pattern propagates to every rendering target — for instance, `@avodado/render` defines `HtmlRendererRegistry = { [K in BlockType]: (data: BlockDataMap[K]) => string }`. Adding a new block type in `core` is a one-line change to `BLOCK_TYPES`, and `tsc` then immediately surfaces every registry that hasn't been extended.
+The same `Record<BlockType, …>` pattern propagates to every rendering target — for instance, `chiltepin-render` defines `HtmlRendererRegistry = { [K in BlockType]: (data: BlockDataMap[K]) => string }`. Adding a new block type in `core` is a one-line change to `BLOCK_TYPES`, and `tsc` then immediately surfaces every registry that hasn't been extended.
 
 This is intentional: there's exactly one place to add a block (its schema), and the type system makes us update every consumer. No scattered switch statements, no runtime `default: throw new Error('unknown block')` clauses to keep in sync.
 
@@ -57,7 +57,7 @@ Twelve former block types merged into canonical ones (`infra`/`event`/`ddd`/`net
 - The **splitter** recognises an alias fence and records the tag as written in the segment's `sourceType`; the segment's `kind` is always canonical.
 - The **parser** shallow-merges the alias `patch` (e.g. `{ kind: 'waterfall' }`) into the parsed body — only for keys the body doesn't set, so the body always wins.
 - **Rendering** is byte-identical to the pre-merge output (pinned parity fixtures); the SECTION eyebrow uses the alias's historical label via `sourceType`.
-- **Validation** surfaces the mapping as a `W_ALIAS_TYPE` warning — informational; warnings never fail `avo check`.
+- **Validation** surfaces the mapping as a `W_ALIAS_TYPE` warning — informational; warnings never fail `chiltepin check`.
 - **Editing stays faithful**: edit ops never rewrite fence lines, so aliased fences survive studio editing byte-for-byte; new insertions always write canonical names.
 
 ## Mermaid input dialect
@@ -86,7 +86,7 @@ Block types are grouped into 13 families (`BLOCK_FAMILIES` / `BLOCK_FAMILY` in t
 
 ## Renderer fidelity
 
-`@avodado/render` owns the HTML/SVG output and the shared editorial skin:
+`chiltepin-render` owns the HTML/SVG output and the shared editorial skin:
 
 - The house CSS (`packages/render/src/css.ts`) is namespaced under `.docskin`.
 - Each block renderer maps schema data to HTML or SVG with shared layout utilities.
@@ -110,7 +110,7 @@ Shared SVG utilities live under `packages/render/src/svg/`:
 
 There is one look: the editorial skin in `packages/render/src/css.ts` (see `packages/render/DESIGN.md`). Every colour is a role token on `:root` (`--paper`, `--ink`, `--accent`, …); dark is the default. `colorScheme: "light"` stamps `data-theme="light"` on the rendered page; `"system"` adds an OS preference rule.
 
-There is no theme choice anywhere — no `avo theme`, no `--theme`, no Studio panel. `packages/render/src/themes.ts` keeps the single-entry shape (`ThemeName = 'textbook'`, label `Editorial`, `themeStyle()` returns `''`) so presets can return without an API change, and `RenderPartsOptions.themeVars` stays as an internal `:root` override with no user surface (the CLI uses it for `--size`).
+There is no theme choice anywhere — no `chiltepin theme`, no `--theme`, no Studio panel. `packages/render/src/themes.ts` keeps the single-entry shape (`ThemeName = 'textbook'`, label `Editorial`, `themeStyle()` returns `''`) so presets can return without an API change, and `RenderPartsOptions.themeVars` stays as an internal `:root` override with no user surface (the CLI uses it for `--size`).
 
 ## Reference scheme
 
@@ -134,7 +134,7 @@ Stable codes that the CLI can sort, filter, and format:
 | `E_BAD_REF_FORMAT` | error | Ref doesn't match `doc#id` or `#id` |
 | `E_UNKNOWN_BLOCK` | error | Defensive (splitter should prevent) |
 | `E_ENCODING` | error | The file on disk is not UTF-8 (CLI-only — it is the layer that reads files) |
-| `E_RENDER` | error | A renderer threw while drawing a block; names the document and the block (CLI-only, around `@avodado/render`) |
+| `E_RENDER` | error | A renderer threw while drawing a block; names the document and the block (CLI-only, around `chiltepin-render`) |
 | `W_EMPTY_BLOCK` | warn | Typed block with empty body |
 | `W_SUSPECT_BLOCK` | warn | Fence tag looks like a typo of a real block type (rendered as plain text; carries a did-you-mean suggestion) |
 | `W_ALIAS_TYPE` | warn | Fence uses one of the 12 permanent alias names (e.g. `waterfall`) — parsed and rendered as its canonical type; informational only |
@@ -147,7 +147,7 @@ Uniform shape: `{ file, line?, level, code, message, value? }`.
 Pure functions do the work and return `{ diagnostics, exitCode }`. The UI layer just formats:
 
 - **TTY interactive** → Ink renders a colored diagnostics table.
-- **Non-TTY / CI / `AVO_PLAIN=1`** → plain `file:line  level  code  message — value` lines.
+- **Non-TTY / CI / `CHILTEPIN_PLAIN=1`** → plain `file:line  level  code  message — value` lines.
 - **`--json` on `check`** → JSON to stdout; Ink is bypassed entirely.
 
 The top-level always `process.exit(code)` after `waitUntilExit()`.
@@ -156,13 +156,13 @@ The top-level always `process.exit(code)` after `waitUntilExit()`.
 
 The renderer covers all canonical block types. Several of the original post-v1 seams have since shipped as workspace packages:
 
-- **The authoring skill** — one copy, at `skills/avodado/` (SKILL.md + reference/), laid out so `npx skills add jdiejim/avodado` installs it into any agent. The CLI build copies it to `packages/cli/templates/skill/` (gitignored) for `avo skill`. The block field contract is not written by hand: `avo block <type>` prints it from the zod schema (`core/src/blocks/contract.ts`), plus one hand-kept table of terse-form hints that a test pins to the grammar table in `normalize.ts`.
-- **`@avodado/studio`** — the visual editor served by `avo studio` (see the layering rules above).
-- **Importers** — `packages/core/src/import/`: pure external-source importers (OpenAPI → whole docs, CSV → `table`/`statustable`/`chart` fences) plus the small importer registry (`IMPORTERS` / `importerForFile`). Exposed as `avo sync openapi` / `avo sync csv` and the studio’s drag-drop / “Import…” flow.
+- **The authoring skill** — one copy, at `skills/chiltepin/` (SKILL.md + reference/), laid out so `npx skills add jdiejim/chiltepin` installs it into any agent. The CLI build copies it to `packages/cli/templates/skill/` (gitignored) for `chiltepin skill`. The block field contract is not written by hand: `chiltepin block <type>` prints it from the zod schema (`core/src/blocks/contract.ts`), plus one hand-kept table of terse-form hints that a test pins to the grammar table in `normalize.ts`.
+- **`chiltepin-studio`** — the visual editor served by `chiltepin studio` (see the layering rules above).
+- **Importers** — `packages/core/src/import/`: pure external-source importers (OpenAPI → whole docs, CSV → `table`/`statustable`/`chart` fences) plus the small importer registry (`IMPORTERS` / `importerForFile`). Exposed as `chiltepin sync openapi` / `chiltepin sync csv` and the studio’s drag-drop / “Import…” flow.
 
 Still clean extension points, not "TODO" stubs:
 
-- **`@avodado/react`** — React component wrapping the HTML renderer. Dropped from v1 per design choice. To add: a new workspace package depending on `core` + `render`, exporting a single `<AvodadoDocument>` that uses `dangerouslySetInnerHTML`.
+- **`@chiltepin/react`** — React component wrapping the HTML renderer. Dropped from v1 per design choice. To add: a new workspace package depending on `core` + `render`, exporting a single `<ChiltepinDocument>` that uses `dangerouslySetInnerHTML`.
 - **Node-level references** — refs into a block's internals (e.g. `doc#id::field`). The current resolver targets whole blocks only; the `REF_RE` regex and `RefGraph` shape would extend cleanly.
 - **Visual diff in CI** — snapshot rendered HTML on PRs and surface changes. SVG geometry is already deterministic, so this is a build-then-compare step.
 

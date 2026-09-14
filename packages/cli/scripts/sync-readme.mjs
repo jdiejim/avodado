@@ -1,5 +1,5 @@
 /**
- * The npm page for `avodado` shows this package's README. Keep it the repo
+ * The npm page for `chiltepin` shows this package's README. Keep it the repo
  * README, with relative links and images rewritten to absolute GitHub URLs so
  * they render on npmjs.com. Runs at build (before `files` are packed).
  */
@@ -10,9 +10,9 @@ import path from 'node:path';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..', '..');
 const src = readFileSync(path.join(root, 'README.md'), 'utf8');
-const RAW = 'https://raw.githubusercontent.com/jdiejim/avodado/main/';
-const BLOB = 'https://github.com/jdiejim/avodado/blob/main/';
-const TREE = 'https://github.com/jdiejim/avodado/tree/main/';
+const RAW = 'https://raw.githubusercontent.com/jdiejim/chiltepin/main/';
+const BLOB = 'https://github.com/jdiejim/chiltepin/blob/main/';
+const TREE = 'https://github.com/jdiejim/chiltepin/tree/main/';
 
 function githubLink(target) {
   const [file] = target.split('#');

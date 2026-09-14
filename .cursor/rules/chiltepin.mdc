@@ -1,0 +1,15 @@
+---
+description: Author Chiltepin documentation (Markdown with typed YAML blocks)
+globs:
+  - "docs/**/*.md"
+alwaysApply: false
+---
+
+# Chiltepin documentation
+
+For docs under `docs/`, follow `skills/chiltepin/SKILL.md`.
+That file holds the authoring workflow and routes to the relevant references.
+
+Run `node packages/cli/dist/bin.js block <type>` for fields and examples.
+Run `node packages/cli/dist/bin.js check` after edits; fix errors and review warnings.
+Build the CLI with `pnpm build` if its output is missing.

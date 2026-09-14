@@ -1,5 +1,5 @@
 /**
- * The schema-derived block contract (`avo block <type>`): every block prints,
+ * The schema-derived block contract (`chiltepin block <type>`): every block prints,
  * every example validates, and the hand-written terse-form hints match the
  * grammar table in normalize.ts exactly — no grammar without a hint, no hint
  * without a grammar.

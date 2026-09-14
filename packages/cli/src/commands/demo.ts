@@ -1,16 +1,16 @@
 /**
- * `avo demo [family]` — render the bundled showcase doc (every block type, or
- * just one family of blocks) so a user can see Avodado without writing
+ * `chiltepin demo [family]` — render the bundled showcase doc (every block type, or
+ * just one family of blocks) so a user can see Chiltepin without writing
  * anything. Defaults to opening an HTML preview in the browser.
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { runSingle, type SingleFormat, type SingleResult } from './single.js';
 import { templatesDir } from './init.js';
-import { BLOCK_FAMILY, BLOCK_FAMILIES as DEMO_FAMILIES, type BlockFamily as DemoFamily } from '@avodado/core';
+import { BLOCK_FAMILY, BLOCK_FAMILIES as DEMO_FAMILIES, type BlockFamily as DemoFamily } from 'chiltepin-core';
 
 /**
  * Filters the demo source down to one family of blocks.
@@ -73,7 +73,7 @@ export async function runDemo(opts: {
 
   // Drop the demo doc in its own temp dir and render it from there, so it
   // never touches the user's project.
-  const dir = join(tmpdir(), 'avodado-demo');
+  const dir = join(tmpdir(), 'chiltepin-demo');
   await mkdir(dir, { recursive: true });
   const input = join(dir, opts.family === undefined ? 'demo.md' : `demo-${opts.family}.md`);
   await writeFile(input, source, 'utf8');

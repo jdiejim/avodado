@@ -1,8 +1,8 @@
 /**
- * Types for `avo audit` — the evidence report + recommendation contract.
+ * Types for `chiltepin audit` — the evidence report + recommendation contract.
  *
  * The JSON shape here is **schema version 1** (see BATCH-B-PLAN.md). The
- * `/avo` slash command and other consumers code against it; do not remove or
+ * `/chiltepin` slash command and other consumers code against it; do not remove or
  * rename fields without bumping `version`.
  */
 
@@ -83,11 +83,11 @@ export interface AuditRecommendation {
   readonly confidence: 'high' | 'medium' | 'low';
   /** Real files from the evidence. */
   readonly citations: readonly string[];
-  /** Nearest `avo new` template name, when one fits. */
+  /** Nearest `chiltepin new` template name, when one fits. */
   readonly template?: string;
 }
 
-/** The full `avo audit --json` payload — schema version 1. */
+/** The full `chiltepin audit --json` payload — schema version 1. */
 export interface AuditReport {
   readonly version: 1;
   readonly source: AuditSourceName;

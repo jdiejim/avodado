@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { buildSite, type SiteDoc } from '../commands/site.js';
 
 const DOC_A = `\`\`\`meta

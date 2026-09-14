@@ -40,14 +40,14 @@ describe('data-path tagging (direct edit, narrative blocks)', () => {
   it('prose renders inline markdown in text fields, like callout/pullquote', () => {
     const html = renderProseBlock({
       blocks: [
-        { type: 'h', text: 'The `avo` CLI' },
+        { type: 'h', text: 'The `chiltepin` CLI' },
         { type: 'p', text: 'This is **bold** and `code`.' },
         { type: 'ul', items: ['*emphasis* item', '[link](https://example.com)'] },
         { type: 'quote', text: 'A **strong** quote' },
       ],
     });
     expect(html).toContain('<p data-bp="blocks.1">This is <strong>bold</strong> and <code>code</code>.</p>');
-    expect(html).toContain('<h3 data-bp="blocks.0">The <code>avo</code> CLI</h3>');
+    expect(html).toContain('<h3 data-bp="blocks.0">The <code>chiltepin</code> CLI</h3>');
     expect(html).toContain('<li data-bp="blocks.2.items.0"><em>emphasis</em> item</li>');
     expect(html).toContain('<a href="https://example.com">link</a>');
     expect(html).toContain('<blockquote data-bp="blocks.3">A <strong>strong</strong> quote</blockquote>');

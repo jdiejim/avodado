@@ -1,17 +1,17 @@
-# @avodado/studio
+# chiltepin-studio
 
-Avodado Studio — a full-screen local visual editor for Avodado docs (Markdown +
+Chiltepin Studio — a full-screen local visual editor for Chiltepin docs (Markdown +
 typed YAML blocks). The files on disk stay the single source of truth: the
 studio reads and writes them through the CLI's JSON file bridge, and all
-parsing, validation, and rendering happens in the browser via `@avodado/core`
-and `@avodado/render`.
+parsing, validation, and rendering happens in the browser via `chiltepin-core`
+and `chiltepin-render`.
 
 ## Usage
 
-Run it from an Avodado project:
+Run it from a Chiltepin project:
 
 ```sh
-avo studio
+chiltepin studio
 ```
 
 The CLI serves the built app (from this package's `dist/app/`) together with
@@ -48,12 +48,12 @@ outside changes to the same files (e.g. by an AI agent) repaint live over SSE.
 ## Development
 
 ```sh
-# terminal 1 — the file-bridge API on 127.0.0.1:4174 (avo studio --no-open, or a mock)
+# terminal 1 — the file-bridge API on 127.0.0.1:4174 (chiltepin studio --no-open, or a mock)
 # terminal 2 — the app with hot reload; /api and /__events proxy to :4174
-pnpm --filter @avodado/studio dev
+pnpm --filter chiltepin-studio dev
 ```
 
-`pnpm --filter @avodado/studio build` produces:
+`pnpm --filter chiltepin-studio build` produces:
 
 - `dist/app/` — the static app (Vite build), and
 - `dist/index.js` + `dist/index.d.ts` — a tiny Node entry exporting

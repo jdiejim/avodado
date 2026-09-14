@@ -5,7 +5,7 @@
  * Placement comes from core (`swimlanePlacements`): a step names its lane by
  * label, id, or index, and its column is either the `col` it carries or its
  * longest-path rank through the links, so the renderer, the Studio canvas,
- * and `avo check` agree on every cell. Optional `phases` band the columns
+ * and `chiltepin check` agree on every cell. Optional `phases` band the columns
  * (BPMN milestones) as a header row above the lanes.
  *
  * Skin (`DESIGN.md`): lanes are paper bands with hairline separators and a
@@ -20,7 +20,7 @@
  * on takes the accent outline and tint; the renderer adds none of its own.
  */
 
-import { swimlanePlacements, type BlockDataMap } from '@avodado/core';
+import { swimlanePlacements, type BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
@@ -82,7 +82,7 @@ export function renderSwimlane(data: BlockDataMap['swimlane']): string {
   const lanesH = Math.max(1, lanes.length) * laneH;
   const height = padTop + lanesH + padBot;
 
-  // Grid metadata for editors (Avodado Studio drag-to-move / drag-to-connect):
+  // Grid metadata for editors (Chiltepin Studio drag-to-move / drag-to-connect):
   // the step grid is labelW-offset columns × lanes-as-rows, so the left pad
   // includes the lane-label column and the row pitch is the lane height. Each
   // step's data-row below is its 1-based lane (`lane + 1`) — editors work in

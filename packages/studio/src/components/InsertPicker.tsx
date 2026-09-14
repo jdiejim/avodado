@@ -20,8 +20,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BLOCK_FAMILIES, parseDocument } from '@avodado/core';
-import { renderDocumentSegments } from '@avodado/render';
+import { BLOCK_FAMILIES, parseDocument } from 'chiltepin-core';
+import { renderDocumentSegments } from 'chiltepin-render';
 import { insertBlockAt } from '../lib/actions.js';
 import { openImportFilePicker } from '../lib/importActions.js';
 import { insertBodyFor, INSERT_ITEMS, type InsertItem } from '../lib/insertEngine.js';

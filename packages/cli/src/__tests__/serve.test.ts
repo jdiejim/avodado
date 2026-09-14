@@ -39,9 +39,9 @@ function waitForPort(child: ChildProcessWithoutNullStreams): Promise<number> {
   });
 }
 
-describe.skipIf(skipIfNotBuilt)('avo serve (built bin)', () => {
+describe.skipIf(skipIfNotBuilt)('chiltepin serve (built bin)', () => {
   it('serves the site from memory, injects live reload, and exits cleanly on SIGINT', async () => {
-    const tmp = join(tmpdir(), `avo-serve-${randomBytes(6).toString('hex')}`);
+    const tmp = join(tmpdir(), `chiltepin-serve-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(
       join(tmp, 'docs', 'getting-started.md'),
@@ -50,7 +50,7 @@ describe.skipIf(skipIfNotBuilt)('avo serve (built bin)', () => {
 
     const child = spawn('node', [BIN, 'serve', '--no-open', '--port', '0'], {
       cwd: tmp,
-      env: { ...process.env, AVO_PLAIN: '1' },
+      env: { ...process.env, CHILTEPIN_PLAIN: '1' },
     });
     try {
       const port = await waitForPort(child);

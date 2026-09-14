@@ -37,7 +37,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { describeBlockSchema } from '@avodado/core';
+import { describeBlockSchema } from 'chiltepin-core';
 import { needsPartDeleteConfirm } from '../lib/confirmDelete.js';
 import { isEditableTarget } from '../lib/dom.js';
 import { useStudio } from '../state/store.js';

@@ -32,7 +32,7 @@ export type DiagnosticCode =
   // the layer that reads files). Reported instead of validating mojibake.
   | 'E_ENCODING'
   // A renderer threw while drawing a block (emitted by the CLI around
-  // `@avodado/render`). Names the document and the offending block.
+  // `chiltepin-render`). Names the document and the offending block.
   | 'E_RENDER'
   | 'W_EMPTY_BLOCK'
   | 'W_SUSPECT_BLOCK'
@@ -102,13 +102,13 @@ export interface Diagnostic {
 }
 
 /** Base URL for per-code error documentation. */
-const ERRORS_BASE = 'https://avodado.dev/errors';
+const ERRORS_BASE = 'https://chiltepin.dev/errors';
 
 /**
  * Returns the documentation URL for a diagnostic code.
  *
  * @param code - The diagnostic code.
- * @returns A stable help URL, e.g. `https://avodado.dev/errors/e_schema`.
+ * @returns A stable help URL, e.g. `https://chiltepin.dev/errors/e_schema`.
  */
 export function helpUrl(code: DiagnosticCode): string {
   return `${ERRORS_BASE}/${code.toLowerCase()}`;

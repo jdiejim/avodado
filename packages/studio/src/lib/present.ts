@@ -4,12 +4,12 @@
  * Pure — parse + render, no store, no DOM.
  */
 
-import { parseDocument } from '@avodado/core';
-import { toSlides } from '@avodado/render';
+import { parseDocument } from 'chiltepin-core';
+import { toSlides } from 'chiltepin-render';
 
 /**
  * Renders `source` (any string, saved or not) to the full deck HTML that
- * `avo slides` would produce for it.
+ * `chiltepin slides` would produce for it.
  */
 export function presentDeckHtml(source: string, slug: string): string {
   return toSlides(parseDocument(source, slug));

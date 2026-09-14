@@ -1,12 +1,12 @@
 ```meta
-title: Getting started with Avodado
-subtitle: The 80/20 tour — what Avodado is, how a doc is built, and the handful of commands you'll use every day.
+title: Getting started with Chiltepin
+subtitle: The 80/20 tour — what Chiltepin is, how a doc is built, and the handful of commands you'll use every day.
 tag: GUIDE · START HERE
 ```
 
-## What is Avodado?
+## What is Chiltepin?
 
-Avodado is **documentation-as-code**: a doc is plain Markdown with typed, fenced
+Chiltepin is **documentation-as-code**: a doc is plain Markdown with typed, fenced
 YAML blocks, and the `.md` file on disk is the single source of truth. Prose stays
 prose. Anything structured — a diagram, a table, a roadmap, a user story — goes in
 a block that renders to clean HTML, slides, or PDF.
@@ -14,7 +14,7 @@ a block that renders to clean HTML, slides, or PDF.
 ```callout
 tone: tip
 title: The one rule
-body: "The .md file is the source of truth. Edit a block surgically — never regenerate a whole document — and run `avo check` until it passes. A passing check is the definition of done."
+body: "The .md file is the source of truth. Edit a block surgically — never regenerate a whole document — and run `chiltepin check` until it passes. A passing check is the definition of done."
 ```
 
 ## Anatomy of a block
@@ -69,9 +69,9 @@ Four steps, over and over: scaffold once, then edit → validate → render.
 ```flow
 title: Author → validate → render
 nodes:
-  - { id: init, col: 1, row: 1, kind: start, label: avo init }
+  - { id: init, col: 1, row: 1, kind: start, label: chiltepin init }
   - { id: edit, col: 2, row: 1, kind: process, label: Edit the .md }
-  - { id: check, col: 3, row: 1, kind: decision, label: avo check passes? }
+  - { id: check, col: 3, row: 1, kind: decision, label: chiltepin check passes? }
   - { id: render, col: 4, row: 1, kind: end, label: render / preview }
   - { id: fix, col: 3, row: 2, kind: process, label: Fix diagnostics }
 edges:
@@ -87,15 +87,15 @@ edges:
 ```table
 columns: [Command, What it does]
 rows:
-  - ["avo init", Scaffold docs/ and avodado.config.json]
-  - ["avo check [globs]", "Validate schemas, references, and duplicate ids — exits non-zero on errors"]
-  - ["avo <file.md>", Render to a temp HTML file and open it in your browser]
-  - ["avo html / slides / pdf <file>", Render one doc to a standalone HTML page, a slide deck, or a PDF]
-  - ["avo demo [-s]", Render the built-in showcase of every block (-s for slides)]
-  - ["avo block [type]", "Every block on one line — or one block's fields, terse forms, and example"]
-  - ["avo new <name>", Scaffold a whole doc (adr, runbook, …) or a single block]
-  - ["npx skills add jdiejim/avodado", "Install the authoring skill into your AI agent — Claude Code, Cursor, Codex, and more"]
-  - ["avo sync openapi <spec>", Generate an API doc straight from an OpenAPI file]
+  - ["chiltepin init", Scaffold docs/ and chiltepin.config.json]
+  - ["chiltepin check [globs]", "Validate schemas, references, and duplicate ids — exits non-zero on errors"]
+  - ["chiltepin <file.md>", Render to a temp HTML file and open it in your browser]
+  - ["chiltepin html / slides / pdf <file>", Render one doc to a standalone HTML page, a slide deck, or a PDF]
+  - ["chiltepin demo [-s]", Render the built-in showcase of every block (-s for slides)]
+  - ["chiltepin block [type]", "Every block on one line — or one block's fields, terse forms, and example"]
+  - ["chiltepin new <name>", Scaffold a whole doc (adr, runbook, …) or a single block]
+  - ["npx skills add jdiejim/chiltepin", "Install the authoring skill into your AI agent — Claude Code, Cursor, Codex, and more"]
+  - ["chiltepin sync openapi <spec>", Generate an API doc straight from an OpenAPI file]
 ```
 
 ## A few blocks to get the feel
@@ -115,16 +115,16 @@ Timeline items take a terse one-liner — `[status] date · label · description
 
 ```timeline
 items:
-  - "[current] now · Write your first doc · Edit this file, run avo check"
-  - "[next] next · Wire it into review · Run avo check in CI on every PR"
-  - "[future] later · Present it · avo slides turns headings into a deck"
+  - "[current] now · Write your first doc · Edit this file, run chiltepin check"
+  - "[next] next · Wire it into review · Run chiltepin check in CI on every PR"
+  - "[future] later · Present it · chiltepin slides turns headings into a deck"
 ```
 
 ## Connect blocks with `doc#id`
 
 Give a block an `id:`, then point at it as `doc#id` (or bare `#id` in the same
 file). The only reference-bearing field today is `userstory.links[].ref`, and a
-dangling reference fails `avo check` — so the model stays honest.
+dangling reference fails `chiltepin check` — so the model stays honest.
 
 ```userstory
 id: US-1
@@ -143,7 +143,7 @@ links:
 
 - **Look.** One editorial skin for every export. Pages follow your OS
   light/dark setting. There is nothing to pick.
-- **Slides.** Any doc is a deck: `avo slides <file>`. Each `#`/`##` heading starts
+- **Slides.** Any doc is a deck: `chiltepin slides <file>`. Each `#`/`##` heading starts
   a new slide and is its title; everything under it rides along. See the advanced
   tutorial (`docs/tutorial.md`) for a deck-first walkthrough of the whole feature
   set.
@@ -151,5 +151,5 @@ links:
 ```callout
 tone: note
 title: Next steps
-body: "Edit this file and run `avo check`. Then open `docs/tutorial.md` for the full feature tour, and run `avo block <type>` for any block's fields."
+body: "Edit this file and run `chiltepin check`. Then open `docs/tutorial.md` for the full feature tour, and run `chiltepin block <type>` for any block's fields."
 ```

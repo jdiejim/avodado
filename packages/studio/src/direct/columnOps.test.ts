@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDocument, validateDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from 'chiltepin-core';
 import {
   addColumnSets,
   columnIndexFromPath,

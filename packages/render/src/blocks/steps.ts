@@ -5,7 +5,7 @@
  * surface), and an optional italic note.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { highlightCode } from '../highlight.js';
 import { bl, bp } from '../paths.js';

@@ -17,7 +17,7 @@
  * Kept free of React/DOM so every rule is unit-testable.
  */
 
-import type { FieldNode } from '@avodado/core';
+import type { FieldNode } from 'chiltepin-core';
 import type { ResolvedControl } from './fieldKind.js';
 
 type ObjectNode = Extract<FieldNode, { kind: 'object' }>;

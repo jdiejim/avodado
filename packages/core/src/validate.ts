@@ -94,8 +94,8 @@ function renderIssue(kind: BlockType, issue: z.ZodIssue): IssueRender {
         message: `${kind}: ${at}expected ${issue.expected}, got ${issue.received}`,
         hint:
           terse !== undefined
-            ? `The only terse form here is ${terse}. Anything else needs the object form (\`avo block ${kind}\`).`
-            : `This list has no terse string form — use the object form (\`avo block ${kind}\`).`,
+            ? `The only terse form here is ${terse}. Anything else needs the object form (\`chiltepin block ${kind}\`).`
+            : `This list has no terse string form — use the object form (\`chiltepin block ${kind}\`).`,
       };
     }
     return {
@@ -249,7 +249,7 @@ function yamlParseHint(message: string): string {
     // terse line, anything else is a field whose value carries `: `.
     const excerpt = message.split('\n').map((l) => l.trim()).find((l, i) => i > 0 && l.length > 0) ?? '';
     return excerpt.startsWith('- ')
-      ? 'A terse line cannot carry a `key: value` pair after its text. Write the whole item in the object form `{ … }` or keep to the terse grammar (`avo block <type>`).'
+      ? 'A terse line cannot carry a `key: value` pair after its text. Write the whole item in the object form `{ … }` or keep to the terse grammar (`chiltepin block <type>`).'
       : 'A value with `: ` in it must be quoted — `note: "pass retryOn: () => true"`.';
   }
   if (/unexpected scalar at node end/i.test(message)) {
@@ -306,7 +306,7 @@ function lintLensRepeat(doc: Document, file: string): Diagnostic[] {
     const n = (seen.get(key) ?? 0) + 1;
     seen.set(key, n);
     if (n !== (LENS_LIMIT[seg.kind] ?? 4)) continue;
-    const alt = LENS_ALTERNATIVES[seg.kind] ?? 'a different block usually answers the third question better — `avo block` lists the families';
+    const alt = LENS_ALTERNATIVES[seg.kind] ?? 'a different block usually answers the third question better — `chiltepin block` lists the families';
     out.push({
       file,
       line: seg.line,
@@ -598,7 +598,7 @@ export function validateDocument(doc: Document, file: string): Diagnostic[] {
     if (seg.kind === 'markdown') continue;
 
     // Alias fences: informational nudge toward the canonical spelling.
-    // A warning only — warnings never fail `avo check`. A dialect fence
+    // A warning only — warnings never fail `chiltepin check`. A dialect fence
     // (mermaid / dbml / prisma) is not an alias (`BLOCK_ALIASES` has no entry
     // for it by design) — it never warns.
     const dialect = isDialectSource(seg.sourceType) ? seg.sourceType : undefined;

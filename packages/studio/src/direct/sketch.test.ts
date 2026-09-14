@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDocument, validateDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from 'chiltepin-core';
 import { specFor } from './connect.js';
 import type { PathSet } from './drag.js';
 import { setPathsInSegment } from './host.js';

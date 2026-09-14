@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
-import { BLOCK_TEMPLATES, parseDocument, type BlockDataMap, type BlockType } from '@avodado/core';
+import { BLOCK_TEMPLATES, parseDocument, type BlockDataMap, type BlockType } from 'chiltepin-core';
 import { renderAudit } from '../blocks/audit.js';
 import { renderChecklist, checklistTotals } from '../blocks/checklist.js';
 import { renderModelcard } from '../blocks/modelcard.js';

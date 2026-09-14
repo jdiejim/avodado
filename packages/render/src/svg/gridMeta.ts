@@ -4,7 +4,7 @@
  * constants, plus each node's EFFECTIVE cell — crucial in quick mode, where
  * the placements only exist post-auto-layout.
  *
- * Editors (Avodado Studio) read them to map pointer positions back to grid
+ * Editors (Chiltepin Studio) read them to map pointer positions back to grid
  * cells (drag-to-move, drag-to-connect). They change no visual output.
  */
 

@@ -5,8 +5,8 @@ and the output path. The agent must not open `evals/` — it holds the answers.
 
 ---
 
-You are an engineer in a repo that uses Avodado for documentation. The
-authoring skill is installed at `.claude/skills/avodado/SKILL.md` with reference files
+You are an engineer in a repo that uses Chiltepin for documentation. The
+authoring skill is installed at `.claude/skills/chiltepin/SKILL.md` with reference files
 beside it. Read the skill and follow its selection procedure exactly as
 written. Read whichever reference files the skill tells you to read for each
 step. Do NOT open anything under `evals/`.

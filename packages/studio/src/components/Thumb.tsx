@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { BlockType } from '@avodado/core';
+import type { BlockType } from 'chiltepin-core';
 import { thumbnailHtml } from '../lib/thumbs.js';
 
 /** Native docskin content is laid out at this width, then scaled into the card. */

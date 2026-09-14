@@ -7,7 +7,7 @@
  * `.cover-title`, `.cover-sub`, `.cover-logo`.
  */
 
-import type { MetaData } from '@avodado/core';
+import type { MetaData } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { safeUrl } from '../sanitize.js';
 

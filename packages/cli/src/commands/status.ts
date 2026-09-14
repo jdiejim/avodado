@@ -1,6 +1,6 @@
 /**
- * Smart bare `avo` — the mini project status shown when `avo` is run with no
- * arguments inside an Avodado project (TTY only). Answers "where am I and
+ * Smart bare `chiltepin` — the mini project status shown when `chiltepin` is run with no
+ * arguments inside a Chiltepin project (TTY only). Answers "where am I and
  * what next?" without picking through 14 commands: doc count, a quick
  * validate summary (parse + validate via core — no rendering), and the 4-5
  * next actions.
@@ -10,7 +10,7 @@ import pc from 'picocolors';
 import { loadConfig } from '../io/config.js';
 import { runCheck } from './check.js';
 
-/** The data behind the bare-`avo` status panel. */
+/** The data behind the bare-`chiltepin` status panel. */
 interface ProjectStatus {
   /** How many docs matched `<docsDir>/**\/*.md`. */
   readonly docCount: number;
@@ -41,11 +41,11 @@ export async function projectStatus(cwd: string): Promise<ProjectStatus> {
 
 /** The next actions listed under the status, with one-liners. */
 const NEXT_ACTIONS: ReadonlyArray<readonly [cmd: string, note: string]> = [
-  ['avo check', 'validate every doc'],
-  ['avo <file.md>', 'render + open one doc in the browser'],
-  ['avo studio', 'edit visually · Site mode previews the docs site live'],
-  ['avo build', 'build the static docs site'],
-  ['avo block', 'every block type, or one block\'s fields + example'],
+  ['chiltepin check', 'validate every doc'],
+  ['chiltepin <file.md>', 'render + open one doc in the browser'],
+  ['chiltepin studio', 'edit visually · Site mode previews the docs site live'],
+  ['chiltepin build', 'build the static docs site'],
+  ['chiltepin block', 'every block type, or one block\'s fields + example'],
 ];
 
 /**
@@ -61,7 +61,7 @@ export function formatStatus(status: ProjectStatus, plain = false): string {
       ? (plain ? '' : pc.red('✗ ')) +
         `${status.errors} error(s)` +
         (status.warnings > 0 ? ` · ${status.warnings} warning(s)` : '') +
-        dim(' — run avo check')
+        dim(' — run chiltepin check')
       : (plain ? '' : pc.green('✓ ')) +
         'clean' +
         (status.warnings > 0 ? dim(` (${status.warnings} warning(s))`) : '');

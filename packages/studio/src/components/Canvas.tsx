@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { replaceProse, BLOCK_LABELS, type Segment } from '@avodado/core';
+import { replaceProse, BLOCK_LABELS, type Segment } from 'chiltepin-core';
 import {
   deleteSegment,
   duplicateSegment,
@@ -526,7 +526,7 @@ function EmptyDocs(): JSX.Element {
         <h1>Create your first doc</h1>
         <p>
           This project has no docs yet. Open the doc switcher in the top bar and pick{' '}
-          <strong>New doc</strong>, or run <code>avo init</code> in your terminal.
+          <strong>New doc</strong>, or run <code>chiltepin init</code> in your terminal.
         </p>
       </div>
     </div>

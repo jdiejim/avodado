@@ -1,5 +1,5 @@
 /**
- * Importer registry — the honest, data-only catalog of what Avodado can
+ * Importer registry — the honest, data-only catalog of what Chiltepin can
  * import. Each importer maps file extensions to what it produces: a `block`
  * importer yields ready-to-insert fenced blocks (CSV → `table` /
  * `statustable` / `chart`; DBML / Prisma / SQL DDL → `erd`), a `document`
@@ -7,7 +7,7 @@
  * framework: an array plus one lookup.
  */
 
-/** One import source Avodado understands. */
+/** One import source Chiltepin understands. */
 export interface Importer {
   readonly id: 'csv' | 'openapi' | 'dbml' | 'prisma' | 'sql';
   /** Lowercase file extensions (with the dot) this importer claims. */

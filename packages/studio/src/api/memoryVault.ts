@@ -18,7 +18,7 @@
  * and a networked backend inherits a client that already handles it.
  */
 
-import { parseDocument, validateDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from 'chiltepin-core';
 import {
   hashSource,
   type DocListItem,
@@ -57,7 +57,7 @@ function checkOf(source: string, slug: string): { title: string; errorCount: num
 /** The document the vault opens with, so a first visit has something to edit. */
 const WELCOME_SLUG = 'welcome';
 const WELCOME = `\`\`\`meta
-title: Welcome to Avodado
+title: Welcome to Chiltepin
 subtitle: Every document here is Markdown with typed, validated blocks.
 tag: START HERE
 \`\`\`
@@ -72,7 +72,7 @@ title: What happens when you edit
 actors:
   - { id: you, name: You }
   - { id: studio, name: Studio }
-  - { id: core, name: avodado core }
+  - { id: core, name: chiltepin core }
 messages:
   - you -> studio: change a block
   - studio -> core: parse and validate

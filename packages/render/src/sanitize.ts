@@ -1,7 +1,7 @@
 /**
  * Output-safety helpers.
  *
- * Avodado documents are normally authored by trusted hands, but rendered output
+ * Chiltepin documents are normally authored by trusted hands, but rendered output
  * is also shown in untrusted contexts — any hosted preview renders whatever a
  * visitor pastes, and shared renders travel beyond their authors. So the
  * renderer treats author-supplied values (colours, link hrefs, prose HTML) as

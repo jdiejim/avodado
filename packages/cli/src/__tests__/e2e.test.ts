@@ -16,7 +16,7 @@ function runBin(
     // Strip runner color hints (GitHub Actions sets CI=true, which flips
     // picocolors on even for piped output) so assertions are deterministic —
     // the binary's own plain-guard is what we're testing.
-    const env: NodeJS.ProcessEnv = { ...process.env, AVO_PLAIN: '1' };
+    const env: NodeJS.ProcessEnv = { ...process.env, CHILTEPIN_PLAIN: '1' };
     delete env['CI'];
     delete env['FORCE_COLOR'];
     const child = spawn('node', [BIN, ...args], { cwd, env });
@@ -34,21 +34,21 @@ if (skipIfNotBuilt) {
   console.warn(`[skip] CLI e2e — built bin not found at ${BIN}. Run: pnpm build`);
 }
 
-describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
-  it('avo check resources/avodado-roadmap.md exits 0', async () => {
+describe.skipIf(skipIfNotBuilt)('chiltepin CLI (built bin)', () => {
+  it('chiltepin check resources/chiltepin-roadmap.md exits 0', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
-    const { code } = await runBin(['check', 'resources/avodado-roadmap.md'], repoRoot);
+    const { code } = await runBin(['check', 'resources/chiltepin-roadmap.md'], repoRoot);
     expect(code).toBe(0);
   }, 30_000);
 
-  it('avo check resources/orders-api.md exits 0', async () => {
+  it('chiltepin check resources/orders-api.md exits 0', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
     const { code } = await runBin(['check', 'resources/orders-api.md'], repoRoot);
     expect(code).toBe(0);
   }, 30_000);
 
-  it('avo check on a broken doc exits 1 and names file + line + value', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin check on a broken doc exits 1 and names file + line + value', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     const file = join(tmp, 'bad.md');
     writeFileSync(
@@ -66,8 +66,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo check warns on a filler opener but exits 0', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin check warns on a filler opener but exits 0', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     writeFileSync(
       join(tmp, 'prose.md'),
@@ -83,8 +83,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo check --strict-prose exits 1 and the output quotes the span', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin check --strict-prose exits 1 and the output quotes the span', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     writeFileSync(
       join(tmp, 'prose.md'),
@@ -102,8 +102,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo check --json emits valid JSON', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin check --json emits valid JSON', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     writeFileSync(join(tmp, 'ok.md'), '```meta\ntitle: OK\n```\n');
     try {
@@ -117,8 +117,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build writes index.html + one page and one deck per doc (nested dirs kept)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build writes index.html + one page and one deck per doc (nested dirs kept)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs', 'guides'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
     writeFileSync(join(tmp, 'docs', 'guides', 'b.md'), '```meta\ntitle: Doc B\n```\n');
@@ -137,8 +137,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build (rich index by default) writes a grouped index with a TLDR and a cross-reference graph', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build (rich index by default) writes a grouped index with a TLDR and a cross-reference graph', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(
       join(tmp, 'docs', 'a.md'),
@@ -171,8 +171,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build on all-singleton tags falls back to the flat card grid by default', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build on all-singleton tags falls back to the flat card grid by default', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
     writeFileSync(join(tmp, 'docs', 'b.md'), '```meta\ntitle: Doc B\ntag: API\n```\n');
@@ -193,8 +193,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build --no-rich-index keeps the plain index (no rich styles at all)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build --no-rich-index keeps the plain index (no rich styles at all)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
     try {
@@ -212,10 +212,10 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build honors richIndex: false in avodado.config.json', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build honors richIndex: false in chiltepin.config.json', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
-    writeFileSync(join(tmp, 'avodado.config.json'), JSON.stringify({ richIndex: false }));
+    writeFileSync(join(tmp, 'chiltepin.config.json'), JSON.stringify({ richIndex: false }));
     writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: Doc A\ntag: GUIDE\n```\n');
     try {
       const { code } = await runBin(['build'], tmp);
@@ -229,8 +229,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build --out overrides the output dir and warns (exit 0) on diagnostics', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build --out overrides the output dir and warns (exit 0) on diagnostics', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     // Dangling ref → a warning at build time, not a failure.
     writeFileSync(
@@ -248,13 +248,13 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo html writes a non-empty HTML file', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin html writes a non-empty HTML file', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     const out = join(tmp, 'out.html');
     try {
       const { code } = await runBin(
-        ['html', join(RESOURCES, 'avodado-roadmap.md'), '-o', out],
+        ['html', join(RESOURCES, 'chiltepin-roadmap.md'), '-o', out],
         tmp,
       );
       expect(code).toBe(0);
@@ -273,36 +273,36 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   });
 
-  it('the old adapter aliases are gone — `avo claude` is an unknown command', async () => {
+  it('the old adapter aliases are gone — `chiltepin claude` is an unknown command', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
     for (const alias of ['claude', 'cursor', 'copilot', 'github', 'windsurf', 'mcp']) {
       const { code, stderr } = await runBin([alias], repoRoot);
-      expect(code, `avo ${alias} must fail`).not.toBe(0);
+      expect(code, `chiltepin ${alias} must fail`).not.toBe(0);
       expect(stderr).toContain('unknown command');
     }
   }, 30_000);
 
-  it('avo prompt is gone — unknown command, non-zero exit', async () => {
+  it('chiltepin prompt is gone — unknown command, non-zero exit', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
     const { code, stderr } = await runBin(['prompt'], repoRoot);
     expect(code).not.toBe(0);
     expect(stderr).toContain('unknown command');
   }, 30_000);
 
-  it('avo --help pipes clean: no ANSI escapes, banner line + grouped epilogue', async () => {
+  it('chiltepin --help pipes clean: no ANSI escapes, banner line + grouped epilogue', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
     const { code, stdout } = await runBin(['--help'], repoRoot);
     expect(code).toBe(0);
     // Piped (non-TTY) output must carry no ANSI escape sequences at all.
     // eslint-disable-next-line no-control-regex
     expect(stdout).not.toMatch(/\u001b\[/);
-    expect(stdout).toContain('avodado v'); // the plain one-line banner
+    expect(stdout).toContain('chiltepin v'); // the plain one-line banner
     // The four-group command epilogue.
     for (const header of ['WORK', 'OUTPUT', 'REFERENCE', 'SETUP']) {
       expect(stdout).toContain(header);
     }
-    expect(stdout).toContain('npx skills add jdiejim/avodado');
-    expect(stdout).toContain('avo <file.md>');
+    expect(stdout).toContain('npx skills add jdiejim/chiltepin');
+    expect(stdout).toContain('chiltepin <file.md>');
     expect(stdout).toMatch(/^ {2}block /m);
     expect(stdout).toMatch(/^ {2}demo /m);
     // Hidden or removed commands stay out of the command listing.
@@ -328,15 +328,15 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     expect(stdout).not.toMatch(/\bserve\b/);
   }, 30_000);
 
-  it('bare avo (non-TTY) prints help — in a project dir and outside one', async () => {
+  it('bare chiltepin (non-TTY) prints help — in a project dir and outside one', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
       for (const cwd of [repoRoot, tmp]) {
         const { code, stdout } = await runBin([], cwd);
         expect(code).toBe(0);
-        expect(stdout).toContain('Usage: avo');
+        expect(stdout).toContain('Usage: chiltepin');
         expect(stdout).toContain('REFERENCE');
       }
     } finally {
@@ -344,8 +344,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo <file.md> shortcut renders the doc (script-safe: writes, does not open)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin <file.md> shortcut renders the doc (script-safe: writes, does not open)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'hello.md'), '```meta\ntitle: Hello\n```\n');
     try {
@@ -359,8 +359,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo new resolves doc templates, block types, and alias spellings', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin new resolves doc templates, block types, and alias spellings', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
       const adr = await runBin(['new', 'adr'], tmp);
@@ -402,7 +402,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
   }, 30_000);
 
   it('removed commands are unknown: explore / install / tour / design / catalog / compare / pptx', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
       for (const cmd of [
@@ -415,7 +415,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
         'template',
       ]) {
         const { code, stderr } = await runBin([cmd], tmp);
-        expect(code, `avo ${cmd} must fail`).not.toBe(0);
+        expect(code, `chiltepin ${cmd} must fail`).not.toBe(0);
         expect(stderr).toContain('unknown command');
       }
       const pptx = await runBin(['pptx', 'x.md'], tmp);
@@ -425,8 +425,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo block lists every type by family; avo block <type> prints the contract + example', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin block lists every type by family; chiltepin block <type> prints the contract + example', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
       const index = await runBin(['block'], tmp);
@@ -462,8 +462,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo demo -o writes the showcase; avo skill prints the stitched skill', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin demo -o writes the showcase; chiltepin skill prints the stitched skill', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
       const demo = await runBin(['demo', '-o', 'demo.html'], tmp);
@@ -471,24 +471,24 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
       expect(existsSync(join(tmp, 'demo.html'))).toBe(true);
       const skill = await runBin(['skill'], tmp);
       expect(skill.code).toBe(0);
-      expect(skill.stdout).toContain('Avodado');
-      expect(skill.stdout).toContain('avo block');
+      expect(skill.stdout).toContain('Chiltepin');
+      expect(skill.stdout).toContain('chiltepin block');
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
   }, 30_000);
 
-  it('avo init writes three files and points at the skills install', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin init writes three files and points at the skills install', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     try {
       const { code, stdout } = await runBin(['init', '-y'], tmp);
       expect(code).toBe(0);
       expect(stdout).toContain('Created 3 file(s)');
-      expect(stdout).toContain('npx skills add jdiejim/avodado');
-      expect(existsSync(join(tmp, 'avodado.config.json'))).toBe(true);
+      expect(stdout).toContain('npx skills add jdiejim/chiltepin');
+      expect(existsSync(join(tmp, 'chiltepin.config.json'))).toBe(true);
       expect(existsSync(join(tmp, 'docs/getting-started.md'))).toBe(true);
-      expect(existsSync(join(tmp, '.avodado'))).toBe(false);
+      expect(existsSync(join(tmp, '.chiltepin'))).toBe(false);
       expect(existsSync(join(tmp, '.claude'))).toBe(false);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -496,16 +496,16 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
   }, 30_000);
 
   it('colorScheme in the config stamps every built page; the default is dark with no stamp', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'a.md'), '```meta\ntitle: A\n```\n\nHello.\n');
     try {
-      writeFileSync(join(tmp, 'avodado.config.json'), '{ "docsDir": "docs", "outDir": "dist" }');
+      writeFileSync(join(tmp, 'chiltepin.config.json'), '{ "docsDir": "docs", "outDir": "dist" }');
       expect((await runBin(['build'], tmp)).code).toBe(0);
       const dark = readFileSync(join(tmp, 'dist', 'a.html'), 'utf8');
       expect(dark).not.toMatch(/<html[^>]*data-theme/);
       expect(dark).toContain('color-scheme:dark');
-      writeFileSync(join(tmp, 'avodado.config.json'), '{ "docsDir": "docs", "outDir": "dist", "colorScheme": "light" }');
+      writeFileSync(join(tmp, 'chiltepin.config.json'), '{ "docsDir": "docs", "outDir": "dist", "colorScheme": "light" }');
       expect((await runBin(['build'], tmp)).code).toBe(0);
       const light = readFileSync(join(tmp, 'dist', 'a.html'), 'utf8');
       expect(light).toContain('<html lang="en" data-theme="light">');
@@ -518,8 +518,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo sync csv prints a ready-to-paste block fence with the suggestion reason on stderr', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin sync csv prints a ready-to-paste block fence with the suggestion reason on stderr', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     writeFileSync(join(tmp, 'team.csv'), 'name,role,team\nAda,eng,core\nGrace,pm,growth\n');
     try {
@@ -535,8 +535,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo sync csv --out writes a minimal doc that passes avo check', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin sync csv --out writes a minimal doc that passes chiltepin check', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     writeFileSync(join(tmp, 'sales.csv'), 'month,units\nJan,4\nFeb,7\n');
     try {
@@ -546,7 +546,7 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
       );
       expect(out.code).toBe(0);
       expect(out.stdout).toContain('Wrote');
-      expect(out.stdout).toContain('avo check: clean');
+      expect(out.stdout).toContain('chiltepin check: clean');
       expect(existsSync(join(tmp, 'docs/sales.md'))).toBe(true);
       const check = await runBin(['check', 'docs/sales.md'], tmp);
       expect(check.code).toBe(0);
@@ -555,8 +555,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo sync csv auto-detects a status column and emits a statustable', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin sync csv auto-detects a status column and emits a statustable', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     writeFileSync(join(tmp, 'tasks.csv'), 'task,status\nShip it,done\nPlan next,todo\n');
     try {
@@ -571,8 +571,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo sync csv exits 1 on a broken CSV (unterminated quote)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin sync csv exits 1 on a broken CSV (unterminated quote)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     writeFileSync(join(tmp, 'broken.csv'), 'a,b\n"unclosed,1\n');
     try {
@@ -584,8 +584,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo sync csv --delimiter overrides auto-detection', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin sync csv --delimiter overrides auto-detection', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     // Auto-detect would pick ',' (2 commas vs 1 semicolon on line 1).
     writeFileSync(join(tmp, 'semi.csv'), 'a,b;c,d\n1,2;3,4\n');
@@ -604,8 +604,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo sync sql --out refuses to overwrite a hand-written doc (W-4)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin sync sql --out refuses to overwrite a hand-written doc (W-4)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'schema.sql'), 'CREATE TABLE users (id uuid PRIMARY KEY);\n');
     const precious = '# PRECIOUS\n\nHand-written content that must not vanish.\n';
@@ -628,8 +628,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build prunes the pages of a deleted doc, keeping user files (W-5)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build prunes the pages of a deleted doc, keeping user files (W-5)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'keep.md'), '```meta\ntitle: Keep\n```\n');
     writeFileSync(join(tmp, 'docs', 'goner.md'), '```meta\ntitle: Goner\n```\n');
@@ -650,8 +650,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo check reports a non-UTF-8 file instead of calling it clean (B-2)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin check reports a non-UTF-8 file instead of calling it clean (B-2)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'ok.md'), '```meta\ntitle: OK\n```\n');
     writeFileSync(
@@ -668,8 +668,8 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   }, 30_000);
 
-  it('avo build names the document and block behind a renderer crash (B-3)', async () => {
-    const tmp = join(tmpdir(), `avo-e2e-${randomBytes(6).toString('hex')}`);
+  it('chiltepin build names the document and block behind a renderer crash (B-3)', async () => {
+    const tmp = join(tmpdir(), `chiltepin-e2e-${randomBytes(6).toString('hex')}`);
     mkdirSync(join(tmp, 'docs'), { recursive: true });
     writeFileSync(join(tmp, 'docs', 'ok.md'), '```meta\ntitle: Fine\n```\n');
     writeFileSync(

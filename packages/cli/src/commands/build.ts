@@ -1,5 +1,5 @@
 /**
- * `avo build` — render every doc into a static HTML site on disk.
+ * `chiltepin build` — render every doc into a static HTML site on disk.
  *
  * Loads config (docsDir/outDir) and docs, builds the site via
  * {@link buildSite}, and writes `index.html` plus one page and one slide
@@ -7,21 +7,21 @@
  * keep their directories).
  *
  * The build then **prunes**: a file the previous build recorded in its manifest
- * (`.avodado-build.json`) and this build did not generate is deleted, so a doc
+ * (`.chiltepin-build.json`) and this build did not generate is deleted, so a doc
  * removed from `docs/` stops being served. Only manifest-listed files are
  * removed — anything else in the output directory (a `CNAME`, an `assets/`
  * folder) is never touched, and an output directory with no manifest is left
  * entirely alone.
  *
  * Diagnostics are returned for the CLI to print. Schema and reference findings
- * are **warnings** — `avo check` remains the CI gate. A renderer that throws is
+ * are **warnings** — `chiltepin check` remains the CI gate. A renderer that throws is
  * an `E_RENDER` error: that document gets a placeholder page, the rest of the
  * build finishes, and the exit code is 1.
  */
 
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
-import { parseDocument, type Diagnostic } from '@avodado/core';
+import { parseDocument, type Diagnostic } from 'chiltepin-core';
 import { loadConfig } from '../io/config.js';
 import { encodingDiagnostics, loadDocs } from '../io/files.js';
 import { readManifest, writeManifest, pruneStale, MANIFEST_FILE } from '../io/manifest.js';
@@ -92,7 +92,7 @@ export async function runBuild(opts: BuildOptions): Promise<BuildResult> {
   const generated = site.pages.map((p) => p.path);
   const removed =
     previous === undefined ? [] : await pruneStale(outDir, previous.files, new Set(generated));
-  await writeManifest(outDir, generated, `avodado ${cliVersion()}`);
+  await writeManifest(outDir, generated, `chiltepin ${cliVersion()}`);
 
   return {
     outDir,

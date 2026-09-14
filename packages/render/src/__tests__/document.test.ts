@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { renderDocument } from '../document.js';
 import { renderDocumentParts } from '../parts.js';
 import { houseCss } from '../css.js';
@@ -8,17 +8,17 @@ import { ordersApi, roadmap } from './fixtures.js';
 
 describe('renderDocument', () => {
   it('renders the roadmap fixture as a standalone HTML document', () => {
-    const doc = parseDocument(roadmap(), 'avodado-roadmap');
+    const doc = parseDocument(roadmap(), 'chiltepin-roadmap');
     const html = renderDocument(doc);
     expect(html.startsWith('<!doctype html>')).toBe(true);
-    expect(html).toContain(`<title>Avodado</title>`);
+    expect(html).toContain(`<title>Chiltepin</title>`);
     expect(html).toContain('<style>');
     expect(html).toContain(houseCss);
     expect(html).not.toContain('class="err"');
 
     const root = parse(html);
     expect(root.querySelector('.docskin')).toBeTruthy();
-    expect(root.querySelector('.cover-title')?.text).toBe('Avodado');
+    expect(root.querySelector('.cover-title')?.text).toBe('Chiltepin');
     // every typed block in the fixture renders to its expected container
     expect(root.querySelector('.callout')).toBeTruthy();
     expect(root.querySelector('.tl')).toBeTruthy();
@@ -46,7 +46,7 @@ describe('renderDocument', () => {
   });
 
   it('is dark by default: no stamp, the root carries the dark set, light is the explicit choice', () => {
-    const doc = parseDocument(roadmap(), 'avodado-roadmap');
+    const doc = parseDocument(roadmap(), 'chiltepin-roadmap');
     const html = renderDocument(doc);
     expect(html).toContain('<html lang="en">\n');
     expect(html).not.toMatch(/<html[^>]*data-theme/);
@@ -64,7 +64,7 @@ describe('renderDocument', () => {
   });
 
   it('colorScheme: light stamps the root; system adds the OS media rule', () => {
-    const doc = parseDocument(roadmap(), 'avodado-roadmap');
+    const doc = parseDocument(roadmap(), 'chiltepin-roadmap');
     const light = renderDocument(doc, { colorScheme: 'light' });
     expect(light).toContain('<html lang="en" data-theme="light">');
     expect(light).not.toContain('prefers-color-scheme');
@@ -74,7 +74,7 @@ describe('renderDocument', () => {
   });
 
   it('emits internal themeVars overrides as a :root style block', () => {
-    const doc = parseDocument(roadmap(), 'avodado-roadmap');
+    const doc = parseDocument(roadmap(), 'chiltepin-roadmap');
     const html = renderDocument(doc, { themeVars: { '--accent': '#abcdef' } });
     expect(html).toContain('<style>:root{--accent:#abcdef;}</style>');
     expect(html).not.toMatch(/<html[^>]*data-theme/);

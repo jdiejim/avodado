@@ -21,7 +21,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseDocument, BLOCK_ALIASES } from '@avodado/core';
+import { parseDocument, BLOCK_ALIASES } from 'chiltepin-core';
 import { renderDocumentSegments } from '../parts.js';
 import { SECTION_LABEL } from '../blocks/frame.js';
 

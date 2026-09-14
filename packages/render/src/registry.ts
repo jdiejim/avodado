@@ -7,7 +7,7 @@
  * until the renderer is added.
  */
 
-import type { BlockDataMap, BlockType } from '@avodado/core';
+import type { BlockDataMap, BlockType } from 'chiltepin-core';
 
 import { renderCallout } from './blocks/callout.js';
 import { renderErd } from './blocks/erd.js';

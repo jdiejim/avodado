@@ -16,7 +16,7 @@
  * more systems, none, or a deeper level means no accent.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
@@ -195,7 +195,7 @@ export function renderC4(data: BlockDataMap['c4']): string {
     namedBoundariesSvg += boundaryPanel(rs, b.label, b.color);
   }
 
-  // Grid metadata for editors (Avodado Studio drag-to-connect): inert attrs
+  // Grid metadata for editors (Chiltepin Studio drag-to-connect): inert attrs
   // mirroring the layout constants plus each node's effective cell below.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
   // Group panels — beneath boundaries, edges, and nodes. Only emitted when present.

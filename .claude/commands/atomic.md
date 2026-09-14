@@ -35,7 +35,7 @@ Then produce:
   which query surfaced them).
 - The existing conventions this task must not break.
 - **Blast radius** — from the graph, what depends on the code this task changes.
-  For anything in `@avo/core` this is the whole repo; prove otherwise before
+  For anything in `@chiltepin/core` this is the whole repo; prove otherwise before
   claiming a change is local.
 - Anything in the task description that is already true in the repo — call it out
   and drop it from scope rather than rebuilding it.
@@ -80,7 +80,7 @@ In this order, stopping at the first failure:
     pnpm -w typecheck
     pnpm -w test
     pnpm -w lint
-    avo check <affected docs>
+    chiltepin check <affected docs>
     pnpm -w build   # only if packages changed
 
 A unit is not "done" until every one of these passes on its own diff. Failures
@@ -93,7 +93,7 @@ describe output in text when you can render it.
 
     .scratch/<task-slug>/proof/<unit>.html
 
-Build it by running the real pipeline — `avo build` / the renderer under test —
+Build it by running the real pipeline — `chiltepin build` / the renderer under test —
 never by hand-writing HTML. Hand-written proof proves nothing about our
 renderers.
 

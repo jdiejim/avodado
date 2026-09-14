@@ -20,7 +20,7 @@ import {
   editableBodyYaml,
   type BlockType,
   type Document,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import { useStudio } from '../state/store.js';
 import { valueAt, type PathSeg } from './paths.js';
 

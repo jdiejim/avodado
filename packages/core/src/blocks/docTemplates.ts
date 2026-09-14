@@ -1,12 +1,12 @@
 /**
  * Multi-block *document* templates (as opposed to single-block scaffolds) —
- * `avo new <name>` / studio's "+ New doc"
+ * `chiltepin new <name>` / studio's "+ New doc"
  * template picker. Pure data, relocated here from the CLI so every consumer
  * (CLI, studio, MCP) shares one source; the CLI re-exports it.
  *
- * Each template is a complete, `avo check`-clean starting doc for a common doc
+ * Each template is a complete, `chiltepin check`-clean starting doc for a common doc
  * kind, following the matching composition recipe in the authoring skill
- * (`skills/avodado/reference/recipes.md`). Placeholder content is a
+ * (`skills/chiltepin/reference/recipes.md`). Placeholder content is a
  * small believable example the author edits — never "TODO".
  */
 
@@ -1667,7 +1667,7 @@ const STATUS_UPDATE_TEMPLATE = [
   '',
 ].join('\n');
 
-/** Full-document templates, keyed by name (`avo new <name>`). */
+/** Full-document templates, keyed by name (`chiltepin new <name>`). */
 export const DOC_TEMPLATES: Record<string, string> = {
   adr: ADR_TEMPLATE,
   'design-doc': DESIGN_DOC_TEMPLATE,

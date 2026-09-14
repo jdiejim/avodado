@@ -53,17 +53,17 @@ interface Studio {
   stop(): Promise<void>;
 }
 
-/** Scaffolds a tmp project with one fixture doc and spawns `avo studio` on it. */
+/** Scaffolds a tmp project with one fixture doc and spawns `chiltepin studio` on it. */
 async function startStudio(opts?: {
   /** Extra scaffolding inside the tmp project before the server starts. */
   before?: (tmp: string) => void;
 }): Promise<Studio> {
-  const tmp = join(tmpdir(), `avo-studio-${randomBytes(6).toString('hex')}`);
+  const tmp = join(tmpdir(), `chiltepin-studio-${randomBytes(6).toString('hex')}`);
   mkdirSync(join(tmp, 'docs'), { recursive: true });
   writeFileSync(join(tmp, 'docs', 'getting-started.md'), FIXTURE_DOC);
   opts?.before?.(tmp);
 
-  const env: NodeJS.ProcessEnv = { ...process.env, AVO_PLAIN: '1' };
+  const env: NodeJS.ProcessEnv = { ...process.env, CHILTEPIN_PLAIN: '1' };
   delete env['CI'];
   delete env['FORCE_COLOR'];
   const child = spawn('node', [BIN, 'studio', '--no-open', '--port', '0'], { cwd: tmp, env });
@@ -96,7 +96,7 @@ async function startStudio(opts?: {
 
 const api = (port: number, path: string): string => `http://127.0.0.1:${port}${path}`;
 
-describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
+describe.skipIf(skipIfNotBuilt)('chiltepin studio (built bin)', () => {
   it('GET /api/meta and /api/docs describe the project', async () => {
     const s = await startStudio();
     try {
@@ -105,7 +105,7 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
       const meta = (await metaRes.json()) as { version: string; docsDir: string };
       expect(meta.version).toMatch(/^\d+\.\d+\.\d+/);
       // '0.0.0' is cliVersion()'s can't-find-my-package fallback — seeing it
-      // means the version walk broke (as it did after the avodado rename).
+      // means the version walk broke (as it did after the chiltepin rename).
       expect(meta.version).not.toBe('0.0.0');
       expect(meta.docsDir).toBe('docs');
 
@@ -323,7 +323,7 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
     }
   }, 20_000);
 
-  it('streams {"type":"meta"} when avodado.config.* changes on disk', async () => {
+  it('streams {"type":"meta"} when chiltepin.config.* changes on disk', async () => {
     const s = await startStudio();
     try {
       let count = 0;
@@ -347,7 +347,7 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
       while (count === 0 && Date.now() < deadline) {
         if (Date.now() - lastFire > 400) {
           lastFire = Date.now();
-          writeFileSync(join(s.tmp, 'avodado.config.json'), '{ "docsDir": "docs", "richIndex": false }\n');
+          writeFileSync(join(s.tmp, 'chiltepin.config.json'), '{ "docsDir": "docs", "richIndex": false }\n');
         }
         await new Promise((r) => setTimeout(r, 25));
       }
@@ -450,12 +450,12 @@ describe.skipIf(skipIfNotBuilt)('avo studio (built bin)', () => {
   }, 30_000);
 
   it('serves the studio app at / (or the fallback page when assets are missing)', async () => {
-    // @avodado/studio ships built static assets; when its dist is present the
+    // chiltepin-studio ships built static assets; when its dist is present the
     // server must serve the real app, and degrade to a fallback page otherwise
     // — never a 500, and the API stays usable either way.
     const studioDist = resolve(
       import.meta.dirname,
-      '../../node_modules/@avodado/studio/dist/app/index.html',
+      '../../node_modules/chiltepin-studio/dist/app/index.html',
     );
     const s = await startStudio();
     try {

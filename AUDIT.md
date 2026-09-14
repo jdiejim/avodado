@@ -1,6 +1,6 @@
-# Avodado audit — 2026-09-13
+# Chiltepin audit — 2026-09-13
 
-Avodado has a strong base: a typed block registry, separate parser and renderer packages, a working CLI, and extensive tests. The immediate opportunity is to make the first successful use easier and keep every public entry point consistent. Adding more block types is a lower priority than proving a few useful workflows.
+Chiltepin has a strong base: a typed block registry, separate parser and renderer packages, a working CLI, and extensive tests. The immediate opportunity is to make the first successful use easier and keep every public entry point consistent. Adding more block types is a lower priority than proving a few useful workflows.
 
 This review covers the tracked repository, the authoring skill, package scripts, release workflows, example output, and public GitHub metadata. It is not a security certification or a complete dead-code analysis. Changes below are local; the audit did not publish packages, push commits, or change repository settings.
 
@@ -9,20 +9,20 @@ This review covers the tracked repository, the authoring skill, package scripts,
 | Priority | Evidence and consequence | Action |
 | --- | --- | --- |
 | High | [Release workflow](./.github/workflows/release.yml) published on `main` independently of CI. A failing revision could reach npm. | Added build, lint, typecheck, tests, docs validation, package lint, and type checks before the publish step. |
-| High | [Cursor](./.cursor/rules/avodado.mdc) and [Windsurf](./.windsurfrules) referenced the deleted `.avodado/skill/SKILL.md`; Cursor restricted authors to nine types. | Replaced duplicated grammar with short adapters pointing to the canonical skill and CLI. |
+| High | [Cursor](./.cursor/rules/chiltepin.mdc) and [Windsurf](./.windsurfrules) referenced the deleted `.chiltepin/skill/SKILL.md`; Cursor restricted authors to nine types. | Replaced duplicated grammar with short adapters pointing to the canonical skill and CLI. |
 | High | The original README linked its competitor comparison to ignored `.scratch/` artifacts. Visitors could not inspect the evidence. | Removed the comparison. Moved internal eval results below the product workflow and disclosed their limits. |
-| Medium | [Skill](./skills/avodado/SKILL.md) activated for essentially any documentation task when installed, demanded several blocks, stopped after two repair rounds, and required a rejected-alternative explanation in every handoff. | Narrowed activation to Avodado work, preserved single-diagram scope, preferred the installed CLI, and tied retries to progress. Handoffs report actual results. |
+| Medium | [Skill](./skills/chiltepin/SKILL.md) activated for essentially any documentation task when installed, demanded several blocks, stopped after two repair rounds, and required a rejected-alternative explanation in every handoff. | Narrowed activation to Chiltepin work, preserved single-diagram scope, preferred the installed CLI, and tied retries to progress. Handoffs report actual results. |
 | Medium | [npm README sync](./packages/cli/scripts/sync-readme.mjs) missed HTML links and treated extensionless `LICENSE` as a directory. Markdown images also needed raw asset URLs. | Fixed link handling. The script now verifies local link targets exist. A concurrent commit wired the existing script into CLI builds during this audit; that change was preserved. |
 | Medium | The README's main image cropped its heading and did not link to a checked-in source. The quick start used a placeholder file. | Added four real screenshots with source links, a reproducible capture script, and commands using generated starter docs. |
-| Medium | The README said unlabeled arrows and repeated callouts failed the command; these are warnings. `verify` did not check the repo's own docs. | Corrected the claim and added `avo check` to `pnpm verify`. |
+| Medium | The README said unlabeled arrows and repeated callouts failed the command; these are warnings. `verify` did not check the repo's own docs. | Corrected the claim and added `chiltepin check` to `pnpm verify`. |
 | Low | Architecture and agent guidance contained old package names, block counts, commands, and theme behavior. Eval introductions listed outdated case counts. | Corrected the inspected references. |
 
 ## Visibility: improve the path from discovery to use
 
 The public GitHub snapshot had 0 stars, 0 forks, a homepage, and 15 relevant topics. The topics include `docs-as-code`, `architecture-diagrams`, `claude-code`, `mcp`, and `markdown`. A concurrent commit removed MCP; remove that topic when updating repository metadata. Adding more keywords is unlikely to be the main improvement. GitHub uses topics to help people browse and search for related projects; this does not promise a ranking or star increase. [GitHub topic guidance](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/classifying-your-repository-with-topics).
 
-1. **Synchronize the website before a launch.** At review time, [avodado.dev](https://avodado.dev/) displayed 87 types, v0.42.0, `avo install claude`, and PowerPoint output. The local CLI has 107 types and rejects the removed `install` and `pptx` commands. The website lives in a separate repository. Update its installation path, examples, and feature claims against the published CLI.
-2. **Use one clear description everywhere.** Suggested GitHub About text: “Turn Markdown + typed YAML into architecture diagrams, API docs, runbooks, and slides. An agent skill writes the content; avo check validates it.” This explains the product without calling all 107 blocks diagrams.
+1. **Synchronize the website before a launch.** At review time, [chiltepin.dev](https://chiltepin.dev/) displayed 87 types, v0.42.0, `chiltepin install claude`, and PowerPoint output. The local CLI has 107 types and rejects the removed `install` and `pptx` commands. The website lives in a separate repository. Update its installation path, examples, and feature claims against the published CLI.
+2. **Use one clear description everywhere.** Suggested GitHub About text: “Turn Markdown + typed YAML into architecture diagrams, API docs, runbooks, and slides. An agent skill writes the content; chiltepin check validates it.” This explains the product without calling all 107 blocks diagrams.
 3. **Configure the social preview.** The existing [social-preview.png](./assets/social-preview.png) is a candidate. Inspect its legibility and claims before selecting it in repository settings. Committing the image alone does not configure the preview. GitHub recommends 1280 × 640 pixels. [GitHub preview instructions](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview).
 4. **Lead with three repeatable use cases.** Demonstrate “explain this service,” “document an API failure path,” and “turn a rollout plan into a reviewable doc.” Each example should show the request, source, rendered output, and validation command. Link each demo back to the repository.
 5. **Make the first contribution small.** Prepare issues for a focused renderer defect, a missing example, and a reproducible bug. Include the input file, expected behavior, and the test command. Use `good first issue` only when the scope and instructions are suitable for a newcomer.
@@ -35,9 +35,9 @@ Suggested order: fix the website, review the README, configure the preview, publ
 
 | Area | Recommendation | Reason |
 | --- | --- | --- |
-| `.cursor/rules/avodado.mdc` and `.windsurfrules` | Keep the small adapters; remove their copied grammar. Done. | Each tool needs its entry point, but block rules need one maintained source. |
+| `.cursor/rules/chiltepin.mdc` and `.windsurfrules` | Keep the small adapters; remove their copied grammar. Done. | Each tool needs its entry point, but block rules need one maintained source. |
 | Root README and `packages/cli/README.md` | Keep both delivery files; edit only the root. | GitHub and npm read different files. Build-time generation removes manual maintenance. |
-| `docs/reference/showcase.md` and `packages/cli/templates/demo.md` | Generate the packaged template from the docs source in a follow-up. | They are byte-identical and tests enforce parity; `avo demo` needs a packaged copy. Deleting the template without updating the build would break it. |
+| `docs/reference/showcase.md` and `packages/cli/templates/demo.md` | Generate the packaged template from the docs source in a follow-up. | They are byte-identical and tests enforce parity; `chiltepin demo` needs a packaged copy. Deleting the template without updating the build would break it. |
 | Skill reference lists in CLI `init.ts` and MCP `embed-skill.mjs` | No further consolidation needed after the concurrent MCP removal. | The baseline duplicated this ordered list. Commit `e70ec5b` removed the MCP consumer during the audit; preserve that simplification. |
 | Package LICENSE copies | Keep. | Each published package needs its license; identical contents are intentional. |
 | Twelve legacy block aliases | Keep. | They are documented compatibility contracts with tests. Removing them breaks existing documents for little simplification. |
@@ -45,7 +45,7 @@ Suggested order: fix the website, review the README, configure the preview, publ
 | `.scratch/` and `graphify-out/` | Review and archive useful evidence before any deletion. | They are ignored local output, not published package bloat. Scratch contains the raw eval evidence referenced by historical results. |
 | `assets/hero.png` | Optional cleanup after checking external consumers. | The new README replaces it. Its old crop is poor, but external pages may still use its raw URL. |
 | `assets/flow.mp4` and `assets/social-preview.png` | Keep as launch assets if used. | Not every useful asset must appear inline in the README. |
-| `resources/*.md` | Inspect callers before pruning. | For example, PDF tests use `resources/avodado-roadmap.md`; these are not all abandoned files. |
+| `resources/*.md` | Inspect callers before pruning. | For example, PDF tests use `resources/chiltepin-roadmap.md`; these are not all abandoned files. |
 
 This audit did not perform broad deletions. The concurrent MCP removal was preserved, and public instructions were updated to match it. This avoids discarding unpublished evidence or breaking packaged assets and external links.
 

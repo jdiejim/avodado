@@ -491,7 +491,7 @@ describe('ring reorder math (cycle stages on a circle)', () => {
 
 describe('cycle stage reorder — through the real pipeline', () => {
   it('a ring drop commits a reordered steps array that stays schema-valid', async () => {
-    const { parseDocument, validateDocument } = await import('@avodado/core');
+    const { parseDocument, validateDocument } = await import('chiltepin-core');
     const { setPathsInSegment } = await import('./host.js');
     const source = [
       '# T',
@@ -566,7 +566,7 @@ describe('saga steps drag-reorder (position IS the array index)', () => {
   });
 
   it('a horizontal drag splices the step to its new index and stays schema-valid', async () => {
-    const { parseDocument, validateDocument } = await import('@avodado/core');
+    const { parseDocument, validateDocument } = await import('chiltepin-core');
     const { setPathsInSegment } = await import('./host.js');
     const source = [
       '# T',

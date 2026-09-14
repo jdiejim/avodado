@@ -55,7 +55,7 @@ function flourish(word: string, lineKey: string = word): void {
   console.log(actionBanner(word));
   console.log(funLine(lineKey) + '\n');
 }
-import type { BlockType } from '@avodado/core';
+import type { BlockType } from 'chiltepin-core';
 import {
   BLOCK_TYPES,
   BLOCK_ALIASES,
@@ -63,9 +63,9 @@ import {
   familyBlocks,
   isBlockFamily,
   type BlockFamily,
-} from '@avodado/core';
+} from 'chiltepin-core';
 
-/** Prints the created/skipped files and next-step hints after `avo init`. */
+/** Prints the created/skipped files and next-step hints after `chiltepin init`. */
 function printInitSummary(result: InitResult): void {
   for (const f of result.created) console.log(pc.green('+ ') + f);
   for (const f of result.skipped) console.log(pc.dim('  skip ') + f + pc.dim(' (exists)'));
@@ -78,10 +78,10 @@ function printInitSummary(result: InitResult): void {
     ),
   );
   console.log(
-    `Next: ${pc.cyan('avo check')} ${pc.dim('·')} ${pc.cyan('avo docs/getting-started.md')} ${pc.dim('(render + open)')}`,
+    `Next: ${pc.cyan('chiltepin check')} ${pc.dim('·')} ${pc.cyan('chiltepin docs/getting-started.md')} ${pc.dim('(render + open)')}`,
   );
   console.log(
-    `AI:   ${pc.cyan('npx skills add jdiejim/avodado')} ${pc.dim('installs the authoring skill into Claude Code, Cursor, Codex, and 70+ agents')}`,
+    `AI:   ${pc.cyan('npx skills add jdiejim/chiltepin')} ${pc.dim('installs the authoring skill into Claude Code, Cursor, Codex, and 70+ agents')}`,
   );
 }
 
@@ -93,29 +93,29 @@ export async function main(argv: readonly string[]): Promise<number> {
   const version = cliVersion();
   const program = new Command();
   program
-    .name('avo')
-    .description('Author, validate, render, and export Avodado documentation.')
+    .name('chiltepin')
+    .description('Author, validate, render, and export Chiltepin documentation.')
     // Lowercase -v is what fingers type; commander's default is -V only, so
     // register the flag string explicitly and alias -V below.
     .version(version, '-v, --version', 'print the version')
     // Banner + workflow only on top-level help — not on every subcommand's --help.
-    .addHelpText('beforeAll', (ctx) => (ctx.command.name() === 'avo' ? banner(version) : ''))
-    .addHelpText('after', (ctx) => (ctx.command.name() === 'avo' ? examples() : ''))
+    .addHelpText('beforeAll', (ctx) => (ctx.command.name() === 'chiltepin' ? banner(version) : ''))
+    .addHelpText('after', (ctx) => (ctx.command.name() === 'chiltepin' ? examples() : ''))
     .exitOverride();
 
   let exitCode = 0;
 
-  // Smart bare `avo` + the `avo <file.md>` shortcut. A bare .md argument is
+  // Smart bare `chiltepin` + the `chiltepin <file.md>` shortcut. A bare .md argument is
   // the most natural gesture, so it becomes the shortest command: render +
-  // open (today's preview). Bare `avo` in a TTY shows a mini project status
+  // open (today's preview). Bare `chiltepin` in a TTY shows a mini project status
   // (or an init hint outside a project); non-TTY keeps the help output.
   program
-    .argument('[file]', 'a .md file to render + open in the browser (same as `avo html <file> -p`)')
+    .argument('[file]', 'a .md file to render + open in the browser (same as `chiltepin html <file> -p`)')
     .action(async (file: string | undefined) => {
       const cwd = process.cwd();
       if (file !== undefined) {
         if (!/\.md$/i.test(file)) {
-          // Keep the unknown-command contract for non-.md strays (`avo claude`).
+          // Keep the unknown-command contract for non-.md strays (`chiltepin claude`).
           console.error(`error: unknown command '${file}'`);
           exitCode = 1;
           return;
@@ -133,7 +133,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
 
-      // Non-TTY / AVO_PLAIN: stay script-safe — print the regular help.
+      // Non-TTY / CHILTEPIN_PLAIN: stay script-safe — print the regular help.
       if (!isInteractive) {
         program.outputHelp();
         return;
@@ -141,9 +141,9 @@ export async function main(argv: readonly string[]): Promise<number> {
 
       console.log(banner(version));
       if (findConfig(cwd) === undefined) {
-        console.log(`  Not an Avodado project yet — run ${pc.cyan('avo init')} to scaffold one.`);
+        console.log(`  Not a Chiltepin project yet — run ${pc.cyan('chiltepin init')} to scaffold one.`);
         console.log(
-          `  ${pc.dim('Curious first?')} ${pc.cyan('avo demo')} ${pc.dim('renders every block · ')}${pc.cyan('avo block')} ${pc.dim('lists them.')}`,
+          `  ${pc.dim('Curious first?')} ${pc.cyan('chiltepin demo')} ${pc.dim('renders every block · ')}${pc.cyan('chiltepin block')} ${pc.dim('lists them.')}`,
         );
         console.log('');
         return;
@@ -154,7 +154,7 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   program
     .command('init')
-    .description('Scaffold a new Avodado project in the current directory')
+    .description('Scaffold a new Chiltepin project in the current directory')
     .option('--force', 'overwrite existing files')
     .option('-y, --yes', 'accepted for compatibility (init has no prompts)', undefined)
     .action(async (opts: { force?: boolean }) => {
@@ -202,11 +202,11 @@ export async function main(argv: readonly string[]): Promise<number> {
       exitCode = result.exitCode;
     });
 
-  // `avo audit [path]` — evidence report + rule-derived doc recommendations.
+  // `chiltepin audit [path]` — evidence report + rule-derived doc recommendations.
   // Informational: exits 0 whenever the path is usable, 2 when it is not.
   program
     .command('audit [path]')
-    .description('Audit a codebase and recommend which Avodado docs to write (evidence-cited)')
+    .description('Audit a codebase and recommend which Chiltepin docs to write (evidence-cited)')
     .option('--json', 'emit machine-readable JSON (schema version 1)')
     .action(async (pathArg: string | undefined, opts: { json?: boolean }) => {
       const result = await runAudit({
@@ -230,10 +230,10 @@ export async function main(argv: readonly string[]): Promise<number> {
       }
     });
 
-  // Hidden compat: `avo preview` ≡ `avo <file.md>` ≡ `avo html <file> -p`.
+  // Hidden compat: `chiltepin preview` ≡ `chiltepin <file.md>` ≡ `chiltepin html <file> -p`.
   program
     .command('preview <input>', { hidden: true })
-    .description('Render a document to a temp HTML file and open it (same as `avo <file.md>`)')
+    .description('Render a document to a temp HTML file and open it (same as `chiltepin <file.md>`)')
     .action(async (input: string) => {
       flourish('preview');
       const result = await runSingle({
@@ -247,7 +247,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       console.log(`${pc.green(verb)} ${result.output} ${pc.dim(`(${result.bytes} bytes)`)}`);
     });
 
-  // `avo new [name]` — one verb for "make something": doc templates (adr,
+  // `chiltepin new [name]` — one verb for "make something": doc templates (adr,
   // runbook, …) AND single-block scaffolds (sequence, erd, …), resolved by
   // name (alias spellings like `waterfall` resolve to their canonical block).
   // Bare + TTY → two-section Ink picker; bare + non-TTY → list the names.
@@ -302,7 +302,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         const hit = resolveName(nameArg);
         if (hit === undefined) {
           console.error(
-            pc.red(`Unknown template or block: ${nameArg}. Run \`avo new\` to list them.`),
+            pc.red(`Unknown template or block: ${nameArg}. Run \`chiltepin new\` to list them.`),
           );
           exitCode = 2;
           return;
@@ -313,7 +313,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         return;
       }
 
-      // Bare `avo new`, non-TTY: list every name (script-safe).
+      // Bare `chiltepin new`, non-TTY: list every name (script-safe).
       if (!isInteractive) {
         console.log('Doc templates:');
         for (const [name, info] of Object.entries(DOC_TEMPLATE_INFO)) {
@@ -323,11 +323,11 @@ export async function main(argv: readonly string[]): Promise<number> {
         for (const fam of BLOCK_FAMILIES) {
           console.log(`  ${fam.label}: ${familyBlocks(fam.id).join('  ')}`);
         }
-        console.log('\nUsage: avo new <name> [-o <path>]');
+        console.log('\nUsage: chiltepin new <name> [-o <path>]');
         return;
       }
 
-      // Bare `avo new`, TTY: two-section picker (Doc templates | Blocks by family).
+      // Bare `chiltepin new`, TTY: two-section picker (Doc templates | Blocks by family).
       flourish('new');
       let picked: string | undefined;
       const { waitUntilExit } = inkRender(
@@ -342,7 +342,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       await emit(picked);
     });
 
-  // `avo build` — render every doc into a static HTML site under outDir.
+  // `chiltepin build` — render every doc into a static HTML site under outDir.
   program
     .command('build')
     .description('Build a static HTML site from all docs — index, sidebar nav, cross-doc links')
@@ -359,7 +359,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         ...(opts.out !== undefined ? { out: opts.out } : {}),
         ...(opts.richIndex !== undefined ? { richIndex: opts.richIndex } : {}),
       });
-      // Schema/ref findings are warnings here — `avo check` stays the gate.
+      // Schema/ref findings are warnings here — `chiltepin check` stays the gate.
       // A render failure (E_RENDER) is an error: it names the document and the
       // block, the rest of the build still ran, and the exit code is 1.
       if (result.diagnostics.length > 0) {
@@ -377,7 +377,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         if (errors > 0) parts.push(`${errors} error(s)`);
         if (warnings > 0) parts.push(`${warnings} warning(s)`);
         console.error(
-          (errors > 0 ? pc.red : pc.yellow)(`${parts.join(', ')} — run \`avo check\` for details`),
+          (errors > 0 ? pc.red : pc.yellow)(`${parts.join(', ')} — run \`chiltepin check\` for details`),
         );
       }
       const bytes = result.pages.reduce((sum, p) => sum + p.bytes, 0);
@@ -405,12 +405,12 @@ export async function main(argv: readonly string[]): Promise<number> {
       exitCode = result.exitCode;
     });
 
-  // Hidden compat: `avo serve` still works, but `avo studio` (Site mode) is
+  // Hidden compat: `chiltepin serve` still works, but `chiltepin studio` (Site mode) is
   // the one local surface — it mounts the same live-reloading site at /site/.
   program
     .command('serve', { hidden: true })
     .description(
-      'Serve the docs site locally with live reload (compat — `avo studio` includes this as Site mode)',
+      'Serve the docs site locally with live reload (compat — `chiltepin studio` includes this as Site mode)',
     )
     .option('--port <n>', 'port to listen on (0 = pick a free port)', '4173')
     .option('--no-open', "don't open the browser")
@@ -430,7 +430,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       });
     });
 
-  // `avo studio` — THE local surface: visual editor over a file-bridge API
+  // `chiltepin studio` — THE local surface: visual editor over a file-bridge API
   // (files stay canonical) with Edit | Site | Present modes in one server.
   program
     .command('studio')
@@ -452,7 +452,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   const syncCmd = program
     .command('sync')
     .description(
-      'Generate Avodado docs from external sources (OpenAPI, CSV, SQL / DBML / Prisma schemas)',
+      'Generate Chiltepin docs from external sources (OpenAPI, CSV, SQL / DBML / Prisma schemas)',
     );
   syncCmd
     .command('openapi <spec>')
@@ -535,20 +535,20 @@ export async function main(argv: readonly string[]): Promise<number> {
           console.log(`${pc.green('✓')} Wrote ${result.outPath} ${pc.dim(`(${result.block})`)}`);
           const diags = result.check?.diagnostics ?? [];
           if (diags.length === 0) {
-            console.log(`${pc.green('✓')} avo check: clean`);
+            console.log(`${pc.green('✓')} chiltepin check: clean`);
           } else {
             for (const d of diags) {
               const loc = d.line !== undefined ? `${d.file}:${d.line}` : d.file;
               const paint = d.level === 'error' ? pc.red : pc.yellow;
               console.error(paint(`${d.level}  ${loc}  ${d.code}  ${d.message}`));
             }
-            console.error(pc.dim(`avo check: ${diags.length} diagnostic(s)`));
+            console.error(pc.dim(`chiltepin check: ${diags.length} diagnostic(s)`));
           }
         }
         exitCode = result.exitCode;
       },
     );
-  // `avo sync sql | dbml | prisma <file>` — a database schema → an `erd` fence (stdout) or a doc (--out).
+  // `chiltepin sync sql | dbml | prisma <file>` — a database schema → an `erd` fence (stdout) or a doc (--out).
   const schemaSync = (dialect: SchemaDialect, what: string): void => {
     syncCmd
       .command(`${dialect} <file>`)
@@ -588,14 +588,14 @@ export async function main(argv: readonly string[]): Promise<number> {
             );
             const diags = result.check?.diagnostics ?? [];
             if (diags.length === 0) {
-              console.log(`${pc.green('✓')} avo check: clean`);
+              console.log(`${pc.green('✓')} chiltepin check: clean`);
             } else {
               for (const d of diags) {
                 const loc = d.line !== undefined ? `${d.file}:${d.line}` : d.file;
                 const paint = d.level === 'error' ? pc.red : pc.yellow;
                 console.error(paint(`${d.level}  ${loc}  ${d.code}  ${d.message}`));
               }
-              console.error(pc.dim(`avo check: ${diags.length} diagnostic(s)`));
+              console.error(pc.dim(`chiltepin check: ${diags.length} diagnostic(s)`));
             }
           }
           exitCode = result.exitCode;
@@ -606,7 +606,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   schemaSync('dbml', 'a DBML schema');
   schemaSync('prisma', 'a Prisma schema');
 
-  // Single-document shortcuts: `avo html|slides|pdf <input> [-o out] [-p]`.
+  // Single-document shortcuts: `chiltepin html|slides|pdf <input> [-o out] [-p]`.
   const single = (name: SingleFormat, desc: string): void => {
     const cmd = program
       .command(`${name} <input>`)
@@ -665,7 +665,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   single('slides', 'Render one document to a self-contained slide deck');
   single('pdf', 'Render one document to a PDF (needs Chromium once)');
 
-  // `avo demo [family] [-s]` — render the bundled showcase doc (all blocks, or
+  // `chiltepin demo [family] [-s]` — render the bundled showcase doc (all blocks, or
   // one family) and open it (-s = slides). Bare TTY invocation shows a picker.
   program
     .command('demo [family]')
@@ -691,7 +691,7 @@ export async function main(argv: readonly string[]): Promise<number> {
           }
           family = familyArg;
         } else if (isInteractive) {
-          // Bare `avo demo` in a TTY: pick a family (or everything) interactively.
+          // Bare `chiltepin demo` in a TTY: pick a family (or everything) interactively.
           let picked: DemoPick | undefined;
           const { waitUntilExit } = inkRender(
             <DemoApp
@@ -718,7 +718,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       },
     );
 
-  // `avo block [type]` — the reference an agent reads: every block on one
+  // `chiltepin block [type]` — the reference an agent reads: every block on one
   // line (no argument), or one block's fields, terse forms, and a validating
   // example, all derived from the schema. `--json` for the structured form.
   program
@@ -734,7 +734,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       }
       const hit = resolveBlockName(typeArg);
       if (hit === undefined) {
-        console.error(pc.red(`Unknown block: ${typeArg}. Run \`avo block\` to list them.`));
+        console.error(pc.red(`Unknown block: ${typeArg}. Run \`chiltepin block\` to list them.`));
         exitCode = 2;
         return;
       }
@@ -749,14 +749,14 @@ export async function main(argv: readonly string[]): Promise<number> {
       process.stdout.write(blockReference(hit.type, opts.json === true));
     });
 
-  // `avo skill` — emit the authoring grammar as a copy-paste system prompt for
+  // `chiltepin skill` — emit the authoring grammar as a copy-paste system prompt for
   // any tool without a repo-file adapter (Microsoft 365 Copilot, a custom GPT,
   // ChatGPT, Gemini). Prints to stdout (so it pipes), copies to the clipboard in
   // a terminal, or writes to a file with -o.
   program
     .command('skill', { hidden: true })
     .description(
-      'Print the Avodado authoring grammar as a copy-paste system prompt (for Copilot / custom GPTs / any AI)',
+      'Print the Chiltepin authoring grammar as a copy-paste system prompt (for Copilot / custom GPTs / any AI)',
     )
     .option('-o, --output <path>', 'write the system prompt to a file instead of printing it')
     .option(
@@ -778,7 +778,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       if (isInteractive) {
         console.log(
           pc.dim(
-            "# Avodado system prompt — paste into your tool's system / custom-instructions box\n",
+            "# Chiltepin system prompt — paste into your tool's system / custom-instructions box\n",
           ),
         );
       }

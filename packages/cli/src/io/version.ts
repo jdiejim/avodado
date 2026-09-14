@@ -1,5 +1,5 @@
 /**
- * Resolves the avodado CLI's own version at runtime — shared by the `--version`
+ * Resolves the chiltepin CLI's own version at runtime — shared by the `--version`
  * flag and the studio's `/api/meta` endpoint.
  */
 
@@ -18,9 +18,12 @@ export function cliVersion(): string {
       const p = join(dir, 'package.json');
       if (existsSync(p)) {
         const j = JSON.parse(readFileSync(p, 'utf8')) as { name?: string; version?: string };
-        // The package renamed @avodado/cli -> avodado; accept either so the
+        // The package was renamed twice (@avodado/cli -> avodado -> chiltepin); accept all so the
         // walk matches its own package.json and never a stray parent's.
-        if ((j.name === 'avodado' || j.name === '@avodado/cli') && typeof j.version === 'string') {
+        if (
+          (j.name === 'chiltepin' || j.name === 'avodado' || j.name === '@avodado/cli') &&
+          typeof j.version === 'string'
+        ) {
           return j.version;
         }
       }

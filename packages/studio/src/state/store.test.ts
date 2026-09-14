@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DOC_TEMPLATES, insertBlock, removeSegment, templateBody } from '@avodado/core';
+import { DOC_TEMPLATES, insertBlock, removeSegment, templateBody } from 'chiltepin-core';
 import { firstContentIndex } from '../lib/docTemplates.js';
 import { newDocTemplate, useStudio } from './store.js';
 
@@ -532,7 +532,7 @@ describe('newDocTemplate', () => {
 describe('init with ?template=', () => {
   function stubWindow(search: string): void {
     vi.stubGlobal('window', {
-      location: { href: `https://studio.avodado.dev/${search}`, search, pathname: '/' },
+      location: { href: `https://studio.chiltepin.dev/${search}`, search, pathname: '/' },
       history: { replaceState: vi.fn() },
     });
   }

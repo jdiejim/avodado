@@ -1,7 +1,7 @@
 /**
- * `avo new [name]` — one verb for "make something": full-document templates
- * (`avo new adr`) and single-block scaffolds (`avo new sequence`) resolved by
- * name; bare `avo new` in a TTY opens an Ink picker with two sections — Doc
+ * `chiltepin new [name]` — one verb for "make something": full-document templates
+ * (`chiltepin new adr`) and single-block scaffolds (`chiltepin new sequence`) resolved by
+ * name; bare `chiltepin new` in a TTY opens an Ink picker with two sections — Doc
  * templates | Blocks (grouped by family).
  */
 
@@ -17,7 +17,7 @@ import {
   familyBlocks,
   type BlockFamily,
   type BlockType,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import { DOC_TEMPLATES, DOC_TEMPLATE_INFO, isDocTemplate } from './docTemplates.js';
 import { assertWritable } from '../io/write.js';
 
@@ -32,8 +32,8 @@ export function templateFor(type: BlockType): string {
   return `\`\`\`meta\ntitle: New document\ntag: DRAFT\n\`\`\`\n\n${BLOCK_TEMPLATES[type]}`;
 }
 
-// Full-document templates (adr, design-doc, deck, …) live in @avodado/core;
-// re-exported here so `avo new` has one import site.
+// Full-document templates (adr, design-doc, deck, …) live in chiltepin-core;
+// re-exported here so `chiltepin new` has one import site.
 export { DOC_TEMPLATES, DOC_TEMPLATE_INFO, isDocTemplate };
 
 /**
@@ -67,7 +67,7 @@ interface PickerProps {
 }
 
 /**
- * Ink picker for bare `avo new` — two sections: Doc templates (titles +
+ * Ink picker for bare `chiltepin new` — two sections: Doc templates (titles +
  * descriptions from {@link DOC_TEMPLATE_INFO}) | Blocks, grouped by family.
  * `q`/escape cancels; the caller decides what to do with the picked name.
  */

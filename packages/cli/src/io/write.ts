@@ -3,11 +3,11 @@
  *
  * The rule, applied identically everywhere:
  *
- * - A command that writes a **document** (`avo sync … --out`, `avo new -o`,
- *   `avo new -o`, `avo skill -o`)
+ * - A command that writes a **document** (`chiltepin sync … --out`, `chiltepin new -o`,
+ *   `chiltepin new -o`, `chiltepin skill -o`)
  *   never replaces an existing file. Those paths point into `docs/`, and the
  *   file there is usually hand-written.
- * - A command that writes an **export** (`avo html|slides|pdf`, and the
+ * - A command that writes an **export** (`chiltepin html|slides|pdf`, and the
  *   gallery writers `demo` / `catalog` / `compare` / `design -p -o`, which all
  *   route through the same writer) replaces a file only when the path already
  *   carries the extension that command produces. Re-exporting `report.html`
@@ -15,7 +15,7 @@
  *   `Makefile` is data loss, and refuses.
  * - `--force` overrides both.
  *
- * `avo build` is out of scope here: it owns its output directory and tracks
+ * `chiltepin build` is out of scope here: it owns its output directory and tracks
  * what it generated in a manifest (see `io/manifest.ts`).
  */
 

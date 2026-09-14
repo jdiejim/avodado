@@ -1,4 +1,4 @@
-import { readSourceMarker, stripHeadingMarkers } from '@avodado/core';
+import { readSourceMarker, stripHeadingMarkers } from 'chiltepin-core';
 import { escapeHtml } from './escape.js';
 /**
  * Renders a prose segment to HTML via `marked`.
@@ -9,7 +9,7 @@ import { escapeHtml } from './escape.js';
  * - Raw HTML is **not** passed through — `marked` v14 emits raw HTML by
  *   default, which is an XSS vector. We decline the block `html` and inline
  *   `tag` tokenizers so any literal `<tag>` falls through to text and is
- *   entity-escaped. This also matches Avodado's house rule: express structure
+ *   entity-escaped. This also matches Chiltepin's house rule: express structure
  *   through blocks, never raw HTML.
  * - Link / image hrefs with `javascript:`, `data:`, or `vbscript:` schemes are
  *   rewritten to `#` (see {@link safeUrl}).

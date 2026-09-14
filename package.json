@@ -1,5 +1,5 @@
 {
-  "name": "avodado",
+  "name": "chiltepin",
   "private": true,
   "version": "0.0.0",
   "description": "Documentation-as-code: Markdown with typed YAML blocks.",
@@ -19,13 +19,13 @@
     "format:check": "prettier --check .",
     "changeset": "changeset",
     "release": "pnpm -r build && changeset publish",
-    "avo": "node packages/cli/dist/bin.js",
-    "studio": "pnpm --filter @avodado/studio dev",
+    "chiltepin": "node packages/cli/dist/bin.js",
+    "studio": "pnpm --filter chiltepin-studio dev",
     "studio:api": "node packages/cli/dist/bin.js studio --no-open --port 4174",
     "publint": "pnpm -r exec publint",
-    "attw": "pnpm -r --filter='@avodado/core' --filter='@avodado/render' exec attw --pack . --profile esm-only",
+    "attw": "pnpm -r --filter='chiltepin-core' --filter='chiltepin-render' exec attw --pack . --profile esm-only",
     "check:packages": "pnpm build && pnpm publint && pnpm attw",
-    "verify": "pnpm build && pnpm lint && pnpm typecheck && pnpm test && pnpm avo check",
+    "verify": "pnpm build && pnpm lint && pnpm typecheck && pnpm test && pnpm chiltepin check",
     "screenshots": "node scripts/readme-screenshots.mjs"
   },
   "pnpm": {

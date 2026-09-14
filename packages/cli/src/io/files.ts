@@ -13,7 +13,7 @@
 import { readFile, realpath } from 'node:fs/promises';
 import { basename, relative, resolve, sep } from 'node:path';
 import fg from 'fast-glob';
-import type { Diagnostic } from '@avodado/core';
+import type { Diagnostic } from 'chiltepin-core';
 
 /** A document file on disk, with derived slug. */
 export interface DocFile {

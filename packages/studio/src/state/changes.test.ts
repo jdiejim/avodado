@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseDocument, templateBody } from '@avodado/core';
+import { parseDocument, templateBody } from 'chiltepin-core';
 import { changesSummary, segmentLabel } from './changes.js';
 
 const META = '```meta\ntitle: T\n```\n';

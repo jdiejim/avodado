@@ -8,7 +8,7 @@
  * Pure string-building on top of {@link renderSlides} — browser-safe, no I/O.
  */
 
-import type { Document } from '@avodado/core';
+import type { Document } from 'chiltepin-core';
 import { renderSlides, type RenderPartsOptions } from './parts.js';
 import { schemeMarkup } from './document.js';
 

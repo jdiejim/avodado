@@ -7,8 +7,8 @@
  * Used by every diagram-type block (sequence, erd, block, …).
  */
 
-import type { BlockType } from '@avodado/core';
-import { BLOCK_ALIASES } from '@avodado/core';
+import type { BlockType } from 'chiltepin-core';
+import { BLOCK_ALIASES } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bp } from '../paths.js';
 

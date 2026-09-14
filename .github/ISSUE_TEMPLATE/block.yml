@@ -20,4 +20,4 @@ body:
     id: closest
     attributes:
       label: The closest existing block, and why it falls short
-      description: Run `npx avodado block` for the list.
+      description: Run `npx chiltepin block` for the list.

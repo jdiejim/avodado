@@ -1,12 +1,12 @@
 <!-- Repo location: .github/copilot-instructions.md — GitHub Copilot reads this automatically. -->
 
-# Avodado — authoring guide
+# Chiltepin — authoring guide
 
-This project uses **Avodado**: documentation-as-code where a doc is Markdown with
+This project uses **Chiltepin**: documentation-as-code where a doc is Markdown with
 typed, fenced YAML blocks, and the files on disk are the single source of truth.
 
 When creating or changing any document under `docs/**/*.md`, follow the authoring
-skill at `skills/avodado/SKILL.md`. It defines the block grammar and the `doc#id`
+skill at `skills/chiltepin/SKILL.md`. It defines the block grammar and the `doc#id`
 reference scheme; run `node packages/cli/dist/bin.js block <type>` for any block's
 fields and an example. In short:
 
@@ -17,5 +17,5 @@ fields and an example. In short:
   strict, so an unknown block or field fails validation. Bodies are YAML.
 - Give a block an `id:` when it needs to be referenced; reference it as `doc#id`.
 - Edit the specific block surgically — don't regenerate whole files.
-- Run `avo check` and fix all diagnostics before finishing. A change isn't done
+- Run `chiltepin check` and fix all diagnostics before finishing. A change isn't done
   until it passes.

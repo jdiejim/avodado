@@ -1,6 +1,6 @@
 /**
- * Single-document export shortcuts behind `avo html` / `avo slides` / `avo pdf`.
- * Each renders one doc, applying the project theme (`avodado.theme.json`), and
+ * Single-document export shortcuts behind `chiltepin html` / `chiltepin slides` / `chiltepin pdf`.
+ * Each renders one doc, applying the project theme (`chiltepin.theme.json`), and
  * writes a single output file (defaulting next to the input).
  */
 
@@ -9,8 +9,8 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join, parse as parsePath, relative, resolve } from 'node:path';
 import open from 'open';
-import { parseDocument } from '@avodado/core';
-import { renderDocument, toSlides } from '@avodado/render';
+import { parseDocument } from 'chiltepin-core';
+import { renderDocument, toSlides } from 'chiltepin-render';
 import { toPdf } from '../io/pdf.js';
 import { assertWritable } from '../io/write.js';
 import { loadConfig } from '../io/config.js';
@@ -72,7 +72,7 @@ export async function runSingle(opts: {
   /**
    * With `preview`, whether to actually open the browser (default true).
    * `false` keeps the temp-file rendering but stays script-safe (non-TTY
-   * `avo <file.md>`).
+   * `chiltepin <file.md>`).
    */
   readonly open?: boolean;
   /**
@@ -114,7 +114,7 @@ export async function runSingle(opts: {
       .update(`${source}\u0000${opts.format}\u0000${JSON.stringify(themeOpts)}`)
       .digest('hex')
       .slice(0, 10);
-    const dir = join(tmpdir(), 'avodado-preview');
+    const dir = join(tmpdir(), 'chiltepin-preview');
     await mkdir(dir, { recursive: true });
     outputAbs = join(dir, `${slug}-${hash}.${EXT[opts.format]}`);
   } else {
@@ -147,7 +147,7 @@ export async function runSingle(opts: {
 
   let bytes: number;
   if (opts.format === 'pdf') {
-    // Auto-download the matching Chromium on first use, so `avo pdf` just works.
+    // Auto-download the matching Chromium on first use, so `chiltepin pdf` just works.
     const page = await named('PDF', () => renderDocument(doc, themeOpts));
     const pdf = await toPdf(page, {
       autoInstallBrowser: true,

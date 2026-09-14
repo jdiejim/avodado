@@ -20,6 +20,6 @@ body:
     id: version
     attributes:
       label: Version
-      description: Output of `npx avodado --version`
+      description: Output of `npx chiltepin --version`
     validations:
       required: true

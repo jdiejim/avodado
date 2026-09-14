@@ -1,6 +1,6 @@
 /** Tiny localStorage-backed one-shot flags (safe in private mode). */
 
-const SLASH_USED_KEY = 'avodado-studio-slash-used';
+const SLASH_USED_KEY = 'chiltepin-studio-slash-used';
 
 /** True once the user has ever opened the slash menu (kills the "/ next" hint). */
 export function slashUsed(): boolean {

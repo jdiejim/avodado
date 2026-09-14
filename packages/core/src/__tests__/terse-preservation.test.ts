@@ -399,11 +399,11 @@ const FIXTURES: readonly Fixture[] = [
     terse: [
       'Where does the content live? — In the .md files on disk.',
       'Do diagrams need a drawing tool? — No, the renderer draws them.',
-      'How do I validate a doc? — Run avo check.',
+      'How do I validate a doc? — Run chiltepin check.',
     ],
     editField: 'a',
     editValue: 'In the Markdown files.',
-    insert: { q: 'Can I export a PDF?', a: 'Yes, with avo build.' },
+    insert: { q: 'Can I export a PDF?', a: 'Yes, with chiltepin build.' },
   },
   {
     kind: 'takeaways',
@@ -423,7 +423,7 @@ const FIXTURES: readonly Fixture[] = [
     path: ['items'],
     head: ['title: What you get', 'items:'],
     terse: [
-      'Typed blocks — 90 strict schemas, validated by avo check.',
+      'Typed blocks — 90 strict schemas, validated by chiltepin check.',
       'One source of truth — diagrams live in the .md file.',
       'Many outputs',
     ],

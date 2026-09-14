@@ -147,7 +147,7 @@ describe('openapiToMarkdown', () => {
     expect(a).toBe(b);
   });
 
-  it('generated md parses + validates clean as an Avodado document', () => {
+  it('generated md parses + validates clean as a Chiltepin document', () => {
     const doc = parseDocument(md, 'orders-api');
     const diags = validateDocument(doc, 'orders-api.md');
     expect(diags).toEqual([]);

@@ -13,7 +13,7 @@ import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import type { Document } from '@avodado/core';
+import type { Document } from 'chiltepin-core';
 import { buildSite, type SiteDoc } from '../commands/site.js';
 import { failingBlock, renderFailure } from '../commands/renderGuard.js';
 import { runBuild } from '../commands/build.js';
@@ -104,12 +104,12 @@ describe('buildSite with a failing renderer', () => {
   });
 });
 
-describe('avo build with a failing renderer', () => {
+describe('chiltepin build with a failing renderer', () => {
   it('finishes the build, exits non-zero, and names the document', async () => {
-    const root = join(tmpdir(), `avo-render-${randomBytes(6).toString('hex')}`);
+    const root = join(tmpdir(), `chiltepin-render-${randomBytes(6).toString('hex')}`);
     await mkdir(join(root, 'docs'), { recursive: true });
     await writeFile(join(root, 'docs/ok.md'), '```meta\ntitle: Fine\n```\n');
-    // Schema-invalid (a `saga` step with no `service`) — `avo build` renders
+    // Schema-invalid (a `saga` step with no `service`) — `chiltepin build` renders
     // anyway, and the renderer throws on it.
     await writeFile(
       join(root, 'docs/boom.md'),

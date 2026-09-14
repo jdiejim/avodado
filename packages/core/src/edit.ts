@@ -1,5 +1,5 @@
 /**
- * Pure surgical text operations on an Avodado Markdown source.
+ * Pure surgical text operations on a Chiltepin Markdown source.
  *
  * Every function takes the source string plus the {@link Document} parsed from
  * it (`doc` MUST be `parseDocument(source, …)` of the same source — the segment

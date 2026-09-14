@@ -13,7 +13,7 @@
  * means no accent.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { edgeLanes, entryPortOffsets, ortho } from '../svg/ortho.js';
 import { wrapText } from '../svg/wrapText.js';
@@ -98,7 +98,7 @@ export function renderState(data: BlockDataMap['state']): string {
   const successExits = states.filter((s) => s.kind === 'terminal' && !isErrTerminal(s));
   const accentId = successExits.length === 1 ? successExits[0]?.id : undefined;
 
-  // Grid metadata for editors (Avodado Studio drag-to-connect): inert attrs
+  // Grid metadata for editors (Chiltepin Studio drag-to-connect): inert attrs
   // mirroring the layout constants plus each state's effective cell below.
   const gridMeta = gridMetaAttrs({ quick, cols, rows, cellW, cellH, gapX, gapY, padX, padTop });
   const a11y = svgName('State machine', data.title, [

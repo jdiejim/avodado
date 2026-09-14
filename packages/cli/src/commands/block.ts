@@ -1,7 +1,7 @@
 /**
- * `avo block [type]` — the reference an agent reads instead of a Markdown
+ * `chiltepin block [type]` — the reference an agent reads instead of a Markdown
  * contract. One block: fields, enums, terse forms, and a validating example,
- * all derived from the schema in `@avodado/core` (so nothing can drift). No
+ * all derived from the schema in `chiltepin-core` (so nothing can drift). No
  * argument: every block type, one line each, grouped by family — the map an
  * agent scans to pick a block.
  *
@@ -17,7 +17,7 @@ import {
   familyBlocks,
   formatBlockContract,
   type BlockType,
-} from '@avodado/core';
+} from 'chiltepin-core';
 
 /** Resolves a name — canonical or one of the permanent aliases. */
 export function resolveBlockName(name: string): { type: BlockType; alias?: string } | undefined {
@@ -30,7 +30,7 @@ export function resolveBlockName(name: string): { type: BlockType; alias?: strin
 /** Every block on one line, grouped by family — the selection map. */
 export function blockIndex(): string {
   const out: string[] = [
-    `${BLOCK_TYPES.length} block types — avo block <type> for fields + example`,
+    `${BLOCK_TYPES.length} block types — chiltepin block <type> for fields + example`,
     '',
   ];
   for (const fam of BLOCK_FAMILIES) {
@@ -44,7 +44,7 @@ export function blockIndex(): string {
   return out.join('\n') + '\n';
 }
 
-/** The text (or JSON) for `avo block <type>`. */
+/** The text (or JSON) for `chiltepin block <type>`. */
 export function blockReference(type: BlockType, json: boolean): string {
   return json ? JSON.stringify(blockContract(type), null, 2) + '\n' : formatBlockContract(type);
 }

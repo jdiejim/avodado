@@ -47,7 +47,7 @@ describe('E_SCHEMA hints', () => {
     const bad = diags.find((d) => d.code === 'E_SCHEMA' && d.message.includes('expected object, got string'));
     expect(bad).toBeDefined();
     expect(bad?.hint).toContain('`from -> to: label`');
-    expect(bad?.hint).toContain('avo block sequence');
+    expect(bad?.hint).toContain('chiltepin block sequence');
   });
 });
 

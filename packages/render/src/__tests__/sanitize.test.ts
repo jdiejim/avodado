@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { safeColor, safeUrl } from '../sanitize.js';
 import { renderProse } from '../markdown.js';
 import { renderDocument } from '../document.js';

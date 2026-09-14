@@ -9,7 +9,7 @@
  *
  * The attributes are inert metadata: emitted on every render target (serve,
  * build, export), they change no visual output and work identically on SVG
- * (`<g data-bp="…">`) and HTML elements. Editors (Avodado Studio) use them to
+ * (`<g data-bp="…">`) and HTML elements. Editors (Chiltepin Studio) use them to
  * map DOM hits back to YAML paths.
  */
 

@@ -5,7 +5,7 @@
  * decision here is unit-testable.
  */
 
-import type { FieldNode } from '@avodado/core';
+import type { FieldNode } from 'chiltepin-core';
 import { unionArmFor } from './union.js';
 import { partitionFields, type FieldSpec, type RefOption } from './fieldKind.js';
 

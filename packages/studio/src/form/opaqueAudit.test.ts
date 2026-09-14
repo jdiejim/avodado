@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { BLOCK_TYPES, describeBlockSchema, type FieldNode } from '@avodado/core';
+import { BLOCK_TYPES, describeBlockSchema, type FieldNode } from 'chiltepin-core';
 
 /**
  * The curated allow-list of legitimately-opaque paths (`type:path` form,

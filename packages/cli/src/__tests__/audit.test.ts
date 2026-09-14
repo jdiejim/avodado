@@ -11,7 +11,7 @@ async function tempRepo(files: Record<string, string>): Promise<{
   root: string;
   cleanup: () => Promise<void>;
 }> {
-  const root = join(tmpdir(), `avo-audit-${randomBytes(6).toString('hex')}`);
+  const root = join(tmpdir(), `chiltepin-audit-${randomBytes(6).toString('hex')}`);
   for (const [rel, content] of Object.entries(files)) {
     const abs = join(root, rel);
     await mkdir(join(abs, '..'), { recursive: true });
@@ -93,7 +93,7 @@ describe('runAudit (builtin source)', () => {
       const text = formatAudit(report, true);
       expect(text).toContain('source  builtin');
       expect(text).toContain('data-model');
-      expect(text).toContain('/avo audit');
+      expect(text).toContain('/chiltepin audit');
       expect(text).toContain('note:');
     } finally {
       await cleanup();
@@ -231,7 +231,7 @@ describe('runAudit (graphify source)', () => {
   });
 });
 
-describe('avo audit --json (CLI wiring)', () => {
+describe('chiltepin audit --json (CLI wiring)', () => {
   it('emits parseable version-1 JSON and exits 0', async () => {
     const { root, cleanup } = await tempRepo(EXPRESS_PRISMA);
     const chunks: string[] = [];
@@ -241,7 +241,7 @@ describe('avo audit --json (CLI wiring)', () => {
     });
     try {
       const { main } = await import('../app.js');
-      const code = await main(['node', 'avo', 'audit', root, '--json']);
+      const code = await main(['node', 'chiltepin', 'audit', root, '--json']);
       expect(code).toBe(0);
       const parsed = JSON.parse(chunks.join('')) as AuditReport;
       expect(parsed.version).toBe(1);
@@ -258,7 +258,7 @@ describe('avo audit --json (CLI wiring)', () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       const { main } = await import('../app.js');
-      const code = await main(['node', 'avo', 'audit', '/definitely/not/a/dir', '--json']);
+      const code = await main(['node', 'chiltepin', 'audit', '/definitely/not/a/dir', '--json']);
       expect(code).toBe(2);
     } finally {
       errSpy.mockRestore();

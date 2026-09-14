@@ -4,7 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BLOCK_TYPES } from '@avodado/core';
+import { BLOCK_TYPES } from 'chiltepin-core';
 import { clearThumbnailCache, thumbnailCacheSize, thumbnailHtml } from './thumbs.js';
 
 describe('thumbnailHtml', () => {

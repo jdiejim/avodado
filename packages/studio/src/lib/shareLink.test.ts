@@ -56,29 +56,29 @@ describe('share links', () => {
   });
 
   it('builds and reads a link, carrying the present flag', async () => {
-    const url = await buildShareUrl('https://studio.avodado.dev/', DOC, { present: true });
+    const url = await buildShareUrl('https://studio.chiltepin.dev/', DOC, { present: true });
     const read = await readShareUrl(url);
     expect(read?.source).toBe(DOC);
     expect(read?.present).toBe(true);
   });
 
   it('defaults to the editor, not the deck', async () => {
-    const url = await buildShareUrl('https://studio.avodado.dev/', DOC);
+    const url = await buildShareUrl('https://studio.chiltepin.dev/', DOC);
     expect((await readShareUrl(url))?.present).toBe(false);
   });
 
   it('keeps the payload in the fragment, which never reaches a server', async () => {
-    const url = new URL(await buildShareUrl('https://studio.avodado.dev/', DOC));
+    const url = new URL(await buildShareUrl('https://studio.chiltepin.dev/', DOC));
     expect(url.hash.startsWith('#d=')).toBe(true);
     expect(url.search).toBe('');
   });
 
   it('reads a plain studio URL as "no shared document"', async () => {
-    expect(await readShareUrl('https://studio.avodado.dev/')).toBeNull();
-    expect(await readShareUrl('https://studio.avodado.dev/#')).toBeNull();
+    expect(await readShareUrl('https://studio.chiltepin.dev/')).toBeNull();
+    expect(await readShareUrl('https://studio.chiltepin.dev/#')).toBeNull();
   });
 
   it('rejects a corrupt payload rather than opening an empty document', async () => {
-    await expect(readShareUrl('https://studio.avodado.dev/#d=not-a-real-payload')).rejects.toThrow();
+    await expect(readShareUrl('https://studio.chiltepin.dev/#d=not-a-real-payload')).rejects.toThrow();
   });
 });

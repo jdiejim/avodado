@@ -12,7 +12,7 @@
  * (and the SLO), with nice ticks carrying the unit.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { DECORATIVE } from '../svg/decorative.js';

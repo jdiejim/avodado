@@ -1,8 +1,8 @@
 # Generation eval
 
-End to end: a fresh agent, the installed skill, a working `avo`, one request.
-The agent follows the skill's fast path in full — pick, `avo block`, write,
-`avo check`, fix — and hands off. Forty scenarios in `cases.yaml` span the
+End to end: a fresh agent, the installed skill, a working `chiltepin`, one request.
+The agent follows the skill's fast path in full — pick, `chiltepin block`, write,
+`chiltepin check`, fix — and hands off. Forty scenarios in `cases.yaml` span the
 block families and never name a block type.
 
 It measures what the selection eval cannot: whether the whole loop produces
@@ -13,9 +13,9 @@ number is now the **1st errors** column here.
 
 ## Run
 
-1. Make a scratch project: `avodado.config.json`, an empty `docs/`, the skill
-   copied to `.claude/skills/avodado/`, and `node_modules/avodado` linked to
-   `packages/cli` of the build under test (so `npx -y avodado` resolves to
+1. Make a scratch project: `chiltepin.config.json`, an empty `docs/`, the skill
+   copied to `.claude/skills/chiltepin/`, and `node_modules/chiltepin` linked to
+   `packages/cli` of the build under test (so `npx -y chiltepin` resolves to
    it, not to npm). Build the CLI first.
 2. For each case start a fresh agent with `PROMPT.md`, substituting the
    project path, the id, the request, and a run directory such as
@@ -33,7 +33,7 @@ node evals/generate/report.mjs <project-dir> <run-dir>   # → <run-dir>/report.
 
 - **selection** — the first structural block that matches `expected` (1),
   `acceptable` (0.5), or `wrong` (0, a keyword trap).
-- **1st errors** — `avo check` errors on the draft copied before the agent
+- **1st errors** — `chiltepin check` errors on the draft copied before the agent
   ran any check. This is the skill's raw quality; the error codes say what
   the skill still teaches wrong.
 - **final errors / warnings** — the handed-off document. Errors here mean
@@ -52,7 +52,7 @@ Keep the case set stable; add new cases at the end.
 
 | Run | Selection | Traps | Clean first write | Clean at handoff | Render failures | Mean tokens | Mean time |
 |---|---|---|---|---|---|---|---|
-| `gen-2026-09-13` (skill at `skills/avodado`, `avo block`) | 15.5/16 | 0 | 13/16 | 16/16 | 0 | 53K | 93 s |
+| `gen-2026-09-13` (skill at `skills/chiltepin`, `chiltepin block`) | 15.5/16 | 0 | 13/16 | 16/16 | 0 | 53K | 93 s |
 | `gen-2026-09-13` + 7 messaging-pattern cases, re-scored after the comma rescue | 22.5/23 | 0 | 20/23 | 23/23 | 0 | 55K | 99 s |
 | `gen-2026-09-13` + 15 coverage-sweep cases (13 new blocks, pareto and histogram chart kinds) | 37.5/38 | 0 | 32/38 | 38/38 | 0 | 54K | 91 s |
 | `gen-2026-09-13` + 2 lens cases (swimlane, code) after the vary-the-lens rule | 39.5/40 | 0 | 33/40 | 40/40 | 0 | 55K | 91 s |
@@ -63,7 +63,7 @@ For comparison, the September 1 write eval averaged 90K to 110K tokens and
 Findings from the first run, all fixed the same day: the SKILL.md rewrite had
 dropped the algorithms row (two-pointer picked `flow`); every first-write
 error was an unquoted comma inside `{ … }` or a string where a list has no
-terse form, so `avo check` now names both; wide drawings shrank to
+terse form, so `chiltepin check` now names both; wide drawings shrank to
 unreadable, state numerals sat on state boxes, gantt heads collided, and a
 quadrant axis label clipped. The evening pass added the seven pattern cases
 (pub/sub, feed fan-out, outbox, CQRS, dead-letter, partitioned consumers,

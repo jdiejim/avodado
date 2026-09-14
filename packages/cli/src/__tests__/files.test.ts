@@ -7,7 +7,7 @@ import { decodeUtf8, encodingDiagnostics, loadDocs } from '../io/files.js';
 import { runCheck } from '../commands/check.js';
 
 async function tempProject(): Promise<{ root: string; cleanup: () => Promise<void> }> {
-  const root = join(tmpdir(), `avo-files-${randomBytes(6).toString('hex')}`);
+  const root = join(tmpdir(), `chiltepin-files-${randomBytes(6).toString('hex')}`);
   await mkdir(join(root, 'docs/sub'), { recursive: true });
   await writeFile(join(root, 'docs/a.md'), '# A\n');
   await writeFile(join(root, 'docs/sub/b.md'), '# B\n');
@@ -65,7 +65,7 @@ describe('loadDocs', () => {
   });
 });
 
-// B-2 — a file that is not UTF-8 used to pass `avo check` clean.
+// B-2 — a file that is not UTF-8 used to pass `chiltepin check` clean.
 describe('UTF-8 enforcement', () => {
   it('decodeUtf8 accepts UTF-8 and strips a UTF-8 BOM', () => {
     expect(decodeUtf8(Buffer.from('# Fine — é\n', 'utf8'))).toEqual({ source: '# Fine — é\n' });
@@ -91,8 +91,8 @@ describe('UTF-8 enforcement', () => {
     expect(decodeUtf8(Buffer.from([0xed, 0xa0, 0x80])).encodingError).toContain('not UTF-8');
   });
 
-  it('avo check reports E_ENCODING and names the file instead of validating mojibake', async () => {
-    const root = join(tmpdir(), `avo-enc-${randomBytes(6).toString('hex')}`);
+  it('chiltepin check reports E_ENCODING and names the file instead of validating mojibake', async () => {
+    const root = join(tmpdir(), `chiltepin-enc-${randomBytes(6).toString('hex')}`);
     await mkdir(join(root, 'docs'), { recursive: true });
     await writeFile(join(root, 'docs/ok.md'), '```meta\ntitle: OK\n```\n');
     await writeFile(

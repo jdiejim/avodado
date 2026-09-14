@@ -219,7 +219,7 @@ describe('block renderers — DOM signatures', () => {
     expect(a?.getAttribute('href')).toBe('#seq-checkout');
     expect(a?.text).toContain('Checkout flow');
     // Attribute order (class → data-ref → href) is load-bearing for the
-    // cross-doc rewrite in `avo build`. Trailing attributes (e.g. the
+    // cross-doc rewrite in `chiltepin build`. Trailing attributes (e.g. the
     // direct-edit `data-bp` tag) may follow.
     expect(html).toContain(
       '<a class="link-chip" data-ref="orders#seq-checkout" href="#seq-checkout"',

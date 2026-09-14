@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { describeBlockSchema, type FieldNode } from '@avodado/core';
-import { KNOWN_LOGIC_KINDS, KNOWN_NODE_KINDS } from '@avodado/render';
+import { describeBlockSchema, type FieldNode } from 'chiltepin-core';
+import { KNOWN_LOGIC_KINDS, KNOWN_NODE_KINDS } from 'chiltepin-render';
 import {
   microVisibleFields,
   ownerArrayName,

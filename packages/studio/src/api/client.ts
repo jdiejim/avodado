@@ -1,7 +1,7 @@
 /**
  * The backend the app talks to — chosen once, at boot.
  *
- * Studio ships in two shapes from one build tree: `avo studio`, where
+ * Studio ships in two shapes from one build tree: `chiltepin studio`, where
  * documents are your `docs/*.md` behind a local file bridge, and the hosted
  * studio, where they live in the browser's own storage. Both satisfy
  * {@link StudioBackend}, so everything above this module is identical.
@@ -59,7 +59,7 @@ export function saveDoc(
  * Stores a document that arrived from outside — today, a share link.
  *
  * Backend-agnostic on purpose: in the hosted studio this lands in the vault,
- * and in `avo studio` it becomes a real file in `docs/`, which is exactly what
+ * and in `chiltepin studio` it becomes a real file in `docs/`, which is exactly what
  * someone opening a colleague's link locally would want.
  *
  * @param hint - Preferred slug (a title, usually). Sanitised, and suffixed

@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parseDocument } from '@avodado/core';
+import { parseDocument } from 'chiltepin-core';
 import { renderDocumentParts } from '../parts.js';
 
 const TABLE = '```table\ntitle: Type scale\ncolumns: [A]\nrows:\n  - [x]\n```\n';

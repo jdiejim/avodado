@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseDocument, validateDocument } from '@avodado/core';
+import { parseDocument, validateDocument } from 'chiltepin-core';
 import { renderDocument } from '../document.js';
 import { renderDocumentSegments } from '../parts.js';
 import { SECTION_LABEL, sectionLabelFor } from '../blocks/frame.js';

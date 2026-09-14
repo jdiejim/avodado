@@ -22,7 +22,7 @@ import {
   type CsvImportResult,
   type ImportDiagnostic,
   type OpenApiSpec,
-} from '@avodado/core';
+} from 'chiltepin-core';
 
 /**
  * True when a drag carries OS files. The canvas's own block DnD writes

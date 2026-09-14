@@ -14,7 +14,7 @@
  * hit the clamp carries its full text in a `title` attribute.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { diagramFrame } from './frame.js';

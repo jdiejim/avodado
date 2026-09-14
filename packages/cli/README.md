@@ -1,39 +1,39 @@
 <!-- Generated from the repo README by scripts/sync-readme.mjs — edit the root README.md. -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/avodado_logo.png" alt="Avodado" width="100" />
+  <img src="https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/brand/mark-256.png" alt="Chiltepin" width="100" />
 </p>
 
-<h1 align="center">Avodado</h1>
+<h1 align="center">Chiltepin</h1>
 
 <p align="center"><strong>Docs your AI agent can write, and your CI can check.</strong><br/>Turn Markdown and typed YAML into architecture diagrams, API docs, runbooks, and slides. 107 block types, with deterministic HTML + SVG output.</p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/avodado"><img src="https://img.shields.io/npm/v/avodado?label=avodado&color=e4744c" alt="npm" /></a>
-  <a href="https://github.com/jdiejim/avodado/actions/workflows/ci.yml"><img src="https://github.com/jdiejim/avodado/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
-  <a href="https://github.com/jdiejim/avodado/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license" /></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/avodado" alt="node" /></a>
-  <a href="https://github.com/jdiejim/avodado/tree/main/skills/avodado"><img src="https://img.shields.io/badge/skills-npx%20skills%20add%20jdiejim%2Favodado-111" alt="skill" /></a>
+  <a href="https://www.npmjs.com/package/chiltepin"><img src="https://img.shields.io/npm/v/chiltepin?label=chiltepin&color=e4744c" alt="npm" /></a>
+  <a href="https://github.com/jdiejim/chiltepin/actions/workflows/ci.yml"><img src="https://github.com/jdiejim/chiltepin/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <a href="https://github.com/jdiejim/chiltepin/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license" /></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/chiltepin" alt="node" /></a>
+  <a href="https://github.com/jdiejim/chiltepin/tree/main/skills/chiltepin"><img src="https://img.shields.io/badge/skills-npx%20skills%20add%20jdiejim%2Fchiltepin-111" alt="skill" /></a>
 </p>
 
 <p align="center">
-  <a href="https://avodado.dev">Website</a> ·
+  <a href="https://chiltepin.dev">Website</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#examples">Examples</a> ·
-  <a href="https://github.com/jdiejim/avodado/blob/main/skills/avodado/SKILL.md">Agent skill</a> ·
-  <a href="https://github.com/jdiejim/avodado/blob/main/CONTRIBUTING.md">Contribute</a>
+  <a href="https://github.com/jdiejim/chiltepin/blob/main/skills/chiltepin/SKILL.md">Agent skill</a> ·
+  <a href="https://github.com/jdiejim/chiltepin/blob/main/CONTRIBUTING.md">Contribute</a>
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/architecture.png" alt="C4 context diagram: a shopper places orders, and the orders system calls payment and shipping services" width="880" />
+  <img src="https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/examples/architecture.png" alt="C4 context diagram: a shopper places orders, and the orders system calls payment and shipping services" width="880" />
 </p>
 
-**Your agent writes the content. Avodado handles the layout.** Keep the source in Git, review a Markdown diff, and run `avo check` in CI.
+**Your agent writes the content. Chiltepin handles the layout.** Keep the source in Git, review a Markdown diff, and run `chiltepin check` in CI.
 
 ```bash
-npx -y avodado demo                    # see rendered examples without creating a project
+npx -y chiltepin demo                    # see rendered examples without creating a project
 ```
 
-Use an agent to write docs with `npx skills add jdiejim/avodado -g`, or follow the [manual quick start](#quick-start).
+Use an agent to write docs with `npx skills add jdiejim/chiltepin -g`, or follow the [manual quick start](#quick-start).
 
 ## Examples
 
@@ -41,30 +41,30 @@ These are screenshots from the current renderer. Open each image at full size, o
 
 | Architecture and system context | Request flow with success and failure branches |
 | --- | --- |
-| [![C4 context: shopper, orders, payments, and shipping](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/architecture.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/architecture.png) | [![Sequence diagram: place an order, charge a card, then approve or decline](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/sequence.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/sequence.png) |
-| [Source: system overview](https://github.com/jdiejim/avodado/blob/main/docs/examples/system-overview.md) | [Source: the example below](#what-a-doc-looks-like) |
+| [![C4 context: shopper, orders, payments, and shipping](https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/examples/architecture.png)](https://github.com/jdiejim/chiltepin/blob/main/assets/examples/architecture.png) | [![Sequence diagram: place an order, charge a card, then approve or decline](https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/examples/sequence.png)](https://github.com/jdiejim/chiltepin/blob/main/assets/examples/sequence.png) |
+| [Source: system overview](https://github.com/jdiejim/chiltepin/blob/main/docs/examples/system-overview.md) | [Source: the example below](#what-a-doc-looks-like) |
 
 | Database relationships | Canary rollout with explicit gates |
 | --- | --- |
-| [![Entity relationship diagram connecting orders and order items](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/data-model.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/data-model.png) | [![Checkout rollout from 1 percent to full traffic, with health gates and rollback](https://raw.githubusercontent.com/jdiejim/avodado/main/assets/examples/rollout.png)](https://github.com/jdiejim/avodado/blob/main/assets/examples/rollout.png) |
-| [Source: API reference](https://github.com/jdiejim/avodado/blob/main/docs/examples/api.md) | [Source: canary rollout](https://github.com/jdiejim/avodado/blob/main/docs/examples/canary-rollout.md) |
+| [![Entity relationship diagram connecting orders and order items](https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/examples/data-model.png)](https://github.com/jdiejim/chiltepin/blob/main/assets/examples/data-model.png) | [![Checkout rollout from 1 percent to full traffic, with health gates and rollback](https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/examples/rollout.png)](https://github.com/jdiejim/chiltepin/blob/main/assets/examples/rollout.png) |
+| [Source: API reference](https://github.com/jdiejim/chiltepin/blob/main/docs/examples/api.md) | [Source: canary rollout](https://github.com/jdiejim/chiltepin/blob/main/docs/examples/canary-rollout.md) |
 
-More complete documents: [ADR](https://github.com/jdiejim/avodado/blob/main/docs/examples/adr.md), [event contract](https://github.com/jdiejim/avodado/blob/main/docs/examples/event-contract.md), [runbook](https://github.com/jdiejim/avodado/blob/main/docs/examples/runbook.md), and [slide deck](https://github.com/jdiejim/avodado/blob/main/docs/examples/presentation.md).
+More complete documents: [ADR](https://github.com/jdiejim/chiltepin/blob/main/docs/examples/adr.md), [event contract](https://github.com/jdiejim/chiltepin/blob/main/docs/examples/event-contract.md), [runbook](https://github.com/jdiejim/chiltepin/blob/main/docs/examples/runbook.md), and [slide deck](https://github.com/jdiejim/chiltepin/blob/main/docs/examples/presentation.md).
 
 <details>
 <summary><strong>Watch the authoring workflow</strong></summary>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jdiejim/avodado/main/assets/flow.gif" alt="Workflow overview: install the skill, ask for a doc, write typed YAML, validate, and render" width="880" />
+  <img src="https://raw.githubusercontent.com/jdiejim/chiltepin/main/assets/flow.gif" alt="Workflow overview: install the skill, ask for a doc, write typed YAML, validate, and render" width="880" />
 </p>
 
 </details>
 
-## Why Avodado
+## Why Chiltepin
 
 - **Docs you can review.** Prose, diagrams, tables, and decisions live in the same Markdown file.
 - **Layout you can reproduce.** Typed content goes through deterministic renderers; the agent does not need to draw the output.
-- **Validation you can automate.** `avo check` fails on invalid fields and broken references. Style and density warnings help authors improve the result.
+- **Validation you can automate.** `chiltepin check` fails on invalid fields and broken references. Style and density warnings help authors improve the result.
 - **Several outputs from one source.** Export HTML, slides, PDF, or a static docs site. Edit the same files in Studio or your editor.
 
 ## What a doc looks like
@@ -100,36 +100,36 @@ Requires **Node.js 20 or later**. `npx` downloads the CLI on first use.
 **With an agent:**
 
 ```bash
-npx skills add jdiejim/avodado -g
+npx skills add jdiejim/chiltepin -g
 ```
 
 Then ask:
 
-> Use Avodado to document this project's request flow. Read the code, explain the services and data stores, include the failure path, and validate the document.
+> Use Chiltepin to document this project's request flow. Read the code, explain the services and data stores, include the failure path, and validate the document.
 
-The [skill](https://github.com/jdiejim/avodado/blob/main/skills/avodado/SKILL.md) guides block selection, schema lookup, and validation. Review the generated content against your code.
+The [skill](https://github.com/jdiejim/chiltepin/blob/main/skills/chiltepin/SKILL.md) guides block selection, schema lookup, and validation. Review the generated content against your code.
 
 **By hand, in your project directory:**
 
 ```bash
-npx -y avodado init
-npx -y avodado check
-npx -y avodado html docs/getting-started.md -p
-npx -y avodado studio
+npx -y chiltepin init
+npx -y chiltepin check
+npx -y chiltepin html docs/getting-started.md -p
+npx -y chiltepin studio
 ```
 
-`init` writes a config and two starter docs; it skips existing files. Look up any block with `npx -y avodado block sequence`.
+`init` writes a config and two starter docs; it skips existing files. Look up any block with `npx -y chiltepin block sequence`.
 
-For a version pinned in your project, run `pnpm add -D avodado`, then use `pnpm exec avo check` and `pnpm exec avo studio`.
+For a version pinned in your project, run `pnpm add -D chiltepin`, then use `pnpm exec chiltepin check` and `pnpm exec chiltepin studio`.
 
-**Other AI tools:** `avo skill` prints the authoring guide for tools with a system-prompt field.
+**Other AI tools:** `chiltepin skill` prints the authoring guide for tools with a system-prompt field.
 
 ## Check docs in CI
 
 After installing the project's dependencies, run:
 
 ```bash
-pnpm exec avo check
+pnpm exec chiltepin check
 ```
 
 Errors fail the command. Warnings are non-blocking by default; `--strict-prose` makes prose warnings fail too. Validation checks structure and references; reviewers still verify the technical facts.
@@ -151,25 +151,25 @@ Errors fail the command. Warnings are non-blocking by default; `--strict-prose` 
 | AI & ML | `agentloop` `trace` `prompt` `context` `neuralnet` `modelcard` |
 | Prose structure | `callout` `list` `glossary` `faq` `steps` `spec` `layers` `gallery` `mindmap` `tree` `fishbone` |
 
-107 block types across 13 families. Every field, enum, and terse form: `avo block <type>`. Twelve old names (`infra` `event` `ddd` `network` `belogic` `dag` `waterfall` `funnel` `diff` `terminal` `mece` `tracker`) remain permanent aliases.
+107 block types across 13 families. Every field, enum, and terse form: `chiltepin block <type>`. Twelve old names (`infra` `event` `ddd` `network` `belogic` `dag` `waterfall` `funnel` `diff` `terminal` `mece` `tracker`) remain permanent aliases.
 
 ## Outputs
 
 | Command | Result |
 |---|---|
-| `avo html docs/x.md` | A standalone page with inline CSS + SVG; size depends on content |
-| `avo slides docs/x.md` | A self-contained deck, one slide per heading |
-| `avo pdf docs/x.md` | Print-ready PDF (Chromium fetched once on first use) |
-| `avo build` | A static docs site: index, sidebar, cross-doc links |
-| `avo studio` | Local editor: Home page of your docs, edit in place, Present, Export |
+| `chiltepin html docs/x.md` | A standalone page with inline CSS + SVG; size depends on content |
+| `chiltepin slides docs/x.md` | A self-contained deck, one slide per heading |
+| `chiltepin pdf docs/x.md` | Print-ready PDF (Chromium fetched once on first use) |
+| `chiltepin build` | A static docs site: index, sidebar, cross-doc links |
+| `chiltepin studio` | Local editor: Home page of your docs, edit in place, Present, Export |
 
-One look, dark by default. `"colorScheme": "light"` or `"system"` in `avodado.config.json` switches it; print and PDF are always light.
+One look, dark by default. `"colorScheme": "light"` or `"system"` in `chiltepin.config.json` switches it; print and PDF are always light.
 
 ## How the check keeps docs honest
 
 ```bash
-avo check                 # docs/**/*.md
-avo check --json          # { code, file, line, column, message, hint, suggestions }
+chiltepin check                 # docs/**/*.md
+chiltepin check --json          # { code, file, line, column, message, hint, suggestions }
 ```
 
 Strict schemas (an unknown field is an error, with "did you mean"), repo-global unique ids, `doc#id` references resolved across files, density caps that say how to split a crowded diagram, prose lints for long sentences and filler, and lens lints: an unlabelled `c4` arrow, a third block of the same type. The parser also repairs the one YAML trap agents hit most — an unquoted comma inside an inline map — so `label: Hold as BACKORDERED, email ETA` means what the author meant.
@@ -187,37 +187,37 @@ Any block with a top-level `id:` can be referenced as `doc#id` (or `#id` in the 
 
 | Package | Purpose |
 |---|---|
-| [`avodado`](https://github.com/jdiejim/avodado/tree/main/packages/cli) | The `avo` CLI: `check · block · demo · html · slides · pdf · build · studio · init · new · audit · sync · skill` |
-| [`@avodado/core`](https://github.com/jdiejim/avodado/tree/main/packages/core) | Parser, block registry, Zod schemas, terse grammars, diagnostics. Pure, no I/O |
-| [`@avodado/render`](https://github.com/jdiejim/avodado/tree/main/packages/render) | Deterministic renderers; HTML + SVG, one editorial skin |
-| [`@avodado/studio`](https://github.com/jdiejim/avodado/tree/main/packages/studio) | The local visual editor served by `avo studio` |
-| [`skills/avodado`](https://github.com/jdiejim/avodado/tree/main/skills/avodado) | The agent skill: block selection, validation, and references loaded on demand |
+| [`chiltepin`](https://github.com/jdiejim/chiltepin/tree/main/packages/cli) | The `chiltepin` CLI: `check · block · demo · html · slides · pdf · build · studio · init · new · audit · sync · skill` |
+| [`chiltepin-core`](https://github.com/jdiejim/chiltepin/tree/main/packages/core) | Parser, block registry, Zod schemas, terse grammars, diagnostics. Pure, no I/O |
+| [`chiltepin-render`](https://github.com/jdiejim/chiltepin/tree/main/packages/render) | Deterministic renderers; HTML + SVG, one editorial skin |
+| [`chiltepin-studio`](https://github.com/jdiejim/chiltepin/tree/main/packages/studio) | The local visual editor served by `chiltepin studio` |
+| [`skills/chiltepin`](https://github.com/jdiejim/chiltepin/tree/main/skills/chiltepin) | The agent skill: block selection, validation, and references loaded on demand |
 
 <details>
 <summary><strong>Full CLI reference</strong></summary>
 
 | Command | What it does |
 |---|---|
-| `avo init` | Scaffold `avodado.config.json` + two starter docs (`--force` overwrites) |
-| `avo new [name]` | Scaffold a whole doc (`adr`, `runbook`, …) or one block |
-| `avo check [globs]` | Validate — schemas, refs, ids, density, prose, lens lints (`--json`) |
-| `avo block [type]` | The reference: every type on one line, or one type's contract (`--json`) |
-| `avo demo [family] [-s]` | Render the built-in showcase — every block, or one family (`-s` slides) |
-| `avo html / slides / pdf <in>` | Render one doc (`-p` opens, `-o` writes) |
-| `avo <file.md>` | Render and open one doc |
-| `avo build` | Static site from all docs (`--out`) |
-| `avo studio` | The local editor (`--port`, `--no-open`) |
-| `avo audit [path]` | Audit a codebase and recommend which docs to write, with evidence |
-| `avo sync openapi\|csv\|sql\|dbml\|prisma <file>` | Generate blocks or docs from an OpenAPI spec, a CSV, or a schema |
-| `avo skill` | Print the skill as one document |
+| `chiltepin init` | Scaffold `chiltepin.config.json` + two starter docs (`--force` overwrites) |
+| `chiltepin new [name]` | Scaffold a whole doc (`adr`, `runbook`, …) or one block |
+| `chiltepin check [globs]` | Validate — schemas, refs, ids, density, prose, lens lints (`--json`) |
+| `chiltepin block [type]` | The reference: every type on one line, or one type's contract (`--json`) |
+| `chiltepin demo [family] [-s]` | Render the built-in showcase — every block, or one family (`-s` slides) |
+| `chiltepin html / slides / pdf <in>` | Render one doc (`-p` opens, `-o` writes) |
+| `chiltepin <file.md>` | Render and open one doc |
+| `chiltepin build` | Static site from all docs (`--out`) |
+| `chiltepin studio` | The local editor (`--port`, `--no-open`) |
+| `chiltepin audit [path]` | Audit a codebase and recommend which docs to write, with evidence |
+| `chiltepin sync openapi\|csv\|sql\|dbml\|prisma <file>` | Generate blocks or docs from an OpenAPI spec, a CSV, or a schema |
+| `chiltepin skill` | Print the skill as one document |
 
-Exit codes: `0` clean · `1` errors · `2` usage error. `AVO_PLAIN=1` forces plain output.
+Exit codes: `0` clean · `1` errors · `2` usage error. `CHILTEPIN_PLAIN=1` forces plain output.
 
 </details>
 
 ## Evaluation
 
-The [generation evaluation](https://github.com/jdiejim/avodado/tree/main/evals/generate) records 40 plain-language requests: a selection score of 39.5/40, 33 first drafts without errors, and 40 documents validated and rendered at handoff. These are maintainer-reported development runs, including rescoring after fixes. Raw run artifacts are local, so this is not an independently reproducible benchmark result yet. See the [case set](https://github.com/jdiejim/avodado/blob/main/evals/generate/cases.yaml) and [method](https://github.com/jdiejim/avodado/blob/main/evals/generate/README.md).
+The [generation evaluation](https://github.com/jdiejim/chiltepin/tree/main/evals/generate) records 40 plain-language requests: a selection score of 39.5/40, 33 first drafts without errors, and 40 documents validated and rendered at handoff. These are maintainer-reported development runs, including rescoring after fixes. Raw run artifacts are local, so this is not an independently reproducible benchmark result yet. See the [case set](https://github.com/jdiejim/chiltepin/blob/main/evals/generate/cases.yaml) and [method](https://github.com/jdiejim/chiltepin/blob/main/evals/generate/README.md).
 
 ## Design rules
 
@@ -226,7 +226,7 @@ The [generation evaluation](https://github.com/jdiejim/avodado/tree/main/evals/g
 - **One look.** Tokens only, no literal colours; one accent per diagram, spent on the one thing the reader must see.
 - **Files are the truth.** Studio, the CLI, and agents write the same `.md`; nothing else holds state.
 
-See [`ARCHITECTURE.md`](https://github.com/jdiejim/avodado/blob/main/ARCHITECTURE.md) and the renderer's [`DESIGN.md`](https://github.com/jdiejim/avodado/blob/main/packages/render/DESIGN.md).
+See [`ARCHITECTURE.md`](https://github.com/jdiejim/chiltepin/blob/main/ARCHITECTURE.md) and the renderer's [`DESIGN.md`](https://github.com/jdiejim/chiltepin/blob/main/packages/render/DESIGN.md).
 
 ## Development
 
@@ -236,14 +236,14 @@ pnpm typecheck && pnpm test && pnpm lint && pnpm build
 node packages/cli/dist/bin.js check        # the repo's own docs
 ```
 
-Evals live in [`evals/`](https://github.com/jdiejim/avodado/tree/main/evals): block selection and end-to-end generation. Add a scenario when you add a block. Regenerate the gallery with `pnpm screenshots` after building; it requires the CLI's optional Playwright and its Chromium browser.
+Evals live in [`evals/`](https://github.com/jdiejim/chiltepin/tree/main/evals): block selection and end-to-end generation. Add a scenario when you add a block. Regenerate the gallery with `pnpm screenshots` after building; it requires the CLI's optional Playwright and its Chromium browser.
 
 ## Contribute and get help
 
-Read [CONTRIBUTING.md](https://github.com/jdiejim/avodado/blob/main/CONTRIBUTING.md) to add a block, improve a renderer, or contribute an example. [Report a bug](https://github.com/jdiejim/avodado/issues/new?template=bug.yml) with the smallest Markdown file that reproduces it, or [request a block](https://github.com/jdiejim/avodado/issues/new?template=block.yml).
+Read [CONTRIBUTING.md](https://github.com/jdiejim/chiltepin/blob/main/CONTRIBUTING.md) to add a block, improve a renderer, or contribute an example. [Report a bug](https://github.com/jdiejim/chiltepin/issues/new?template=bug.yml) with the smallest Markdown file that reproduces it, or [request a block](https://github.com/jdiejim/chiltepin/issues/new?template=block.yml).
 
-If Avodado saves you a diagram, a star helps other people find it.
+If Chiltepin saves you a diagram, a star helps other people find it.
 
 ## License
 
-[MIT](https://github.com/jdiejim/avodado/blob/main/LICENSE)
+[MIT](https://github.com/jdiejim/chiltepin/blob/main/LICENSE)

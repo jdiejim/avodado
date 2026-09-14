@@ -1,5 +1,5 @@
 /**
- * The `avo studio` file bridge — documents are `docs/*.md` on your disk.
+ * The `chiltepin studio` file bridge — documents are `docs/*.md` on your disk.
  *
  * Typed fetch wrappers over the local JSON API. The server owns hashing: every
  * read/write returns the sha256 `hash` of the LF-normalised source, and the
@@ -64,7 +64,7 @@ export async function saveDoc(
   return { ok: true, hash: body.hash, mtimeMs: body.mtimeMs };
 }
 
-/** The local-files backend, as used by `avo studio`. */
+/** The local-files backend, as used by `chiltepin studio`. */
 export const fileBridge: StudioBackend = {
   kind: 'file-bridge',
   hasServer: true,

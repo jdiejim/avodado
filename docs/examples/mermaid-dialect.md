@@ -1,6 +1,6 @@
 ```meta
 title: Mermaid input dialect
-subtitle: Five Mermaid grammars that parse into typed Avodado blocks.
+subtitle: Five Mermaid grammars that parse into typed Chiltepin blocks.
 tag: Example
 ```
 

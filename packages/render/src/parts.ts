@@ -11,7 +11,7 @@
  * section-level navigation (each section carries an `id`).
  */
 
-import type { BlockDataMap, BlockType, Document, Segment, TypedSegment } from '@avodado/core';
+import type { BlockDataMap, BlockType, Document, Segment, TypedSegment } from 'chiltepin-core';
 import {
   isNearDuplicateTitle,
   readAlignMarker,
@@ -19,7 +19,7 @@ import {
   readSourceMarker,
   stripHeadingMarkers,
   trailingHeading,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import { houseCss } from './css.js';
 import { escapeHtml } from './escape.js';
 import { renderCover } from './blocks/meta.js';
@@ -264,7 +264,7 @@ export interface DocumentSegmentsResult {
  * addressable by its index in `doc.segments` (for editors that re-render one
  * block at a time).
  *
- * @param doc - The parsed Avodado document.
+ * @param doc - The parsed Chiltepin document.
  * @param opts - Optional theme + variable overrides.
  * @returns The shared page pieces plus one rendered entry per segment.
  */
@@ -303,7 +303,7 @@ export function renderDocumentSegments(
  * Implemented on top of {@link renderDocumentSegments}: the body is
  * `defs + cover + segments.join('')`.
  *
- * @param doc - The parsed Avodado document.
+ * @param doc - The parsed Chiltepin document.
  * @param opts - Optional theme + variable overrides.
  * @returns The CSS, theme vars, body HTML, title, and section index.
  */
@@ -742,7 +742,7 @@ export function renderSlides(doc: Document, opts: RenderPartsOptions = {}): Slid
             pushSlide(false); // a heading starts a new slide
             // Optional marker, e.g. `## Title {top}` or `## Title {split}` —
             // stripped from the title.
-            // Markers are parsed by @avodado/core so the deck, the page and
+            // Markers are parsed by chiltepin-core so the deck, the page and
             // the nav can't disagree about what a title says.
             const raw = m[2] ?? '';
             const src = readSourceMarker(raw);

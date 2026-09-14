@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseDocument, type Document } from '@avodado/core';
+import { parseDocument, type Document } from 'chiltepin-core';
 import { renderDocumentParts, renderDocumentSegments } from '../parts.js';
 import { ordersApi, roadmap } from './fixtures.js';
 
@@ -14,7 +14,7 @@ function cliTemplate(name: string): string {
 /** Every fixture doc we can get our hands on, parsed. */
 function fixtureDocs(): Array<{ name: string; doc: Document }> {
   return [
-    { name: 'avodado-roadmap', doc: parseDocument(roadmap(), 'avodado-roadmap') },
+    { name: 'chiltepin-roadmap', doc: parseDocument(roadmap(), 'chiltepin-roadmap') },
     { name: 'orders-api', doc: parseDocument(ordersApi(), 'orders-api') },
     { name: 'demo', doc: parseDocument(cliTemplate('demo.md'), 'demo') },
     {

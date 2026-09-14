@@ -5,8 +5,8 @@
  * family expand) and every subsequent open is a cache hit.
  */
 
-import { BLOCK_TEMPLATES, parseDocument, type BlockType } from '@avodado/core';
-import { renderDocumentSegments } from '@avodado/render';
+import { BLOCK_TEMPLATES, parseDocument, type BlockType } from 'chiltepin-core';
+import { renderDocumentSegments } from 'chiltepin-render';
 
 const cache = new Map<BlockType, string>();
 

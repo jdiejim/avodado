@@ -1,5 +1,5 @@
 ```meta
-title: Avodado — all blocks
+title: Chiltepin — all blocks
 subtitle: One rendered example of every block type the renderer supports.
 tag: DEMO · v1
 ```
@@ -7,7 +7,7 @@ tag: DEMO · v1
 ## Welcome
 
 Each section renders one block type from a typed YAML fence in this file.
-Edit the file, rerun `avo render`, and the HTML updates. Copy a fence into
+Edit the file, rerun `chiltepin render`, and the HTML updates. Copy a fence into
 your own doc as a starting point.
 
 ```callout
@@ -106,12 +106,12 @@ items:
 ```tree
 title: Repo layout
 nodes:
-  - { id: root, label: avodado }
+  - { id: root, label: chiltepin }
   - { id: packages, parent: root, label: packages }
-  - { id: core, parent: packages, label: '@avodado/core', note: pure model }
-  - { id: render, parent: packages, label: '@avodado/render', note: HTML out }
-  - { id: studio, parent: packages, label: '@avodado/studio', note: visual editor }
-  - { id: cli, parent: packages, label: '@avodado/cli', note: avo binary }
+  - { id: core, parent: packages, label: 'chiltepin-core', note: pure model }
+  - { id: render, parent: packages, label: 'chiltepin-render', note: HTML out }
+  - { id: studio, parent: packages, label: 'chiltepin-studio', note: visual editor }
+  - { id: cli, parent: packages, label: 'chiltepin', note: chiltepin binary }
   - { id: resources, parent: root, label: resources, note: fixtures + reference renderer }
   - { id: docs, parent: root, label: docs, note: the documents }
 ```

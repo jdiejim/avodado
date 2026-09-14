@@ -6,7 +6,7 @@
  * documents, and this is that seam: four methods, one interface, two (soon
  * three) implementations.
  *
- *   - `fileBridge`  — `avo studio`'s local JSON API over your `docs/*.md`.
+ *   - `fileBridge`  — `chiltepin studio`'s local JSON API over your `docs/*.md`.
  *   - `memoryVault` — in-tab storage, for the hosted studio with no server.
  *
  * A networked backend (documents in a database) is the next implementation and
@@ -21,7 +21,7 @@
 export interface StudioMeta {
   readonly version: string;
   readonly docsDir: string;
-  /** The project's colour scheme (`avodado.config` › `colorScheme`); absent on older servers = dark. */
+  /** The project's colour scheme (`chiltepin.config` › `colorScheme`); absent on older servers = dark. */
   readonly colorScheme?: 'dark' | 'light' | 'system';
 }
 
@@ -32,7 +32,7 @@ export interface DocListItem {
   readonly title: string;
   readonly mtimeMs: number;
   /**
-   * `avo check` error count of the doc as stored (warnings excluded) — the
+   * `chiltepin check` error count of the doc as stored (warnings excluded) — the
    * rail dots and the All-documents Status column. Absent on older servers;
    * consumers show nothing rather than a fake "pass".
    */

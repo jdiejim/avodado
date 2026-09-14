@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'node-html-parser';
-import { BLOCK_TEMPLATES, parseDocument } from '@avodado/core';
+import { BLOCK_TEMPLATES, parseDocument } from 'chiltepin-core';
 import { renderPercentiles } from '../blocks/percentiles.js';
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 
 type Data = BlockDataMap['percentiles'];
 

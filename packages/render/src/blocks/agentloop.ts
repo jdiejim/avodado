@@ -12,7 +12,7 @@
  * renders as a foot line below the diagram.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { nodeGlyph } from '../svg/blockStyle.js';
 import { wrapText } from '../svg/wrapText.js';

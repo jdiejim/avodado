@@ -1,6 +1,6 @@
 /**
  * Guards the skill's reference/blocks/ split: every canonical block type in
- * @avodado/core's BLOCK_TYPES is documented in exactly one family file (its
+ * chiltepin-core's BLOCK_TYPES is documented in exactly one family file (its
  * `#### \`name\`` heading), alias spellings appear only in the INDEX alias
  * table, and the block-count strings cannot drift from BLOCK_TYPES.length.
  */
@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { BLOCK_ALIASES, BLOCK_TYPES } from '@avodado/core';
+import { BLOCK_ALIASES, BLOCK_TYPES } from 'chiltepin-core';
 import { SKILL_REFERENCE_FILES, skillDir } from '../commands/init.js';
 
 const SKILL_DIR = skillDir();
@@ -105,9 +105,9 @@ describe('reference/blocks family files', () => {
     for (const f of walk(SKILL_DIR)) {
       const md = readFileSync(f, 'utf8');
       expect(md, `${f} mentions contract.md`).not.toContain('contract.md');
-      expect(md, `${f} mentions .avodado/skill`).not.toContain('.avodado/skill');
-      expect(md, `${f} mentions avo install`).not.toContain('avo install');
-      expect(md, `${f} mentions avo template`).not.toContain('avo template');
+      expect(md, `${f} mentions .chiltepin/skill`).not.toContain('.chiltepin/skill');
+      expect(md, `${f} mentions chiltepin install`).not.toContain('chiltepin install');
+      expect(md, `${f} mentions chiltepin template`).not.toContain('chiltepin template');
     }
   });
 

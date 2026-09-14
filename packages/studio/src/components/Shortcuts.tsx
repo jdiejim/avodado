@@ -15,11 +15,11 @@ import { useDerived, useStudio } from '../state/store.js';
 import { useTour } from '../tour/state.js';
 import { IconClose } from './Icons.js';
 
-const BAR_KEY = 'avodado-studio-shortcutbar-dismissed';
+const BAR_KEY = 'chiltepin-studio-shortcutbar-dismissed';
 /** Dismissal keys of the RETIRED hint surfaces (HintBar, DirectLayer note). */
 const LEGACY_KEYS = [
-  'avodado-studio-hint-dismissed',
-  'avodado-studio-direct-hint-dismissed',
+  'chiltepin-studio-hint-dismissed',
+  'chiltepin-studio-direct-hint-dismissed',
 ] as const;
 
 /**

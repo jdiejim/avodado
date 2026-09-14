@@ -1,6 +1,6 @@
 /**
  * Prisma schema → `erd` block data (the ```` ```prisma ```` fence dialect and
- * `avo sync prisma`).
+ * `chiltepin sync prisma`).
  *
  * Subset: `model X { … }` (and `view X { … }`) with scalar fields
  * `name Type[?|[]] @id @unique @default(…) @map(…) @db.…(…) @updatedAt`,

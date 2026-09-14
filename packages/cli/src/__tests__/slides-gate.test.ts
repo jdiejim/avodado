@@ -22,7 +22,7 @@ function runBin(
   return new Promise((res, rej) => {
     const child = spawn('node', [BIN, ...args], {
       cwd,
-      env: { ...process.env, AVO_PLAIN: '1' },
+      env: { ...process.env, CHILTEPIN_PLAIN: '1' },
     });
     let stdout = '';
     let stderr = '';
@@ -39,8 +39,8 @@ if (skipIfNotBuilt) {
 }
 
 describe.skipIf(skipIfNotBuilt)('slides gate (built bin)', () => {
-  it('avo slides on the full demo doc renders a complete, clean deck', async () => {
-    const tmp = join(tmpdir(), `avo-slides-gate-${randomBytes(6).toString('hex')}`);
+  it('chiltepin slides on the full demo doc renders a complete, clean deck', async () => {
+    const tmp = join(tmpdir(), `chiltepin-slides-gate-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     const out = join(tmp, 'demo.slides.html');
     try {
@@ -58,8 +58,8 @@ describe.skipIf(skipIfNotBuilt)('slides gate (built bin)', () => {
     }
   });
 
-  it('avo demo agentic -s renders the agentic family as a clean deck', async () => {
-    const tmp = join(tmpdir(), `avo-slides-gate-${randomBytes(6).toString('hex')}`);
+  it('chiltepin demo agentic -s renders the agentic family as a clean deck', async () => {
+    const tmp = join(tmpdir(), `chiltepin-slides-gate-${randomBytes(6).toString('hex')}`);
     mkdirSync(tmp, { recursive: true });
     const out = join(tmp, 'agentic.slides.html');
     try {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDocument, type TypedSegment } from '@avodado/core';
+import { parseDocument, type TypedSegment } from 'chiltepin-core';
 import { blockWeight, renderSlides } from '../parts.js';
 
 /** Parses a single fenced block and returns its typed segment. */

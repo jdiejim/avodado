@@ -1,7 +1,7 @@
 /**
  * The "+ New doc" template picker: a modal with a slug field and a card per
  * starting point — Blank plus the doc templates from core (DOC_TEMPLATES /
- * DOC_TEMPLATE_INFO, the same data behind `avo new`). Picking a template
+ * DOC_TEMPLATE_INFO, the same data behind `chiltepin new`). Picking a template
  * creates the doc through the store's normal PUT path and lands the author
  * in the first content block's Edit Sheet.
  *
@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DOC_TEMPLATES } from '@avodado/core';
+import { DOC_TEMPLATES } from 'chiltepin-core';
 import { TEMPLATE_CARDS } from '../lib/docTemplates.js';
 import { useStudio } from '../state/store.js';
 import { IconDoc } from './Icons.js';

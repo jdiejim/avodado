@@ -6,7 +6,7 @@
  * criteria, and links.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { refIdPart } from './refs.js';
@@ -79,7 +79,7 @@ function linksRow(story: Story, i: number): string {
     .map((l, k) => {
       const label = l.label ?? l.ref ?? l.mode ?? 'link';
       // Ref-bearing links are real anchors; attribute order class → data-ref →
-      // href is load-bearing for `avo build`'s cross-doc rewrite.
+      // href is load-bearing for `chiltepin build`'s cross-doc rewrite.
       if (l.ref !== undefined && l.ref !== '') {
         return `<a class="st-link" data-ref="${escapeHtml(l.ref)}" href="#${escapeHtml(refIdPart(l.ref))}"${bp(`items.${i}.links.${k}`)}>${escapeHtml(label)}</a>`;
       }

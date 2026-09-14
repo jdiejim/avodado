@@ -1,5 +1,5 @@
 /**
- * `avo check` — validate one or more documents and report diagnostics.
+ * `chiltepin check` — validate one or more documents and report diagnostics.
  *
  * Runs schema validation, cross-doc reference resolution, the STE-informed
  * prose lint (`lintProse`), the density-budget lint (`lintDensity`), and the
@@ -20,7 +20,7 @@ import {
   validateDocument,
   type Diagnostic,
   type Document,
-} from '@avodado/core';
+} from 'chiltepin-core';
 import { encodingDiagnostics, loadDocs, type DocFile } from '../io/files.js';
 import { lintConventions } from './conventions.js';
 
@@ -39,7 +39,7 @@ interface CheckOptions {
   readonly strictProse?: boolean;
 }
 
-/** Result of running `avo check` — diagnostics aggregated across all matched docs. */
+/** Result of running `chiltepin check` — diagnostics aggregated across all matched docs. */
 export interface CheckResult {
   /** All diagnostics in file/line order. */
   readonly diagnostics: readonly Diagnostic[];

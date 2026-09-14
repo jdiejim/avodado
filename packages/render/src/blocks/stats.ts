@@ -5,7 +5,7 @@
  * sanitising); an unsafe value falls back to the skin's `accent` token.
  */
 
-import type { BlockDataMap } from '@avodado/core';
+import type { BlockDataMap } from 'chiltepin-core';
 import { escapeHtml } from '../escape.js';
 import { bl, bp } from '../paths.js';
 import { safeColor } from '../sanitize.js';

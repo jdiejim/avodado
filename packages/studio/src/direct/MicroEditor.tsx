@@ -17,7 +17,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import type { FieldNode } from '@avodado/core';
+import type { FieldNode } from 'chiltepin-core';
 import { IconTrash } from '../components/Icons.js';
 import { SmartControl } from '../form/controls.js';
 import { microVisibleFields, resolveControl } from '../form/fieldKind.js';

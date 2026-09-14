@@ -1,5 +1,5 @@
 /**
- * Avodado HTML renderer.
+ * Chiltepin HTML renderer.
  *
  * Pure function: takes a parsed {@link Document}, returns a standalone HTML
  * string. No DOM, no browser, no I/O.

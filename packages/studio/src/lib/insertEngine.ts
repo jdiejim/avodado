@@ -20,7 +20,7 @@ import {
   templateBody,
   type BlockFamily,
   type BlockType,
-} from '@avodado/core';
+} from 'chiltepin-core';
 
 /** One insertable block, denormalised for display + filtering. */
 export interface InsertItem {

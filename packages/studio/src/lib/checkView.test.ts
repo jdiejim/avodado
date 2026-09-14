@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDocument, validateDocument, type Diagnostic } from '@avodado/core';
+import { parseDocument, validateDocument, type Diagnostic } from 'chiltepin-core';
 import { buildCheckRows, docCheckStatus } from './checkView.js';
 
 const SOURCE = [

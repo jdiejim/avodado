@@ -1,13 +1,13 @@
-# Avodado vs diagram-design — one complex sequence diagram
+# Chiltepin vs diagram-design — one complex sequence diagram
 
 Run on 1 Sep 2026. Four fresh agents, same model, identical brief: an
 access-token refresh with rotation, reuse detection, one retry, and async
-audit across six participants. Two wrote an Avodado `sequence` block; two
+audit across six participants. Two wrote a Chiltepin `sequence` block; two
 wrote a self-contained HTML+SVG file with the
 [diagram-design](https://github.com/cathrynlavery/diagram-design) skill,
 where the model draws every coordinate. Each side ran its own validation.
 
-| Measure | Avodado A | Avodado B | diagram-design A | diagram-design B |
+| Measure | Chiltepin A | Chiltepin B | diagram-design A | diagram-design B |
 |---|---:|---:|---:|---:|
 | Tokens (whole run) | 83,403 | 82,466 | 139,609 | 140,574 |
 | Tool calls | 15 | 15 | 21 | 18 |
@@ -31,9 +31,9 @@ dropped, 0 diagnostics.
 - The model writes about 7x less and the run costs 40% fewer tokens,
   because the renderer owns layout.
 - Both diagram-design runs footnoted that the flow "exceeds the sequence
-  budget" and simplified it. Neither Avodado run dropped content. A budget
+  budget" and simplified it. Neither Chiltepin run dropped content. A budget
   in prose makes the model cut; a budget in the renderer makes it split.
-- `avo check` validates the data. The geometry scripts validate the
+- `chiltepin check` validates the data. The geometry scripts validate the
   drawing. Only the first can say the diagram is wrong.
 - diagram-design wins on combined-fragment frames (`alt` / `else`) and an
   on-canvas annotation. `sequence.frames` is the next feature this points
@@ -41,9 +41,9 @@ dropped, 0 diagnostics.
 
 ## Reproduce
 
-1. Install the skill (`npx skills add jdiejim/avodado`) in an empty project with `docs/` and
-   `avodado.config.json`; clone diagram-design beside it.
+1. Install the skill (`npx skills add jdiejim/chiltepin`) in an empty project with `docs/` and
+   `chiltepin.config.json`; clone diagram-design beside it.
 2. Give each fresh agent the brief in `evals/compare/brief.md`, pointing at
    its skill, and let it validate with its own tooling.
 3. Record tokens, tool calls, and time from the task notification; count
-   bytes written; run `avo check` or the diagram-design scripts.
+   bytes written; run `chiltepin check` or the diagram-design scripts.

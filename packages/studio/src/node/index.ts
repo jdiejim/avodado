@@ -1,7 +1,7 @@
 /**
- * Node-only entry for `@avodado/studio` — the ONLY module in this package that
+ * Node-only entry for `chiltepin-studio` — the ONLY module in this package that
  * may touch `node:` APIs. The published package ships the built app as static
- * assets under `dist/app/`; the CLI (`avo studio`) imports this entry to find
+ * assets under `dist/app/`; the CLI (`chiltepin studio`) imports this entry to find
  * them and serve them alongside the file-bridge API.
  *
  * Everything under `src/` outside this folder runs in the browser.

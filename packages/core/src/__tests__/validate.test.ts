@@ -4,11 +4,11 @@ import { isNearDuplicateTitle, trailingHeading, validateDocument } from '../vali
 import { ordersApi, roadmap } from './fixtures.js';
 
 describe('validateDocument', () => {
-  it('reports only W_ALIAS_TYPE warnings for the avodado-roadmap fixture (it uses a `tracker` fence)', () => {
-    const doc = parseDocument(roadmap(), 'avodado-roadmap');
-    const diags = validateDocument(doc, 'resources/avodado-roadmap.md');
+  it('reports only W_ALIAS_TYPE warnings for the chiltepin-roadmap fixture (it uses a `tracker` fence)', () => {
+    const doc = parseDocument(roadmap(), 'chiltepin-roadmap');
+    const diags = validateDocument(doc, 'resources/chiltepin-roadmap.md');
     // The fixture spells one block with the legacy `tracker` alias — that is
-    // a warning, never an error, so `avo check` semantics are unchanged.
+    // a warning, never an error, so `chiltepin check` semantics are unchanged.
     expect(diags.every((d) => d.code === 'W_ALIAS_TYPE' && d.level === 'warn')).toBe(true);
     expect(diags.length).toBeGreaterThan(0);
   });

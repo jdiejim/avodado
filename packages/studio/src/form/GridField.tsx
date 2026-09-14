@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { FieldNode } from '@avodado/core';
+import type { FieldNode } from 'chiltepin-core';
 import { coerceValue } from '../direct/paths.js';
 import type { Ctx, YamlPath } from '../components/FormTab.js';
 import { SmartControl } from './controls.js';

@@ -5,7 +5,7 @@
  * column show. Pure functions — no store, no DOM.
  */
 
-import { segmentSpan, type Diagnostic, type Document } from '@avodado/core';
+import { segmentSpan, type Diagnostic, type Document } from 'chiltepin-core';
 import type { DocListItem } from '../api/client.js';
 import { mapDiagnosticsToFields } from './blockPreview.js';
 

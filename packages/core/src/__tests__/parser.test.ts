@@ -3,10 +3,10 @@ import { parseDocument } from '../parser.js';
 import { ordersApi, roadmap } from './fixtures.js';
 
 describe('parseDocument', () => {
-  it('parses the avodado-roadmap fixture without crashing', () => {
-    const doc = parseDocument(roadmap(), 'avodado-roadmap');
-    expect(doc.slug).toBe('avodado-roadmap');
-    expect(doc.meta).toMatchObject({ title: 'Avodado', tag: 'ROADMAP · v0.1' });
+  it('parses the chiltepin-roadmap fixture without crashing', () => {
+    const doc = parseDocument(roadmap(), 'chiltepin-roadmap');
+    expect(doc.slug).toBe('chiltepin-roadmap');
+    expect(doc.meta).toMatchObject({ title: 'Chiltepin', tag: 'ROADMAP · v0.1' });
     const typedKinds = doc.segments.filter((s) => s.kind !== 'markdown').map((s) => s.kind);
     // The fixture's `tracker` fence parses to its canonical kind, statustable.
     expect(typedKinds).toEqual(['meta', 'callout', 'timeline', 'kanban', 'statustable', 'table', 'callout']);

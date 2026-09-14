@@ -5,7 +5,7 @@
  * enforces. The terse spellings are the one hand-written table: they describe
  * the input sugar in `normalize.ts`, which the schema never sees.
  *
- * Pure: strings in, strings out. The CLI prints it (`avo block <type>`), the
+ * Pure: strings in, strings out. The CLI prints it (`chiltepin block <type>`), the
  * MCP server can serve it, tests pin it against the grammar table.
  */
 
@@ -301,7 +301,7 @@ export function blockContract(type: BlockType): BlockContract {
 }
 
 /**
- * The contract as the text `avo block <type>` prints: what the block is, its
+ * The contract as the text `chiltepin block <type>` prints: what the block is, its
  * fields, the terse forms, and one validating example — about forty lines.
  */
 export function formatBlockContract(type: BlockType): string {

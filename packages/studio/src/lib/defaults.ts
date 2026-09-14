@@ -4,7 +4,7 @@
  * Scalars get their zero value, enums their first option, containers recurse.
  */
 
-import type { FieldNode } from '@avodado/core';
+import type { FieldNode } from 'chiltepin-core';
 
 /** The default value for a single schema node. */
 export function defaultValue(node: FieldNode): unknown {

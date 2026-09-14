@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { describeBlockSchema } from '@avodado/core';
+import { describeBlockSchema } from 'chiltepin-core';
 import {
   coerceValue,
   defaultItemFor,
