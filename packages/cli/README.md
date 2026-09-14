@@ -34,7 +34,7 @@ Written in Markdown. Drawn by code. Checked in CI.</p>
 **Your agent writes the content. Chiltepin handles the layout.** Compose prose and typed YAML blocks in a `.md` file. Get consistent diagrams, a document you can share, and a source diff you can review.
 
 ```bash
-npx -y chiltepin demo
+npx -y chiltepin@latest demo
 ```
 
 Explore the built-in examples without creating a project. **Node.js 20+ required.**
@@ -144,10 +144,10 @@ The skill guides block selection, schema lookup, composition, and validation. Yo
 Run these commands in your project directory:
 
 ```bash
-npx -y chiltepin init
-npx -y chiltepin check
-npx -y chiltepin html docs/getting-started.md -p
-npx -y chiltepin studio
+npx -y chiltepin@latest init
+npx -y chiltepin@latest check
+npx -y chiltepin@latest html docs/getting-started.md -p
+npx -y chiltepin@latest studio
 ```
 
 `init` creates a config and two starter documents, skipping existing files. `html -p` opens the rendered page. `studio` opens the local visual editor.
@@ -156,7 +156,7 @@ To pin the CLI in your project:
 
 ```bash
 npm install --save-dev chiltepin
-npx chiltepin check
+npx chiltepin@latest check
 ```
 
 See the [getting started guide](https://github.com/jdiejim/chiltepin/blob/main/docs/guides/getting-started.md) for the full workflow. `chiltepin skill` also prints the guide for tools with a system-prompt field.

@@ -2,7 +2,7 @@
 
 Part of the **chiltepin** skill (the hub is `SKILL.md`, two folders up). One
 line per block, mapped to the family file that holds its selection guidance.
-For a block's fields and a validating example, run `npx -y chiltepin block
+For a block's fields and a validating example, run `npx -y chiltepin@latest block
 <type>`; bare `chiltepin block` prints this same list. Twelve old block names
 remain valid as permanent aliases — see the table at the bottom.
 

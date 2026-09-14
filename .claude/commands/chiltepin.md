@@ -18,7 +18,7 @@ For any other word, or for no word, print this usage block and stop:
 ### Step 1 — run the audit
 
 Run `chiltepin audit <path> --json`. Omit `<path>` when the user gave none.
-If `chiltepin` is not on PATH, run `npx -y chiltepin audit <path> --json`.
+If `chiltepin` is not on PATH, run `npx -y chiltepin@latest audit <path> --json`.
 The JSON carries `recommendations`, `evidence`, and sometimes a `notice`.
 If the JSON has a `notice`, show it to the user verbatim.
 

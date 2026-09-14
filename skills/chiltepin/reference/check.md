@@ -15,7 +15,7 @@ chiltepin build                       # static site (index + nav + cross-doc lin
 chiltepin sync openapi spec.yaml --out docs/api.md   # doc from an OpenAPI spec
 ```
 
-Prefix every command with `npx -y chiltepin` when `chiltepin` is not on PATH.
+Prefix every command with `npx -y chiltepin@latest` when `chiltepin` is not on PATH.
 
 `chiltepin check` exits non-zero on any error and names the file, line, and
 offending value. Warnings never fail the check, but read each one: most name a

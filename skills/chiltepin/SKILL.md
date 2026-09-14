@@ -31,7 +31,7 @@ messages:
 ## Fast path
 
 Use the project's installed CLI (`pnpm exec chiltepin` or `npx --no-install chiltepin`)
-to match its dependency version. Otherwise, `npx -y chiltepin …` downloads and
+to match its dependency version. Otherwise, `npx -y chiltepin@latest …` downloads and
 runs the published CLI. In the Chiltepin source repo, use the built
 `node packages/cli/dist/bin.js`. The commands below show the fallback form.
 
@@ -42,28 +42,28 @@ at the end explains which reference each task needs.
    request. Use the table below. For a full doc, two to five structural blocks
    often suffice. A single diagram request needs only that diagram. Use prose
    when a small list communicates the same information more clearly.
-   Unsure which block exists: `npx -y chiltepin block` lists all 107 block types.
-2. **Look up each block you will write**: `npx -y chiltepin block <type>`.
+   Unsure which block exists: `npx -y chiltepin@latest block` lists all 107 block types.
+2. **Look up each block you will write**: `npx -y chiltepin@latest block <type>`.
    It prints the fields, enums, terse one-line forms, and a validating
    example. Read a family selection sheet only when the choice remains unclear.
 3. **Write the doc.** For a full doc, put `meta` first (title, subtitle, tag). A `##` heading
    above a block is its title. Prose carries why and consequence, never a
    description of the block below it. Rules in the two sections after the
    table.
-4. **Check**: `npx -y chiltepin check <file> --json`. Every diagnostic carries
+4. **Check**: `npx -y chiltepin@latest check <file> --json`. Every diagnostic carries
    a stable code and the failing value; `reference/check.md` maps each code
    to its fix. Fix errors and rerun while you make progress. Stop and report
    the blocker if a diagnostic repeats without a new fix or needs missing facts.
    Warnings do not fail the check by default; review them and report relevant ones.
    A non-zero exit is never "done". If the CLI is unavailable, report validation
    as unverified. Never invent a successful check.
-5. **Render**: after a clean check, `npx -y chiltepin html <file>` writes
+5. **Render**: after a clean check, `npx -y chiltepin@latest html <file>` writes
    `<file>.html` next to the source, so the reader gets the page as well as
    the Markdown. Add `-p` to open it. For a deck, `slides <file>` instead.
 
 Handoff: the `.md` and `.html` paths, the actual check result, and any
 unresolved diagnostics. Then one line on what to do next: open the `.html`
-in a browser, or run `npx -y chiltepin studio` to edit the document visually.
+in a browser, or run `npx -y chiltepin@latest studio` to edit the document visually.
 Explain block selection only when the user asks or a tradeoff needs explanation.
 
 Editing an existing doc: read it whole first. Change the one block, and

@@ -3,7 +3,7 @@
 Read this file when a YAML question is not answered by `chiltepin block <type>`.
 It holds the block grammar, the full terse-item table, the YAML traps, the
 reference scheme, and the naming rules. The field contract and an example
-for every block come from `npx -y chiltepin block <type>`.
+for every block come from `npx -y chiltepin@latest block <type>`.
 
 ## How a block looks
 
