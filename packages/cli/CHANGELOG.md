@@ -1,5 +1,11 @@
 # chiltepin
 
+## 0.47.2
+
+### Patch Changes
+
+- a4370ef: The install hint reads `npx skills add jdiejim/chiltepin -g -y`: no prompts, every detected agent.
+
 ## 0.47.1
 
 ### Patch Changes
