@@ -7,8 +7,6 @@ tag: ARCHITECTURE REVIEW · EXAMPLE
 Keep payment confirmation on the request path. Publish order events from a transactional outbox so a broker outage cannot lose a confirmed order.
 This example describes a proposed system; the rollout stages are illustrative.
 
-## The system at a glance
-
 ```block
 id: checkout-design-system
 preset: infra
@@ -30,8 +28,6 @@ edges:
   - db --> relay: read outbox
   - relay --> events: publish
 ```
-
-## A decline is part of the contract
 
 The client sends a stable idempotency key on every retry. The payment provider deduplicates charges with that key.
 After a capture, the API commits the order and its outbox event together before returning success.
@@ -57,8 +53,6 @@ messages:
   - end
 ```
 
-## Store the order and the event together
-
 The unique idempotency key prevents duplicate orders. The relay marks an outbox event as published only after the broker acknowledges it.
 Consumers deduplicate by event ID because a relay retry can publish the same event again.
 
@@ -83,8 +77,6 @@ entities:
 relations:
   - { from: orders, to: outbox, fromCol: id, toCol: order_id, card: "1:N", label: emits }
 ```
-
-## Ship behind a canary
 
 Stop the rollout when a gate fails. Keep the previous deployment available until the new version completes a full day at 100% traffic.
 

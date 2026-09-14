@@ -6,8 +6,6 @@ tag: CHILTEPIN · ARCHITECTURE
 
 The CLI and Studio share the parser, schemas, and renderers. An agent writes the same Markdown files that a person edits.
 
-## From source to something you can share
-
 ```block
 id: chiltepin-render-pipeline
 title: The document pipeline

@@ -20,7 +20,13 @@ const examples = [
   ['rollout', 'docs/examples/checkout-design.md', 'rollout'],
   ['pipeline', 'docs/examples/chiltepin-pipeline.md', 'block'],
   ['deployment', 'docs/examples/deployment-topology.md', 'block'],
+  ['platform', 'docs/examples/platform-architecture.md', 'block'],
+  ['agent', 'docs/examples/research-agent.md', 'agentloop'],
+  ['agent-context', 'docs/examples/research-agent.md', 'context'],
+  ['transport', 'docs/examples/transport-network.md', 'c4'],
+  ['graph', 'docs/examples/transport-network.md', 'graph'],
   ['document', 'docs/examples/checkout-design.md', null],
+  ['agent-document', 'docs/examples/research-agent.md', null],
 ];
 
 const browser = await chromium.launch();
@@ -42,6 +48,7 @@ try {
     if (errors.length) throw new Error(JSON.stringify(errors));
     await page.setContent(renderDocument(doc), { waitUntil: 'load' });
     await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() => window.scrollTo(0, 0));
     // Match a wide page export when the renderer uses horizontal scrolling.
     const overflow = await page.locator('.diagram-stage--wide, .ro-strip').evaluateAll((stages) =>
       Math.max(0, ...stages.map((el) => el.scrollWidth - el.clientWidth)),
@@ -66,9 +73,13 @@ try {
       const first = await page.locator('.section-block').first().boundingBox();
       if (!first) throw new Error(`${file}: no first section to capture`);
       const clip = { x: 0, y: 0, width: page.viewportSize().width, height: Math.ceil(first.y + first.height + 32) };
-      await page.screenshot({ path: resolve(output, 'document-cover.png'), clip, animations: 'disabled' });
+      // Playwright intersects a clip with the viewport unless fullPage is set.
+      // Size the viewport to the cover so its top and diagram footer both fit.
+      await page.setViewportSize({ width: clip.width, height: clip.height });
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({ path: resolve(output, `${name}-cover.png`), clip, animations: 'disabled' });
       await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
-      await page.screenshot({ path: resolve(output, 'document-light.png'), clip, animations: 'disabled' });
+      await page.screenshot({ path: resolve(output, `${name}-light.png`), clip, animations: 'disabled' });
     }
     console.log(`${file} (${type ?? 'full document + dark/light covers'}) → assets/examples/${name}.png`);
   }
