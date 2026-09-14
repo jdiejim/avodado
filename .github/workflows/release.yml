@@ -46,6 +46,9 @@ jobs:
           pnpm release            # pnpm -r build && changeset publish (creates tags)
           git add -A
           git commit -m "chore: version packages [skip ci]"
+          # main may have moved while publishing: rebase the bump commit onto it
+          # rather than dropping it, and fail loudly if that is not possible.
+          git pull --rebase origin main
           git push origin HEAD:main
           git push origin --tags
         env:
