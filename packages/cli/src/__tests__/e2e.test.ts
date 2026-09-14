@@ -273,19 +273,9 @@ describe.skipIf(skipIfNotBuilt)('avo CLI (built bin)', () => {
     }
   });
 
-  it('avo mcp prints client setup snippets', async () => {
-    const repoRoot = resolve(import.meta.dirname, '../../../..');
-    const { code, stdout } = await runBin(['mcp'], repoRoot);
-    expect(code).toBe(0);
-    expect(stdout).toContain('claude mcp add avodado -- npx -y @avodado/mcp');
-    expect(stdout).toContain('"mcpServers"');
-    expect(stdout).toContain('"command": "npx"');
-    expect(stdout).toContain('Cursor');
-  }, 30_000);
-
   it('the old adapter aliases are gone — `avo claude` is an unknown command', async () => {
     const repoRoot = resolve(import.meta.dirname, '../../../..');
-    for (const alias of ['claude', 'cursor', 'copilot', 'github', 'windsurf']) {
+    for (const alias of ['claude', 'cursor', 'copilot', 'github', 'windsurf', 'mcp']) {
       const { code, stderr } = await runBin([alias], repoRoot);
       expect(code, `avo ${alias} must fail`).not.toBe(0);
       expect(stderr).toContain('unknown command');

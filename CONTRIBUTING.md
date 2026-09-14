@@ -1,6 +1,6 @@
 # Contributing
 
-Avodado is a pnpm monorepo: `@avodado/core` (parse, schemas, diagnostics), `@avodado/render` (deterministic HTML/SVG), `avodado` (the `avo` CLI), `@avodado/studio`, `@avodado/mcp`, and the agent skill in `skills/avodado`.
+Avodado is a pnpm monorepo: `@avodado/core` (parse, schemas, diagnostics), `@avodado/render` (deterministic HTML/SVG), `avodado` (the `avo` CLI), `@avodado/studio`, and the agent skill in `skills/avodado`.
 
 ```bash
 pnpm install

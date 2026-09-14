@@ -108,14 +108,4 @@ describe('the skill folder', () => {
     const longest = exemplar.split('\n').reduce((a, b) => (b.length > a.length ? b : a), '');
     expect(md).not.toContain(longest);
   });
-
-  it('the MCP embed script lists exactly the stitch files, in order', async () => {
-    const script = await readFile(
-      join(import.meta.dirname, '../../../mcp/scripts/embed-skill.mjs'),
-      'utf8',
-    );
-    const listed = [...script.matchAll(/^\s+'([^']+\.md)',$/gm)].map((m) => m[1]);
-    expect(listed).toEqual(['SKILL.md', ...SKILL_REFERENCE_FILES]);
-    expect(script).toContain("'../../../skills/avodado'");
-  });
 });

@@ -79,7 +79,7 @@ const HELP_GROUPS: ReadonlyArray<{ readonly header: string; readonly commands: r
   { header: 'WORK', commands: ['init', 'new', 'check', 'studio'] },
   { header: 'OUTPUT', commands: ['html', 'slides', 'pdf', 'build'] },
   { header: 'REFERENCE', commands: ['block', 'demo'] },
-  { header: 'SETUP', commands: ['mcp', 'sync'] },
+  { header: 'SETUP', commands: ['sync'] },
 ];
 
 /** The grouped command epilogue, shown after top-level help. Uncolored when
@@ -150,10 +150,6 @@ const COMMAND_EXAMPLES: Readonly<Record<string, ReadonlyArray<readonly [cmd: str
   demo: [
     ['avo demo', 'render the built-in showcase of every block and open it'],
     ['avo demo charts -s', 'one family, as a slide deck'],
-  ],
-  mcp: [
-    ['avo mcp', 'print MCP client setup snippets'],
-    ['avo mcp --stdio', 'run the Avodado MCP server on stdio'],
   ],
   sync: [
     ['avo sync openapi api.yaml -o docs/api.md', 'generate a doc from an OpenAPI spec'],

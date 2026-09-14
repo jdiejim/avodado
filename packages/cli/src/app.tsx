@@ -26,7 +26,6 @@ import { runInit, type InitResult } from './commands/init.js';
 import { blockIndex, blockReference, resolveBlockName } from './commands/block.js';
 import { copyToClipboard } from './io/clipboard.js';
 import { systemPrompt } from './commands/skill.js';
-import { mcpInstructions, runMcpStdio } from './commands/mcp.js';
 import { resolve as resolvePath } from 'node:path';
 import { writeFileSafe } from './io/write.js';
 import {
@@ -787,21 +786,6 @@ export async function main(argv: readonly string[]): Promise<number> {
       if (isInteractive && copyToClipboard(text)) {
         console.log(pc.green('\n✓ copied to clipboard') + pc.dim(` (${text.length} chars)`));
       }
-    });
-
-  // `avo mcp` — MCP client setup snippets; `--stdio` spawns the @avodado/mcp
-  // server (local install if resolvable, else npx). No output on --stdio:
-  // stdout is the MCP protocol channel.
-  program
-    .command('mcp')
-    .description('Show MCP client setup for the Avodado server, or run it (--stdio)')
-    .option('--stdio', 'start the MCP server on stdio (spawns @avodado/mcp)')
-    .action(async (opts: { stdio?: boolean }) => {
-      if (opts.stdio === true) {
-        exitCode = await runMcpStdio(process.cwd());
-        return;
-      }
-      console.log(mcpInstructions());
     });
 
   // Per-command EXAMPLES epilogue — one data table in banner.ts drives them.

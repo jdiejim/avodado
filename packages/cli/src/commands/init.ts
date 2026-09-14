@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
  * and the MCP embed concatenate exactly this list; the on-disk folder may
  * carry more (the exemplars), which stay out of the single-file form.
  *
- * Keep this list in sync with `packages/mcp/scripts/embed-skill.mjs` (FILES).
+ * This is the one list of skill reference files the CLI stitches for `avo skill`.
  */
 export const SKILL_REFERENCE_FILES: readonly string[] = [
   'reference/blocks/INDEX.md',
